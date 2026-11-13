@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Umdoislab Central: Ingress UI + authenticated n8n ingest, SQLite state."""
 import hmac
+import hashlib
 import json
 import os
 import re
@@ -182,7 +183,70 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(200, {"item": dict(row)}) if row else self.respond(404, {"error": "Não encontrado"})
         return self.respond(404, {"error": "Não encontrado"})
 
+    def send_automated(self, data):
+        """Single controlled outbound path for future n8n bot replies.
+
+        Serialize permission check and dispatch with the same lock used by
+        'Assumir'; the current published v1.4 does not use this endpoint.
+        """
+        sender = data.get("senderId")
+        instance = data.get("instance")
+        message_id = data.get("messageId")
+        message = data.get("text")
+        if not all(isinstance(x, str) for x in (sender, instance, message_id, message)):
+            return self.respond(422, {"error": "Campos obrigatórios ausentes"})
+        message = message.strip()
+        if not 0 < len(message) <= 1500 or not 1 <= len(message_id) <= 160:
+            return self.respond(422, {"error": "Texto ou messageId inválido"})
+        cfg = options()
+        authorized_sender = str(cfg.get("auto_test_sender") or "")
+        if not authorized_sender or sender != authorized_sender:
+            return self.respond(403, {"error": "Remetente fora do contato de teste autorizado"})
+        api_key = str(cfg.get("evolution_api_key") or "")
+        endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
+        evolution_instance = str(cfg.get("evolution_instance") or "")
+        if not api_key or not endpoint.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", evolution_instance):
+            return self.respond(503, {"error": "Evolution API não configurada"})
+        if instance != evolution_instance or not valid_sender_for_send(sender):
+            return self.respond(422, {"error": "Instância ou destino inválido"})
+        delivery_key = "auto-" + hashlib.sha256((sender + "|" + message_id).encode()).hexdigest()
+        with LOCK:
+            decision = routing_decision(instance, sender)
+            if decision is None or not decision["allowAutoReply"]:
+                return self.respond(409, {"error": "Atendimento humano ativo ou pendente; não enviar",
+                                          "state": decision["state"] if decision else "invalid"})
+            with connect() as db:
+                duplicate = db.execute("SELECT outcome FROM replies WHERE request_id=?", (delivery_key,)).fetchone()
+                if duplicate:
+                    return self.respond(409, {"error": "Resposta automática já solicitada; não reenviar"})
+                db.execute("INSERT INTO replies VALUES(?,?,?,?,?)",
+                           (delivery_key, sender, now(), "requested", "auto"))
+            url = endpoint + "/message/sendText/" + evolution_instance
+            body = json.dumps({"number": sender.split("@")[0], "text": message}).encode("utf-8")
+            req = urllib.request.Request(url, data=body,
+                headers={"Content-Type": "application/json", "apikey": api_key}, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=12) as response:
+                    response.read(8192)
+                    if not 200 <= response.status < 300:
+                        raise ValueError("Evolution rejected request")
+                with connect() as db:
+                    db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (delivery_key,))
+                return self.respond(200, {"ok": True, "delivery": "accepted_not_confirmed"})
+            except Exception:
+                with connect() as db:
+                    db.execute("UPDATE replies SET outcome='uncertain' WHERE request_id=?", (delivery_key,))
+                return self.respond(502, {"error": "Envio automático incerto; não repetir sem verificar"})
+
+
     def do_POST(self):
+        if self.path == "/bridge/send-auto":
+            if not self.bridge():
+                return self.respond(403, {"error": "Acesso negado"})
+            payload = self.read_json()
+            if payload is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            return self.send_automated(payload)
         if self.path == "/bridge/decision":
             # This gate is checked before all automatic outgoing messages.
             if not self.bridge():
