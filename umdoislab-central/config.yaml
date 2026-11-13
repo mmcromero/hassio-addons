@@ -19,8 +19,10 @@ options:
   evolution_url: "http://homeassistant.local:8080"
   evolution_instance: "umdoislab"
   evolution_api_key: ""
+  auto_test_sender: "CONTATO_TESTE_NAO_CONFIGURADO"
 schema:
   bridge_secret: password
   evolution_url: str
   evolution_instance: str
   evolution_api_key: password
+  auto_test_sender: str
