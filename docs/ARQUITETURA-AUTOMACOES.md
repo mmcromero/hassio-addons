@@ -66,3 +66,16 @@ Somente avaliar instalação no PC quando houver demanda concreta (ex.: tratamen
 3. Definir os comandos do WhatsApp e limites de autorização.
 4. Só então desenhar protocolo e fila durável para tarefas pesadas e determinar o papel do computador.
 5. Registrar implementação e evidências em PRs; atualizar estes documentos quando decisões mudarem.
+
+
+## Atualização operacional — Umdoislab, 13/11/2026
+
+A diretriz de manter **um n8n no Raspberry** continua válida. Após a elaboração deste documento, o proprietário confirmou a instalação da Evolution API, o pareamento da instância WhatsApp `umdoislab` e a classificação de mensagem por assunto em produção no n8n 2.47.3 (workflow v1.1, **Success**, quatro nós). A homologação foi relatada pelo proprietário; não é auditoria de carga, persistência ou proteção de dados. Ver [passagem de bastão completa](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md).
+
+**Separação aprovada para a próxima evolução:**
+
+- **Comercial, regras:** workflow v1.1 continua a entrada validada. Preparar respostas sugeridas para revisão antes de qualquer envio automático.
+- **Comercial, IA:** Gemini em workflow separado, primeiro com dados sintéticos. Adotar uma única entrada WhatsApp com roteamento explícito para evitar duas respostas ao mesmo cliente. A API do Gemini ainda não está configurada.
+- **Pessoal, residência:** laboratório de comandos `/casa` fornecido em JSON, **somente simulador**; sem conexão real ao Home Assistant. `fromMe` sozinho não autentica/autorizada comandos domésticos.
+
+**Pendências:** exportar JSON efetivo da v1.1 antes de alterar regras; revisar segurança, idempotência, anti-loop, privacidade, permissões e backups antes de habilitar envio automático ou ações físicas. Nenhum serviço externo, segundo n8n ou IA local no computador foi implementado nesta atualização.
