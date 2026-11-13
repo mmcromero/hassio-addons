@@ -1,0 +1,33 @@
+name: Validar Central Umdoislab
+on:
+  pull_request:
+    paths:
+      - 'umdoislab-central/**'
+      - '.github/workflows/validar-umdoislab-central.yml'
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compilar Python
+        run: python -m py_compile umdoislab-central/server.py
+      - name: Testes SQLite e regras de eventos
+        run: python -m unittest discover -s umdoislab-central -p 'test_*.py' -v
+      - name: Validar JSON importável do n8n
+        run: |
+          python -m json.tool umdoislab-central/n8n/central-guard-lab.json > /dev/null
+          python -m json.tool umdoislab-central/n8n/atendimento-v1.5-laboratorio.json > /dev/null
+      - name: Preparar build ARM64
+        uses: docker/setup-qemu-action@v3
+      - name: Preparar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Construir imagem ARM64 (sem publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./umdoislab-central
+          platforms: linux/arm64
+          push: false

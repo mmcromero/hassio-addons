@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Umdoislab — Atendimentos</title>
+<style>
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg,#f5f5f7);color:var(--fg,#1c2430)}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:default}
+.wrap{max-width:900px;margin:auto;padding:18px 14px 55px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:1.55rem;margin:0;letter-spacing:-.04em}h2{font-size:1.12rem;margin:0}.muted{color:#687383}.small{font-size:.82rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.stat{background:#fff;border:1px solid #dce1e6;border-radius:12px;padding:12px 6px;text-align:center}.stat strong{font-size:1.5rem;display:block}.stat span{font-size:.76rem;color:#687383}
+.controls{display:grid;gap:10px}input,textarea,select{width:100%;background:#fff;border:1px solid #c9d0d9;color:#1c2430;padding:12px;border-radius:10px;min-height:44px}textarea{min-height:110px;resize:vertical}
+.tabs{display:flex;gap:4px;background:#e9edf0;padding:4px;border-radius:12px}.tab{flex:1;border:0;background:none;color:#3c4959;font-weight:600;padding:11px 3px;border-radius:9px;font-size:.85rem}.tab.active{background:#fff;box-shadow:0 1px 3px #0002}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:8px 0}.plain{background:none;border:0;padding:8px;color:#314d79}.filters{background:#fff;border:1px solid #dce1e6;padding:12px;border-radius:10px}
+.cards{display:grid;gap:10px}.card{background:#fff;border:1px solid #dce1e6;border-radius:13px;padding:14px;width:100%;text-align:left;color:#1c2430}.card:focus-visible,.btn:focus-visible{outline:3px solid #4d77ce}.card-head{display:flex;justify-content:space-between;gap:8px}.card-name{font-weight:700}.card p{margin:8px 0;color:#536071;overflow-wrap:anywhere}.subject{font-weight:600;font-size:.9rem;margin-top:9px}.status{font-size:.75rem;color:#455264;margin-top:8px}.btn{border:1px solid #b9c2ce;background:#fff;color:#24334a;padding:12px 15px;border-radius:10px;font-weight:650;min-height:44px}.btn.primary{background:#214d89;color:#fff;border-color:#214d89}.btn.full{width:100%}.actions{display:grid;gap:9px}.detailbox{background:#fff;border:1px solid #dce1e6;padding:14px;border-radius:12px}.detailbox p{margin-bottom:0;white-space:pre-wrap;overflow-wrap:anywhere}
+#notice{min-height:22px;font-size:.86rem;padding:4px 0}#notice.error{color:#a12828}#notice.ok{color:#1a6c44}.hidden{display:none!important}
+@media (min-width:700px){.wrap{padding:24px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.actions{grid-template-columns:1fr 1fr}.controls{grid-template-columns:1fr}.stat{padding:16px}}
+@media(prefers-color-scheme:dark){body{--bg:#14191f;--fg:#f3f6fa}.stat,.card,.filters,.detailbox{background:#202833;border-color:#394552;color:#f3f6fa}.stat span,.muted,.small,.card p,.status{color:#b2becc}input,textarea,select{background:#202833;border-color:#536171;color:#fff}.tabs{background:#2a3542}.tab{color:#d4dce4}.tab.active{background:#405269}.btn{background:#27374b;color:#fff;border-color:#536171}}
+</style></head><body><main class="wrap">
+<section id="listPanel">
+<div class="top"><div><h1>Atendimentos</h1><div class="muted small">UMDOISLAB · Central de Atendimento</div></div><button id="reload" class="btn" title="Atualizar lista">↻ Atualizar</button></div>
+<div class="stats"><div class="stat"><strong id="pendingCount">0</strong><span>Pendentes</span></div><div class="stat"><strong id="humanCount">0</strong><span>Em atendimento</span></div><div class="stat"><strong id="doneCount">0</strong><span>Resolvidos</span></div></div>
+<div class="controls"><label><span class="small muted">Buscar cliente ou assunto</span><input id="search" type="search" placeholder="Nome, assunto ou mensagem..." autocomplete="off"></label>
+<div class="tabs" role="group" aria-label="Filtrar atendimentos"><button class="tab active" data-view="pending">Pendentes</button><button class="tab" data-view="human">Em atendimento</button><button class="tab" data-view="all">Todos</button></div></div>
+<div class="bar"><span class="small muted" id="resultCount">Mais recentes primeiro</span><button id="filterToggle" class="plain" aria-expanded="false">⚙ Filtros ▾</button></div>
+<div id="filters" class="filters hidden"><label class="small" for="statusFilter">Situação</label><select id="statusFilter"><option value="all">Todas</option><option value="pending">Aguardando responsável</option><option value="human">Em atendimento</option><option value="done">Resolvido</option></select></div>
+<div class="cards" id="cards"></div>
+</section>
+<section id="details" class="hidden">
+<button class="plain" id="back">← Voltar à lista</button><div class="top"><div><h1 id="dName">Contato</h1><span id="dTime" class="small muted"></span></div><span id="dStatus" class="small"></span></div>
+<div class="detailbox" style="margin-top:18px"><h2>Resumo do atendimento</h2><p id="dSummary"></p></div>
+<div class="detailbox" style="margin-top:12px"><h2>Última mensagem</h2><p id="dMessage"></p></div>
+<div class="detailbox" style="margin-top:12px"><h2>Responder pelo WhatsApp</h2><p class="small muted">A mensagem será enviada pela Evolution API após tocar em Enviar. Enviar não resolve o atendimento.</p><textarea id="replyText" maxlength="1500" placeholder="Digite sua resposta..."></textarea><button id="send" class="btn primary full" style="margin-top:9px">Enviar resposta</button></div>
+<div class="actions" style="margin-top:12px"><button id="assume" class="btn">Assumir atendimento</button><button id="resolve" class="btn">Marcar como resolvido</button><button id="reopen" class="btn hidden">Reabrir atendimento</button></div>
+<div id="notice" role="status" aria-live="polite"></div>
+</section>
+</main><script>
+const $=id=>document.getElementById(id);
+let entries=[],view="pending",selected=null,busy=false;
+const statusLabel={pending:"Aguardando responsável",human:"Em atendimento humano",done:"Resolvido"};
+function text(id,value){$(id).textContent=value??""}
+function notify(msg,ok=false){const n=$("notice");n.className=ok?"ok":"error";n.textContent=msg}
+function formatDate(s){const d=new Date(s);return isNaN(d)?"":d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
+async function api(path,init={}){const res=await fetch(path,{...init,headers:{"Content-Type":"application/json","X-Requested-With":"UmdoislabCentral",...(init.headers||{})},cache:"no-store"});let json={};try{json=await res.json()}catch{}if(!res.ok)throw Error(json.error||"Falha de comunicação");return json}
+function render(){
+  text("pendingCount",entries.filter(e=>e.status==="pending").length);
+  text("humanCount",entries.filter(e=>e.status==="human").length);
+  text("doneCount",entries.filter(e=>e.status==="done").length);
+  document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
+  const q=$("search").value.trim().toLocaleLowerCase("pt-BR"), f=$("statusFilter").value;
+  const matches=entries.filter(e=>(view==="all"||e.status===view)&&(f==="all"||e.status===f)&&[e.sender_name,e.subject,e.last_message,e.summary].join(" ").toLocaleLowerCase("pt-BR").includes(q)).sort((a,b)=>Date.parse(b.updated_at)-Date.parse(a.updated_at));
+  text("resultCount",matches.length+" registro(s) · Atividade mais recente primeiro");
+  const cards=$("cards");cards.replaceChildren();
+  if(!matches.length){const p=document.createElement("p");p.className="muted";p.textContent="Nenhum atendimento nesta lista.";cards.append(p)}
+  for(const e of matches){
+    const card=document.createElement("button");card.type="button";card.className="card";
+    const head=document.createElement("div");head.className="card-head";
+    const name=document.createElement("span");name.className="card-name";name.textContent=e.sender_name||"Contato";
+    const time=document.createElement("span");time.className="small muted";time.textContent=formatDate(e.updated_at);head.append(name,time);
+    const subj=document.createElement("div");subj.className="subject";subj.textContent=e.subject||"Atendimento";
+    const preview=document.createElement("p");preview.textContent=e.last_message||e.summary||"Sem mensagem";preview.style.display="-webkit-box";preview.style.webkitLineClamp="2";preview.style.webkitBoxOrient="vertical";preview.style.overflow="hidden";
+    const status=document.createElement("div");status.className="status";status.textContent="● "+(statusLabel[e.status]||"");
+    card.append(head,subj,preview,status);card.addEventListener("click",()=>showDetails(e.sender_id));cards.append(card);
+  }
+}
+async function reload(){try{entries=(await api("api/conversations")).items||[];render()}catch(e){alert("Não foi possível carregar atendimentos: "+e.message)}}
+async function showDetails(sender){
+  try{selected=(await api("api/conversations/"+encodeURIComponent(sender))).item;text("dName",selected.sender_name||"Contato");text("dTime",formatDate(selected.updated_at));text("dStatus",statusLabel[selected.status]);text("dSummary",selected.summary||"Nenhum resumo registrado.");text("dMessage",selected.last_message||"Nenhuma mensagem recente.");$("replyText").value="";notify("",true);$("listPanel").classList.add("hidden");$("details").classList.remove("hidden");$("assume").classList.toggle("hidden",selected.status!=="pending");$("resolve").classList.toggle("hidden",selected.status==="done");$("reopen").classList.toggle("hidden",selected.status!=="done");window.scrollTo(0,0)}catch(e){alert(e.message)}
+}
+function back(){$("details").classList.add("hidden");$("listPanel").classList.remove("hidden");reload()}
+async function action(type){
+  if(!selected||busy)return;busy=true;try{
+    await api("api/conversations/"+encodeURIComponent(selected.sender_id)+"/"+type,{method:"POST",body:"{}"});
+    const id=selected.sender_id;await reload();await showDetails(id);notify("Situação atualizada.",true)
+  }catch(e){notify(e.message)}finally{busy=false}
+}
+function requestUUID(){
+  if(globalThis.crypto && typeof crypto.randomUUID==="function")return crypto.randomUUID();
+  // getRandomValues funciona também em contextos HTTP locais, onde randomUUID pode faltar.
+  if(globalThis.crypto && typeof crypto.getRandomValues==="function"){
+    const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+    const h=Array.from(b,v=>v.toString(16).padStart(2,"0")).join("");
+    return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);
+  }
+  throw Error("Este navegador não suporta identificadores seguros de envio.");
+}
+async function send(){
+  if(!selected||busy)return;const value=$("replyText").value.trim();if(!value)return;
+  if(!confirm("Enviar esta mensagem ao WhatsApp do contato?"))return;
+  let requestId;try{requestId=requestUUID()}catch(e){notify(e.message);return}
+  busy=true;$("send").disabled=true;
+  try{
+    const result=await api("api/conversations/"+encodeURIComponent(selected.sender_id)+"/reply",{method:"POST",body:JSON.stringify({text:value,requestId})});
+    $("replyText").value="";const id=selected.sender_id;await reload();await showDetails(id);notify(result.detail||"Solicitação de envio aceita.",true)
+  }catch(e){notify(e.message)}finally{busy=false;$("send").disabled=false}
+}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>{view=b.dataset.view;$("statusFilter").value="all";render()}));
+$("search").addEventListener("input",render);$("statusFilter").addEventListener("change",render);
+$("filterToggle").addEventListener("click",()=>{const hidden=$("filters").classList.toggle("hidden");$("filterToggle").setAttribute("aria-expanded",String(!hidden))});
+$("reload").addEventListener("click",reload);$("back").addEventListener("click",back);
+$("assume").addEventListener("click",()=>action("assume"));$("resolve").addEventListener("click",()=>action("resolve"));$("reopen").addEventListener("click",()=>action("reopen"));$("send").addEventListener("click",send);
+reload();
+</script></body></html>

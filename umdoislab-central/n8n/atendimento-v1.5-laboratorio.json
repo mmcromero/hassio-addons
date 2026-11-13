@@ -1,0 +1,205 @@
+{
+  "name": "LAB — Umdoislab v1.5 — fluxo completo isolado (NÃO PUBLICAR)",
+  "nodes": [
+    {
+      "id": "a",
+      "name": "Iniciar laboratório",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        160,
+        300
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "b",
+      "name": "Evento de teste e classificação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        385,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Altere somente este objeto para simular cada mensagem do mesmo contato.\nconst sample={senderId:'5511999999999@s.whatsapp.net', messageId:'lab-mensagem-001', text:'Quasimoto', senderName:'Contato de laboratório'};\nconst norm=x=>String(x||'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();\nconst t=norm(sample.text);\nlet category='outros';\nif (/\\b(oi|ola|opa|bom dia|boa tarde|boa noite)\\b/.test(t))category='saudacao';\nelse if (/\\b(mf ?doom|mfdu|quasimoto|dichavador|tchavador|pracinha)\\b/.test(t))category='produto';\nelse if (/\\b(catalogo|catalog)\\b/.test(t))category='catalogo';\nelse if (/\\b(preco|valor|quanto|custa)\\b/.test(t))category='preco';\nelse if (/\\b(entrega|frete|cep|envio)\\b/.test(t))category='entrega';\nelse if (/\\b(pedido|rastreio|compra)\\b/.test(t))category='pedido';\nconst handoffRequested=false; // Mude para true só ao simular uma transferência humana.\nreturn [{json:{instance:'umdoislab',isClientMessage:true,isGroup:false,\nsenderId:sample.senderId,senderName:sample.senderName,messageId:sample.messageId,\nmessageText:sample.text,category,summary:'Laboratório v1.5 — '+category,\nhandoffRequested}}];"
+      }
+    },
+    {
+      "id": "c",
+      "name": "Registrar entrada e consultar estado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        610,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://CENTRAL_HOST_INTERNO:8099/bridge/inbound",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "d",
+      "name": "Decidir resposta controlada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        835,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const result=$input.first()?.json;\nif (!result || typeof result.action!=='string' || !['auto','handoff','offer_choice','resume','silent','ignore'].includes(result.action))throw Error('Central indisponível ou resposta inválida; bloquear.');\nconst incoming=$('Evento de teste e classificação').first().json;\nconst action=result.action;\nif (['silent','ignore'].includes(action))return [{json:{...incoming,action,shouldSend:false,reason:'Atendimento humano ou evento repetido'}}];\nlet kind='normal',text='',reason='';\nif(action==='handoff'){kind='handoff';reason='Transferência para humano (texto definido no servidor)';}\nelse if(action==='offer_choice'){kind='choice';reason='Perguntar 1 aguardar / 2 continuar (texto definido no servidor)';}\nelse if(action==='resume'){text='Certo! Podemos continuar pelo atendimento automático. 😊 O que você gostaria de saber?';reason='Cliente pediu explicitamente para continuar';}\nelse {\n const replies={\n  saudacao:'Oi! Tudo bem? 😊 Como posso ajudar aqui na Umdoislab?',\n  catalogo:'Você pode conhecer a Umdoislab em https://umdoislab.com.br/ 😊 Quer procurar algum produto específico?',\n  produto:'Posso te ajudar a localizar esse produto. Qual modelo ou informação você procura? Não vou informar preço sem consultar o catálogo.',\n  preco:'Qual produto você quer consultar? Assim podemos confirmar o valor correto.',\n  entrega:'Para conferir a entrega, me diga o CEP e o produto desejado, por favor.',\n  pedido:'Posso encaminhar sua dúvida sobre pedido para atendimento pessoal. Pode descrever o que aconteceu?'\n };\n text=replies[incoming.category]||'Pode me dizer o nome do produto ou qual informação você procura?';\n kind=incoming.category==='outros'?'fallback':'normal';\n reason='Resposta de laboratório, sem preço ou estoque inventado';\n}\nreturn [{json:{instance:incoming.instance,senderId:incoming.senderId,messageId:incoming.messageId,\nkind,text,action,shouldSend:true,reason}}];"
+      }
+    },
+    {
+      "id": "e",
+      "name": "Envio habilitado apenas no laboratório autorizado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1085,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "t",
+              "leftValue": "={{ $json.shouldSend === true && false }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f",
+      "name": "Enviar pela Central protegida (desabilitado por padrão)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        170
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://CENTRAL_HOST_INTERNO:8099/bridge/send-auto",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({instance:$json.instance,senderId:$json.senderId,messageId:$json.messageId,kind:$json.kind,text:$json.text}) }}",
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "g",
+      "name": "Resultado seco sem WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        410
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(x=>({json:{...x.json,dryRun:true,whatsAppSent:false,\nnote:'Envio desligado neste JSON. Não habilitar sem configurar contato de teste e autenticação.'}}));"
+      }
+    }
+  ],
+  "connections": {
+    "Iniciar laboratório": {
+      "main": [
+        [
+          {
+            "node": "Evento de teste e classificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evento de teste e classificação": {
+      "main": [
+        [
+          {
+            "node": "Registrar entrada e consultar estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar entrada e consultar estado": {
+      "main": [
+        [
+          {
+            "node": "Decidir resposta controlada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir resposta controlada": {
+      "main": [
+        [
+          {
+            "node": "Envio habilitado apenas no laboratório autorizado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio habilitado apenas no laboratório autorizado?": {
+      "main": [
+        [
+          {
+            "node": "Enviar pela Central protegida (desabilitado por padrão)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resultado seco sem WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
