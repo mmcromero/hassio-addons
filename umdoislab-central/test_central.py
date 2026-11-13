@@ -249,6 +249,40 @@ class CentralTests(unittest.TestCase):
         body=json.loads(send.call_args.args[0].data)
         self.assertEqual(body["text"],self.mod.CHOICE_PROMPT)
 
+    def test_waiting_customer_can_explicitly_resume_later(self):
+        self.mod.process_inbound(self.event())
+        self.mod.process_inbound(self.event(messageId="m2",messageText="Dúvida",
+                                              handoffRequested=False))
+        self.mod.process_inbound(self.event(messageId="m3",messageText="1",
+                                              handoffRequested=False))
+        resumed=self.mod.process_inbound(self.event(messageId="m4",messageText="2",
+                                              handoffRequested=False))
+        self.assertEqual(resumed["action"],"resume")
+        self.assertEqual(self.mod.routing_decision("umdoislab",
+          "5511999999999@s.whatsapp.net")["choiceState"],"opted_in")
+
+    def test_fallback_triggers_handoff_on_second_unknown_without_existing_ticket(self):
+        sender="5511999999999@s.whatsapp.net"
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"fake","evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab","auto_test_sender":sender}))
+        class Dummy:
+            def respond(self,code,data):return code,data
+        class Success:
+            status=200
+            def __enter__(self):return self
+            def __exit__(self,*args):return False
+            def read(self,n):return b'{}'
+        with patch.object(self.mod.urllib.request,"urlopen",return_value=Success()) as send:
+            status,_=self.mod.Handler.send_automated(Dummy(),
+                {"instance":"umdoislab","senderId":sender,"messageId":"m1",
+                 "kind":"fallback","text":"Pode explicar melhor?"})
+        self.assertEqual(status,200)
+        result=self.mod.process_inbound(self.event(messageId="m2",messageText="Sei la",
+            category="outros",handoffRequested=False))
+        self.assertEqual(result["action"],"handoff")
+        self.assertEqual(self.mod.routing_decision("umdoislab",sender)["state"],"pending")
+
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))
         self.assertFalse(self.mod.store_event(self.event(isClientMessage=False)))
