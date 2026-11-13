@@ -1,0 +1,197 @@
+{
+  "name": "LAB — Umdoislab Central v1.5 — Guard de estado (NÃO PUBLICAR)",
+  "nodes": [
+    {
+      "id": "manual",
+      "name": "Iniciar teste manual",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        180,
+        280
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "sample",
+      "name": "Mensagem sintética (sem cliente real)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        410,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Somente teste isolado: NUNCA envia WhatsApp.\nreturn [{json:{instance:'umdoislab',senderId:'5511999999999@s.whatsapp.net',messageId:'EXEMPLO-NAO-REAL'}}];"
+      }
+    },
+    {
+      "id": "http",
+      "name": "Consultar estado na Central",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        650,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://CENTRAL_HOST_INTERNO:8099/bridge/decision",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ instance: $json.instance, senderId: $json.senderId }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "check",
+      "name": "Validar decisão (falhar fechado)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        890,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const decision=$input.first()?.json;\nif (!decision || typeof decision.allowAutoReply !== 'boolean' || !['none','pending','human','done'].includes(decision.state)) { throw new Error('Decisão inválida; bloquear envio automático.'); }\nreturn [{json:{...decision, block: decision.allowAutoReply !== true}}];"
+      }
+    },
+    {
+      "id": "if",
+      "name": "Resposta automática permitida?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "allowed",
+              "leftValue": "={{ $json.allowAutoReply }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ok",
+      "name": "Permissão recebida (sem envio)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        170
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Etapa de diagnóstico: NENHUM envio WhatsApp nesta branch.\nreturn [{json:{diagnostico:'Permitido somente para teste; o envio real deve passar por /bridge/send-auto',...$input.first().json}}];"
+      }
+    },
+    {
+      "id": "blocked",
+      "name": "Bloqueado pela Central (sem envio)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        390
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{json:{diagnostico:'Sem resposta automática; manter atendimento humano',...$input.first().json}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Iniciar teste manual": {
+      "main": [
+        [
+          {
+            "node": "Mensagem sintética (sem cliente real)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem sintética (sem cliente real)": {
+      "main": [
+        [
+          {
+            "node": "Consultar estado na Central",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar estado na Central": {
+      "main": [
+        [
+          {
+            "node": "Validar decisão (falhar fechado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar decisão (falhar fechado)": {
+      "main": [
+        [
+          {
+            "node": "Resposta automática permitida?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta automática permitida?": {
+      "main": [
+        [
+          {
+            "node": "Permissão recebida (sem envio)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Bloqueado pela Central (sem envio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
