@@ -96,7 +96,7 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "UmdoislabCentral/0.1"
     def log_message(self, fmt, *args):
         # No access-log body/headers/token/phone
-        print("central-request", self.command, self.path.split("?")[0], flush=True)
+        print("central-request", self.command, self.path.split("?")[0].split("/")[1:3], flush=True)
 
     def respond(self, status, data):
         raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -198,8 +198,10 @@ class Handler(BaseHTTPRequestHandler):
         api_key = str(cfg.get("evolution_api_key") or "")
         endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
         instance = str(cfg.get("evolution_instance") or "")
-        if not api_key or not endpoint.startswith("http") or not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
+        if not api_key or not endpoint.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
             return self.respond(503, {"error": "Evolution API não configurada"})
+        if not re.fullmatch(r"[0-9]{10,15}@s\\.whatsapp\\.net", sender):
+            return self.respond(422, {"error": "Identificador do contato incompatível com envio seguro; confira o JID recebido"})
         url = endpoint + "/message/sendText/" + instance
         body = json.dumps({"number":sender.split("@")[0], "text":message}).encode()
         req = urllib.request.Request(url, data=body,
