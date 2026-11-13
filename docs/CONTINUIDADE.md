@@ -2,11 +2,13 @@
 
 **Atualizado em:** 2026-11-13  
 **Repositório:** https://github.com/mmcromero/hassio-addons  
-**Situação:** infraestrutura básica publicada; instalação real da Evolution API em andamento no último relato do proprietário. **Não afirmar que concluiu** sem nova evidência.
+**Situação (13/11/2026):** Evolution API instalada, instância `umdoislab` pareada e classificação v1.1 homologada em produção pelo proprietário; ver [passagem de bastão](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md).
+
+> **LEITURA PRIORITÁRIA — ESTADO MAIS RECENTE:** [PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md). Este arquivo registra também o histórico inicial; as etapas de instalação/QR descritas abaixo **já foram concluídas** pelo proprietário. Não tratá-las como próximas ações. O webhook em produção é `/webhook/umdoislab-atendimento-inicial` e a classificação v1.1 teve execução **Success** com quatro nós. O próximo incremento é resposta sugerida sem envio automático.
 
 ## Como retomar em outro chat
 
-> Atue no modo `/pair` do projeto `mmcromero/hassio-addons`. Leia primeiro `docs/CONTINUIDADE.md`, `docs/ARQUITETURA-AUTOMACOES.md`, `evolution-api/DOCS.md` e os PRs/Actions recentes. Continue a homologação da Evolution API v0.1.0 no Home Assistant OS sem alterar o Raspberry Pi sem autorização explícita. Não confunda CI verde com instalação ou pareamento real aprovados.
+> Atue no modo `/pair` do projeto `mmcromero/hassio-addons`. Leia primeiro `docs/PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md`, depois `docs/CONTINUIDADE.md`, `docs/ARQUITETURA-AUTOMACOES.md` e `evolution-api/DOCS.md`. O proprietário já confirmou o pareamento e o recebimento de eventos em produção no n8n v1.1. Próxima tarefa: preservar o JSON efetivo da v1.1 e preparar respostas sugeridas sem envio automático. Não alterar Raspberry Pi nem workflows sem autorização.
 
 Esse parágrafo pode ser copiado como mensagem inicial. Documentos no Git são a fonte da verdade para decisões deste projeto; informações sobre estado de execução precisam de evidências atuais.
 
@@ -19,7 +21,7 @@ Esse parágrafo pode ser copiado como mensagem inicial. Documentos no Git são a
 - Objetivo imediato: construir uma infraestrutura confiável, **não** definir todos os workflows de negócio antes da homologação.
 - **Prioridade:** Home Assistant e funções da residência não devem ficar indisponíveis por causa da Evolution API.
 
-**Não confirmado atualmente:** consumo de CPU/RAM, armazenamento livre, uso simultâneo do Jellyfin, número de sessões, carga real do n8n, instalação concluída, saúde de longo prazo e funcionamento de QR Code.
+**Não confirmado atualmente:** consumo de CPU/RAM, armazenamento livre, carga real do n8n, saúde de longo prazo, backups, persistência e reconexão após reinício. Instalação e QR **foram confirmados depois**; consultar a passagem de bastão.
 
 ## Histórico validado em GitHub
 
@@ -30,28 +32,22 @@ Esse parágrafo pode ser copiado como mensagem inicial. Documentos no Git são a
 5. Contêiner inclui PostgreSQL; dados em `/data/postgres`, senha em `/data/postgres-password`, sessões em `/data/instances`.
 6. Opções no Supervisor: `api_key`, `server_url` e `webhook_url`.
 7. CI #**43432666479**: YAML, build ARM64, inicialização PostgreSQL, HTTP Manager e reinício persistente **aprovados em ambiente de teste**. Isso não testa conexão real com WhatsApp no Raspberry.
-8. O Home Assistant do proprietário **reconheceu o repositório na loja e mostrou o add-on Evolution API WhatsApp 0.1.0, classificado como experimental**. O último relato foi que a instalação estava em andamento.
+8. O Home Assistant reconheceu o repositório e instalou o add-on. Depois, o proprietário homologou a instância `umdoislab`, evento `messages.upsert` e n8n v1.1 com Success; consultar a passagem de bastão.
 
 **Fonte da publicação:** https://github.com/mmcromero/hassio-addons/pull/1  
 **CI da validação:** https://github.com/mmcromero/hassio-addons/actions/runs/43432666479
 
-## Próxima tarefa operacional
+## Próxima tarefa operacional — atualizada em 13/11/2026
 
-Antes de propor qualquer novo desenvolvimento, confirmar apenas a etapa atual da instalação no Home Assistant e observar os logs sem segredos.
+A instalação/pareamento e o recebimento de eventos em produção **já foram homologados pelo proprietário**. A versão v1.1 executou os quatro nós e classificou uma pergunta de preço. Ainda **não envia respostas**.
 
-Sequência de homologação, sem pular etapas:
+1. Exportar o **JSON real da v1.1 em produção** antes de modificá-la.
+2. Preparar v1.2 de respostas sugeridas para revisão, **sem envio automático**.
+3. Desenvolver Gemini em workflow separado com dados fictícios, sem ligar ao atendimento real.
+4. Manter automação pessoal separada (o JSON entregue é somente simulador).
+5. Mais tarde verificar backups, reinício, reconexão, logs sem segredos, carga e prevenção de duplicidade.
 
-1. Confirmar conclusão da instalação pelo Supervisor e ausência de conflito da porta 8080.
-2. Na UI do add-on, configurar `api_key` forte, `server_url` correto e manter `webhook_url` vazio no primeiro teste.
-3. Iniciar; conferir os logs e a saúde do PostgreSQL + Evolution, sem compartilhar tokens nem credenciais.
-4. Abrir `http://homeassistant.local:8080/manager` (ou IP/endereço configurado) e validar autenticação.
-5. Criar **uma** instância, parear por QR Code e verificar recebimento/envio de texto e mídia.
-6. Criar workflow Webhook no n8n e testar entrega controlada de eventos; só depois ativar webhook global.
-7. Reiniciar somente o add-on; verificar banco, arquivos e reconexão de sessão.
-8. Planejar backup consistente, restauração e monitoramento de consumo de recursos; não fazer mudanças destrutivas sem verificar dados e modelo exatos.
-9. Registrar resultados no Git (evidências redigidas sem dados pessoais, tokens, QR, telefone ou conteúdo de conversas).
-
-**Não presumir** que uma mensagem enviada do WhatsApp para o n8n executa automaticamente ações na casa; isso depende dos workflows, autorização e controles de segurança.
+Endpoint atual: `POST http://homeassistant.local:5678/webhook/umdoislab-atendimento-inicial`. Para detalhes, evidências e problemas já resolvidos: [passagem de bastão](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md).
 
 ## Política de mudanças
 
@@ -70,8 +66,8 @@ Consulte [ARQUITETURA-AUTOMACOES.md](ARQUITETURA-AUTOMACOES.md). Resumo: manter 
 
 **Solicitação do proprietário (não implementar agora):** estudar uma identidade visual consistente e agradável para o catálogo de add-ons e, quando viável, para as interfaces dos próprios add-ons, considerando como referência a marca **Fábrica de Ideias**. **Não foi selecionada arte, logo ou paleta definitiva.**
 
-**Evidência atual:** após iniciar Evolution API v2.3.7 no Raspberry Pi e autenticar no Manager com a Global API Key, a tela de instâncias abriu normalmente (ainda sem instâncias), mas no canto superior esquerdo a imagem aparece quebrada, exibindo o texto alternativo `Logo`. A causa da falha da imagem ainda **não foi identificada**. Pode estar nos ativos da UI upstream ou em URL/servidor; não presumir causa.
+**Evidência histórica (anterior ao pareamento):** após iniciar Evolution API v2.3.7 no Raspberry Pi e autenticar no Manager com a Global API Key, a tela de instâncias abriu normalmente (ainda sem instâncias), mas no canto superior esquerdo a imagem aparece quebrada, exibindo o texto alternativo `Logo`. A causa da falha da imagem ainda **não foi identificada**. Pode estar nos ativos da UI upstream ou em URL/servidor; não presumir causa.
 
 **Encaminhamento:** tratar como backlog de UX, sem bloquear o pareamento do WhatsApp. Antes de modificar a imagem, investigar o caminho HTTP do recurso, se o asset é interno ou remoto, os direitos de uso da marca e a necessidade de customização da imagem base. Priorizar personalização do catálogo do Home Assistant sem criar um fork de manutenção desnecessário. O usuário decidiu **concluir primeiro a configuração do WhatsApp**.
 
-**Estado operacional confirmado pelo proprietário:** instalação do add-on 0.1.0 concluída, PostgreSQL inicializou, 57 migrações foram aplicadas, Evolution API abriu porta 8080; Manager acessível, chave global aceita e painel de instâncias exibido. Não há comprovação ainda de instância criada ou WhatsApp pareado. A próxima ação é clicar em `Instance +` e revisar os campos antes de salvar. Manter `webhook_url` vazio até a conexão básica estar homologada.
+**Estado operacional mais recente:** o proprietário confirmou instância pareada, evento recebido pelo n8n em produção e classificação v1.1 com Success. Consulte a [passagem de bastão](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md).
