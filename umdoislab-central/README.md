@@ -30,10 +30,11 @@ Formato JSON aceito por `POST /bridge/events`:
   "messageId": "ID_UNICO",
   "messageText": "Quanto custa?",
   "category": "preco",
-  "summary": "Consulta de preço"
+  "summary": "Consulta de preço",
+  "handoffRequested": true
 }
 ```
-Não compartilhar telefone/ID reais no GitHub. A origem precisa ser validada em rede privada, com secret e sem portas publicadas.
+A **flag `handoffRequested: true` é obrigatória para criar uma nova pendência**. Eventos comuns da v1.4 não devem gerar uma ficha para cada mensagem. Se a pendência já existe, eventos novos podem atualizar a última mensagem mesmo sem a flag. Não compartilhar telefone/ID reais no GitHub. A origem precisa ser validada em rede privada, com secret e sem portas publicadas.
 
 ## Regras de produto
 
@@ -43,3 +44,13 @@ Não compartilhar telefone/ID reais no GitHub. A origem precisa ser validada em 
 - Assumir, resolver e reabrir são operações explícitas. `done` só é reaberto por ação humana; entrada posterior do mesmo contato cria pendência novamente (nova conversa operacional).
 - Falha ao enviar **não** é registrada como sucesso; repetição acidental reduzida pelo bloqueio do botão durante a requisição. Deduplicação no servidor por `request_id` exige chave por tentativa. Confirmação de entrega ao WhatsApp depende de eventos de ACK não implementados.
 - O backend chama `POST /message/sendText/{instance}` com `apikey`; precisa de homologação real na Evolution API v2.3.7, e não exibe credenciais ao navegador.
+
+## Limites desta primeira implementação
+
+- Este PR **não muda a Evolution API, o n8n, a v1.4 ou o Home Assistant instalado**. A interface, o backend e as regras estão no repositório, ainda sem homologação real do add-on.
+- O endereço do add-on acessível do n8n depende da rede real entre contêineres. Não assumir o alias antes da instalação. O endpoint de ingestão não publica porta no host e exige Bearer secret.
+- O primeiro conector do n8n deve encaminhar apenas eventos de **transferência humana**, com campos normalizados. O painel não implementa a detecção por IA nem o anti-loop da v1.5: eles pertencem à etapa posterior do workflow.
+- Mensagem enviada pelo painel usa o destino WhatsApp no formato numérico `@s.whatsapp.net`. Se o evento trouxer ID `@lid` ou outro formato, o envio é bloqueado até implementar resolução segura do destino.
+- Confirmação de HTTP 2xx da Evolution significa **solicitação aceita**, não mensagem entregue/lida. A UI informa esta diferença.
+- A conexão via Ingress pressupõe autenticação do Home Assistant e restrição ao usuário administrador. Não colocar o serviço diretamente na Internet.
+- SQLite faz persistência local na área `/data` do add-on; respaldos/retenção e restauração precisam de validação antes do uso contínuo.
