@@ -149,9 +149,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.wfile.write(raw)
         if self.path == "/api/conversations":
             with connect() as db:
-                rows = db.execute("""SELECT sender_id,sender_name,subject,summary,last_message,status,
+                # Nunca ocultar pendências por causa de muitos atendimentos resolvidos.
+                active = db.execute("""SELECT sender_id,sender_name,subject,summary,last_message,status,
                        updated_at,created_at,last_reply_at FROM conversations
-                       ORDER BY updated_at DESC LIMIT 150""").fetchall()
+                       WHERE status != 'done' ORDER BY updated_at DESC""").fetchall()
+                resolved = db.execute("""SELECT sender_id,sender_name,subject,summary,last_message,status,
+                       updated_at,created_at,last_reply_at FROM conversations
+                       WHERE status = 'done' ORDER BY updated_at DESC LIMIT 50""").fetchall()
+                rows = sorted([*active, *resolved], key=lambda item: item["updated_at"], reverse=True)
             return self.respond(200, {"items": [dict(r) for r in rows]})
         if self.path.startswith("/api/conversations/"):
             sender = self.path.removeprefix("/api/conversations/")
