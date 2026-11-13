@@ -68,6 +68,31 @@ class CentralTests(unittest.TestCase):
         with self.mod.connect() as db:
             self.assertEqual(db.execute("SELECT status FROM conversations").fetchone()[0], "pending")
 
+    def test_routing_denies_human_and_pending(self):
+        sender = "5511999999999@s.whatsapp.net"
+        decision = self.mod.routing_decision("umdoislab", sender)
+        self.assertEqual(decision["allowAutoReply"], True)
+        self.assertEqual(decision["state"], "none")
+        self.mod.store_event(self.event())
+        pending = self.mod.routing_decision("umdoislab", sender)
+        self.assertFalse(pending["allowAutoReply"])
+        self.assertTrue(pending["needsCustomerChoice"])
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='human'")
+        human = self.mod.routing_decision("umdoislab", sender)
+        self.assertFalse(human["allowAutoReply"])
+        self.assertFalse(human["needsCustomerChoice"])
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='done'")
+        done = self.mod.routing_decision("umdoislab", sender)
+        self.assertTrue(done["allowAutoReply"])
+
+    def test_routing_rejects_unknown_instance_and_unsafe_sender(self):
+        self.assertIsNone(self.mod.routing_decision("outra", "5511999999999@s.whatsapp.net"))
+        self.assertIsNone(self.mod.routing_decision("umdoislab", "5511999999999@g.us"))
+        self.assertIsNone(self.mod.routing_decision("umdoislab", "status@broadcast"))
+        self.assertIsNone(self.mod.routing_decision("umdoislab", "123@lid"))
+
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))
         self.assertFalse(self.mod.store_event(self.event(isClientMessage=False)))
