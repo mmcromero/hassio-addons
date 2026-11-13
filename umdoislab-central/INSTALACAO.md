@@ -20,6 +20,7 @@
   - `evolution_url`: URL da Evolution API acessível **de dentro** do contêiner; o padrão `http://homeassistant.local:8080` é sugestão e deve ser confirmado no ambiente.
   - `evolution_instance`: `umdoislab`.
   - `evolution_api_key`: chave global já existente no Evolution, configurada exclusivamente nas opções do Home Assistant.
+  - `auto_test_sender`: JID **exato** do contato permitido na v1.4, no formato `5511...@s.whatsapp.net`. O valor padrão não autoriza ninguém.
 - Iniciar somente a Central e abrir **Open Web UI** pelo Home Assistant. Não mapear portas, não criar túnel e não publicar o endereço na Internet.
 - Conferir no celular a ordem por atividade recente, busca, filtros e detalhes. Os controles devem funcionar com dados de laboratório.
 
@@ -28,11 +29,11 @@
 A v1.4 publicada **continua respondendo ao contato de teste**. O painel **não** deve ser usado para assumir conversas reais antes de o n8n respeitar os estados `human`/`done`.
 
 1. Criar workflow de integração **separado** no n8n; não editar a v1.4 atual.
-2. Verificar o endereço de rede interno da Central e o acesso HTTPS/HTTP local entre os contêineres, sem expor a porta ao host. Usar exclusivamente `POST /bridge/events` com Bearer secret armazenado em credencial n8n.
+2. Verificar o endereço de rede interno da Central e o acesso HTTPS/HTTP local entre os contêineres, sem expor a porta ao host. Usar `POST /bridge/decision`, `POST /bridge/events` e posteriormente `POST /bridge/send-auto` com Bearer secret armazenado em credencial n8n. Importar **apenas no laboratório** o workflow [n8n/central-guard-lab.json](n8n/central-guard-lab.json), que não envia WhatsApp.
 3. Enviar evento fictício normalizado com `handoffRequested: true`. Apenas transferências criam uma nova pendência; mensagens recebidas comuns podem atualizar uma pendência existente.
 4. Confirmar criação de uma ficha, atualização sem duplicar por `messageId`, ordenação, Assumir, Resolver e Reabrir.
 5. Validar envio pelo painel somente a um número de teste autorizado, verificando o destino no backend. O retorno HTTP 2xx da Evolution significa **requisição aceita**, não prova de entrega; verificar recebimento no WhatsApp.
-6. Implementar o roteamento da versão de atendimento que consulta o estado humano **antes** de qualquer resposta automática. Se não houver consulta ao estado, **não habilitar atendimento humano real no painel**.
+6. Na versão de desenvolvimento, usar a consulta `/bridge/decision` e trocar **somente no fluxo novo** o envio direto à Evolution pelo `/bridge/send-auto`; essa operação confirma o estado sob trava **no momento do envio**. Se não houver esse caminho protegido, **não habilitar atendimento humano real no painel**.
 7. Testar anti-loop e transferência com mensagens repetidas antes de liberar para contatos fora do teste.
 8. Substituir a v1.4 apenas com autorização e depois de confirmar que não há dois Webhooks com o mesmo path.
 
@@ -53,3 +54,11 @@ A v1.4 publicada **continua respondendo ao contato de teste**. O painel **não**
 - Não deletar add-on ou `/data` antes de coletar backup do banco; não fazer restauração na instalação em produção sem verificar versão.
 - Manter a v1.4 como fluxo publicado durante homologação isolada da Central.
 - Retornar ao estado anterior apenas desabilitando o novo conector n8n→Central; não alterar Webhook do Evolution em testes do painel.
+
+## Portão de integração aprovado para testes futuros
+
+- Nenhuma URL, segredo ou ID de contato real deve entrar no workflow versionado; usar credenciais Header Auth do n8n.
+- Consultar estado `human` => `allowAutoReply:false`; `pending` => `allowAutoReply:false`; falha de rede => **não responder**; `none`/`done` => `allowAutoReply:true` para um contato autorizado.
+- **Nunca enviar pela Evolution diretamente após um check positivo**: a pessoa pode assumir a conversa no intervalo. Usar `/bridge/send-auto` como última etapa da nova versão.
+- A ação Enviar pelo painel já coloca `human` **antes de chamar Evolution**, para impedir que outro envio automático entre durante uma solicitação manual.
+- A versão de laboratório n8n presente no PR é para **diagnóstico**, sem webhook público e sem nó de envio. O fluxo comercial não foi substituído.
