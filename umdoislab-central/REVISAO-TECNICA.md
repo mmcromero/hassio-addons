@@ -64,3 +64,15 @@ Implementação adicionada na **branch do PR #5**, sem instalação e sem altera
 5. Testes unitários adicionais verificam estados `none/pending/human/done`, destinatários inválidos, whitelist de teste, bloqueio sem chamada externa e idempotência de envio.
 
 **Limites:** integração real com a instância n8n ainda não realizada. A v1.4 não usa a nova rota; somente a futura versão migrada terá bloqueio efetivo. Em `pending`, a escolha explícita do cliente entre esperar e continuar com robô, além do anti-loop e da interpretação IA, permanecem pendentes. Não afirmar atendimento comercial concluído.
+
+## Complemento v1.5 — Escolha e anti-loop (13/11/2026)
+
+Novos componentes em branch:
+- `/bridge/inbound` recebe eventos válidos, registra `senderId + messageId` e devolve ação controlada, sem resposta aberta por IA.
+- `choice_state` persistente em SQLite: `idle`, `offered`, `waiting`, `opted_in`, `exhausted`. `status=pending` permanece enquanto o cliente usa o robô por opção explícita.
+- `CHOICE_PROMPT` e `HANDOFF_PROMPT` definidos no servidor; só o tipo de ação é escolhido pelo n8n.
+- `bot_guard` mantém último texto e contador de dúvidas não compreendidas também antes de existir ficha. Uma segunda incompreensão seguida escala para humano; repetição exata é bloqueada. Resolver atendimento reinicia o controle da sessão, sem apagar registros do ticket.
+- Envio automático ainda exige `auto_test_sender`, autenticação Bearer, controle de estado na mesma trava e idempotência.
+- Workflow `n8n/atendimento-v1.5-laboratorio.json` preparado com gatilho manual, classificação local, ingestão, decisão e ramo de envio **desativado por padrão**. Não publicado, não instalado.
+
+Homologação: testes sintéticos via GitHub Actions, não via n8n/Evolution reais. Não afirmar que o Gemini ou a consulta WooCommerce estão integrados. O usuário pediu resposta comercial com IA; permanece como dependência funcional **posterior**, não como parte concluída desta etapa.
