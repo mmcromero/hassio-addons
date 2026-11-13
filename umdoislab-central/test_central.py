@@ -50,6 +50,24 @@ class CentralTests(unittest.TestCase):
             row = db.execute("select status,last_message from conversations").fetchone()
             self.assertEqual((row["status"],row["last_message"]),("human","Outra dúvida"))
 
+    def test_safe_send_jid_validation(self):
+        self.assertTrue(self.mod.valid_sender_for_send("5511999999999@s.whatsapp.net"))
+        self.assertFalse(self.mod.valid_sender_for_send("5511999999999@g.us"))
+        self.assertFalse(self.mod.valid_sender_for_send("abc@lid"))
+        self.assertFalse(self.mod.valid_sender_for_send("status@broadcast"))
+        self.assertFalse(self.mod.valid_sender_for_send("5511999999999@sXwhatsappXnet"))
+
+    def test_resolved_conversation_reopens_only_on_explicit_handoff(self):
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='done'")
+        self.mod.store_event(self.event(messageId="m2", handoffRequested=False))
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT status FROM conversations").fetchone()[0], "done")
+        self.mod.store_event(self.event(messageId="m3", handoffRequested=True))
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT status FROM conversations").fetchone()[0], "pending")
+
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))
         self.assertFalse(self.mod.store_event(self.event(isClientMessage=False)))
