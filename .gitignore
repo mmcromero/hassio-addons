@@ -1,0 +1,12 @@
+**/options.json
+**/secrets.yaml
+**/secrets.yml
+**/.env
+**/.env.*
+!**/.env.example
+**/postgres/
+**/instances/
+**/node_modules/
+**/*.db
+**/*.sqlite*
+.DS_Store
