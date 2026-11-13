@@ -72,10 +72,21 @@ async function action(type){
     const id=selected.sender_id;await reload();await showDetails(id);notify("Situação atualizada.",true)
   }catch(e){notify(e.message)}finally{busy=false}
 }
+function requestUUID(){
+  if(globalThis.crypto && typeof crypto.randomUUID==="function")return crypto.randomUUID();
+  // getRandomValues funciona também em contextos HTTP locais, onde randomUUID pode faltar.
+  if(globalThis.crypto && typeof crypto.getRandomValues==="function"){
+    const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+    const h=Array.from(b,v=>v.toString(16).padStart(2,"0")).join("");
+    return h.slice(0,8)+"-"+h.slice(8,12)+"-"+h.slice(12,16)+"-"+h.slice(16,20)+"-"+h.slice(20);
+  }
+  throw Error("Este navegador não suporta identificadores seguros de envio.");
+}
 async function send(){
   if(!selected||busy)return;const value=$("replyText").value.trim();if(!value)return;
   if(!confirm("Enviar esta mensagem ao WhatsApp do contato?"))return;
-  busy=true;$("send").disabled=true;const requestId=crypto.randomUUID();
+  let requestId;try{requestId=requestUUID()}catch(e){notify(e.message);return}
+  busy=true;$("send").disabled=true;
   try{
     const result=await api("api/conversations/"+encodeURIComponent(selected.sender_id)+"/reply",{method:"POST",body:JSON.stringify({text:value,requestId})});
     $("replyText").value="";const id=selected.sender_id;await reload();await showDetails(id);notify(result.detail||"Solicitação de envio aceita.",true)
