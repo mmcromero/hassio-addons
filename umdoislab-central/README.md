@@ -103,3 +103,61 @@ O arquivo [n8n/central-guard-lab.json](n8n/central-guard-lab.json) pode ser impo
 - A configuração `auto_test_sender` deve corresponder à lista de teste do workflow de desenvolvimento. Nunca usar todos os contatos por padrão.
 - Conversas existentes no WhatsApp e mensagens manuais enviadas diretamente pelo aplicativo não são transferidas automaticamente ao painel nesta etapa.
 - O anti-loop semântico, as mensagens de oferta de escolha e a interpretação de intenção por IA ainda não foram integrados. O bloqueio técnico de atendimento humano e de duplicação de saída já está na Central.
+
+## Escolha do cliente, memória de estado e anti-loop — etapa de laboratório
+
+Esta etapa adiciona `POST /bridge/inbound`, que recebe o evento normalizado uma vez por
+`senderId + messageId`, guarda o estado em SQLite e responde com uma das ações:
+
+| Ação | Quando | Saída |
+| --- | --- | --- |
+| `handoff` | Transferência nova; ou segunda dúvida não compreendida sem ficha | Enviar **uma única** mensagem de encaminhamento |
+| `silent` | Cliente agradece, confirma espera, ou você já assumiu | Não enviar nova mensagem |
+| `offer_choice` | Cliente tem pendência e escreve outra pergunta | Uma oferta de escolha: **1 = aguardar**, **2 = continuar** |
+| `resume` | Cliente digita explicitamente **2** ou frase equivalente | Ativa o robô sem apagar pendência humana |
+| `auto` | Sem pendência/resolvido ou retomada expressa | Selecionar resposta controlada; enviar pelo guard |
+| `ignore` | Evento já registrado | Não enviar |
+
+**Texto de encaminhamento e escolha é controlado no servidor** e não pode ser
+substituído pelo workflow. O servidor permite **uma oferta por episódio de pendência**;
+com `waiting`, o cliente ainda pode escolher `2` depois, mas não recebe ofertas
+repetidas. Em `opted_in`, a ficha continua `pending` até o operador marcar resolvido.
+Em `human`, nem o opt-in do cliente pode furar o bloqueio do responsável.
+
+### Anti-loop
+
+- Cada mensagem recebida é persistida em `inbound_ids` e ignorada na repetição.
+- Cada tentativa de envio usa uma chave por contato/messageId/tipo.
+- `bot_guard` guarda o último texto automático e o número de incompreensões mesmo
+  antes de existir uma ficha no painel.
+- Texto automático idêntico ao anterior é bloqueado. Em pendência humana com robô
+  retomado, o estado passa a `exhausted`, encerrando a retomada; a pendência permanece.
+- Uma resposta de incompreensão seguida de outro texto não entendido faz o fluxo
+  solicitar atendimento humano; não insistir em respostas genéricas.
+- Ao acertar uma resposta comum, o contador de incompreensão é reiniciado.
+- Falha ou indisponibilidade da Central **não permite continuar enviando pela Evolution diretamente**.
+
+### Arquivo importável
+
+[n8n/atendimento-v1.5-laboratorio.json](n8n/atendimento-v1.5-laboratorio.json) — pipeline de laboratório com
+`Manual Trigger`, mensagem sintética editável, classificação local limitada,
+`POST /bridge/inbound`, seleção de resposta e etapa opcional de envio.
+**Por padrão a condição de envio é sempre falsa**, portanto não envia WhatsApp.
+A execução manual poderá gravar dados de teste na Central, se o add-on for instalado
+e o endpoint configurado. Não publicar, não reutilizar o webhook da v1.4.
+
+Antes de qualquer execução:
+1. Instalar a Central **somente em homologação** e confirmar a URL interna.
+2. Configurar a credencial n8n Header Auth `Authorization: Bearer <bridge_secret>`,
+   sem inserir o segredo no arquivo JSON.
+3. Usar um remetente sintético para avaliar decisões; **não habilitar envio**.
+4. Alterar o `messageId` a cada nova simulação; o mesmo ID é ignorado para evitar repetição.
+5. Se houver autorização posterior para testar envio real, configurar
+   `auto_test_sender` com o JID do contato autorizado e habilitar o ramo de envio
+   somente nessa cópia isolada. Não publicar nem alterar a v1.4.
+
+**Limites funcionais ainda abertos:** Gemini como intérprete, consulta real ao
+WooCommerce, notificações de pendências, classificação de mídia e integração
+com intervenção humana feita diretamente pelo aplicativo WhatsApp. A classificação
+do fluxo de laboratório usa regras locais simples; não deve ser apresentada como
+interpretação por IA. A interface móvel mantém o desenho anteriormente aprovado.
