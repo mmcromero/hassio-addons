@@ -309,6 +309,10 @@ class Handler(BaseHTTPRequestHandler):
             if duplicate:
                 return self.respond(409, {"error": "Envio já solicitado; consulte a conversa antes de repetir"})
             db.execute("INSERT INTO replies VALUES(?,?,?,?,?)",(req_id,sender,now(),"requested",""))
+            # Assumir antes do envio: se a rede demorar, o robô já fica bloqueado.
+            # Em resultado incerto, manter estado humano até decisão do responsável.
+            db.execute("UPDATE conversations SET status='human', updated_at=? WHERE sender_id=?",
+                       (now(), sender))
         url = endpoint + "/message/sendText/" + instance
         body = json.dumps({"number":sender.split("@")[0], "text":message}).encode()
         req = urllib.request.Request(url, data=body,
