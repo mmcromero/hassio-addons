@@ -91,12 +91,12 @@ HANDOFF_PROMPT = ("Não consegui resolver sua solicitação agora. "
 def normalized(text):
     import unicodedata
     value = unicodedata.normalize("NFD", str(text or "").lower())
-    return re.sub(r"\\s+", " ", "".join(c for c in value if unicodedata.category(c) != "Mn")).strip()
+    return re.sub(r"\s+", " ", "".join(c for c in value if unicodedata.category(c) != "Mn")).strip()
 
 
 def classify_choice(message):
     """Strict deterministic choice; never treat a generic 'sim' as opt-in."""
-    msg = re.sub(r"\\s+", " ", re.sub(r"[^a-z0-9 ]+", " ", normalized(message))).strip()
+    msg = re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]+", " ", normalized(message))).strip()
     if msg.startswith("ah "):
         msg = msg[3:]
     if msg in ("1", "aguardar", "vou aguardar", "prefiro aguardar", "esperar",
