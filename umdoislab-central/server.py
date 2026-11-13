@@ -90,6 +90,21 @@ def store_event(ev):
     return True
 
 
+def routing_decision(instance, sender):
+    """Read authoritative state for n8n. No state lookup error may imply permission."""
+    if instance != "umdoislab" or not valid_sender_for_send(sender):
+        return None
+    with LOCK, connect() as db:
+        row = db.execute("SELECT status FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+    status = row["status"] if row else "none"
+    # Pending requires a separate, approved choice flow. Never resume unattended.
+    permission = status in ("none", "done")
+    return {"allowAutoReply": permission,
+            "state": status,
+            "reason": "allowed" if permission else "human_active" if status == "human" else "human_pending",
+            "needsCustomerChoice": status == "pending"}
+
+
 def public_row(r, detail=False):
     out = dict(r)
     if not detail:
@@ -101,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "UmdoislabCentral/0.1"
     def log_message(self, fmt, *args):
         # No access-log body/headers/token/phone
-        print("central-request", self.command, self.path.split("?")[0].split("/")[1:3], flush=True)
+        print("central-request", self.command, self.path.split("?")[0].split("/")[1:2], flush=True)
 
     def respond(self, status, data):
         raw = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -168,6 +183,21 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "Não encontrado"})
 
     def do_POST(self):
+        if self.path == "/bridge/decision":
+            # This gate is checked before all automatic outgoing messages.
+            if not self.bridge():
+                return self.respond(403, {"error": "Acesso negado"})
+            request = self.read_json()
+            if request is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            instance = request.get("instance")
+            sender = request.get("senderId")
+            if not isinstance(instance, str) or not isinstance(sender, str):
+                return self.respond(422, {"error": "Instância e destinatário obrigatórios"})
+            decision = routing_decision(instance, sender)
+            if decision is None:
+                return self.respond(422, {"error": "Instância ou destinatário incompatível"})
+            return self.respond(200, decision)
         if self.path == "/bridge/events":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
