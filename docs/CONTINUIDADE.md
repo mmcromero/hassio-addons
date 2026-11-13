@@ -8,7 +8,7 @@
 
 ## Como retomar em outro chat
 
-> Atue no modo `/pair` do projeto `mmcromero/hassio-addons`. Leia primeiro `docs/CONTINUIDADE.md`, `docs/ARQUITETURA-AUTOMACOES.md`, `evolution-api/DOCS.md` e os PRs/Actions recentes. Continue a homologação da Evolution API v0.1.0 no Home Assistant OS sem alterar o Raspberry Pi sem autorização explícita. Não confunda CI verde com instalação ou pareamento real aprovados.
+> Atue no modo `/pair` do projeto `mmcromero/hassio-addons`. Leia primeiro `docs/PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md`, depois `docs/CONTINUIDADE.md`, `docs/ARQUITETURA-AUTOMACOES.md` e `evolution-api/DOCS.md`. O proprietário já confirmou o pareamento e o recebimento de eventos em produção no n8n v1.1. Próxima tarefa: preservar o JSON efetivo da v1.1 e preparar respostas sugeridas sem envio automático. Não alterar Raspberry Pi nem workflows sem autorização.
 
 Esse parágrafo pode ser copiado como mensagem inicial. Documentos no Git são a fonte da verdade para decisões deste projeto; informações sobre estado de execução precisam de evidências atuais.
 
