@@ -52,3 +52,15 @@
 ## Conclusão
 
 **Pronto para revisão do PR e preparação de instalação isolada**, não pronto ainda para publicar a v1.5 como atendimento comercial completo. Não fazer merge ou instalar automaticamente a partir desta revisão. Ver [INSTALACAO.md](INSTALACAO.md).
+
+## Complemento — Proteção n8n → Central (13/11/2026)
+
+Implementação adicionada na **branch do PR #5**, sem instalação e sem alterar a v1.4:
+
+1. `POST /bridge/decision`: consulta autenticada do estado. `human` e `pending` não autorizam resposta automática; entradas inválidas recebem erro, não permissão.
+2. `POST /bridge/send-auto`: envio automático pelo backend, autenticado com o segredo de integração, restrito a `auto_test_sender` e deduplicado pelo par destinatário/messageId.
+3. A trava compartilhada protege a decisão e a chamada Evolution contra o comando **Assumir** durante o envio, tornando o ordenamento explícito. A opção **Enviar manualmente** muda a conversa para `human` antes de chamar a Evolution.
+4. O workflow importável [n8n/central-guard-lab.json](n8n/central-guard-lab.json) é **somente manual e diagnóstico**, sem envio de mensagens ou webhook publicado. O HTTP Request deve usar credencial Header Auth armazenada no n8n; nunca salvar segredos no JSON.
+5. Testes unitários adicionais verificam estados `none/pending/human/done`, destinatários inválidos, whitelist de teste, bloqueio sem chamada externa e idempotência de envio.
+
+**Limites:** integração real com a instância n8n ainda não realizada. A v1.4 não usa a nova rota; somente a futura versão migrada terá bloqueio efetivo. Em `pending`, a escolha explícita do cliente entre esperar e continuar com robô, além do anti-loop e da interpretação IA, permanecem pendentes. Não afirmar atendimento comercial concluído.
