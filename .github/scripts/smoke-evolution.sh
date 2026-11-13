@@ -6,7 +6,7 @@ NAME="evolution-ci-smoke"
 cleanup() {
   docker logs "$NAME" 2>&1 | tail -100 || true
   docker rm -f "$NAME" >/dev/null 2>&1 || true
-  rm -rf "$WORK"
+  sudo rm -rf -- "$WORK"
 }
 trap cleanup EXIT
 
@@ -38,7 +38,11 @@ wait_ready() {
 }
 start
 wait_ready
-docker exec "$NAME" sh -c "su-exec postgres psql -h /data/postgres -tAc \"SELECT 1 FROM pg_database WHERE datname='evolution'\" postgres | grep -qx 1"
+DATABASE_EXISTS="$(docker exec "$NAME" su-exec postgres psql -h /data/postgres -tAc "SELECT 1 FROM pg_database WHERE datname='evolution'" postgres | tr -d '[:space:]')"
+if [ "$DATABASE_EXISTS" != "1" ]; then
+  echo "Falha: banco evolution ausente (consulta: $DATABASE_EXISTS)" >&2
+  exit 1
+fi
 test -f "$WORK/data/postgres/PG_VERSION"
 test -f "$WORK/data/postgres-password"
 test -d "$WORK/data/instances"
