@@ -96,7 +96,9 @@ def normalized(text):
 
 def classify_choice(message):
     """Strict deterministic choice; never treat a generic 'sim' as opt-in."""
-    msg = re.sub(r"[.!?]+$", "", normalized(message)).strip()
+    msg = re.sub(r"\\s+", " ", re.sub(r"[^a-z0-9 ]+", " ", normalized(message))).strip()
+    if msg.startswith("ah "):
+        msg = msg[3:]
     if msg in ("1", "aguardar", "vou aguardar", "prefiro aguardar", "esperar",
                "vou esperar", "quero aguardar", "atendimento humano", "pessoa"):
         return "wait"
@@ -104,7 +106,7 @@ def classify_choice(message):
                "atendimento automatico", "quero continuar com o automatico",
                "quero continuar com o robo", "voltar ao robo", "robo"):
         return "resume"
-    if msg in ("ok", "obrigado", "obrigada", "ok obrigado", "ok obrigada",
+    if msg in ("ok", "obrigado", "obrigada", "obg", "blz", "ok obrigado", "ok obrigada",
                "tudo bem", "beleza", "certo", "entendi", "ta bom", "valeu"):
         return "ack"
     return "other"
