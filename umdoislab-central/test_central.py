@@ -154,6 +154,101 @@ class CentralTests(unittest.TestCase):
             self.assertEqual(repeated,409)
             self.assertEqual(send.call_count,1)
 
+    def test_pending_ack_question_and_explicit_resume(self):
+        self.assertEqual(self.mod.process_inbound(self.event())["action"], "handoff")
+        self.assertEqual(self.mod.process_inbound(self.event(messageId="m2", messageText="ok, obrigado",
+                                            handoffRequested=False))["action"], "silent")
+        self.assertEqual(self.mod.process_inbound(self.event(messageId="m3", messageText="E personalizado?",
+                                            handoffRequested=False))["action"], "offer_choice")
+        self.assertEqual(self.mod.process_inbound(self.event(messageId="m4", messageText="2",
+                                            handoffRequested=False))["action"], "resume")
+        decision = self.mod.routing_decision("umdoislab", "5511999999999@s.whatsapp.net")
+        self.assertTrue(decision["allowAutoReply"])
+        self.assertEqual(decision["state"], "pending")
+        self.assertEqual(decision["choiceState"], "opted_in")
+
+    def test_pending_explicit_wait_and_no_prompt_loop(self):
+        self.mod.process_inbound(self.event())
+        self.mod.process_inbound(self.event(messageId="m2",messageText="Outra dúvida",
+                              handoffRequested=False))
+        wait = self.mod.process_inbound(self.event(messageId="m3",messageText="1",
+                              handoffRequested=False))
+        self.assertEqual(wait["action"], "silent")
+        again = self.mod.process_inbound(self.event(messageId="m4",messageText="Quanto custa?",
+                              handoffRequested=False))
+        self.assertEqual(again["action"], "silent")
+        decision = self.mod.routing_decision("umdoislab", "5511999999999@s.whatsapp.net")
+        self.assertFalse(decision["allowAutoReply"])
+
+    def test_same_inbound_message_is_idempotent(self):
+        self.assertEqual(self.mod.process_inbound(self.event())["action"], "handoff")
+        self.assertEqual(self.mod.process_inbound(self.event())["action"], "ignore")
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM inbound_ids").fetchone()[0],1)
+
+    def test_no_resume_from_ambiguous_yes(self):
+        self.mod.process_inbound(self.event())
+        self.mod.process_inbound(self.event(messageId="m2",messageText="Qualquer pergunta",
+                                   handoffRequested=False))
+        self.assertEqual(self.mod.classify_choice("sim"),"other")
+        self.assertEqual(self.mod.process_inbound(self.event(messageId="m3",messageText="sim",
+                                        handoffRequested=False))["action"],"silent")
+        self.assertFalse(self.mod.routing_decision("umdoislab",
+                         "5511999999999@s.whatsapp.net")["allowAutoReply"])
+
+    def test_repeat_automatic_reply_exhausts_pending(self):
+        sender = "5511999999999@s.whatsapp.net"
+        self.mod.process_inbound(self.event())
+        self.mod.process_inbound(self.event(messageId="m2",messageText="Outra pergunta",
+                                  handoffRequested=False))
+        self.mod.process_inbound(self.event(messageId="m3",messageText="2",
+                                  handoffRequested=False))
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"fake", "evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab", "auto_test_sender":sender}))
+        class Dummy:
+            def respond(self, status, body): return status, body
+        class Success:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, n): return b'{}'
+        with patch.object(self.mod.urllib.request,"urlopen",return_value=Success()) as send:
+            first, _ = self.mod.Handler.send_automated(Dummy(),
+                {"instance":"umdoislab","senderId":sender,"messageId":"m4",
+                 "kind":"normal","text":"Posso ajudar?"})
+            second, result = self.mod.Handler.send_automated(Dummy(),
+                {"instance":"umdoislab","senderId":sender,"messageId":"m5",
+                 "kind":"normal","text":"Posso ajudar?"})
+        self.assertEqual(first, 200)
+        self.assertEqual(second, 409)
+        self.assertEqual(result["state"],"loop_blocked")
+        self.assertEqual(send.call_count,1)
+        self.assertFalse(self.mod.routing_decision("umdoislab", sender)["allowAutoReply"])
+
+    def test_offer_message_is_server_controlled(self):
+        sender="5511999999999@s.whatsapp.net"
+        self.mod.process_inbound(self.event())
+        self.mod.process_inbound(self.event(messageId="m2",messageText="Ainda tenho pergunta",
+                                  handoffRequested=False))
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"fake", "evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab", "auto_test_sender":sender}))
+        class Dummy:
+            def respond(self, status, body): return status, body
+        class Success:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, n): return b'{}'
+        with patch.object(self.mod.urllib.request,"urlopen",return_value=Success()) as send:
+            status, _=self.mod.Handler.send_automated(Dummy(),
+              {"instance":"umdoislab","senderId":sender,"messageId":"m2",
+               "kind":"choice","text":"TEXTO CONTROLADO PELO CLIENTE"})
+        self.assertEqual(status,200)
+        body=json.loads(send.call_args.args[0].data)
+        self.assertEqual(body["text"],self.mod.CHOICE_PROMPT)
+
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))
         self.assertFalse(self.mod.store_event(self.event(isClientMessage=False)))
