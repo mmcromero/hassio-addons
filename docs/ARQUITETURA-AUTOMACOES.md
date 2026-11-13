@@ -76,6 +76,6 @@ A diretriz de manter **um n8n no Raspberry** continua válida. Após a elaboraç
 
 - **Comercial, regras:** workflow v1.1 continua a entrada validada. Preparar respostas sugeridas para revisão antes de qualquer envio automático.
 - **Comercial, IA:** Gemini em workflow separado, primeiro com dados sintéticos. Adotar uma única entrada WhatsApp com roteamento explícito para evitar duas respostas ao mesmo cliente. A API do Gemini ainda não está configurada.
-- **Pessoal, residência:** laboratório de comandos `/casa` fornecido em JSON, **somente simulador**; sem conexão real ao Home Assistant. `fromMe` sozinho não autentica/autorizada comandos domésticos.
+- **Pessoal, residência:** laboratório de comandos `/casa` fornecido em JSON, **somente simulador**; sem conexão real ao Home Assistant. `fromMe` sozinho não autentica nem autoriza comandos domésticos.
 
 **Pendências:** exportar JSON efetivo da v1.1 antes de alterar regras; revisar segurança, idempotência, anti-loop, privacidade, permissões e backups antes de habilitar envio automático ou ações físicas. Nenhum serviço externo, segundo n8n ou IA local no computador foi implementado nesta atualização.
