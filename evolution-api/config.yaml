@@ -1,0 +1,23 @@
+name: "Evolution API — WhatsApp"
+version: "0.1.0"
+slug: evolution_api
+description: "Evolution API v2 com PostgreSQL interno e integração n8n"
+url: "https://github.com/evolution-foundation/evolution-api"
+arch:
+  - aarch64
+startup: services
+boot: auto
+init: false
+ports:
+  8080/tcp: 8080
+ports_description:
+  8080/tcp: "API e Manager Web"
+webui: "http://[HOST]:[PORT:8080]/manager"
+options:
+  api_key: ""
+  server_url: "http://homeassistant.local:8080"
+  webhook_url: ""
+schema:
+  api_key: password
+  server_url: str
+  webhook_url: "str?"
