@@ -36,6 +36,13 @@ Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` 
 |---|---|---|---|
 | Evolution API — WhatsApp + n8n | 0.1.0 | aarch64 | Candidato, ainda não homologado no Raspberry Pi |
 
+## Continuidade e arquitetura de automações
+
+- **[CONTINUIDADE.md](docs/CONTINUIDADE.md)** — estado real, evidências, roteiro de homologação e instruções para retomar em outro chat.
+- **[ARQUITETURA-AUTOMACOES.md](docs/ARQUITETURA-AUTOMACOES.md)** — decisão de manter n8n principal no Raspberry e usar processamento externo no computador apenas quando necessário.
+
+Atualize esses documentos quando uma etapa for **confirmada por evidências** ou uma decisão mudar. Não confunda proposta, CI e homologação real.
+
 ## Regras de manutenção
 
 - Branch isolada, validação automática, revisão em PR e depois merge.
