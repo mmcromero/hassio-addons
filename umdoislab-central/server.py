@@ -178,7 +178,7 @@ def process_inbound(ev):
                     action = "silent"
                     if classification == "wait":
                         db.execute("UPDATE conversations SET choice_state='waiting' WHERE sender_id=?", (sender,))
-                elif classification == "resume" and choice == "offered":
+                elif classification == "resume" and choice in ("offered", "waiting"):
                     db.execute("""UPDATE conversations SET choice_state='opted_in',
                                   last_bot_text='',bot_repeat_count=0,fallback_count=0
                                   WHERE sender_id=?""", (sender,))
@@ -400,7 +400,7 @@ class Handler(BaseHTTPRequestHandler):
                                       VALUES(?,?,?,?)
                                       ON CONFLICT(sender_id) DO UPDATE SET
                                         last_text=excluded.last_text,
-                                        fallback_count=bot_guard.fallback_count+excluded.fallback_count,
+                                        fallback_count=CASE WHEN excluded.fallback_count=0 THEN 0 ELSE bot_guard.fallback_count+1 END,
                                         updated_at=excluded.updated_at""",
                                    (sender, message[:1500], 1 if kind == "fallback" else 0, now()))
                         if row:
