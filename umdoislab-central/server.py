@@ -483,6 +483,11 @@ class Handler(BaseHTTPRequestHandler):
                 status = {"assume": "human", "resolve": "done", "reopen": "pending"}[action]
                 db.execute("UPDATE conversations SET status=?, updated_at=? WHERE sender_id=?",
                            (status, now(), sender))
+                if action == "resolve":
+                    db.execute("""UPDATE conversations SET choice_state='idle',
+                                  last_bot_text='',fallback_count=0,bot_repeat_count=0,
+                                  choice_message_id='' WHERE sender_id=?""", (sender,))
+                    db.execute("DELETE FROM bot_guard WHERE sender_id=?", (sender,))
                 return self.respond(200, {"ok": True, "status": status})
             message = str(data.get("text") or "").strip()
             req_id = str(data.get("requestId") or "")
