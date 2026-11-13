@@ -17,6 +17,8 @@ jobs:
         run: python -m py_compile umdoislab-central/server.py
       - name: Testes SQLite e regras de eventos
         run: python -m unittest discover -s umdoislab-central -p 'test_*.py' -v
+      - name: Validar JSON importável do n8n
+        run: python -m json.tool umdoislab-central/n8n/central-guard-lab.json > /dev/null
       - name: Preparar build ARM64
         uses: docker/setup-qemu-action@v3
       - name: Preparar Docker Buildx
