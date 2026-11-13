@@ -59,6 +59,134 @@ def init():
           request_id TEXT PRIMARY KEY, sender_id TEXT NOT NULL,
           created_at TEXT NOT NULL, outcome TEXT NOT NULL, detail TEXT NOT NULL DEFAULT ''
         )""")
+        for col, ddl in (
+            ("choice_state", "TEXT NOT NULL DEFAULT 'idle'"),
+            ("choice_message_id", "TEXT NOT NULL DEFAULT ''"),
+            ("last_bot_text", "TEXT NOT NULL DEFAULT ''"),
+            ("bot_repeat_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("fallback_count", "INTEGER NOT NULL DEFAULT 0"),
+        ):
+            names = {row[1] for row in db.execute("PRAGMA table_info(conversations)")}
+            if col not in names:
+                db.execute("ALTER TABLE conversations ADD COLUMN " + col + " " + ddl)
+        db.execute("""CREATE TABLE IF NOT EXISTS inbound_ids(
+            sender_id TEXT NOT NULL, message_id TEXT NOT NULL, created_at TEXT NOT NULL,
+            PRIMARY KEY(sender_id,message_id)
+        )""")
+
+
+# Textos de protocolo: não permitir que o n8n substitua essas mensagens.
+CHOICE_PROMPT = ("Ainda não conseguimos iniciar o atendimento pessoal. "
+                 "Você prefere aguardar ou quer continuar com o atendimento automático? "
+                 "Responda 1 para aguardar ou 2 para continuar.")
+HANDOFF_PROMPT = ("Não consegui resolver sua solicitação agora. "
+                  "Vou encaminhar seu atendimento para uma pessoa da Umdoislab. "
+                  "Assim que possível, alguém entra em contato. 😊")
+
+
+def normalized(text):
+    import unicodedata
+    value = unicodedata.normalize("NFD", str(text or "").lower())
+    return re.sub(r"\\s+", " ", "".join(c for c in value if unicodedata.category(c) != "Mn")).strip()
+
+
+def classify_choice(message):
+    """Strict deterministic choice; never treat a generic 'sim' as opt-in."""
+    msg = re.sub(r"[.!?]+$", "", normalized(message)).strip()
+    if msg in ("1", "aguardar", "vou aguardar", "prefiro aguardar", "esperar",
+               "vou esperar", "quero aguardar", "atendimento humano", "pessoa"):
+        return "wait"
+    if msg in ("2", "continuar", "continuar com robo", "continuar com o robo",
+               "atendimento automatico", "quero continuar com o automatico",
+               "quero continuar com o robo", "voltar ao robo", "robo"):
+        return "resume"
+    if msg in ("ok", "obrigado", "obrigada", "ok obrigado", "ok obrigada",
+               "tudo bem", "beleza", "certo", "entendi", "ta bom", "valeu"):
+        return "ack"
+    return "other"
+
+
+def valid_event(ev):
+    return (ev.get("instance") == "umdoislab"
+            and ev.get("isClientMessage") is True
+            and ev.get("isGroup") is False
+            and valid_sender_for_send(str(ev.get("senderId") or ""))
+            and isinstance(ev.get("messageId"), str)
+            and 1 <= len(ev["messageId"]) <= 160)
+
+
+def process_inbound(ev):
+    """Atomic finite-state processing; returns only bounded actions.
+
+    Intentionally no LLM inference here. Explicit opt-in is a strict command.
+    Multiple deliveries of one incoming event return 'ignore'.
+    """
+    if not isinstance(ev, dict) or not valid_event(ev):
+        return None
+    sender, mid = ev["senderId"], ev["messageId"]
+    ts = now()
+    message = str(ev.get("messageText") or "")[:500]
+    name = str(ev.get("senderName") or "Contato")[:100]
+    subject = str(ev.get("category") or "Atendimento")[:100]
+    summary = str(ev.get("summary") or "")[:500]
+    handoff = ev.get("handoffRequested") is True
+    with LOCK, connect() as db:
+        seen = db.execute("SELECT 1 FROM inbound_ids WHERE sender_id=? AND message_id=?",
+                          (sender, mid)).fetchone()
+        if seen:
+            return {"action": "ignore", "state": "duplicate", "messageId": mid}
+        old = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        action = "auto"
+        if old is None:
+            if handoff:
+                db.execute("""INSERT INTO conversations(sender_id,sender_name,subject,summary,last_message,
+                          last_message_id,status,updated_at,created_at,choice_state)
+                          VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                           (sender, name, subject, summary, message, mid, "pending", ts, ts, "idle"))
+                action = "handoff"
+        else:
+            status, choice = old["status"], old["choice_state"]
+            if status == "done" and handoff:
+                db.execute("""UPDATE conversations SET status='pending', choice_state='idle',
+                     last_bot_text='', bot_repeat_count=0, fallback_count=0,
+                     choice_message_id='' WHERE sender_id=?""", (sender,))
+                status, choice, action = "pending", "idle", "handoff"
+            elif status == "done":
+                action = "auto"
+            elif status == "human":
+                action = "silent"
+            elif handoff:
+                # Already pending: don't repeat transfer notification.
+                action = "silent"
+            elif choice == "opted_in":
+                action = "auto"
+            elif choice == "exhausted":
+                action = "silent"
+            else:
+                classification = classify_choice(message)
+                if classification == "ack" or classification == "wait":
+                    action = "silent"
+                    if classification == "wait":
+                        db.execute("UPDATE conversations SET choice_state='waiting' WHERE sender_id=?", (sender,))
+                elif classification == "resume" and choice == "offered":
+                    db.execute("""UPDATE conversations SET choice_state='opted_in',
+                                  last_bot_text='',bot_repeat_count=0,fallback_count=0
+                                  WHERE sender_id=?""", (sender,))
+                    action = "resume"
+                elif choice == "idle":
+                    db.execute("""UPDATE conversations SET choice_state='offered',
+                                 choice_message_id=? WHERE sender_id=?""", (mid, sender))
+                    action = "offer_choice"
+                else:
+                    # No second offer in this pending episode: prevents a prompt loop.
+                    action = "silent"
+            db.execute("""UPDATE conversations SET sender_name=?,subject=?,summary=?,
+                      last_message=?,last_message_id=?,updated_at=? WHERE sender_id=?""",
+                       (name,subject,summary or old["summary"],message,mid,ts,sender))
+        db.execute("INSERT INTO inbound_ids(sender_id,message_id,created_at) VALUES(?,?,?)",
+                   (sender,mid,ts))
+    return {"action": action, "state": routing_decision("umdoislab",sender)["state"],
+            "messageId": mid, "senderId": sender, "instance": "umdoislab"}
 
 
 def store_event(ev):
@@ -96,14 +224,13 @@ def routing_decision(instance, sender):
     if instance != "umdoislab" or not valid_sender_for_send(sender):
         return None
     with LOCK, connect() as db:
-        row = db.execute("SELECT status FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        row = db.execute("SELECT status,choice_state FROM conversations WHERE sender_id=?", (sender,)).fetchone()
     status = row["status"] if row else "none"
-    # Pending requires a separate, approved choice flow. Never resume unattended.
-    permission = status in ("none", "done")
-    return {"allowAutoReply": permission,
-            "state": status,
+    choice = row["choice_state"] if row else "idle"
+    permission = status in ("none", "done") or (status == "pending" and choice == "opted_in")
+    return {"allowAutoReply": permission, "state": status, "choiceState": choice,
             "reason": "allowed" if permission else "human_active" if status == "human" else "human_pending",
-            "needsCustomerChoice": status == "pending"}
+            "needsCustomerChoice": status == "pending" and choice == "idle"}
 
 
 def public_row(r, detail=False):
@@ -240,6 +367,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
     def do_POST(self):
+        if self.path == "/bridge/inbound":
+            if not self.bridge():
+                return self.respond(403, {"error": "Acesso negado"})
+            ev = self.read_json()
+            if ev is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            result = process_inbound(ev)
+            if result is None:
+                return self.respond(422, {"error": "Evento inválido ou destino não suportado"})
+            return self.respond(200, result)
         if self.path == "/bridge/send-auto":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
