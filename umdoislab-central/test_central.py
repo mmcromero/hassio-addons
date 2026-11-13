@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+import json
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent
 class CentralTests(unittest.TestCase):
@@ -92,6 +94,65 @@ class CentralTests(unittest.TestCase):
         self.assertIsNone(self.mod.routing_decision("umdoislab", "5511999999999@g.us"))
         self.assertIsNone(self.mod.routing_decision("umdoislab", "status@broadcast"))
         self.assertIsNone(self.mod.routing_decision("umdoislab", "123@lid"))
+
+    def test_auto_sender_guard_blocks_when_human_assumed(self):
+        sender = "5511999999999@s.whatsapp.net"
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='human'")
+        options_path = Path(os.environ["CENTRAL_OPTIONS"])
+        options_path.write_text(json.dumps({
+            "bridge_secret":"a"*32,"evolution_api_key":"test-not-real",
+            "evolution_url":"http://example.invalid:8080","evolution_instance":"umdoislab",
+            "auto_test_sender":sender}))
+        class FakeRequest:
+            def respond(self, code, body):
+                return code, body
+        req = {"instance":"umdoislab","senderId":sender,"messageId":"msg-1",
+               "text":"mensagem fictícia"}
+        with patch.object(self.mod.urllib.request, "urlopen") as send:
+            code, result = self.mod.Handler.send_automated(FakeRequest(), req)
+            self.assertEqual(code, 409)
+            self.assertEqual(result["state"], "human")
+            send.assert_not_called()
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM replies").fetchone()[0],0)
+
+    def test_auto_sender_guard_blocks_other_contacts(self):
+        sender = "5511999999999@s.whatsapp.net"
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"test-not-real","evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab","auto_test_sender":"OUTRO"}))
+        class FakeRequest:
+            def respond(self, code, body):
+                return code, body
+        with patch.object(self.mod.urllib.request, "urlopen") as send:
+            code, result = self.mod.Handler.send_automated(FakeRequest(),
+                 {"instance":"umdoislab","senderId":sender,"messageId":"msg-1","text":"Teste"})
+            self.assertEqual(code,403)
+            send.assert_not_called()
+
+    def test_auto_sender_guard_avoids_duplicar_mensagem(self):
+        sender = "5511999999999@s.whatsapp.net"
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"test-not-real","evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab","auto_test_sender":sender}))
+        class FakeRequest:
+            def respond(self, code, body):
+                return code, body
+        class FakeHTTP:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, size): return b'{"ok":true}'
+        payload = {"instance":"umdoislab","senderId":sender,"messageId":"msg-1","text":"Teste"}
+        with patch.object(self.mod.urllib.request, "urlopen", return_value=FakeHTTP()) as send:
+            code, result = self.mod.Handler.send_automated(FakeRequest(), payload)
+            self.assertEqual(code,200)
+            self.assertEqual(result["delivery"],"accepted_not_confirmed")
+            repeated, _ = self.mod.Handler.send_automated(FakeRequest(), payload)
+            self.assertEqual(repeated,409)
+            self.assertEqual(send.call_count,1)
 
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))
