@@ -1,0 +1,26 @@
+name: "Umdoislab — Central de Atendimento"
+version: "0.1.0"
+slug: umdoislab_central
+description: "Painel mobile-first para atendimento humano da Umdoislab"
+arch:
+  - aarch64
+startup: application
+boot: manual
+init: false
+stage: experimental
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:message-processing-outline
+panel_title: "Umdoislab Atendimento"
+panel_admin: true
+backup: cold
+options:
+  bridge_secret: ""
+  evolution_url: "http://homeassistant.local:8080"
+  evolution_instance: "umdoislab"
+  evolution_api_key: ""
+schema:
+  bridge_secret: password
+  evolution_url: str
+  evolution_instance: str
+  evolution_api_key: password
