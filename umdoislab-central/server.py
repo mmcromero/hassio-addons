@@ -311,60 +311,87 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "Não encontrado"})
 
     def send_automated(self, data):
-        """Single controlled outbound path for future n8n bot replies.
-
-        Serialize permission check and dispatch with the same lock used by
-        'Assumir'; the current published v1.4 does not use this endpoint.
-        """
+        """Safe outbound dispatch: atomic with operator actions, dedupe per inbound ID."""
         sender = data.get("senderId")
         instance = data.get("instance")
         message_id = data.get("messageId")
-        message = data.get("text")
-        if not all(isinstance(x, str) for x in (sender, instance, message_id, message)):
+        kind = data.get("kind", "normal")
+        if not all(isinstance(x, str) for x in (sender, instance, message_id)):
             return self.respond(422, {"error": "Campos obrigatórios ausentes"})
-        message = message.strip()
-        if not 0 < len(message) <= 1500 or not 1 <= len(message_id) <= 160:
-            return self.respond(422, {"error": "Texto ou messageId inválido"})
+        if kind not in ("normal", "fallback", "handoff", "choice"):
+            return self.respond(422, {"error": "Tipo de envio inválido"})
+        if not 1 <= len(message_id) <= 160:
+            return self.respond(422, {"error": "messageId inválido"})
         cfg = options()
-        authorized_sender = str(cfg.get("auto_test_sender") or "")
-        if not authorized_sender or sender != authorized_sender:
-            return self.respond(403, {"error": "Remetente fora do contato de teste autorizado"})
-        api_key = str(cfg.get("evolution_api_key") or "")
-        endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
-        evolution_instance = str(cfg.get("evolution_instance") or "")
-        if not api_key or not endpoint.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", evolution_instance):
+        if sender != str(cfg.get("auto_test_sender") or "") or not valid_sender_for_send(sender):
+            return self.respond(403, {"error": "Fora do contato de teste autorizado"})
+        key = str(cfg.get("evolution_api_key") or "")
+        base = str(cfg.get("evolution_url") or "").rstrip("/")
+        configured_instance = str(cfg.get("evolution_instance") or "")
+        if not key or not base.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", configured_instance):
             return self.respond(503, {"error": "Evolution API não configurada"})
-        if instance != evolution_instance or not valid_sender_for_send(sender):
-            return self.respond(422, {"error": "Instância ou destino inválido"})
-        delivery_key = "auto-" + hashlib.sha256((sender + "|" + message_id).encode()).hexdigest()
+        if instance != configured_instance:
+            return self.respond(422, {"error": "Instância inválida"})
+        message = CHOICE_PROMPT if kind == "choice" else HANDOFF_PROMPT if kind == "handoff" else data.get("text")
+        if not isinstance(message, str) or not 0 < len(message.strip()) <= 1500:
+            return self.respond(422, {"error": "Texto inválido"})
+        message = message.strip()
+        delivery_key = "auto-" + hashlib.sha256(
+            (sender + "|" + message_id + "|" + kind).encode()).hexdigest()
         with LOCK:
             decision = routing_decision(instance, sender)
-            if decision is None or not decision["allowAutoReply"]:
-                return self.respond(409, {"error": "Atendimento humano ativo ou pendente; não enviar",
-                                          "state": decision["state"] if decision else "invalid"})
             with connect() as db:
-                duplicate = db.execute("SELECT outcome FROM replies WHERE request_id=?", (delivery_key,)).fetchone()
-                if duplicate:
-                    return self.respond(409, {"error": "Resposta automática já solicitada; não reenviar"})
+                row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+                if kind == "choice":
+                    allowed = bool(row and row["status"] == "pending"
+                        and row["choice_state"] == "offered"
+                        and row["choice_message_id"] == message_id)
+                elif kind == "handoff":
+                    allowed = bool(row and row["status"] == "pending"
+                        and row["choice_state"] == "idle"
+                        and row["last_message_id"] == message_id)
+                else:
+                    allowed = decision is not None and decision["allowAutoReply"]
+                    if row and row["status"] == "pending":
+                        allowed = allowed and row["choice_state"] == "opted_in"
+                    if allowed and row and normalized(row["last_bot_text"]) == normalized(message):
+                        db.execute("""UPDATE conversations SET choice_state='exhausted'
+                                      WHERE sender_id=? AND status='pending'""", (sender,))
+                        return self.respond(409, {"error": "Resposta repetida bloqueada; atendimento humano mantido",
+                                                  "state": "loop_blocked"})
+                    if allowed and kind == "fallback" and row and row["fallback_count"] >= 1:
+                        db.execute("""UPDATE conversations SET choice_state='exhausted'
+                                      WHERE sender_id=? AND status='pending'""", (sender,))
+                        return self.respond(409, {"error": "Limite de incompreensão; atendimento humano mantido",
+                                                  "state": "fallback_limit"})
+                if not allowed:
+                    return self.respond(409, {"error": "Estado não autoriza envio automático",
+                                              "state": decision["state"] if decision else "invalid"})
+                if db.execute("SELECT 1 FROM replies WHERE request_id=?", (delivery_key,)).fetchone():
+                    return self.respond(409, {"error": "Mensagem já solicitada; não reenviar"})
                 db.execute("INSERT INTO replies VALUES(?,?,?,?,?)",
-                           (delivery_key, sender, now(), "requested", "auto"))
-            url = endpoint + "/message/sendText/" + evolution_instance
-            body = json.dumps({"number": sender.split("@")[0], "text": message}).encode("utf-8")
-            req = urllib.request.Request(url, data=body,
-                headers={"Content-Type": "application/json", "apikey": api_key}, method="POST")
+                           (delivery_key, sender, now(), "requested", kind))
+            url = base + "/message/sendText/" + configured_instance
+            payload = json.dumps({"number":sender.split("@")[0], "text":message}).encode("utf-8")
+            request = urllib.request.Request(url, data=payload,
+                headers={"Content-Type":"application/json", "apikey":key}, method="POST")
             try:
-                with urllib.request.urlopen(req, timeout=12) as response:
+                with urllib.request.urlopen(request, timeout=12) as response:
                     response.read(8192)
                     if not 200 <= response.status < 300:
                         raise ValueError("Evolution rejected request")
                 with connect() as db:
                     db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (delivery_key,))
-                return self.respond(200, {"ok": True, "delivery": "accepted_not_confirmed"})
+                    if kind in ("normal", "fallback") and row:
+                        db.execute("""UPDATE conversations
+                                      SET last_bot_text=?,fallback_count=fallback_count+?
+                                      WHERE sender_id=?""",
+                                   (message[:1500], 1 if kind == "fallback" else 0, sender))
+                return self.respond(200, {"ok":True, "delivery":"accepted_not_confirmed", "kind":kind})
             except Exception:
                 with connect() as db:
                     db.execute("UPDATE replies SET outcome='uncertain' WHERE request_id=?", (delivery_key,))
-                return self.respond(502, {"error": "Envio automático incerto; não repetir sem verificar"})
-
+                return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def do_POST(self):
         if self.path == "/bridge/inbound":
