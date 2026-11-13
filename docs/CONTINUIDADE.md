@@ -64,3 +64,14 @@ Sequência de homologação, sem pular etapas:
 ## Decisão de arquitetura futura
 
 Consulte [ARQUITETURA-AUTOMACOES.md](ARQUITETURA-AUTOMACOES.md). Resumo: manter **um n8n principal no Raspberry** e fazer automações leves locais. Preparar caminho para delegar mídia/IA/processamento pesado ao computador por serviço autenticado e assíncrono. **Não instalar segundo n8n agora**; avaliar quando houver demanda real. Um segundo n8n independente é opcional no futuro; workers oficiais e Redis compartilhado são complexidade desnecessária neste estágio.
+
+
+## Interface visual — melhoria futura (13/11/2026)
+
+**Solicitação do proprietário (não implementar agora):** estudar uma identidade visual consistente e agradável para o catálogo de add-ons e, quando viável, para as interfaces dos próprios add-ons, considerando como referência a marca **Fábrica de Ideias**. **Não foi selecionada arte, logo ou paleta definitiva.**
+
+**Evidência atual:** após iniciar Evolution API v2.3.7 no Raspberry Pi e autenticar no Manager com a Global API Key, a tela de instâncias abriu normalmente (ainda sem instâncias), mas no canto superior esquerdo a imagem aparece quebrada, exibindo o texto alternativo `Logo`. A causa da falha da imagem ainda **não foi identificada**. Pode estar nos ativos da UI upstream ou em URL/servidor; não presumir causa.
+
+**Encaminhamento:** tratar como backlog de UX, sem bloquear o pareamento do WhatsApp. Antes de modificar a imagem, investigar o caminho HTTP do recurso, se o asset é interno ou remoto, os direitos de uso da marca e a necessidade de customização da imagem base. Priorizar personalização do catálogo do Home Assistant sem criar um fork de manutenção desnecessário. O usuário decidiu **concluir primeiro a configuração do WhatsApp**.
+
+**Estado operacional confirmado pelo proprietário:** instalação do add-on 0.1.0 concluída, PostgreSQL inicializou, 57 migrações foram aplicadas, Evolution API abriu porta 8080; Manager acessível, chave global aceita e painel de instâncias exibido. Não há comprovação ainda de instância criada ou WhatsApp pareado. A próxima ação é clicar em `Instance +` e revisar os campos antes de salvar. Manter `webhook_url` vazio até a conexão básica estar homologada.
