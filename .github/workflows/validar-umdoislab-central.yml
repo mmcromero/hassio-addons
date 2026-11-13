@@ -17,3 +17,13 @@ jobs:
         run: python -m py_compile umdoislab-central/server.py
       - name: Testes SQLite e regras de eventos
         run: python -m unittest discover -s umdoislab-central -p 'test_*.py' -v
+      - name: Preparar build ARM64
+        uses: docker/setup-qemu-action@v3
+      - name: Preparar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Construir imagem ARM64 (sem publicar)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./umdoislab-central
+          platforms: linux/arm64
+          push: false
