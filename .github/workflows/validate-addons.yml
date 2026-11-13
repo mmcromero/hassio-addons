@@ -52,4 +52,6 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Build ARM64 (sem publicação)
-        run: docker buildx build --platform linux/arm64 --progress plain evolution-api/
+        run: docker buildx build --platform linux/arm64 --progress plain --load -t evolution-api:test evolution-api/
+      - name: Testar inicialização e reinício (PostgreSQL + API)
+        run: bash .github/scripts/smoke-evolution.sh
