@@ -73,6 +73,10 @@ def init():
             sender_id TEXT NOT NULL, message_id TEXT NOT NULL, created_at TEXT NOT NULL,
             PRIMARY KEY(sender_id,message_id)
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS bot_guard(
+            sender_id TEXT PRIMARY KEY,last_text TEXT NOT NULL DEFAULT '',
+            fallback_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+        )""")
 
 
 # Textos de protocolo: não permitir que o n8n substitua essas mensagens.
@@ -136,6 +140,10 @@ def process_inbound(ev):
         if seen:
             return {"action": "ignore", "state": "duplicate", "messageId": mid}
         old = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        guard = db.execute("SELECT fallback_count FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
+        # Two vague requests in sequence become a human handoff, not a generic answer loop.
+        if old is None and not handoff and subject == "outros" and guard and guard["fallback_count"] >= 1:
+            handoff = True
         action = "auto"
         if old is None:
             if handoff:
@@ -342,6 +350,7 @@ class Handler(BaseHTTPRequestHandler):
             decision = routing_decision(instance, sender)
             with connect() as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+                guard = db.execute("SELECT * FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
                 if kind == "choice":
                     allowed = bool(row and row["status"] == "pending"
                         and row["choice_state"] == "offered"
@@ -354,10 +363,12 @@ class Handler(BaseHTTPRequestHandler):
                     allowed = decision is not None and decision["allowAutoReply"]
                     if row and row["status"] == "pending":
                         allowed = allowed and row["choice_state"] == "opted_in"
-                    if allowed and row and normalized(row["last_bot_text"]) == normalized(message):
-                        db.execute("""UPDATE conversations SET choice_state='exhausted'
-                                      WHERE sender_id=? AND status='pending'""", (sender,))
-                        return self.respond(409, {"error": "Resposta repetida bloqueada; atendimento humano mantido",
+                    if allowed and ((guard and normalized(guard["last_text"]) == normalized(message))
+                                    or (row and normalized(row["last_bot_text"]) == normalized(message))):
+                        if row:
+                            db.execute("""UPDATE conversations SET choice_state='exhausted'
+                                          WHERE sender_id=? AND status='pending'""", (sender,))
+                        return self.respond(409, {"error": "Resposta repetida bloqueada; atendimento humano precisa avaliar",
                                                   "state": "loop_blocked"})
                     if allowed and kind == "fallback" and row and row["fallback_count"] >= 1:
                         db.execute("""UPDATE conversations SET choice_state='exhausted'
@@ -382,11 +393,19 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError("Evolution rejected request")
                 with connect() as db:
                     db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (delivery_key,))
-                    if kind in ("normal", "fallback") and row:
-                        db.execute("""UPDATE conversations
-                                      SET last_bot_text=?,fallback_count=fallback_count+?
-                                      WHERE sender_id=?""",
-                                   (message[:1500], 1 if kind == "fallback" else 0, sender))
+                    if kind in ("normal", "fallback"):
+                        db.execute("""INSERT INTO bot_guard(sender_id,last_text,fallback_count,updated_at)
+                                      VALUES(?,?,?,?)
+                                      ON CONFLICT(sender_id) DO UPDATE SET
+                                        last_text=excluded.last_text,
+                                        fallback_count=bot_guard.fallback_count+excluded.fallback_count,
+                                        updated_at=excluded.updated_at""",
+                                   (sender, message[:1500], 1 if kind == "fallback" else 0, now()))
+                        if row:
+                            db.execute("""UPDATE conversations
+                                          SET last_bot_text=?,fallback_count=fallback_count+?
+                                          WHERE sender_id=?""",
+                                       (message[:1500], 1 if kind == "fallback" else 0, sender))
                 return self.respond(200, {"ok":True, "delivery":"accepted_not_confirmed", "kind":kind})
             except Exception:
                 with connect() as db:
