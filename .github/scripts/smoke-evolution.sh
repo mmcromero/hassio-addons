@@ -43,8 +43,8 @@ if [ "$DATABASE_EXISTS" != "1" ]; then
   echo "Falha: banco evolution ausente (consulta: $DATABASE_EXISTS)" >&2
   exit 1
 fi
-test -f "$WORK/data/postgres/PG_VERSION"
-test -f "$WORK/data/postgres-password"
+docker exec "$NAME" test -f /data/postgres/PG_VERSION
+docker exec "$NAME" test -f /data/postgres-password
 test -d "$WORK/data/instances"
 echo "OK: banco, senha e sessões em /data"
 
