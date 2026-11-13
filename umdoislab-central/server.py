@@ -33,6 +33,11 @@ def options():
         return {}
 
 
+def valid_sender_for_send(sender):
+    # Apenas chats individuais com número explícito, nunca grupos, status ou @lid.
+    return bool(re.fullmatch(r"[0-9]{10,15}@s\.whatsapp\.net", sender))
+
+
 def connect():
     db = sqlite3.connect(DB, timeout=10)
     db.row_factory = sqlite3.Row
@@ -175,6 +180,17 @@ class Handler(BaseHTTPRequestHandler):
         data = self.read_json()
         if data is None:
             return self.respond(400, {"error": "JSON inválido"})
+        # Validar configuração/destino ANTES de reservar a chave de idempotência.
+        # Uma configuração ausente não pode impedir uma futura tentativa corrigida.
+        if action == "reply":
+            cfg = options()
+            api_key = str(cfg.get("evolution_api_key") or "")
+            endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
+            instance = str(cfg.get("evolution_instance") or "")
+            if not api_key or not endpoint.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
+                return self.respond(503, {"error": "Evolution API não configurada"})
+            if not valid_sender_for_send(sender):
+                return self.respond(422, {"error": "Identificador do contato incompatível com envio seguro; confira o JID recebido"})
         with LOCK, connect() as db:
             existing = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
             if not existing:
@@ -194,14 +210,6 @@ class Handler(BaseHTTPRequestHandler):
             if duplicate:
                 return self.respond(409, {"error": "Envio já solicitado; consulte a conversa antes de repetir"})
             db.execute("INSERT INTO replies VALUES(?,?,?,?,?)",(req_id,sender,now(),"requested",""))
-        cfg = options()
-        api_key = str(cfg.get("evolution_api_key") or "")
-        endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
-        instance = str(cfg.get("evolution_instance") or "")
-        if not api_key or not endpoint.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
-            return self.respond(503, {"error": "Evolution API não configurada"})
-        if not re.fullmatch(r"[0-9]{10,15}@s\\.whatsapp\\.net", sender):
-            return self.respond(422, {"error": "Identificador do contato incompatível com envio seguro; confira o JID recebido"})
         url = endpoint + "/message/sendText/" + instance
         body = json.dumps({"number":sender.split("@")[0], "text":message}).encode()
         req = urllib.request.Request(url, data=body,
