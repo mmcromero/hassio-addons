@@ -46,6 +46,14 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     assert.match(await setup.text(), /Primeiro acesso/);
     const status = await fetch('http://127.0.0.1:' + port + '/api/setup/status');
     assert.deepEqual(await status.json(), { needs_setup: true });
+    let codeMatch;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      codeMatch = logs.match(/BIPOU PRIMEIRO ACESSO[^\\n]*?([a-f0-9]{48})/);
+      if (codeMatch) break;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    assert.ok(codeMatch, 'código temporário deve aparecer nos logs locais');
+
   } finally {
     child.kill('SIGTERM');
     await new Promise(resolve => child.once('exit', resolve)).catch(() => {});
