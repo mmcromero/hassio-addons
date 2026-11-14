@@ -389,16 +389,16 @@
   <!-- Cartão do Pager do Cliente -->
   <main id="app-card" class="app-card">
     <header class="restaurant-header">
-      <div class="logo-badge" aria-hidden="true">🍔</div>
+      <div class="logo-badge" aria-hidden="true">🔔</div>
       <div class="restaurant-info">
-        <h1>Burger House Grill</h1>
-        <p>Praça de Alimentação · Piso L2</p>
+        <h1>Pager Virtual</h1>
+        <p>Acompanhamento do seu pedido</p>
       </div>
     </header>
 
     <section class="order-status-card">
       <span class="order-number-tag">Sua Senha de Retirada</span>
-      <div class="order-number" id="order-num">#42</div>
+      <div class="order-number" id="order-num">—</div>
 
       <div id="status-badge" class="status-badge preparo">
         <span id="status-icon" aria-hidden="true">⏳</span>
@@ -410,7 +410,7 @@
       </p>
 
       <p id="sub-message" class="sub-message">
-        Tempo estimado: ~8 a 10 minutos. Fique à vontade para passear!
+        Você receberá um aviso quando o pedido estiver pronto.
       </p>
 
       <!-- Botão de Toggle: Ativa e Desativa o som e vibração a qualquer momento -->
@@ -425,51 +425,19 @@
       </button>
     </section>
 
-    <!-- Resumo dos itens do pedido -->
-    <section class="order-details" aria-labelledby="order-details-title">
-      <h2 id="order-details-title">Itens do Pedido</h2>
-      <ul class="item-list">
-        <li class="item-row">
-          <span>1x Classic Bacon Burger</span>
-          <strong>R$ 32,90</strong>
-        </li>
-        <li class="item-row">
-          <span>1x Batata Rústica Pequena</span>
-          <strong>R$ 11,00</strong>
-        </li>
-        <li class="item-row">
-          <span>1x Suco Natural de Laranja 500ml</span>
-          <strong>R$ 6,50</strong>
-        </li>
-      </ul>
-      <div class="item-total">
-        <span>Total Pago</span>
-        <span>R$ 50,40</span>
-      </div>
-
-      <!-- Resumo pós-entrega -->
-      <div id="delivered-section" class="review-box" style="display: none;">
-        <h3>Como estava seu lanche?</h3>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Sua opinião nos ajuda a melhorar!</p>
-        <div class="star-rating" role="radiogroup" aria-label="Avalie sua experiência de 1 a 5 estrelas">
-          <button class="star-btn" aria-label="1 estrela">★</button>
-          <button class="star-btn" aria-label="2 estrelas">★</button>
-          <button class="star-btn" aria-label="3 estrelas">★</button>
-          <button class="star-btn" aria-label="4 estrelas">★</button>
-          <button class="star-btn" aria-label="5 estrelas">★</button>
-        </div>
-        <p style="font-size: 0.9rem; margin-top: 10px;">Ganhe 10% de desconto na próxima visita:</p>
-        <span class="coupon-badge">BURGER10</span>
-      </div>
+    <!-- Produtos opcionais: exibidos apenas quando presentes no QR. -->
+    <section class="order-details" id="order-details" aria-labelledby="order-details-title" hidden>
+      <h2 id="order-details-title">Itens do pedido</h2>
+      <ul class="item-list"></ul>
     </section>
   </main>
 
   <script>
     // --- IDENTIFICAÇÃO DO PEDIDO E SESSÃO (PÁGINA CASCA) ---
     const urlParams = new URLSearchParams(window.location.search);
-    const orderNumber = urlParams.get('pedido') || '42';
-    const token = urlParams.get('token') || urlParams.get('sessao') || 'demo_token';
-    const restName = urlParams.get('rest') || 'Burger House';
+    const orderNumber = urlParams.get('pedido') || '—';
+    const token = urlParams.get('token') || urlParams.get('sessao') || '';
+    const restName = urlParams.get('rest') || 'Pager Virtual';
 
     document.getElementById('order-num').textContent = '#' + orderNumber;
     const restNameEl = document.querySelector('.restaurant-info h1');
@@ -477,22 +445,19 @@
       restNameEl.textContent = restName;
     }
 
-    // Se vier itens no hash/URL, preenche dinamicamente sem requisição extra
+    // Dados opcionais do pedido vêm da URL e não geram consultas extras.
     const rawItens = urlParams.get('itens');
     if (rawItens) {
-      try {
-        const itemListEl = document.querySelector('.item-list');
-        if (itemListEl) {
-          const itens = rawItens.split(',').map(i => i.trim());
-          itemListEl.innerHTML = itens.map(item => `
-            <li class="item-row">
-              <span>${item}</span>
-              <strong>Item Incluso</strong>
-            </li>
-          `).join('');
-        }
-      } catch (e) {
-        console.warn('Erro ao processar itens da URL:', e);
+      const itens = rawItens.split(',').map(i => i.trim()).filter(Boolean);
+      if (itens.length) {
+        const lista = document.querySelector('.item-list');
+        itens.forEach(item => {
+          const li = document.createElement('li');
+          li.className = 'item-row';
+          li.textContent = item; // Nunca interpretar texto da URL como HTML.
+          lista.appendChild(li);
+        });
+        document.getElementById('order-details').hidden = false;
       }
     }
 
@@ -726,21 +691,21 @@
         statusIcon.textContent = '⏳';
         statusText.textContent = 'Em Preparo';
         statusMessage.textContent = 'Sua comida está sendo preparada com todo cuidado pelo nosso chef!';
-        subMessage.textContent = 'Tempo estimado: ~8 a 10 minutos. Fique à vontade para passear!';
+        subMessage.textContent = 'Você receberá um aviso quando o pedido estiver pronto.';
         deliveredSection.style.display = 'none';
-        liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' em preparo. Tempo estimado de 8 a 10 minutos.';
+        liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' em preparo.';
       } 
       else if (status === 'pronto') {
         statusBadge.className = 'status-badge pronto';
         statusIcon.textContent = '🔔';
         statusText.textContent = 'PRONTO PARA RETIRADA!';
         statusMessage.innerHTML = '<strong>Seu pedido está no balcão de entrega!</strong>';
-        subMessage.textContent = 'Por favor, dirija-se ao Balcão 02 com a senha #' + orderNumber + '.';
+        subMessage.textContent = 'Apresente a senha #' + orderNumber + ' no balcão.';
         appCard.classList.add('flash-alert');
         deliveredSection.style.display = 'none';
 
         startAlarmLoop();
-        liveAnnouncer.textContent = 'Atenção! Seu pedido ' + orderNumber + ' está pronto para retirada no Balcão 02!';
+        liveAnnouncer.textContent = 'Atenção! Seu pedido ' + orderNumber + ' está pronto para retirada!';
       } 
       else if (status === 'entregue') {
         isCurrentlyReady = false;
@@ -757,7 +722,8 @@
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
     function connectSSE() {
       if (!token) return;
-      const sseUrl = `/api/pedidos/stream/${token}`;
+      const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
+      const sseUrl = `${appBasePath}/api/pedidos/stream/${encodeURIComponent(token)}`;
       const eventSource = new EventSource(sseUrl);
 
       eventSource.onmessage = (event) => {
@@ -778,16 +744,6 @@
 
     connectSSE();
 
-    // Fallback local via BroadcastChannel para testes na mesma máquina
-    const localChannel = new BroadcastChannel('pager_' + token);
-    localChannel.onmessage = (event) => {
-      try {
-        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-        if (data.status) {
-          applyStatus(data.status);
-        }
-      } catch (e) {}
-    };
 
     // Acessibilidade
     toggleContrast.addEventListener('click', () => {
