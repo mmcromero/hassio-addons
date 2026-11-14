@@ -449,10 +449,6 @@
             status: p.status,
             createdAt: p.created_at
           }));
-          if (activeOrders.length > 0) {
-            const maxNum = Math.max(...activeOrders.map(o => parseInt(o.id, 10) || 40));
-            if (maxNum > orderCounter) orderCounter = maxNum;
-          }
           renderOrders();
         }
       } catch (e) {
