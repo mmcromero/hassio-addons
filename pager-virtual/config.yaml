@@ -1,5 +1,5 @@
 name: "Pager Virtual"
-version: "0.1.3"
+version: "0.1.5"
 slug: pager_virtual
 description: "Sistema de Pager Virtual ultraleve e em tempo real para restaurantes"
 url: "https://github.com/mmcromero/pager-virtual"

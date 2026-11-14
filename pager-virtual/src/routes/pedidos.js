@@ -1,17 +1,20 @@
 import { nanoid } from 'nanoid';
 import db from '../db.js';
 import { sseManager } from '../sse.js';
+import { requireRestaurant, currentUser } from '../auth.js';
 
 export async function pedidosRoutes(fastify, options) {
   // 1. Listar pedidos ativos para o KDS (Cozinha/Balcão)
   fastify.get('/api/pedidos', async (request, reply) => {
+    const user = requireRestaurant(request, reply);
+    if (!user) return;
     const pedidos = db.prepare(`
       SELECT p.*, r.nome as restaurante_nome
       FROM pedidos p
       JOIN restaurantes r ON p.restaurante_id = r.id
-      WHERE p.status IN ('preparo', 'pronto')
+      WHERE p.restaurante_id = ? AND p.status IN ('preparo', 'pronto')
       ORDER BY p.created_at ASC
-    `).all();
+    `).all(user.restaurante_id);
 
     return pedidos.map(p => ({
       ...p,
@@ -21,7 +24,14 @@ export async function pedidosRoutes(fastify, options) {
 
   // 2. Criar novo pedido (chamado pelo Interceptador de PDV ou pelo KDS)
   fastify.post('/api/pedidos', async (request, reply) => {
-    const { restaurante_id = 'rest_demo_01', numero, itens = [] } = request.body || {};
+    const user = requireRestaurant(request, reply);
+    if (!user) return;
+    const { numero, itens = [] } = request.body || {};
+    const restaurante_id = user.restaurante_id;
+    if (!Array.isArray(itens) || itens.length > 20 ||
+        !itens.every(i => typeof i === 'string' && i.length <= 120)) {
+      return reply.code(400).send({ error: 'Lista de itens inválida' });
+    }
 
     const numeroNormalizado = Number(numero);
     if (!Number.isSafeInteger(numeroNormalizado) || numeroNormalizado <= 0) {
@@ -58,13 +68,15 @@ export async function pedidosRoutes(fastify, options) {
     };
 
     // Notifica telas KDS conectadas
-    sseManager.notifyKds('novo_pedido', novoPedido);
+    sseManager.notifyKds(restaurante_id, 'novo_pedido', novoPedido);
 
     return reply.code(201).send(novoPedido);
   });
 
   // 3. Atualizar status do pedido (Cozinha aciona: 'pronto' ou 'entregue')
   fastify.patch('/api/pedidos/:id/status', async (request, reply) => {
+    const user = requireRestaurant(request, reply);
+    if (!user) return;
     const { id } = request.params;
     const { status } = request.body || {};
 
@@ -72,7 +84,7 @@ export async function pedidosRoutes(fastify, options) {
       return reply.code(400).send({ error: 'Status inválido' });
     }
 
-    const pedido = db.prepare('SELECT * FROM pedidos WHERE id = ?').get(id);
+    const pedido = db.prepare('SELECT * FROM pedidos WHERE id = ? AND restaurante_id = ?').get(id, user.restaurante_id);
     if (!pedido) {
       return reply.code(400).send({ error: 'Pedido não encontrado' });
     }
@@ -102,7 +114,7 @@ export async function pedidosRoutes(fastify, options) {
     // Dispara alerta em tempo real para o celular do cliente
     sseManager.notifyClient(pedido.token, payload);
     // Dispara atualização para os painéis KDS
-    sseManager.notifyKds('status_alterado', payload);
+    sseManager.notifyKds(pedido.restaurante_id, 'status_alterado', payload);
 
     return payload;
   });
@@ -117,6 +129,7 @@ export async function pedidosRoutes(fastify, options) {
     }
 
     // Configuração dos cabeçalhos HTTP para Server-Sent Events
+    reply.hijack();
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
     reply.raw.setHeader('Connection', 'keep-alive');
@@ -129,18 +142,40 @@ export async function pedidosRoutes(fastify, options) {
       timestamp: Date.now()
     })}\n\n`);
 
-    // Registra conexão no gerenciador SSE
+    // Registra conexão no gerenciador SSE.
     sseManager.addClient(token, reply);
+    const clientHeartbeat = setInterval(() => {
+      if (reply.raw.destroyed || reply.raw.writableEnded) clearInterval(clientHeartbeat);
+      else reply.raw.write(': ping\n\n');
+    }, 25000);
+    reply.raw.on('close', () => clearInterval(clientHeartbeat));
   });
 
   // 5. Stream SSE para o KDS (Cozinha)
   fastify.get('/api/kds/stream', (request, reply) => {
+    const user = requireRestaurant(request, reply);
+    if (!user) return;
+    reply.hijack();
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
     reply.raw.setHeader('Connection', 'keep-alive');
     reply.raw.setHeader('Access-Control-Allow-Origin', '*');
 
     reply.raw.write(`event: conectado\ndata: ${JSON.stringify({ ok: true })}\n\n`);
-    sseManager.addKds(reply);
+    const isAuthorized = () => {
+      const current = currentUser(request);
+      return current?.id === user.id && current.restaurante_id === user.restaurante_id;
+    };
+    sseManager.addKds(user.restaurante_id, reply, isAuthorized);
+    // Sessões encerradas, revogadas ou expiradas não conservam um canal SSE aberto.
+    const heartbeat = setInterval(() => {
+      if (!isAuthorized()) {
+        clearInterval(heartbeat);
+        reply.raw.end();
+      } else {
+        reply.raw.write(': ping\n\n');
+      }
+    }, 25000);
+    reply.raw.on('close', () => clearInterval(heartbeat));
   });
 }

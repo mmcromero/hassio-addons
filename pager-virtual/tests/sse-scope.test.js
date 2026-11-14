@@ -1,0 +1,51 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { EventEmitter } from 'node:events';
+import { sseManager } from '../src/sse.js';
+
+function client() {
+  const raw = new EventEmitter();
+  raw.messages = [];
+  raw.write = message => raw.messages.push(message);
+  return { raw };
+}
+
+test('evento de restaurante A não alcança KDS do restaurante B', () => {
+  const a = client(), b = client();
+  sseManager.addKds('restaurante-a', a);
+  sseManager.addKds('restaurante-b', b);
+  sseManager.notifyKds('restaurante-a', 'novo_pedido', { numero: 12 });
+  assert.equal(a.raw.messages.length, 1);
+  assert.equal(b.raw.messages.length, 0);
+  assert.match(a.raw.messages[0], /novo_pedido/);
+  a.raw.emit('close'); b.raw.emit('close');
+  assert.equal(sseManager.kdsStreams.size, 0);
+});
+
+test('cliente acompanha somente token cadastrado', () => {
+  const a = client(), b = client();
+  sseManager.addClient('token-a', a);
+  sseManager.addClient('token-b', b);
+  sseManager.notifyClient('token-a', { status: 'pronto' });
+  assert.equal(a.raw.messages.length, 1);
+  assert.equal(b.raw.messages.length, 0);
+  a.raw.emit('close'); b.raw.emit('close');
+});
+
+test('KDS revogado encerra stream antes do próximo evento, sem afetar restaurante vizinho', () => {
+  const revoked = client(), other = client();
+  let active = true;
+  revoked.raw.end = () => { revoked.raw.ended = true; revoked.raw.emit('close'); };
+  other.raw.end = () => { other.raw.ended = true; other.raw.emit('close'); };
+  sseManager.addKds('restaurante-a', revoked, () => active);
+  sseManager.addKds('restaurante-b', other, () => true);
+  active = false;
+  sseManager.notifyKds('restaurante-a', 'novo_pedido', { numero: 98 });
+  sseManager.notifyKds('restaurante-b', 'novo_pedido', { numero: 99 });
+  assert.equal(revoked.raw.messages.length, 0);
+  assert.equal(revoked.raw.ended, true);
+  assert.equal(other.raw.messages.length, 1);
+  assert.equal(other.raw.ended, undefined);
+  other.raw.emit('close');
+  assert.equal(sseManager.kdsStreams.size, 0);
+});

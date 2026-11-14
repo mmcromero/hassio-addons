@@ -376,6 +376,8 @@
       </div>
 
       <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
+      <a id="admin-link" href="/admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">⚙️ Administração</a>
+      <button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:54px;margin:0;padding:12px 16px">Sair</button>
     </div>
   </header>
 
@@ -423,6 +425,11 @@
     let publicBaseUrl = '';
     const appBasePath = window.location.pathname.replace(/\/kds\.html$/, '').replace(/\/$/, '');
     const apiPath = (suffix) => appBasePath + suffix;
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
     async function carregarConfiguracao() {
       try {
         const resposta = await fetch(apiPath('/api/config/publica'));
@@ -449,10 +456,6 @@
             status: p.status,
             createdAt: p.created_at
           }));
-          if (activeOrders.length > 0) {
-            const maxNum = Math.max(...activeOrders.map(o => parseInt(o.id, 10) || 40));
-            if (maxNum > orderCounter) orderCounter = maxNum;
-          }
           renderOrders();
         }
       } catch (e) {
@@ -555,7 +558,7 @@
             </div>
 
             <div class="status-badge ${order.status}">${statusLabel}</div>
-            <div class="order-summary">${order.items}</div>
+            <div class="order-summary">${escapeHtml(order.items)}</div>
 
             <!-- Miniatura do QR Code que abre o display expandido -->
             <div class="qr-strip" onclick="openQrModal('${order.id}')" title="Toque para ampliar o QR Code deste pedido">
@@ -722,6 +725,18 @@
     });
 
     document.getElementById('btn-print-qr').addEventListener('click', () => window.print());
+    // A entrada pelo KDS requer sessão; o servidor também protege as APIs.
+    fetch(apiPath('/api/auth/me'), { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('Sessão expirada')))
+      .then(user => {
+        if (user.papel === 'gerente') document.getElementById('admin-link').style.display = 'inline-flex';
+      })
+      .catch(() => window.location.replace('/login.html'));
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      try { await fetch(apiPath('/api/auth/logout'), { method: 'POST', credentials: 'same-origin' }); }
+      finally { window.location.replace('/login.html'); }
+    });
+
     // Carrega a URL configurada antes de permitir o primeiro QR.
     carregarConfiguracao().finally(() => {
       carregarPedidos();
