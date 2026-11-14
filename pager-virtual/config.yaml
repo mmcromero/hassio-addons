@@ -1,0 +1,27 @@
+name: "Pager Virtual"
+version: "0.1.0"
+slug: pager_virtual
+description: "Sistema de Pager Virtual ultraleve e em tempo real para restaurantes"
+url: "https://github.com/mmcromero/pager-virtual"
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+init: true
+stage: experimental
+timeout: 60
+ports:
+  8095/tcp: 8095
+ports_description:
+  8095/tcp: "Painel KDS e Página do Cliente (Web)"
+webui: "http://[HOST]:[PORT:8095]/kds.html"
+map:
+  - share:rw
+  - data:rw
+options:
+  port: 8095
+  log_level: info
+schema:
+  port: int
+  log_level: list(info|debug|warn|error)

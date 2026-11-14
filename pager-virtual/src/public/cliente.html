@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>Acompanhamento do seu Pedido — Burger House</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --warning: #f59e0b;
+      --warning-bg: rgba(245, 158, 11, 0.15);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.2);
+      --success-border: #059669;
+      --focus-ring: #60a5fa;
+      --font-scale: 1rem;
+    }
+
+    body.high-contrast {
+      --bg: #000000;
+      --card-bg: #121212;
+      --card-border: #ffffff;
+      --text-main: #ffffff;
+      --text-muted: #e2e8f0;
+      --primary: #93c5fd;
+      --warning: #fde047;
+      --warning-bg: #000000;
+      --success: #86efac;
+      --success-bg: #000000;
+      --success-border: #ffffff;
+      --focus-ring: #ffffff;
+    }
+
+    body.large-text {
+      --font-scale: 1.15rem;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-size: var(--font-scale);
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      transition: background-color 0.2s, color 0.2s;
+      overflow-x: hidden;
+    }
+
+    /* EFEITO VISÃO PERIFÉRICA: Iluminação nas bordas da tela em amarelo (Edge Lighting) */
+    .edge-glow-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99999;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    .edge-glow-overlay.active {
+      opacity: 1;
+      animation: edgePulseYellow 1.2s infinite ease-in-out;
+    }
+
+    @keyframes edgePulseYellow {
+      0% {
+        box-shadow: inset 0 0 30px 10px rgba(251, 191, 36, 0.5), inset 0 0 65px 20px rgba(245, 158, 11, 0.3);
+      }
+      50% {
+        box-shadow: inset 0 0 55px 18px rgba(251, 191, 36, 1), inset 0 0 100px 35px rgba(245, 158, 11, 0.7);
+      }
+      100% {
+        box-shadow: inset 0 0 30px 10px rgba(251, 191, 36, 0.5), inset 0 0 65px 20px rgba(245, 158, 11, 0.3);
+      }
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 3px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .a11y-bar {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .btn-chip {
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      border-radius: 9999px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-chip.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary-hover);
+    }
+
+    .app-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .restaurant-header {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      background: #f97316;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .restaurant-info h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .restaurant-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .order-status-card {
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .order-number-tag {
+      display: inline-block;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .order-number {
+      font-size: 3.8rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 16px;
+      letter-spacing: -0.04em;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .status-badge.preparo {
+      background: var(--warning-bg);
+      color: var(--warning);
+      border: 1px solid var(--warning);
+    }
+
+    .status-badge.pronto {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 2px solid var(--success-border);
+      animation: pulseAlert 0.9s infinite;
+    }
+
+    .status-badge.entregue {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--text-muted);
+      border: 1px solid var(--card-border);
+    }
+
+    @keyframes pulseAlert {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1.06); box-shadow: 0 0 0 16px rgba(16, 185, 129, 0); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .flash-alert {
+      background: #064e3b !important;
+      animation: bgFlash 0.7s infinite alternate;
+    }
+
+    @keyframes bgFlash {
+      from { border-color: #10b981; }
+      to { border-color: #fbbf24; }
+    }
+
+    .status-message {
+      font-size: 1.1rem;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .sub-message {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Botão Toggle de Alerta Sonoro e Vibração */
+    .sound-toggle-btn {
+      width: 100%;
+      background: #0f172a;
+      border: 2px dashed #475569;
+      color: var(--text-main);
+      padding: 14px 18px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      transition: all 0.2s;
+    }
+
+    .sound-toggle-btn.enabled {
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--success);
+      color: #6ee7b7;
+    }
+
+    .sound-toggle-btn.muted {
+      background: rgba(239, 68, 68, 0.1);
+      border: 2px solid #ef4444;
+      color: #fca5a5;
+    }
+
+    .order-details {
+      border-top: 1px solid var(--card-border);
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    .order-details h2 {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .item-list {
+      list-style: none;
+    }
+
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .item-row:last-child {
+      border-bottom: none;
+    }
+
+    .item-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding-top: 10px;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .review-box {
+      margin-top: 16px;
+      padding: 18px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .star-rating {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .star-btn {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: #fbbf24;
+      line-height: 1;
+    }
+
+    .coupon-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: #0f172a;
+      border: 1px dashed #fbbf24;
+      color: #fef08a;
+      font-weight: 700;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 1.05rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para o efeito de iluminação periférica nas laterais da tela -->
+  <div id="edge-glow" class="edge-glow-overlay" aria-hidden="true"></div>
+
+  <!-- Barra de acessibilidade rápida para o cliente -->
+  <aside class="a11y-bar" aria-label="Acessibilidade">
+    <button id="toggle-contrast" class="btn-chip" aria-pressed="false" title="Alternar modo de alto contraste">
+      Alto Contraste
+    </button>
+    <button id="toggle-font" class="btn-chip" aria-pressed="false" title="Aumentar tamanho do texto">
+      Texto A+
+    </button>
+  </aside>
+
+  <!-- Região ARIA para anúncios dinâmicos em leitores de tela -->
+  <div id="live-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+  <!-- Cartão do Pager do Cliente -->
+  <main id="app-card" class="app-card">
+    <header class="restaurant-header">
+      <div class="logo-badge" aria-hidden="true">🍔</div>
+      <div class="restaurant-info">
+        <h1>Burger House Grill</h1>
+        <p>Praça de Alimentação · Piso L2</p>
+      </div>
+    </header>
+
+    <section class="order-status-card">
+      <span class="order-number-tag">Sua Senha de Retirada</span>
+      <div class="order-number" id="order-num">#42</div>
+
+      <div id="status-badge" class="status-badge preparo">
+        <span id="status-icon" aria-hidden="true">⏳</span>
+        <span id="status-text">Em Preparo</span>
+      </div>
+
+      <p id="status-message" class="status-message">
+        Sua comida está sendo preparada com todo cuidado pelo nosso chef!
+      </p>
+
+      <p id="sub-message" class="sub-message">
+        Tempo estimado: ~8 a 10 minutos. Fique à vontade para passear!
+      </p>
+
+      <!-- Botão de Toggle: Ativa e Desativa o som e vibração a qualquer momento -->
+      <button id="btn-sound-test" class="sound-toggle-btn" aria-label="Ativar ou desativar alerta sonoro e vibração">
+        <span id="sound-icon" aria-hidden="true">🔔</span>
+        <span id="sound-label">Toque para ativar alerta sonoro e vibração</span>
+      </button>
+
+      <!-- Botão de emergência para silenciar alarme enquanto toca -->
+      <button id="btn-silence" class="btn-chip" style="display: none; margin: 0 auto 16px; background: #dc2626; color: white;" aria-label="Silenciar toque do pedido">
+        🔇 Silenciar Alarme Agora
+      </button>
+    </section>
+
+    <!-- Resumo dos itens do pedido -->
+    <section class="order-details" aria-labelledby="order-details-title">
+      <h2 id="order-details-title">Itens do Pedido</h2>
+      <ul class="item-list">
+        <li class="item-row">
+          <span>1x Classic Bacon Burger</span>
+          <strong>R$ 32,90</strong>
+        </li>
+        <li class="item-row">
+          <span>1x Batata Rústica Pequena</span>
+          <strong>R$ 11,00</strong>
+        </li>
+        <li class="item-row">
+          <span>1x Suco Natural de Laranja 500ml</span>
+          <strong>R$ 6,50</strong>
+        </li>
+      </ul>
+      <div class="item-total">
+        <span>Total Pago</span>
+        <span>R$ 50,40</span>
+      </div>
+
+      <!-- Resumo pós-entrega -->
+      <div id="delivered-section" class="review-box" style="display: none;">
+        <h3>Como estava seu lanche?</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">Sua opinião nos ajuda a melhorar!</p>
+        <div class="star-rating" role="radiogroup" aria-label="Avalie sua experiência de 1 a 5 estrelas">
+          <button class="star-btn" aria-label="1 estrela">★</button>
+          <button class="star-btn" aria-label="2 estrelas">★</button>
+          <button class="star-btn" aria-label="3 estrelas">★</button>
+          <button class="star-btn" aria-label="4 estrelas">★</button>
+          <button class="star-btn" aria-label="5 estrelas">★</button>
+        </div>
+        <p style="font-size: 0.9rem; margin-top: 10px;">Ganhe 10% de desconto na próxima visita:</p>
+        <span class="coupon-badge">BURGER10</span>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // --- IDENTIFICAÇÃO DO PEDIDO E SESSÃO (PÁGINA CASCA) ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderNumber = urlParams.get('pedido') || '42';
+    const token = urlParams.get('token') || urlParams.get('sessao') || 'demo_token';
+    const restName = urlParams.get('rest') || 'Burger House';
+
+    document.getElementById('order-num').textContent = '#' + orderNumber;
+    const restNameEl = document.querySelector('.restaurant-info h1');
+    if (restNameEl && urlParams.get('rest')) {
+      restNameEl.textContent = restName;
+    }
+
+    // Se vier itens no hash/URL, preenche dinamicamente sem requisição extra
+    const rawItens = urlParams.get('itens');
+    if (rawItens) {
+      try {
+        const itemListEl = document.querySelector('.item-list');
+        if (itemListEl) {
+          const itens = rawItens.split(',').map(i => i.trim());
+          itemListEl.innerHTML = itens.map(item => `
+            <li class="item-row">
+              <span>${item}</span>
+              <strong>Item Incluso</strong>
+            </li>
+          `).join('');
+        }
+      } catch (e) {
+        console.warn('Erro ao processar itens da URL:', e);
+      }
+    }
+
+    // --- ELEMENTOS DO DOM ---
+    const appCard = document.getElementById('app-card');
+    const edgeGlow = document.getElementById('edge-glow');
+    const statusBadge = document.getElementById('status-badge');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    const statusMessage = document.getElementById('status-message');
+    const subMessage = document.getElementById('sub-message');
+    const liveAnnouncer = document.getElementById('live-announcer');
+    const btnSoundTest = document.getElementById('btn-sound-test');
+    const soundIcon = document.getElementById('sound-icon');
+    const soundLabel = document.getElementById('sound-label');
+    const btnSilence = document.getElementById('btn-silence');
+    const deliveredSection = document.getElementById('delivered-section');
+
+    const toggleContrast = document.getElementById('toggle-contrast');
+    const toggleFont = document.getElementById('toggle-font');
+
+    // --- SÍNTESE DE ÁUDIO & VIBRAÇÃO HÁPTICA ---
+    let audioContext = null;
+    let alarmInterval = null;
+    let isSoundEnabled = false; // Controle de toggle
+    let isCurrentlyReady = false;
+
+    function getAudioContext() {
+      if (!audioContext) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioCtx();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      return audioContext;
+    }
+
+    // Executa vibração segura para dispositivos móveis
+    function triggerVibration(pattern) {
+      try {
+        if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+          navigator.vibrate(pattern);
+        }
+      } catch (e) {
+        console.warn('Vibração não suportada pelo navegador/sistema.', e);
+      }
+    }
+
+    // Sequência ágil de pager: "tu-tu-tu-tu" rápido e nítido
+    function playChime(isReadyAlert = false) {
+      if (!isSoundEnabled) return;
+      const ctx = getAudioContext();
+      if (!ctx) return;
+
+      const now = ctx.currentTime;
+      // 4 bipes rápidos e agudos (A5, B5, C#6, E6)
+      const notes = isReadyAlert ? [880, 987.77, 1108.73, 1318.51] : [880, 1108.73];
+      
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.075);
+
+        gain.gain.setValueAtTime(0.45, now + idx * 0.075);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.075 + 0.1);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.075);
+        osc.stop(now + idx * 0.075 + 0.12);
+      });
+
+      // Vibração háptica ritmada com os bipes (em aparelhos compatíveis)
+      if (isReadyAlert) {
+        triggerVibration([80, 40, 80, 40, 80, 40, 150]);
+      } else {
+        triggerVibration(120);
+      }
+    }
+
+    // Loop rápido do alarme: repete a cada 1.4 segundos (cadência de pager)
+    function startAlarmLoop() {
+      stopAlarmLoop();
+      isCurrentlyReady = true;
+
+      // Ativa efeito de visão periférica (Edge Lighting Amarelo)
+      edgeGlow.classList.add('active');
+
+      if (isSoundEnabled) {
+        playChime(true);
+        btnSilence.style.display = 'inline-block';
+      }
+
+      alarmInterval = setInterval(() => {
+        if (isCurrentlyReady) {
+          if (isSoundEnabled) {
+            playChime(true);
+          } else {
+            // Se o som estiver desativado, ainda vibra o celular e pisca
+            triggerVibration([80, 40, 80, 40, 120]);
+          }
+        }
+      }, 1400);
+    }
+
+    function stopAlarmLoop() {
+      if (alarmInterval) {
+        clearInterval(alarmInterval);
+        alarmInterval = null;
+      }
+      triggerVibration(0);
+      edgeGlow.classList.remove('active');
+      btnSilence.style.display = 'none';
+    }
+
+    // --- TOGGLE DE ATIVAÇÃO / DESATIVAÇÃO DO ALERTA ---
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+
+      if (isSoundEnabled) {
+        getAudioContext();
+        btnSoundTest.className = 'sound-toggle-btn enabled';
+        soundIcon.textContent = '🔊';
+        soundLabel.textContent = 'Alerta Sonoro Ativo (Toque para Desativar)';
+        playChime(false); // Bipe de confirmação
+        triggerVibration([100, 50, 100]); // Teste de vibração
+        liveAnnouncer.textContent = 'Alerta sonoro e vibração ativados.';
+
+        if (isCurrentlyReady) {
+          btnSilence.style.display = 'inline-block';
+          playChime(true);
+        }
+      } else {
+        btnSoundTest.className = 'sound-toggle-btn muted';
+        soundIcon.textContent = '🔇';
+        soundLabel.textContent = 'Alerta Desativado (Toque para Ativar)';
+        triggerVibration(0);
+        liveAnnouncer.textContent = 'Alerta sonoro desativado.';
+      }
+    }
+
+    btnSoundTest.addEventListener('click', toggleSound);
+
+    btnSilence.addEventListener('click', () => {
+      stopAlarmLoop();
+      appCard.classList.remove('flash-alert');
+      liveAnnouncer.textContent = 'Alarme silenciado.';
+    });
+
+    // --- TRANSIÇÕES DE ESTADO DO CLIENTE ---
+    function applyStatus(status) {
+      stopAlarmLoop();
+      appCard.classList.remove('flash-alert');
+
+      if (status === 'preparo') {
+        isCurrentlyReady = false;
+        statusBadge.className = 'status-badge preparo';
+        statusIcon.textContent = '⏳';
+        statusText.textContent = 'Em Preparo';
+        statusMessage.textContent = 'Sua comida está sendo preparada com todo cuidado pelo nosso chef!';
+        subMessage.textContent = 'Tempo estimado: ~8 a 10 minutos. Fique à vontade para passear!';
+        deliveredSection.style.display = 'none';
+        liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' em preparo. Tempo estimado de 8 a 10 minutos.';
+      } 
+      else if (status === 'pronto') {
+        statusBadge.className = 'status-badge pronto';
+        statusIcon.textContent = '🔔';
+        statusText.textContent = 'PRONTO PARA RETIRADA!';
+        statusMessage.innerHTML = '<strong>Seu pedido está no balcão de entrega!</strong>';
+        subMessage.textContent = 'Por favor, dirija-se ao Balcão 02 com a senha #' + orderNumber + '.';
+        appCard.classList.add('flash-alert');
+        deliveredSection.style.display = 'none';
+
+        startAlarmLoop();
+        liveAnnouncer.textContent = 'Atenção! Seu pedido ' + orderNumber + ' está pronto para retirada no Balcão 02!';
+      } 
+      else if (status === 'entregue') {
+        isCurrentlyReady = false;
+        statusBadge.className = 'status-badge entregue';
+        statusIcon.textContent = '✓';
+        statusText.textContent = 'Pedido Entregue';
+        statusMessage.textContent = 'Bom apetite! Esperamos que aproveite sua refeição.';
+        subMessage.textContent = 'Pedido finalizado com sucesso.';
+        deliveredSection.style.display = 'block';
+        liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' retirado com sucesso. Bom apetite!';
+      }
+    }
+
+    // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
+    function connectSSE() {
+      if (!token) return;
+      const sseUrl = `/api/pedidos/stream/${token}`;
+      const eventSource = new EventSource(sseUrl);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.status) {
+            applyStatus(data.status);
+          }
+        } catch (e) {
+          console.error('Erro ao processar evento SSE:', e);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.warn('Conexão SSE oscilou, reconectando automaticamente...', err);
+      };
+    }
+
+    connectSSE();
+
+    // Fallback local via BroadcastChannel para testes na mesma máquina
+    const localChannel = new BroadcastChannel('pager_' + token);
+    localChannel.onmessage = (event) => {
+      try {
+        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        if (data.status) {
+          applyStatus(data.status);
+        }
+      } catch (e) {}
+    };
+
+    // Acessibilidade
+    toggleContrast.addEventListener('click', () => {
+      const isHigh = document.body.classList.toggle('high-contrast');
+      toggleContrast.classList.toggle('active', isHigh);
+      toggleContrast.setAttribute('aria-pressed', isHigh);
+    });
+
+    toggleFont.addEventListener('click', () => {
+      const isLarge = document.body.classList.toggle('large-text');
+      toggleFont.classList.toggle('active', isLarge);
+      toggleFont.setAttribute('aria-pressed', isLarge);
+    });
+
+    document.querySelectorAll('.star-btn').forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.star-btn').forEach((s, idx) => {
+          s.style.opacity = idx <= index ? '1' : '0.3';
+        });
+        liveAnnouncer.textContent = `Avaliação registrada: ${index + 1} estrelas.`;
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090e17">
+  <title>KDS Cozinha & Balcão — Pager Virtual</title>
+  <style>
+    :root {
+      --bg: #090e17;
+      --card-bg: #131c2e;
+      --card-border: #23334d;
+      --text: #f1f5f9;
+      --text-muted: #8fa0bc;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --success-hover: #059669;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 20px 40px;
+    }
+
+    /* BARRA SUPERIOR DO KDS */
+    .kds-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 20px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-title h1 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-title span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .kds-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .metric-tag {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .metric-tag.active-orders {
+      color: #38bdf8;
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+
+    .metric-tag.finished {
+      color: #34d399;
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+
+    /* BOTÃO DISCRETO DE SIMULAÇÃO DE NOVO PEDIDO */
+    .btn-sim-order {
+      background: #1e293b;
+      color: #93c5fd;
+      border: 1px dashed #3b82f6;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-sim-order:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #60a5fa;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    /* GRID DE CARTÕES DE PEDIDOS */
+    .orders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 18px;
+    }
+
+    .order-card {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease-out;
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* Animação de entrada e saída dos pedidos */
+    .order-card.fade-in {
+      animation: cardEnter 0.3s ease-out;
+    }
+
+    .order-card.fade-out {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+
+    @keyframes cardEnter {
+      from { opacity: 0; transform: translateY(-12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .order-card.ready-state {
+      border-color: #10b981;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+
+    .card-id {
+      font-size: 1.8rem;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+
+    .card-meta {
+      font-size: 0.75rem;
+      background: #1e293b;
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      border-radius: 4px;
+    }
+
+    .status-badge.preparo {
+      color: #fbbf24;
+    }
+
+    .status-badge.pronto {
+      color: #34d399;
+    }
+
+    .order-summary {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      line-height: 1.45;
+      margin-bottom: 14px;
+      min-height: 48px;
+    }
+
+    /* MINIATURA DO QR CODE DO PEDIDO */
+    .qr-strip {
+      background: #ffffff;
+      padding: 8px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      transition: transform 0.15s;
+    }
+
+    .qr-strip:hover {
+      transform: scale(1.02);
+    }
+
+    .qr-thumb {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .qr-strip-text {
+      color: #0f172a;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .qr-strip-text span {
+      color: #64748b;
+      font-weight: 500;
+      display: block;
+      margin-top: 2px;
+      font-size: 0.7rem;
+    }
+
+    /* BOTÕES DE AÇÃO DO CARD */
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-action-kds {
+      flex: 1;
+      padding: 12px 10px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-call-kds {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-call-kds:hover {
+      background: var(--success-hover);
+    }
+
+    .btn-finish-kds {
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #475569;
+    }
+
+    .btn-finish-kds:hover {
+      background: #475569;
+    }
+
+    /* MODAL DE QR CODE AMPLIADO (DISPLAY DO CAIXA) */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      place-items: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+
+    .modal-backdrop.open {
+      display: grid;
+    }
+
+    .modal-box {
+      background: #1e293b;
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 24px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-qr {
+      background: #fff;
+      padding: 16px;
+      border-radius: 16px;
+      width: 220px;
+      height: 220px;
+      margin: 16px auto;
+      display: grid;
+      place-items: center;
+    }
+
+    .btn-close-modal {
+      width: 100%;
+      padding: 12px;
+      background: #334155;
+      border: none;
+      color: white;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 12px;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      border: 2px dashed var(--card-border);
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO DO KDS -->
+  <header class="kds-header">
+    <div class="brand-title">
+      <div style="font-size: 2rem;">🍳</div>
+      <div>
+        <h1>Burger House Grill · KDS</h1>
+        <span>Painel de Atendimento da Cozinha & Balcão</span>
+      </div>
+    </div>
+
+    <div class="kds-controls">
+      <div class="metric-tag active-orders">
+        <span id="active-count">3</span> Pedidos Ativos
+      </div>
+      <div class="metric-tag finished">
+        <span id="finished-count">0</span> Finalizados
+      </div>
+
+      <!-- BOTÃO DE TESTE: SIMULA ENTRADA DE NOVO PEDIDO DO PDV -->
+      <button id="btn-add-sim-order" class="btn-sim-order" title="Simula novo pedido recebido da impressora/PDV">
+        ➕ Simular Novo Pedido (PDV)
+      </button>
+    </div>
+  </header>
+
+  <!-- GRID DE CARTÕES DE PEDIDOS -->
+  <main id="orders-grid" class="orders-grid"></main>
+
+  <!-- MODAL DE QR CODE AMPLIADO (DISPLAY DO CAIXA) -->
+  <div id="qr-modal" class="modal-backdrop">
+    <div class="modal-box">
+      <h2 id="modal-title" style="font-size: 1.4rem;">Display do Caixa</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+        Aponte a câmera do celular para abrir o Pager do Cliente
+      </p>
+
+      <div class="modal-qr">
+        <div id="modal-qrcode"></div>
+      </div>
+
+      <p id="modal-link-label" style="font-size: 0.72rem; color: #94a3b8; font-family: monospace; word-break: break-all;"></p>
+      <button id="btn-close-modal" class="btn-close-modal">Fechar Display</button>
+    </div>
+  </div>
+
+  <script src="./qrcode.min.js"></script>
+  <script>
+    // --- INTEGRAÇÃO COM API REAL DO PAGER VIRTUAL & SSE ---
+    let activeOrders = [];
+    let finishedCount = 0;
+    let orderCounter = 40;
+
+    const orderPool = [
+      { cliente: 'Mesa 04', items: '1x Smash Burger Duplo, 1x Batata Rústica, 1x Coca Zero' },
+      { cliente: 'Balcão', items: '1x Classic Bacon Burger, 1x Suco de Laranja 500ml' },
+      { cliente: 'Retirada', items: '2x Cheeseburger Artesanal, 2x Fritas Crocantes' },
+      { cliente: 'Mesa 12', items: '1x Cheddar Melt Especial, 1x Onion Rings, 1x Milkshake' },
+      { cliente: 'Balcão', items: '1x Salada Caesar com Frango, 1x Água Mineral c/ Gás' },
+      { cliente: 'Retirada', items: '1x Costela BBQ Burger, 1x Batata Canoa com Cheddar' },
+      { cliente: 'Mesa 02', items: '1x Veggie Burger Grão-de-Bico, 1x Suco Verde Detox' }
+    ];
+    let poolIndex = 0;
+
+    // Busca pedidos ativos diretamente do backend SQLite
+    async function carregarPedidos() {
+      try {
+        const res = await fetch('/api/pedidos');
+        if (res.ok) {
+          const dados = await res.json();
+          activeOrders = dados.map(p => ({
+            id: String(p.numero),
+            dbId: p.id,
+            token: p.token,
+            items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Itens da comanda',
+            status: p.status,
+            createdAt: p.created_at
+          }));
+          if (activeOrders.length > 0) {
+            const maxNum = Math.max(...activeOrders.map(o => parseInt(o.id, 10) || 40));
+            if (maxNum > orderCounter) orderCounter = maxNum;
+          }
+          renderOrders();
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar pedidos da API:', e);
+      }
+    }
+
+    // Receptor SSE da Cozinha (sincronização em tempo real)
+    function conectarSseKds() {
+      const sse = new EventSource('/api/kds/stream');
+      sse.addEventListener('novo_pedido', (e) => {
+        try {
+          const p = JSON.parse(e.data);
+          const existe = activeOrders.some(o => o.dbId === p.id);
+          if (!existe) {
+            activeOrders.push({
+              id: String(p.numero),
+              dbId: p.id,
+              token: p.token,
+              items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Itens da comanda',
+              status: p.status,
+              createdAt: p.created_at
+            });
+            renderOrders();
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      sse.addEventListener('status_alterado', (e) => {
+        try {
+          const p = JSON.parse(e.data);
+          const order = activeOrders.find(o => o.dbId === p.id);
+          if (order) {
+            order.status = p.status;
+            if (p.status === 'entregue') {
+              activeOrders = activeOrders.filter(o => o.dbId !== p.id);
+              finishedCount++;
+            }
+            renderOrders();
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      });
+    }
+
+    function getClientUrl(order) {
+      const baseUrl = window.location.origin;
+      return `${baseUrl}/cliente.html?token=${order.token || 'demo'}&pedido=${order.id}&itens=${encodeURIComponent(order.items)}`;
+    }
+
+    function getElapsedText(createdAt) {
+      const minutes = Math.floor((Date.now() - createdAt) / 60000);
+      if (minutes <= 0) return 'Agora mesmo';
+      if (minutes === 1) return '1 min atrás';
+      return minutes + ' min atrás';
+    }
+
+    const grid = document.getElementById('orders-grid');
+
+    function renderOrders() {
+      grid.innerHTML = '';
+      document.getElementById('active-count').textContent = activeOrders.length;
+      document.getElementById('finished-count').textContent = finishedCount;
+
+      if (activeOrders.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">🍽️</div>
+            <h3>Cozinha em dia! Nenhum pedido pendente.</h3>
+            <p style="font-size: 0.85rem; margin-top: 6px;">
+              Clique em <strong>"➕ Simular Novo Pedido (PDV)"</strong> acima para adicionar mais pedidos.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      // Ordenação rigorosa FIFO: pedidos mais antigos (menor createdAt) sempre vêm primeiro
+      activeOrders.sort((a, b) => a.createdAt - b.createdAt);
+
+      activeOrders.forEach(order => {
+        const card = document.createElement('div');
+        card.id = 'card-' + order.id;
+        card.className = 'order-card ' + (order.status === 'pronto' ? 'ready-state' : '');
+
+        const statusLabel = order.status === 'preparo' ? '🟡 Em Preparo' : '🟢 Chamando no Celular!';
+        const timeLabel = getElapsedText(order.createdAt);
+
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Senha</div>
+                <div class="card-id">#${order.id}</div>
+              </div>
+              <div class="card-meta">${timeLabel}</div>
+            </div>
+
+            <div class="status-badge ${order.status}">${statusLabel}</div>
+            <div class="order-summary">${order.items}</div>
+
+            <!-- Miniatura do QR Code que abre o display expandido -->
+            <div class="qr-strip" onclick="openQrModal('${order.id}')" title="Toque para ampliar o QR Code deste pedido">
+              <div class="qr-thumb" id="thumb-qr-${order.id}"></div>
+              <div class="qr-strip-text">
+                📱 QR Code do Pedido #${order.id}
+                <span>Toque para ampliar display</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            ${order.status === 'preparo' ? `
+              <button class="btn-action-kds btn-call-kds" onclick="callOrder('${order.id}')">
+                🔔 Chamar Pedido!
+              </button>
+            ` : `
+              <button class="btn-action-kds btn-call-kds" onclick="callOrder('${order.id}')" title="Toca o alarme novamente">
+                🔔 Re-chamar
+              </button>
+              <button class="btn-action-kds btn-finish-kds" onclick="finishOrder('${order.id}')">
+                ✓ Finalizar & Sumir
+              </button>
+            `}
+          </div>
+        `;
+
+        grid.appendChild(card);
+
+        // Renderiza o QR Code em miniatura
+        setTimeout(() => {
+          const container = document.getElementById('thumb-qr-' + order.id);
+          if (container && !container.hasChildNodes()) {
+            new QRCode(container, {
+              text: getClientUrl(order),
+              width: 48,
+              height: 48,
+              colorDark: '#0f172a',
+              colorLight: '#ffffff',
+              correctLevel: QRCode.CorrectLevel.L
+            });
+          }
+        }, 10);
+      });
+    }
+
+    // AÇÃO: Chamar pedido (chama a API real do Pager Virtual)
+    window.callOrder = async function(orderId) {
+      const order = activeOrders.find(o => o.id === orderId);
+      if (order) {
+        order.status = 'pronto';
+        renderOrders();
+        try {
+          if (order.dbId) {
+            await fetch(`/api/pedidos/${order.dbId}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ status: 'pronto' })
+            });
+          }
+        } catch (e) {
+          console.error('Erro ao chamar pedido na API:', e);
+        }
+      }
+    };
+
+    // AÇÃO: Finalizar pedido (marca como entregue na API e remove da tela)
+    window.finishOrder = async function(orderId) {
+      const cardEl = document.getElementById('card-' + orderId);
+      if (cardEl) {
+        cardEl.classList.add('fade-out');
+      }
+
+      const order = activeOrders.find(o => o.id === orderId);
+      finishedCount++;
+
+      try {
+        if (order && order.dbId) {
+          await fetch(`/api/pedidos/${order.dbId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'entregue' })
+          });
+        }
+      } catch (e) {
+        console.error('Erro ao finalizar pedido na API:', e);
+      }
+
+      setTimeout(() => {
+        activeOrders = activeOrders.filter(o => o.id !== orderId);
+        renderOrders();
+      }, 300);
+    };
+
+    // AÇÃO: Adicionar novo pedido (cria registro real no banco SQLite via API)
+    document.getElementById('btn-add-sim-order').addEventListener('click', async () => {
+      orderCounter++;
+      const template = orderPool[poolIndex % orderPool.length];
+      poolIndex++;
+
+      try {
+        const res = await fetch('/api/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numero: orderCounter,
+            itens: template.items.split(', ')
+          })
+        });
+
+        if (res.ok) {
+          const novo = await res.json();
+          // Se o SSE não tiver adicionado ainda, adiciona
+          if (!activeOrders.some(o => o.dbId === novo.id)) {
+            activeOrders.push({
+              id: String(novo.numero),
+              dbId: novo.id,
+              token: novo.token,
+              items: template.items,
+              status: novo.status,
+              createdAt: novo.created_at
+            });
+            renderOrders();
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao criar pedido via API, inserindo em memória:', e);
+        activeOrders.push({
+          id: String(orderCounter),
+          dbId: 'sim_' + Date.now(),
+          token: 'token_' + orderCounter,
+          items: template.items,
+          status: 'preparo',
+          createdAt: Date.now()
+        });
+        renderOrders();
+      }
+    });
+
+    // Atualiza os minutos decorridos a cada 30 segundos
+    setInterval(renderOrders, 30000);
+
+    // Modal de QR Code ampliado
+    window.openQrModal = function(orderId) {
+      const order = activeOrders.find(o => o.id === orderId);
+      if (!order) return;
+
+      const modal = document.getElementById('qr-modal');
+      const title = document.getElementById('modal-title');
+      const qrContainer = document.getElementById('modal-qrcode');
+      const linkLabel = document.getElementById('modal-link-label');
+
+      title.textContent = 'Display do Caixa · Pedido #' + order.id;
+      qrContainer.innerHTML = '';
+      const url = getClientUrl(order);
+      linkLabel.textContent = url;
+
+      new QRCode(qrContainer, {
+        text: url,
+        width: 190,
+        height: 190,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      modal.classList.add('open');
+    };
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      document.getElementById('qr-modal').classList.remove('open');
+    });
+
+    // Inicia ouvindo a API e o SSE
+    carregarPedidos();
+    conectarSseKds();
+  </script>
+</body>
+</html>
