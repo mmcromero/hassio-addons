@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090e17"><title>Primeiro acesso · Bipou</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#090e17;color:#f1f5f9;padding:20px;font:16px system-ui,-apple-system,sans-serif}
+  main{width:100%;max-width:440px;background:#131c2e;border:1px solid #30435f;border-radius:20px;padding:26px}
+  h1{font-size:1.55rem;margin:0 0 10px}p{color:#bac8de;line-height:1.45}
+  label{display:block;margin:14px 0 6px;font-weight:700}input{width:100%;padding:12px;min-height:54px;background:#0b1220;color:white;border:2px solid #475569;border-radius:10px;font:inherit}
+  button{width:100%;margin-top:20px;min-height:55px;background:#3b82f6;color:white;border:0;border-radius:10px;font-size:1.06rem;font-weight:750;cursor:pointer}
+  button:disabled{opacity:.6}input:focus-visible,button:focus-visible{outline:3px solid #93c5fd;outline-offset:3px}
+  #message{color:#fca5a5;min-height:20px;margin:12px 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>🔔 Primeiro acesso ao Bipou</h1>
+  <p>Este cadastro é feito apenas uma vez. Abra os logs do add-on Pager Virtual no Home Assistant e copie o código temporário indicado como <strong>BIPOU PRIMEIRO ACESSO</strong>. Use esta página na rede local.</p>
+  <form id="setup-form">
+    <label for="codigo">Código temporário</label><input id="codigo" required maxlength="48" minlength="48" autocomplete="off" autocapitalize="none">
+    <label for="nome">Nome do administrador</label><input id="nome" required maxlength="120" autocomplete="name">
+    <label for="login">Usuário de acesso</label><input id="login" required maxlength="120" autocomplete="username" autocapitalize="none">
+    <label for="senha">Senha (mínimo 12 caracteres)</label><input id="senha" required type="password" minlength="12" maxlength="256" autocomplete="new-password">
+    <button id="save" type="submit">Criar Master Admin</button>
+    <p id="message" role="alert" aria-live="polite"></p>
+  </form>
+</main>
+<script>
+  fetch('/api/setup/status').then(r=>r.json()).then(data=>{
+    if(!data.needs_setup) location.replace('/login.html');
+  }).catch(()=>{});
+  document.getElementById('setup-form').addEventListener('submit',async event=>{
+    event.preventDefault();
+    const button=document.getElementById('save');
+    const message=document.getElementById('message');
+    button.disabled=true;message.textContent='';
+    try{
+      const response=await fetch('/api/setup/master',{
+        method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
+        body:JSON.stringify({
+          codigo:document.getElementById('codigo').value.trim(),
+          nome:document.getElementById('nome').value.trim(),
+          login:document.getElementById('login').value.trim(),
+          senha:document.getElementById('senha').value
+        })
+      });
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'Não foi possível criar o acesso');
+      location.replace('/login.html');
+    }catch(err){message.textContent=err.message;button.disabled=false;}
+  });
+</script>
+</body>
+</html>
