@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#090e17"><title>Administração · Bipou</title>
+<meta name="theme-color" content="#090e17"><title>Administração · Avisaqui</title>
 <style>
   * { box-sizing:border-box } body { margin:0;padding:18px;background:#090e17;color:#f1f5f9;font:16px system-ui,-apple-system,sans-serif }
   main { max-width:800px;margin:0 auto } header { display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid #334155;margin-bottom:20px }
@@ -17,7 +17,7 @@
 </head>
 <body>
 <main>
-<header><div><h1>🔔 Administração do Bipou</h1><span class="muted" id="identity">Carregando conta...</span></div>
+<header><div><h1>🔔 Administração do Avisaqui</h1><span class="muted" id="identity">Carregando conta...</span></div>
 <div class="row"><a class="action secondary" href="/kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
 
 <section id="master-area" hidden>
@@ -32,6 +32,7 @@
   <label for="manager-password">Senha inicial</label><input id="manager-password" type="password" minlength="12" required autocomplete="new-password">
   <button type="submit">Criar acesso do gerente</button></form></div>
   <div class="card"><h2>Restaurantes cadastrados</h2><div id="restaurants-list" class="list"></div></div>
+  <div class="card"><h2>Interessados no piloto</h2><p class="muted">Contatos enviados pelo formulário da landing page. Acesso exclusivo do Master Admin.</p><button type="button" class="secondary" id="refresh-interesses">Atualizar lista</button><p id="interesses-count" class="muted"></p><div id="interesses-list" class="list" aria-live="polite"></div></div>
 </section>
 
 <section id="manager-area" hidden>
@@ -54,6 +55,24 @@
 </main>
 <script>
   const $ = id => document.getElementById(id);
+  async function loadInteresses() {
+    const list=$('interesses-list');list.textContent='Carregando...';
+    try {
+      const data=await api('/api/admin/interesses-piloto');
+      list.replaceChildren();$('interesses-count').textContent=data.length+' contato(s) exibido(s)';
+      for (const item of data) {
+        const line=document.createElement('div');line.className='line';
+        const info=document.createElement('div');
+        const name=document.createElement('strong');name.textContent=item.nome;
+        const details=document.createElement('div');details.className='muted';
+        details.textContent=item.telefone+' · '+item.email+' · '+new Date(item.criado_em).toLocaleString('pt-BR');
+        info.append(name,details);line.append(info);list.append(line);
+      }
+      if(!data.length)list.textContent='Nenhum interessado cadastrado.';
+    }catch(e){list.textContent='Erro ao consultar contatos: '+e.message;}
+  }
+  $('refresh-interesses').addEventListener('click',loadInteresses);
+
   const message = (text, error=false) => { $('message').textContent = text; $('message').className = error ? 'status error' : 'status'; };
   async function api(url, options={}) {
     const response = await fetch(url, { credentials:'same-origin', ...options });
@@ -167,7 +186,7 @@
     try {
       const user=await api('/api/auth/me');
       $('identity').textContent=user.nome+' · '+(user.papel==='master'?'Master Admin':'Gerente');
-      if(user.papel==='master'){$('master-area').hidden=false;await loadRestaurants();}
+      if(user.papel==='master'){$('master-area').hidden=false;await loadRestaurants();await loadInteresses();}
       else if(user.papel==='gerente'){$('manager-area').hidden=false;$('go-kds').hidden=false;await loadTerminals();}
       else location.replace('/kds.html');
     }catch(e){message(e.message,true);}
