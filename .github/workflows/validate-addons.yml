@@ -68,9 +68,9 @@ jobs:
           const vm = require('vm');
           for (const name of ['kds', 'cliente']) {
             const html = fs.readFileSync('pager-virtual/src/public/' + name + '.html', 'utf8');
-            const scripts = [...html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)];
+            const scripts = html.split('<script>').slice(1).map(part => part.split('</script>')[0]);
             if (!scripts.length) throw new Error(name + ' sem script inline');
-            for (const script of scripts) new vm.Script(script[1], { filename: name + '.html' });
+            for (const script of scripts) new vm.Script(script, { filename: name + '.html' });
             console.log(name + '.html: JavaScript válido');
           }
           JS
