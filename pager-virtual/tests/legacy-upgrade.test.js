@@ -117,7 +117,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
         headers: { host: 'localhost', cookie }
       });
       assert.equal(response.statusCode, 200, response.body);
-      assert.deepEqual(response.json().map(p => [p.numero, p.token, p.status]), [
+      assert.deepEqual(response.json().map(p => [p.numero, p.token, p.status]).sort((a, b) => a[0] - b[0]), [
         [41, 'token-persistido-41', 'preparo'],
         [42, 'token-persistido-42', 'pronto']
       ]);
