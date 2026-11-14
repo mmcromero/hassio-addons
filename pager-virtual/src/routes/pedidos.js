@@ -129,6 +129,7 @@ export async function pedidosRoutes(fastify, options) {
     }
 
     // Configuração dos cabeçalhos HTTP para Server-Sent Events
+    reply.hijack();
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
     reply.raw.setHeader('Connection', 'keep-alive');
@@ -141,14 +142,20 @@ export async function pedidosRoutes(fastify, options) {
       timestamp: Date.now()
     })}\n\n`);
 
-    // Registra conexão no gerenciador SSE
+    // Registra conexão no gerenciador SSE.
     sseManager.addClient(token, reply);
+    const clientHeartbeat = setInterval(() => {
+      if (reply.raw.destroyed || reply.raw.writableEnded) clearInterval(clientHeartbeat);
+      else reply.raw.write(': ping\n\n');
+    }, 25000);
+    reply.raw.on('close', () => clearInterval(clientHeartbeat));
   });
 
   // 5. Stream SSE para o KDS (Cozinha)
   fastify.get('/api/kds/stream', (request, reply) => {
     const user = requireRestaurant(request, reply);
     if (!user) return;
+    reply.hijack();
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
     reply.raw.setHeader('Connection', 'keep-alive');
