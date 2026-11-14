@@ -48,7 +48,7 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     assert.deepEqual(await status.json(), { needs_setup: true });
     let codeMatch;
     for (let attempt = 0; attempt < 30; attempt++) {
-      codeMatch = logs.match(/BIPOU PRIMEIRO ACESSO[^\\n]*?([a-f0-9]{48})/);
+      codeMatch = logs.match(/BIPOU PRIMEIRO ACESSO.*?([a-f0-9]{48})/);
       if (codeMatch) break;
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -76,11 +76,11 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     const admin = await fetch(origin + '/admin.html', { headers: { Cookie: cookie } });
     assert.equal(admin.status, 200);
     assert.match(await admin.text(), /Administra/);
-    const kds = await fetch(origin + '/kds.html', {
+    const masterKds = await fetch(origin + '/kds.html', {
       headers: { Cookie: cookie }, redirect: 'manual'
     });
-    assert.equal(kds.status, 302);
-    assert.equal(kds.headers.get('location'), '/admin.html');
+    assert.equal(masterKds.status, 302);
+    assert.equal(masterKds.headers.get('location'), '/admin.html');
 
 
 
