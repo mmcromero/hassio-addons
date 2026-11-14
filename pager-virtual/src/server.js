@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pedidosRoutes } from './routes/pedidos.js';
+import { pushRoutes } from './push.js';
 import { authRoutes, currentUser } from './auth.js';
 import { adminRoutes } from './admin.js';
 import { setupRoutes, needsSetup } from './setup.js';
@@ -51,6 +52,7 @@ await fastify.register(setupRoutes);
 await fastify.register(authRoutes);
 await fastify.register(adminRoutes);
 await fastify.register(pedidosRoutes);
+await fastify.register(pushRoutes);
 
 
 // Configuração pública do add-on: lida no início do processo após reiniciar.
