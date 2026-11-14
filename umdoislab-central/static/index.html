@@ -20,9 +20,9 @@ h1{font-size:1.55rem;margin:0;letter-spacing:-.04em}h2{font-size:1.12rem;margin:
 <div class="top"><div><h1>Atendimentos</h1><div class="muted small">UMDOISLAB · Central de Atendimento</div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="policyOpen" class="btn">⚙ Automação</button><button id="reload" class="btn" title="Atualizar lista">↻ Atualizar</button></div></div>
 <div class="stats"><div class="stat"><strong id="pendingCount">0</strong><span>Pendentes</span></div><div class="stat"><strong id="humanCount">0</strong><span>Em atendimento</span></div><div class="stat"><strong id="doneCount">0</strong><span>Resolvidos</span></div></div>
 <div class="controls"><label><span class="small muted">Buscar cliente ou assunto</span><input id="search" type="search" placeholder="Nome, assunto ou mensagem..." autocomplete="off"></label>
-<div class="tabs" role="group" aria-label="Filtrar atendimentos"><button class="tab active" data-view="pending">Pendentes</button><button class="tab" data-view="human">Em atendimento</button><button class="tab" data-view="all">Todos</button></div></div>
+<div class="tabs" role="group" aria-label="Filtrar atendimentos"><button class="tab active" data-view="pending">Pendentes</button><button class="tab" data-view="human">Em atendimento</button><button class="tab" data-view="auto">Automáticos</button><button class="tab" data-view="all">Todos</button></div></div>
 <div class="bar"><span class="small muted" id="resultCount">Mais recentes primeiro</span><button id="filterToggle" class="plain" aria-expanded="false">⚙ Filtros ▾</button></div>
-<div id="filters" class="filters hidden"><label class="small" for="statusFilter">Situação</label><select id="statusFilter"><option value="all">Todas</option><option value="pending">Aguardando responsável</option><option value="human">Em atendimento</option><option value="done">Resolvido</option></select></div>
+<div id="filters" class="filters hidden"><label class="small" for="statusFilter">Situação</label><select id="statusFilter"><option value="all">Todas</option><option value="pending">Aguardando responsável</option><option value="human">Em atendimento</option><option value="done">Resolvido</option><option value="auto">Automático</option></select></div>
 <div class="cards" id="cards"></div>
 </section>
 <section id="policyPanel" class="hidden">
@@ -36,6 +36,16 @@ h1{font-size:1.55rem;margin:0;letter-spacing:-.04em}h2{font-size:1.12rem;margin:
 <label><input type="radio" name="policyMode" value="all"> Todos os contatos</label></div>
 <button id="policySave" class="btn primary full">Salvar modo</button>
 <p class="small muted" id="policyInfo"></p></div>
+<div class="detailbox" style="margin-top:12px">
+<h2>🔎 Verificar contato no histórico</h2>
+<p class="small muted">Digite um telefone com DDI + DDD. A consulta usa os números já registrados na Central e não envia mensagens.</p>
+<div class="row" style="display:flex;gap:8px;align-items:center">
+<input id="verifyNumber" inputmode="tel" placeholder="5511999999999" aria-label="Telefone para verificar">
+<button id="verifyContact" class="btn primary" style="flex-shrink:0">Verificar</button>
+</div>
+<p id="verifyResult" role="status" aria-live="polite" class="small"></p>
+<p class="small muted">Se aparecer “não encontrado”, isso não prova que o número nunca conversou: o histórico da Evolution pode ser incompleto.</p>
+</div>
 <div class="detailbox" style="margin-top:12px">
 <h2>Histórico da Evolution</h2><p class="small muted">O modo novos só fica disponível depois da consulta inicial ao histórico. Se a consulta não for confiável, mantenha somente testes.</p>
 <button id="syncHistory" class="btn full">Consultar histórico</button></div>
@@ -57,14 +67,14 @@ h1{font-size:1.55rem;margin:0;letter-spacing:-.04em}h2{font-size:1.12rem;margin:
 <button class="plain" id="back">← Voltar à lista</button><div class="top"><div><h1 id="dName">Contato</h1><span id="dTime" class="small muted"></span></div><span id="dStatus" class="small"></span></div>
 <div class="detailbox" style="margin-top:18px"><h2>Resumo do atendimento</h2><p id="dSummary"></p></div>
 <div class="detailbox" style="margin-top:12px"><h2>Última mensagem</h2><p id="dMessage"></p></div>
-<div class="detailbox" style="margin-top:12px"><h2>Responder pelo WhatsApp</h2><p class="small muted">A mensagem será enviada pela Evolution API após tocar em Enviar. Enviar não resolve o atendimento.</p><textarea id="replyText" maxlength="1500" placeholder="Digite sua resposta..."></textarea><button id="send" class="btn primary full" style="margin-top:9px">Enviar resposta</button></div>
+<div id="replyPanel" class="detailbox" style="margin-top:12px"><h2>Responder pelo WhatsApp</h2><p class="small muted">A mensagem será enviada pela Evolution API após tocar em Enviar. Enviar não resolve o atendimento.</p><textarea id="replyText" maxlength="1500" placeholder="Digite sua resposta..."></textarea><button id="send" class="btn primary full" style="margin-top:9px">Enviar resposta</button></div>
 <div class="actions" style="margin-top:12px"><button id="assume" class="btn">Assumir atendimento</button><button id="resolve" class="btn">Marcar como resolvido</button><button id="reopen" class="btn hidden">Reabrir atendimento</button><button id="neverAuto" class="btn">🚫 Nunca usar robô com este contato</button></div>
 <div id="notice" role="status" aria-live="polite"></div>
 </section>
 </main><script>
 const $=id=>document.getElementById(id);
 let entries=[],view="pending",selected=null,busy=false,policyBusy=false;
-const statusLabel={pending:"Aguardando responsável",human:"Em atendimento humano",done:"Resolvido"};
+const statusLabel={pending:"Aguardando responsável",human:"Em atendimento humano",done:"Resolvido",auto:"Atendimento automático"};
 function text(id,value){$(id).textContent=value??""}
 function notify(msg,ok=false){const n=$("notice");n.className=ok?"ok":"error";n.textContent=msg}
 function formatDate(s){const d=new Date(s);return isNaN(d)?"":d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}
@@ -92,7 +102,7 @@ function render(){
 }
 async function reload(){try{entries=(await api("api/conversations")).items||[];render()}catch(e){alert("Não foi possível carregar atendimentos: "+e.message)}}
 async function showDetails(sender){
-  try{selected=(await api("api/conversations/"+encodeURIComponent(sender))).item;text("dName",selected.sender_name||"Contato");text("dTime",formatDate(selected.updated_at));text("dStatus",statusLabel[selected.status]);text("dSummary",selected.summary||"Nenhum resumo registrado.");text("dMessage",selected.last_message||"Nenhuma mensagem recente.");$("replyText").value="";notify("",true);$("listPanel").classList.add("hidden");$("details").classList.remove("hidden");$("assume").classList.toggle("hidden",selected.status!=="pending");$("resolve").classList.toggle("hidden",selected.status==="done");$("reopen").classList.toggle("hidden",selected.status!=="done");window.scrollTo(0,0)}catch(e){alert(e.message)}
+  try{selected=(await api("api/conversations/"+encodeURIComponent(sender))).item;text("dName",selected.sender_name||"Contato");text("dTime",formatDate(selected.updated_at));text("dStatus",statusLabel[selected.status]);text("dSummary",selected.summary||"Nenhum resumo registrado.");text("dMessage",selected.last_message||"Nenhuma mensagem recente.");$("replyText").value="";$("replyPanel").classList.toggle("hidden",selected.status==="auto");notify("",true);$("listPanel").classList.add("hidden");$("details").classList.remove("hidden");$("assume").classList.toggle("hidden",selected.status!=="pending");$("resolve").classList.toggle("hidden",selected.status==="done"||selected.status==="auto");$("reopen").classList.toggle("hidden",selected.status!=="done");window.scrollTo(0,0)}catch(e){alert(e.message)}
 }
 function back(){$("details").classList.add("hidden");$("listPanel").classList.remove("hidden");reload()}
 function policyBack(){$("policyPanel").classList.add("hidden");$("listPanel").classList.remove("hidden");reload()}
@@ -122,6 +132,18 @@ async function savePolicy(){
  const mode=document.querySelector('input[name="policyMode"]:checked')?.value;if(!mode||policyBusy)return;
  policyBusy=true;try{await api("api/policy/mode",{method:"POST",body:JSON.stringify({mode})});await loadPolicy();policyMessage("Modo atualizado.",true)}
  catch(e){policyMessage(e.message);await loadPolicy()}finally{policyBusy=false}
+}
+async function verifyContact(){
+ const number=$("verifyNumber").value.trim();const result=$("verifyResult");
+ result.textContent="";if(!number){result.textContent="Digite um telefone.";return}
+ $("verifyContact").disabled=true;
+ try{
+  const data=await api("api/contacts/check",{method:"POST",body:JSON.stringify({number})});
+  if(!data.baselineReady)result.textContent="Histórico ainda não consultado. Não é possível classificar este contato.";
+  else if(data.known)result.textContent="✓ Número encontrado no histórico consultado.";
+  else result.textContent="Número não encontrado no histórico consultado. Isso não confirma que seja novo.";
+  if(!data.allowedNow)result.textContent+=" Atendimento automático não autorizado neste momento.";
+ }catch(e){result.textContent=e.message}finally{$("verifyContact").disabled=false}
 }
 async function syncHistory(){
  if(policyBusy)return;policyBusy=true;policyMessage("Consultando a Evolution...");
@@ -168,7 +190,7 @@ $("filterToggle").addEventListener("click",()=>{const hidden=$("filters").classL
 $("policyOpen").addEventListener("click",showPolicy);$("policyBack").addEventListener("click",policyBack);
 $("addTests").addEventListener("click",()=>addPolicyNumbers("test","testNumbers"));
 $("addExcluded").addEventListener("click",()=>addPolicyNumbers("excluded","excludeNumbers"));
-$("policySave").addEventListener("click",savePolicy);$("syncHistory").addEventListener("click",syncHistory);
+$("policySave").addEventListener("click",savePolicy);$("verifyContact").addEventListener("click",verifyContact);$("syncHistory").addEventListener("click",syncHistory);
 $("reload").addEventListener("click",reload);$("back").addEventListener("click",back);
 $("assume").addEventListener("click",()=>action("assume"));$("resolve").addEventListener("click",()=>action("resolve"));$("reopen").addEventListener("click",()=>action("reopen"));$("send").addEventListener("click",send);$("neverAuto").addEventListener("click",neverAuto);
 reload();

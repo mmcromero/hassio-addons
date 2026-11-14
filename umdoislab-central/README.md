@@ -210,3 +210,28 @@ credencial **Central Umdoislab** também no nó `Consultar contexto na Central`
 e manter **Gemini — Umdoislab** no nó Gemini; conservar o webhook
 `/webhook/umdoislab-v15`. Não ativar duas cópias com o mesmo caminho de webhook.
 Fazer um teste com o número autorizado antes de ampliar a política.
+
+## Central 0.3.1 — Verificação de contatos e conversas automáticas
+Na aba **Automação**, o verificador busca o número na referência local dos
+contatos/chats já consultados pela Evolution. Não solicita exportação e não
+envia mensagem. "Não encontrado" NÃO significa "contato novo" com certeza:
+o histórico pode estar incompleto.
+
+Na tela **Atendimentos**, a aba **Automáticos** exibe conversas atendidas pelo
+Gemini, usando registros gravados pela Central 0.3.0. Essas conversas não viram
+pendência humana automaticamente; **Pendentes** mostra somente solicitações
+que exigem ação humana. Uma conversa automática não pode ser respondida
+manualmente pela ficha de pendências, mas pode ser adicionada à lista
+"Nunca usar robô" na sua própria ficha.
+
+### Prioridades para a próxima sessão
+1. **Catálogo WooCommerce:** preferir sincronização autenticada e limitada pela
+   API do WooCommerce para produtos/preços/estoque atualizados; CSV é
+   alternativa provisória. Validar permissões, cache e tratamento de dados
+   antes de permitir que o assistente confirme valores.
+2. **Encaminhamento humano real:** quando o Gemini oferecer atendimento por
+   uma pessoa e o cliente aceitar, criar uma pendência na Central e parar o
+   robô até resolução/retomada; testar com conversas reais.
+3. Homologar a memória de contexto e o tratamento de linguagem informal com
+   variações de mensagens reais; conferir o desempenho antes de ampliar
+   o grupo de teste.

@@ -286,6 +286,25 @@ class CentralTests(unittest.TestCase):
         self.assertEqual(result["action"],"handoff")
         self.assertEqual(self.mod.routing_decision("umdoislab",sender)["state"],"pending")
 
+    def test_auto_conversation_does_not_create_human_ticket(self):
+        result=self.mod.process_inbound(self.event(handoffRequested=False))
+        self.assertEqual(result["action"],"auto")
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM conversations").fetchone()[0],0)
+            self.assertEqual(db.execute("SELECT count(*) FROM conversation_turns").fetchone()[0],1)
+
+    def test_contact_verifier_baseline(self):
+        known="5511999999999@s.whatsapp.net"
+        unknown="5511888888888@s.whatsapp.net"
+        with self.mod.connect() as db:
+            self.assertFalse(self.mod.get_policy(db)["baseline_ready"])
+            db.execute("INSERT INTO known_contacts VALUES(?)",(known,))
+            db.execute("INSERT INTO policy_settings VALUES('baseline_ready','1')")
+            self.assertTrue(self.mod.get_policy(db)["baseline_ready"])
+            self.assertTrue(bool(db.execute("SELECT 1 FROM known_contacts WHERE sender_id=?",(known,)).fetchone()))
+            self.assertFalse(bool(db.execute("SELECT 1 FROM known_contacts WHERE sender_id=?",(unknown,)).fetchone()))
+        self.assertIsNone(self.mod.canonical_number("abc@g.us"))
+
     def test_context_records_each_client_turn_once(self):
         sender="5511999999999@s.whatsapp.net"
         first=self.mod.process_inbound(self.event(messageText="Dichavador dos Simpsons",handoffRequested=False))

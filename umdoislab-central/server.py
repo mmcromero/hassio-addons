@@ -434,6 +434,9 @@ class Handler(BaseHTTPRequestHandler):
                 policy["excluded"] = [r[0] for r in db.execute(
                     "SELECT sender_id FROM contact_rules WHERE category='excluded' ORDER BY sender_id")]
             return self.respond(200, policy)
+        if self.path == "/api/contacts/check":
+            # Verificação é POST, nunca via URL, para não expor telefone em logs.
+            return self.respond(405, {"error": "Use POST"})
         if self.path == "/api/conversations":
             with connect() as db:
                 # Nunca ocultar pendências por causa de muitos atendimentos resolvidos.
@@ -444,14 +447,39 @@ class Handler(BaseHTTPRequestHandler):
                        updated_at,created_at,last_reply_at FROM conversations
                        WHERE status = 'done' ORDER BY updated_at DESC LIMIT 50""").fetchall()
                 rows = sorted([*active, *resolved], key=lambda item: item["updated_at"], reverse=True)
-            return self.respond(200, {"items": [dict(r) for r in rows]})
+            items = [dict(r) for r in rows]
+            tickets = {r["sender_id"] for r in rows}
+            with connect() as db:
+                activity = db.execute("""SELECT sender_id,MAX(created_at) AS updated_at
+                    FROM conversation_turns GROUP BY sender_id
+                    ORDER BY updated_at DESC LIMIT 200""").fetchall()
+                for activity_row in activity:
+                    sender = activity_row["sender_id"]
+                    if sender in tickets:
+                        continue
+                    last = db.execute("""SELECT text FROM conversation_turns WHERE sender_id=?
+                        ORDER BY created_at DESC,rowid DESC LIMIT 1""",(sender,)).fetchone()
+                    items.append({"sender_id":sender,"sender_name":sender.split("@")[0],
+                                  "subject":"Conversa automática","summary":"Conversa atendida pelo assistente",
+                                  "last_message":last["text"] if last else "",
+                                  "status":"auto","updated_at":activity_row["updated_at"]})
+            return self.respond(200, {"items": sorted(items,key=lambda x:x["updated_at"],reverse=True)})
         if self.path.startswith("/api/conversations/"):
             sender = self.path.removeprefix("/api/conversations/")
             from urllib.parse import unquote
             sender = unquote(sender)
             with connect() as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
-            return self.respond(200, {"item": dict(row)}) if row else self.respond(404, {"error": "Não encontrado"})
+            if row:
+                return self.respond(200, {"item":dict(row)})
+            with connect() as db:
+                activity = db.execute("""SELECT text,created_at FROM conversation_turns
+                    WHERE sender_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1""",(sender,)).fetchone()
+            if activity:
+                return self.respond(200, {"item":{"sender_id":sender,"sender_name":sender.split("@")[0],
+                    "subject":"Conversa automática","summary":"Sem solicitação de atendimento humano.",
+                    "last_message":activity["text"],"status":"auto","updated_at":activity["created_at"]}})
+            return self.respond(404, {"error": "Não encontrado"})
         return self.respond(404, {"error": "Não encontrado"})
 
     def send_automated(self, data):
@@ -555,6 +583,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def do_POST(self):
+        if self.path == "/api/contacts/check":
+            if not self.ingress() or self.headers.get("X-Requested-With") != "UmdoislabCentral":
+                return self.respond(403, {"error":"Acesso negado"})
+            request = self.read_json()
+            if not isinstance(request,dict):
+                return self.respond(400, {"error":"JSON inválido"})
+            sender = canonical_number(request.get("number"))
+            if not sender:
+                return self.respond(422, {"error":"Número inválido; informe DDI, DDD e telefone"})
+            with LOCK, connect() as db:
+                policy = get_policy(db)
+                known = bool(db.execute("SELECT 1 FROM known_contacts WHERE sender_id=?",(sender,)).fetchone())
+                permission = contact_policy(db,sender)
+            return self.respond(200, {"number":sender.split("@")[0],"baselineReady":policy["baseline_ready"],
+                "known":known if policy["baseline_ready"] else None,
+                "allowedNow":permission["allowed"],"reason":permission["reason"]})
         if self.path == "/bridge/context":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
