@@ -7,6 +7,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
+- Após a migração, gerente de restaurante preservado consegue entrar e consultar os pedidos antigos ainda ativos; pedido entregue permanece armazenado sem reaparecer no KDS. Teste integrado aprovado.
 - Migração aditiva do SQLite 0.1.3 validada em CI: preservados integralmente restaurante, pedidos (em preparo/pronto/entregue), números, tokens, datas e status; novas tabelas de usuários e sessões criadas sem credenciais padrão. Sem execução sobre o banco real do Raspberry Pi.
 
 - Teste de configuração `PUBLIC_URL=https://...` aprovado: login HTTP local sem `Secure`, login pela origem HTTPS declarada com cookie `Secure`, e rejeição de origem externa. Teste automatizado, sem validação do proxy real.
