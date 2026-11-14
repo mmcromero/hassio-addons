@@ -162,11 +162,14 @@ export async function pedidosRoutes(fastify, options) {
     reply.raw.setHeader('Access-Control-Allow-Origin', '*');
 
     reply.raw.write(`event: conectado\ndata: ${JSON.stringify({ ok: true })}\n\n`);
-    sseManager.addKds(user.restaurante_id, reply);
+    const isAuthorized = () => {
+      const current = currentUser(request);
+      return current?.id === user.id && current.restaurante_id === user.restaurante_id;
+    };
+    sseManager.addKds(user.restaurante_id, reply, isAuthorized);
     // Sessões encerradas, revogadas ou expiradas não conservam um canal SSE aberto.
     const heartbeat = setInterval(() => {
-      const current = currentUser(request);
-      if (!current || current.id !== user.id || current.restaurante_id !== user.restaurante_id) {
+      if (!isAuthorized()) {
         clearInterval(heartbeat);
         reply.raw.end();
       } else {
