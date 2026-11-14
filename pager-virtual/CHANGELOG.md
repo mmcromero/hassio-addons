@@ -5,6 +5,13 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.10] — 14/11/2026 — entrada pela landing page
+
+- Corrigido o botão **Abrir página web** do Home Assistant para acessar `/`, em vez de `/kds.html`.
+- Visitantes sem sessão válida são direcionados à landing `/landing.html`; usuários autenticados continuam com o direcionamento por perfil.
+- Sem alterações no banco de dados, slug, porta ou rotas de autenticação.
+
+
 ## [0.1.8] — 14/11/2026 — cadastro rápido e WhatsApp manual
 
 - Cadastro manual com nome e WhatsApp opcionais.
