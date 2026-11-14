@@ -194,12 +194,18 @@ def init():
         db.execute("""CREATE TABLE IF NOT EXISTS known_contacts(
             sender_id TEXT PRIMARY KEY
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS handoff_offers(
+            sender_id TEXT PRIMARY KEY,
+            message_id TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
 
 
 # Textos de protocolo: não permitir que o n8n substitua essas mensagens.
 CHOICE_PROMPT = ("Ainda não conseguimos iniciar o atendimento pessoal. "
                  "Você prefere aguardar ou quer continuar com o atendimento automático? "
                  "Responda 1 para aguardar ou 2 para continuar.")
+HUMAN_OFFER_PROMPT = "Quer que eu encaminhe sua dúvida para um atendente? Responda SIM ou NÃO."
 HANDOFF_PROMPT = ("Não consegui resolver sua solicitação agora. "
                   "Vou encaminhar seu atendimento para uma pessoa da Umdoislab. "
                   "Assim que possível, alguém entra em contato. 😊")
@@ -227,6 +233,15 @@ def classify_choice(message):
                "tudo bem", "beleza", "certo", "entendi", "ta bom", "valeu"):
         return "ack"
     return "other"
+
+
+def is_handoff_yes(message):
+    """Aceita apenas confirmação explícita de uma oferta anterior registrada."""
+    return normalized(message).strip(" .!?") in ("sim", "s", "pode", "pode sim", "quero", "por favor", "sim por favor")
+
+
+def is_handoff_no(message):
+    return normalized(message).strip(" .!?") in ("nao", "n", "nao obrigado", "nao obrigada", "prefiro nao")
 
 
 def valid_event(ev):
@@ -263,6 +278,26 @@ def process_inbound(ev):
         if seen:
             return {"action": "ignore", "state": "duplicate", "messageId": mid}
         old = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        offer = db.execute("SELECT message_id,created_at FROM handoff_offers WHERE sender_id=?", (sender,)).fetchone()
+        if offer:
+            # Oferta só vale para a próxima mensagem, até duas horas depois; não
+            # transforma 'sim' genérico de conversas futuras em encaminhamento.
+            from datetime import timedelta
+            try:
+                age = datetime.now(timezone.utc) - datetime.fromisoformat(offer["created_at"])
+                valid_offer = timedelta(0) <= age <= timedelta(hours=2)
+            except (ValueError, TypeError):
+                valid_offer = False
+            confirmed_offer = valid_offer and is_handoff_yes(message)
+            handoff = handoff or confirmed_offer
+            if confirmed_offer:
+                previous = db.execute("""SELECT text FROM conversation_turns
+                    WHERE sender_id=? AND role='client'
+                    ORDER BY rowid DESC LIMIT 1""", (sender,)).fetchone()
+                subject = "atendimento"
+                summary = ("Cliente confirmou atendimento humano. Dúvida anterior: "
+                           + previous["text"][:280]) if previous else "Cliente confirmou atendimento humano"
+            db.execute("DELETE FROM handoff_offers WHERE sender_id=?", (sender,))
         guard = db.execute("SELECT fallback_count FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
         # Two vague requests in sequence become a human handoff, not a generic answer loop.
         if old is None and not handoff and subject == "outros" and guard and guard["fallback_count"] >= 1:
@@ -462,7 +497,7 @@ class Handler(BaseHTTPRequestHandler):
         kind = data.get("kind", "normal")
         if not all(isinstance(x, str) for x in (sender, instance, message_id)):
             return self.respond(422, {"error": "Campos obrigatórios ausentes"})
-        if kind not in ("normal", "fallback", "handoff", "choice"):
+        if kind not in ("normal", "fallback", "handoff", "choice", "human_offer"):
             return self.respond(422, {"error": "Tipo de envio inválido"})
         if not 1 <= len(message_id) <= 160:
             return self.respond(422, {"error": "messageId inválido"})
@@ -476,10 +511,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(503, {"error": "Evolution API não configurada"})
         if instance != configured_instance:
             return self.respond(422, {"error": "Instância inválida"})
-        message = CHOICE_PROMPT if kind == "choice" else HANDOFF_PROMPT if kind == "handoff" else data.get("text")
+        message = (CHOICE_PROMPT if kind == "choice" else
+                   HANDOFF_PROMPT if kind == "handoff" else
+                   HUMAN_OFFER_PROMPT if kind == "human_offer" else data.get("text"))
         if not isinstance(message, str) or not 0 < len(message.strip()) <= 1500:
             return self.respond(422, {"error": "Texto inválido"})
         message = message.strip()
+        if kind in ("normal", "fallback"):
+            normalized_out = normalized(message)
+            # Gemini nunca pode confirmar operação que o backend não registrou.
+            if re.search(r"\b(encaminhei|foi encaminhad[oa]|ja encaminh|avisei (um |o )?colega|colega (ja )?recebeu)\b", normalized_out):
+                return self.respond(422, {"error": "Confirmação de encaminhamento sem registro bloqueada"})
+            if (("encaminh" in normalized_out or "atendente" in normalized_out or "colega" in normalized_out)
+                    and ("quer" in normalized_out or "posso" in normalized_out or "pode" in normalized_out)):
+                return self.respond(422, {"error": "Oferta de atendimento deve usar tipo human_offer"})
         delivery_key = "auto-" + hashlib.sha256(
             (sender + "|" + message_id + "|" + kind).encode()).hexdigest()
         with LOCK:
@@ -490,7 +535,10 @@ class Handler(BaseHTTPRequestHandler):
                 # Exclusão e modo de autorização valem também para mensagens protocolares.
                 if not contact_policy(db, sender)["allowed"]:
                     return self.respond(403, {"error": "Contato bloqueado pela política da Central"})
-                if kind == "choice":
+                if kind == "human_offer":
+                    allowed = decision is not None and decision["allowAutoReply"] and (
+                        row is None or row["status"] == "done")
+                elif kind == "choice":
                     allowed = bool(row and row["status"] == "pending"
                         and row["choice_state"] == "offered"
                         and row["choice_message_id"] == message_id)
@@ -535,6 +583,14 @@ class Handler(BaseHTTPRequestHandler):
                     db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
                                   VALUES(?,?,?,?,?)""",(sender,delivery_key,"assistant",message[:1500],now()))
 
+                    if kind == "human_offer":
+                        db.execute("""INSERT INTO handoff_offers(sender_id,message_id,created_at)
+                                      VALUES(?,?,?)
+                                      ON CONFLICT(sender_id) DO UPDATE SET
+                                      message_id=excluded.message_id,created_at=excluded.created_at""",
+                                   (sender,message_id,now()))
+                    if kind == "handoff":
+                        db.execute("DELETE FROM handoff_offers WHERE sender_id=?", (sender,))
                     if kind in ("normal", "fallback"):
                         db.execute("""INSERT INTO bot_guard(sender_id,last_text,fallback_count,updated_at)
                                       VALUES(?,?,?,?)
