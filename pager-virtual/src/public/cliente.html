@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.webmanifest">
   <title>Acompanhamento do seu Pedido — Burger House</title>
   <style>
     :root {
@@ -419,6 +420,11 @@
         <span id="sound-label">Toque para ativar alerta sonoro e vibração</span>
       </button>
 
+      <section id="push-guide" hidden aria-live="polite" style="border:1px solid #64748b;border-radius:12px;padding:12px;margin-top:14px;text-align:left;background:#162238;">
+        <p id="push-message" style="line-height:1.5;font-size:.9rem"></p>
+        <button id="push-enable" type="button" hidden style="margin-top:10px;padding:10px 14px;border:0;border-radius:9px;background:#fbbf24;color:#111827;font-weight:700;cursor:pointer;">Ativar notificações</button>
+      </section>
+
       <!-- Botão de emergência para silenciar alarme enquanto toca -->
       <button id="btn-silence" class="btn-chip" style="display: none; margin: 0 auto 16px; background: #dc2626; color: white;" aria-label="Silenciar toque do pedido">
         🔇 Silenciar Alarme Agora
@@ -718,6 +724,93 @@
         console.warn('Conexão SSE oscilou, reconectando automaticamente...', err);
       };
     }
+
+    // Avisos do sistema complementam o SSE: só solicitamos permissão após toque.
+    const pushGuide = document.getElementById('push-guide');
+    const pushMessage = document.getElementById('push-message');
+    const pushEnable = document.getElementById('push-enable');
+    const iosDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    const pushAvailable = window.isSecureContext && 'serviceWorker' in navigator &&
+      'PushManager' in window && 'Notification' in window;
+    let pushKey = null;
+    let pushRegistration = null;
+
+    function showPushGuide(message, allowButton = false) {
+      pushMessage.textContent = message;
+      pushEnable.hidden = !allowButton;
+      pushGuide.hidden = false;
+    }
+
+    function decodeVapidKey(value) {
+      const padding = '='.repeat((4 - value.length % 4) % 4);
+      const bytes = atob((value + padding).replace(/-/g, '+').replace(/_/g, '/'));
+      return Uint8Array.from(bytes, c => c.charCodeAt(0));
+    }
+
+    async function registerPushSubscription() {
+      if (!token || !pushRegistration || !pushKey || Notification.permission !== 'granted') return false;
+      const sub = await pushRegistration.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: decodeVapidKey(pushKey)
+      });
+      const result = await fetch('/api/push/assinaturas/' + encodeURIComponent(token), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub.toJSON())
+      });
+      if (!result.ok) throw new Error('Registro de notificação falhou');
+      pushGuide.hidden = true; // Experiência pronta: não mostrar instruções desnecessárias.
+      return true;
+    }
+
+    async function initPush() {
+      if (!token || isCurrentlyReady) return;
+      const keepOpen = 'Mantenha esta tela aberta e ativa enquanto espera seu pedido para não perder o aviso.';
+      if (iosDevice && !standalone) {
+        showPushGuide('No iPhone, avisos em segundo plano exigem adicionar o Bipou à Tela de Início e permitir notificações. ' + keepOpen);
+        return;
+      }
+      if (!pushAvailable) {
+        showPushGuide('Este navegador ou esta conexão não oferece avisos em segundo plano para o Bipou. ' + keepOpen);
+        return;
+      }
+      if (Notification.permission === 'denied') {
+        showPushGuide('As notificações estão bloqueadas no navegador. Libere nas configurações ou ' + keepOpen.toLowerCase());
+        return;
+      }
+      try {
+        const config = await fetch('/api/push/public-key').then(r => r.json());
+        if (!config.enabled || !config.publicKey) throw new Error('Push não configurado');
+        pushKey = config.publicKey;
+        pushRegistration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+        if (Notification.permission === 'granted') {
+          await registerPushSubscription();
+        } else {
+          showPushGuide('Quer usar outros aplicativos enquanto espera? Ative as notificações do Bipou para receber avisos em segundo plano. O som depende das configurações do aparelho.', true);
+        }
+      } catch (error) {
+        console.warn('[PUSH] Indisponível', error);
+        showPushGuide('Não foi possível ativar avisos em segundo plano neste aparelho. ' + keepOpen);
+      }
+    }
+
+    pushEnable.addEventListener('click', async () => {
+      pushEnable.disabled = true;
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          await registerPushSubscription();
+        } else {
+          showPushGuide('As notificações não foram permitidas. Mantenha esta tela aberta e ativa enquanto aguarda seu pedido.');
+        }
+      } catch {
+        showPushGuide('Não foi possível ativar as notificações. Mantenha esta tela aberta e ativa enquanto aguarda seu pedido.');
+      } finally {
+        pushEnable.disabled = false;
+      }
+    });
+
+    void initPush();
 
     connectSSE();
 
