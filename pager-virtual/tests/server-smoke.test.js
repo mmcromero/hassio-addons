@@ -64,6 +64,16 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     });
     const forbidden = await post('/api/setup/master', registration, 'http://outro-host.example');
     assert.equal(forbidden.status, 403);
+    const spoof = await fetch(origin + '/api/setup/master', {
+      method: 'POST',
+      headers: {
+        Host: 'site-publico.example', Origin: 'http://site-publico.example',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(registration)
+    });
+    assert.equal(spoof.status, 403);
+
     const created = await post('/api/setup/master', registration);
     assert.equal(created.status, 201, await created.text());
     const repeated = await post('/api/setup/master', registration);
