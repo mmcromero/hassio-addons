@@ -5,6 +5,16 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.8] — 14/11/2026 — cadastro rápido e WhatsApp manual
+
+- Cadastro manual com nome e WhatsApp opcionais.
+- Numeração automática persistente, com próximo número configurável pelo gerente quando não houver pedidos ativos.
+- Proteção SQLite contra número duplicado ativo no restaurante e transição de pedido entregue de volta para ativo.
+- Compartilhamento manual de acompanhamento e aviso de retirada pelo WhatsApp; o funcionário confirma o envio.
+- Dados opcionais de nome e telefone são apagados ao marcar pedido entregue.
+- Testes de duplicidade, sequência, concorrência, migração aditiva e restauração.
+- Instalação e atualização do add-on exigem backup e validação no Home Assistant real.
+
 ## [0.1.7] — 14/11/2026 — acesso contextual do Master Admin
 
 - Botão **Entrar no restaurante** em cada estabelecimento ativo no painel do Master Admin.
