@@ -7,6 +7,8 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
+- Migração aditiva do SQLite 0.1.3 validada em CI: preservados integralmente restaurante, pedidos (em preparo/pronto/entregue), números, tokens, datas e status; novas tabelas de usuários e sessões criadas sem credenciais padrão. Sem execução sobre o banco real do Raspberry Pi.
+
 - Teste de configuração `PUBLIC_URL=https://...` aprovado: login HTTP local sem `Secure`, login pela origem HTTPS declarada com cookie `Secure`, e rejeição de origem externa. Teste automatizado, sem validação do proxy real.
 
 - Teste integrado com servidor real aprovado no GitHub Actions: dois restaurantes, Master Admin, gerentes, terminais, criação e alteração de pedidos, bloqueio cruzado e revogação de sessão. Sem homologação no Home Assistant.
