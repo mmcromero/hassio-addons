@@ -286,6 +286,27 @@ class CentralTests(unittest.TestCase):
         self.assertEqual(result["action"],"handoff")
         self.assertEqual(self.mod.routing_decision("umdoislab",sender)["state"],"pending")
 
+    def test_context_records_each_client_turn_once(self):
+        sender="5511999999999@s.whatsapp.net"
+        first=self.mod.process_inbound(self.event(messageText="Dichavador dos Simpsons",handoffRequested=False))
+        self.assertEqual(first["action"],"auto")
+        again=self.mod.process_inbound(self.event(messageText="repetida",handoffRequested=False))
+        self.assertEqual(again["action"],"ignore")
+        next_msg=self.mod.process_inbound(self.event(messageId="m2",messageText="Preço?",handoffRequested=False))
+        self.assertEqual(next_msg["action"],"auto")
+        with self.mod.connect() as db:
+            rows=db.execute("SELECT role,text FROM conversation_turns WHERE sender_id=? ORDER BY rowid",(sender,)).fetchall()
+        self.assertEqual([r["text"] for r in rows],["Dichavador dos Simpsons","Preço?"])
+        self.assertEqual([r["role"] for r in rows],["client","client"])
+
+    def test_excluded_contacts_do_not_enter_context(self):
+        sender="5511999999999@s.whatsapp.net"
+        self.mod.update_contacts("excluded",[sender])
+        result=self.mod.process_inbound(self.event())
+        self.assertEqual(result["action"],"ignore")
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM conversation_turns").fetchone()[0],0)
+
     def test_canonical_number_and_duplicate_labels(self):
         target = "5511999999999@s.whatsapp.net"
         self.assertEqual(self.mod.canonical_number("+55 (11) 99999-9999"), target)

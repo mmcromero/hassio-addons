@@ -190,3 +190,23 @@ Considerar uma ficha de clientes alimentada pelo histórico do WhatsApp com
 informações adicionais opcionais e controle de privacidade. Não implementar
 nesta demanda, nem ampliar acesso às mensagens de contatos sem consentimento
 e avaliação da finalidade.
+
+
+## Atendimento contextual Gemini — Central 0.3.0 / workflow v1.6
+
+A Central armazena mensagens de entrada autorizadas e respostas automáticas aceitas,
+isoladas pelo destinatário. O endpoint autenticado `POST /bridge/context` expõe no
+máximo 12 falas do mesmo contato; não permite acesso ao histórico de outros contatos.
+O n8n v1.6 passa a buscar esse contexto antes do Gemini produzir uma resposta
+natural. A resposta é limitada e revisada por validações antes de atravessar
+`/bridge/send-auto`, que continua controlando permissões, exclusões, estado
+humano e deduplicação. Valores comerciais não são consultados e não devem ser
+inventados. Sem histórico persistido, o modelo usa a mensagem atual.
+A primeira resposta de mensagens anteriormente enviadas não é reconstruída.
+
+**Publicação:** atualizar Central para 0.3.0 e depois atualizar o n8n com o arquivo
+`n8n/atendimento-v1.5-whatsapp-real.json` (nome interno v1.6). Selecionar
+credencial **Central Umdoislab** também no nó `Consultar contexto na Central`
+e manter **Gemini — Umdoislab** no nó Gemini; conservar o webhook
+`/webhook/umdoislab-v15`. Não ativar duas cópias com o mesmo caminho de webhook.
+Fazer um teste com o número autorizado antes de ampliar a política.

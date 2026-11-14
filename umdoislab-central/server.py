@@ -176,6 +176,14 @@ def init():
             sender_id TEXT PRIMARY KEY,last_text TEXT NOT NULL DEFAULT '',
             fallback_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS conversation_turns(
+            sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('client','assistant')),
+            text TEXT NOT NULL, created_at TEXT NOT NULL,
+            PRIMARY KEY(sender_id,message_id,role)
+        )""")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_turns_sender_time ON conversation_turns(sender_id,created_at)")
+
         db.execute("""CREATE TABLE IF NOT EXISTS policy_settings(
             key TEXT PRIMARY KEY,value TEXT NOT NULL
         )""")
@@ -308,6 +316,10 @@ def process_inbound(ev):
                        (name,subject,summary or old["summary"],message,mid,ts,sender))
         db.execute("INSERT INTO inbound_ids(sender_id,message_id,created_at) VALUES(?,?,?)",
                    (sender,mid,ts))
+        if message.strip():
+            db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
+                          VALUES(?,?,?,?,?)""",(sender,mid,"client",message,ts))
+
     return {"action": action, "state": routing_decision("umdoislab",sender)["state"],
             "messageId": mid, "senderId": sender, "instance": "umdoislab"}
 
@@ -520,6 +532,9 @@ class Handler(BaseHTTPRequestHandler):
                         raise ValueError("Evolution rejected request")
                 with connect() as db:
                     db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (delivery_key,))
+                    db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
+                                  VALUES(?,?,?,?,?)""",(sender,delivery_key,"assistant",message[:1500],now()))
+
                     if kind in ("normal", "fallback"):
                         db.execute("""INSERT INTO bot_guard(sender_id,last_text,fallback_count,updated_at)
                                       VALUES(?,?,?,?)
@@ -540,6 +555,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def do_POST(self):
+        if self.path == "/bridge/context":
+            if not self.bridge():
+                return self.respond(403, {"error": "Acesso negado"})
+            payload = self.read_json()
+            if not isinstance(payload,dict):
+                return self.respond(400, {"error": "JSON inválido"})
+            sender = payload.get("senderId")
+            message_id = payload.get("messageId")
+            if not valid_sender_for_send(str(sender or "")) or not isinstance(message_id,str):
+                return self.respond(422, {"error": "Identificador inválido"})
+            with LOCK, connect() as db:
+                current = db.execute("""SELECT 1 FROM inbound_ids
+                                        WHERE sender_id=? AND message_id=?""",
+                                     (sender,message_id)).fetchone()
+                policy = contact_policy(db,sender)
+                if not current or not policy["allowed"]:
+                    return self.respond(403, {"error": "Mensagem não autorizada"})
+                # Apenas as últimas 12 falas, e nunca dados de outro contato.
+                turns = db.execute("""SELECT role,text FROM conversation_turns
+                    WHERE sender_id=? ORDER BY created_at DESC, rowid DESC LIMIT 12""",(sender,)).fetchall()
+            return self.respond(200, {"turns":[dict(t) for t in reversed(turns)]})
         if self.path in ("/api/policy/mode", "/api/policy/contacts", "/api/policy/remove", "/api/policy/baseline"):
             if not self.ingress() or self.headers.get("X-Requested-With") != "UmdoislabCentral":
                 return self.respond(403, {"error": "Acesso negado"})
