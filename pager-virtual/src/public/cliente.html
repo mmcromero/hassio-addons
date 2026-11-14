@@ -474,7 +474,6 @@
     const soundIcon = document.getElementById('sound-icon');
     const soundLabel = document.getElementById('sound-label');
     const btnSilence = document.getElementById('btn-silence');
-    const deliveredSection = document.getElementById('delivered-section');
 
     const toggleContrast = document.getElementById('toggle-contrast');
     const toggleFont = document.getElementById('toggle-font');
@@ -652,25 +651,6 @@
         }
       }
     }
-        btnSoundTest.className = 'sound-toggle-btn enabled';
-        soundIcon.textContent = '🔊';
-        soundLabel.textContent = 'Alerta Sonoro Ativo (Toque para Desativar)';
-        playChime(false); // Bipe de confirmação
-        triggerVibration([100, 50, 100]); // Teste de vibração
-        liveAnnouncer.textContent = 'Alerta sonoro e vibração ativados.';
-
-        if (isCurrentlyReady) {
-          btnSilence.style.display = 'inline-block';
-          playChime(true);
-        }
-      } else {
-        btnSoundTest.className = 'sound-toggle-btn muted';
-        soundIcon.textContent = '🔇';
-        soundLabel.textContent = 'Alerta Desativado (Toque para Ativar)';
-        triggerVibration(0);
-        liveAnnouncer.textContent = 'Alerta sonoro desativado.';
-      }
-    }
 
     btnSoundTest.addEventListener('click', toggleSound);
 
@@ -692,7 +672,6 @@
         statusText.textContent = 'Em Preparo';
         statusMessage.textContent = 'Sua comida está sendo preparada com todo cuidado pelo nosso chef!';
         subMessage.textContent = 'Você receberá um aviso quando o pedido estiver pronto.';
-        deliveredSection.style.display = 'none';
         liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' em preparo.';
       } 
       else if (status === 'pronto') {
@@ -702,7 +681,6 @@
         statusMessage.innerHTML = '<strong>Seu pedido está no balcão de entrega!</strong>';
         subMessage.textContent = 'Apresente a senha #' + orderNumber + ' no balcão.';
         appCard.classList.add('flash-alert');
-        deliveredSection.style.display = 'none';
 
         startAlarmLoop();
         liveAnnouncer.textContent = 'Atenção! Seu pedido ' + orderNumber + ' está pronto para retirada!';
@@ -714,7 +692,6 @@
         statusText.textContent = 'Pedido Entregue';
         statusMessage.textContent = 'Bom apetite! Esperamos que aproveite sua refeição.';
         subMessage.textContent = 'Pedido finalizado com sucesso.';
-        deliveredSection.style.display = 'block';
         liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' retirado com sucesso. Bom apetite!';
       }
     }
