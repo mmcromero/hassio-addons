@@ -113,3 +113,7 @@ Não relatar “atualizado na main”, “implantado” ou “homologado” sem 
 ## 10. Atualização de engenharia — correção proposta de handoff (14/11/2026)
 
 Foi preparada em branch isolada a correção do falso “encaminhei” observado na v1.6. A proposta usa **oferta registrada pela Central após aceite do envio**, confirmação explícita na próxima mensagem e criação de ficha antes da resposta de encaminhamento. O backend bloqueia confirmação inventada por texto do Gemini. **Não implantado:** workflow em produção permanece **v1.6** e Central HA permanece **0.3.0**. Leia [UMDOISLAB-HANDOFF-V17-CORRECAO.md](UMDOISLAB-HANDOFF-V17-CORRECAO.md) para implementação, casos de teste, limites e ordem segura da futura publicação. O validador de contatos continua adiado.
+
+## 11. Nova evolução proposta — Central 0.4.1 (14/11/2026)
+
+O proprietário aprovou acompanhamento de conversas automáticas no painel para identificar **respostas aceitas pela Evolution, mensagens sem resposta registrada e atendimentos humanos**, sem depender de verificar o celular. Implementação desenvolvida em branch para Central **0.4.1**, com indicadores, filtros, lista e histórico, preservando a área anterior de atendimento humano. Regras, limites e testes em [UMDOISLAB-MONITOR-CONVERSAS-041.md](UMDOISLAB-MONITOR-CONVERSAS-041.md). **Não confundir merge de código com implantação no Home Assistant**. O validador histórico de contatos continua adiado.
