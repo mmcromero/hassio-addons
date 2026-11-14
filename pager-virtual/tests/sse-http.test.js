@@ -111,6 +111,46 @@ test('SSE real do KDS e do cliente transmite mudança de pedido', { timeout: 300
     assert.equal(readyOrder.response.status, 200);
     assert.match(await streamMessage(clientReader, '"pronto"'), /pronto/);
     assert.match(await streamMessage(kdsReader, 'status_alterado'), /pronto/);
+
+    // Um operador autenticado mantém um stream aberto até o gerente revogar o acesso.
+    const terminal = await api('POST', '/api/admin/terminais', {
+      nome: 'Caixa revogavel', login: 'caixa-stream', senha: 'senha-caixa-stream-1234'
+    }, cookie);
+    assert.equal(terminal.response.status, 201);
+    const terminalLogin = await api('POST', '/api/auth/login', {
+      login: 'caixa-stream', senha: 'senha-caixa-stream-1234'
+    });
+    assert.equal(terminalLogin.response.status, 200);
+    const terminalCookie = terminalLogin.response.headers.get('set-cookie').split(';')[0];
+    const terminalAbort = new AbortController(); controllers.push(terminalAbort);
+    const terminalResponse = await fetch(base + '/api/kds/stream', {
+      headers: { Cookie: terminalCookie }, signal: terminalAbort.signal
+    });
+    assert.equal(terminalResponse.status, 200);
+    const terminalReader = terminalResponse.body.getReader();
+    await streamMessage(terminalReader, 'event: conectado');
+
+    const revoked = await api('PATCH', '/api/admin/terminais/' + terminal.body.id + '/ativo', {
+      ativo: false
+    }, cookie);
+    assert.equal(revoked.response.status, 200);
+    const invalidSession = await api('GET', '/api/auth/me', undefined, terminalCookie);
+    assert.equal(invalidSession.response.status, 401);
+
+    // O evento seguinte provoca o encerramento imediato do stream revogado.
+    const following = await api('POST', '/api/pedidos', {
+      numero: 124, itens: ['Pedido novo']
+    }, cookie);
+    assert.equal(following.response.status, 201);
+    const terminalEnd = await Promise.race([
+      terminalReader.read(),
+      new Promise((_, reject) => setTimeout(
+        () => reject(new Error('Stream revogado permaneceu aberto')), 5000
+      ))
+    ]);
+    assert.equal(terminalEnd.done, true, 'Terminal revogado recebeu eventos');
+    assert.match(await streamMessage(kdsReader, 'novo_pedido'), /124/);
+
   } finally {
     for (const ctrl of controllers) ctrl.abort();
     if (child && child.exitCode === null) {
