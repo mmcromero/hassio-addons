@@ -34,6 +34,105 @@ def options():
         return {}
 
 
+# Políticas são armazenadas na Central, nunca embutidas no workflow.
+POLICY_MODES = ("tests", "new", "all")
+
+
+def canonical_number(raw):
+    value = str(raw or "").strip()
+    if value.endswith("@s.whatsapp.net"):
+        value = value[:-len("@s.whatsapp.net")]
+    # Aceitar número colado com +, espaços, parênteses ou hífen.
+    if not re.fullmatch(r"[+0-9()\s-]+", value):
+        return None
+    value = re.sub(r"[^0-9]", "", value)
+    if not re.fullmatch(r"[0-9]{10,15}", value):
+        return None
+    return value + "@s.whatsapp.net"
+
+
+def get_policy(db):
+    rows = db.execute("SELECT key,value FROM policy_settings").fetchall()
+    values = {r["key"]: r["value"] for r in rows}
+    return {"mode": values.get("mode", "tests"),
+            "baseline_ready": values.get("baseline_ready", "0") == "1",
+            "baseline_count": int(values.get("baseline_count", "0")),
+            "baseline_at": values.get("baseline_at", "")}
+
+
+def contact_policy(db, sender):
+    if not valid_sender_for_send(sender):
+        return {"allowed": False, "reason": "invalid_sender"}
+    exclusion = db.execute(
+        "SELECT 1 FROM contact_rules WHERE sender_id=? AND category='excluded'", (sender,)).fetchone()
+    if exclusion:
+        return {"allowed": False, "reason": "excluded"}
+    policy = get_policy(db)
+    test = db.execute(
+        "SELECT 1 FROM contact_rules WHERE sender_id=? AND category='test'", (sender,)).fetchone()
+    if policy["mode"] == "tests":
+        # Retrocompatibilidade de um único remetente no add-on, enquanto o painel migra.
+        old_test = str(options().get("auto_test_sender") or "")
+        return {"allowed": bool(test or sender == old_test), "reason": "test" if test or sender == old_test else "not_in_test_list"}
+    if policy["mode"] == "all":
+        return {"allowed": True, "reason": "all"}
+    if not policy["baseline_ready"]:
+        return {"allowed": False, "reason": "baseline_unavailable"}
+    known = db.execute("SELECT 1 FROM known_contacts WHERE sender_id=?", (sender,)).fetchone()
+    return {"allowed": not bool(known), "reason": "known_contact" if known else "new_contact"}
+
+
+def update_contacts(category, submitted):
+    if category not in ("test", "excluded") or not isinstance(submitted, list) or len(submitted) > 300:
+        return None
+    unique = []
+    for item in submitted:
+        number = canonical_number(item)
+        if number is None:
+            return None
+        if number not in unique:
+            unique.append(number)
+    with LOCK, connect() as db:
+        for number in unique:
+            db.execute("INSERT OR IGNORE INTO contact_rules(sender_id,category) VALUES(?,?)",
+                       (number,category))
+    return unique
+
+
+def historical_baseline():
+    """Fetch contacts and chats BEFORE enabling 'new'. No guesses on API failures."""
+    cfg = options()
+    base = str(cfg.get("evolution_url") or "").rstrip("/")
+    key = str(cfg.get("evolution_api_key") or "")
+    instance = str(cfg.get("evolution_instance") or "")
+    if not key or not base.startswith(("http://", "https://")) or not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
+        raise ValueError("Evolution não configurada")
+    found = set()
+    for endpoint in ("findContacts", "findChats"):
+        url = base + "/chat/" + endpoint + "/" + instance
+        request = urllib.request.Request(url,data=b'{"where":{}}',
+            headers={"Content-Type":"application/json","apikey":key},method="POST")
+        with urllib.request.urlopen(request,timeout=20) as response:
+            if not 200 <= response.status < 300:
+                raise ValueError("Consulta à Evolution falhou")
+            result = json.loads(response.read(5_000_000))
+        # API pode responder lista ou objeto com múltiplos formatos; sem confirmar
+        # lista completa não ativamos os contatos novos.
+        if not isinstance(result,list):
+            raise ValueError("Resposta de contatos/chats incompatível")
+        if len(result) >= 10000:
+            raise ValueError("Histórico excede o limite de consulta")
+        for item in result:
+            if not isinstance(item,dict):
+                raise ValueError("Registro histórico inesperado")
+            jid = item.get("remoteJid") or item.get("id")
+            if isinstance(jid,str) and valid_sender_for_send(jid):
+                found.add(jid)
+    if not found:
+        raise ValueError("Histórico vazio; não liberar modo novos")
+    return found
+
+
 def valid_sender_for_send(sender):
     # Apenas chats individuais com número explícito, nunca grupos, status ou @lid.
     return bool(re.fullmatch(r"[0-9]{10,15}@s\.whatsapp\.net", sender))
@@ -76,6 +175,16 @@ def init():
         db.execute("""CREATE TABLE IF NOT EXISTS bot_guard(
             sender_id TEXT PRIMARY KEY,last_text TEXT NOT NULL DEFAULT '',
             fallback_count INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS policy_settings(
+            key TEXT PRIMARY KEY,value TEXT NOT NULL
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS contact_rules(
+            sender_id TEXT NOT NULL,category TEXT NOT NULL CHECK(category IN ('test','excluded')),
+            PRIMARY KEY(sender_id,category)
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS known_contacts(
+            sender_id TEXT PRIMARY KEY
         )""")
 
 
@@ -137,6 +246,10 @@ def process_inbound(ev):
     summary = str(ev.get("summary") or "")[:500]
     handoff = ev.get("handoffRequested") is True
     with LOCK, connect() as db:
+        eligibility = contact_policy(db, sender)
+        if not eligibility["allowed"]:
+            return {"action": "ignore", "state": "policy_blocked",
+                    "reason": eligibility["reason"], "messageId": mid}
         seen = db.execute("SELECT 1 FROM inbound_ids WHERE sender_id=? AND message_id=?",
                           (sender, mid)).fetchone()
         if seen:
@@ -235,11 +348,12 @@ def routing_decision(instance, sender):
         return None
     with LOCK, connect() as db:
         row = db.execute("SELECT status,choice_state FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        eligibility = contact_policy(db, sender)
     status = row["status"] if row else "none"
     choice = row["choice_state"] if row else "idle"
-    permission = status in ("none", "done") or (status == "pending" and choice == "opted_in")
+    permission = eligibility["allowed"] and (status in ("none", "done") or (status == "pending" and choice == "opted_in"))
     return {"allowAutoReply": permission, "state": status, "choiceState": choice,
-            "reason": "allowed" if permission else "human_active" if status == "human" else "human_pending",
+            "reason": "allowed" if permission else eligibility["reason"] if not eligibility["allowed"] else "human_active" if status == "human" else "human_pending",
             "needsCustomerChoice": status == "pending" and choice == "idle"}
 
 
@@ -300,6 +414,14 @@ class Handler(BaseHTTPRequestHandler):
                 "connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'self'")
             self.end_headers()
             return self.wfile.write(raw)
+        if self.path == "/api/policy":
+            with LOCK, connect() as db:
+                policy = get_policy(db)
+                policy["test"] = [r[0] for r in db.execute(
+                    "SELECT sender_id FROM contact_rules WHERE category='test' ORDER BY sender_id")]
+                policy["excluded"] = [r[0] for r in db.execute(
+                    "SELECT sender_id FROM contact_rules WHERE category='excluded' ORDER BY sender_id")]
+            return self.respond(200, policy)
         if self.path == "/api/conversations":
             with connect() as db:
                 # Nunca ocultar pendências por causa de muitos atendimentos resolvidos.
@@ -333,8 +455,8 @@ class Handler(BaseHTTPRequestHandler):
         if not 1 <= len(message_id) <= 160:
             return self.respond(422, {"error": "messageId inválido"})
         cfg = options()
-        if sender != str(cfg.get("auto_test_sender") or "") or not valid_sender_for_send(sender):
-            return self.respond(403, {"error": "Fora do contato de teste autorizado"})
+        if not valid_sender_for_send(sender):
+            return self.respond(403, {"error": "Destino inválido"})
         key = str(cfg.get("evolution_api_key") or "")
         base = str(cfg.get("evolution_url") or "").rstrip("/")
         configured_instance = str(cfg.get("evolution_instance") or "")
@@ -353,6 +475,9 @@ class Handler(BaseHTTPRequestHandler):
             with connect() as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
                 guard = db.execute("SELECT * FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
+                # Exclusão e modo de autorização valem também para mensagens protocolares.
+                if not contact_policy(db, sender)["allowed"]:
+                    return self.respond(403, {"error": "Contato bloqueado pela política da Central"})
                 if kind == "choice":
                     allowed = bool(row and row["status"] == "pending"
                         and row["choice_state"] == "offered"
@@ -415,6 +540,45 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def do_POST(self):
+        if self.path in ("/api/policy/mode", "/api/policy/contacts", "/api/policy/remove", "/api/policy/baseline"):
+            if not self.ingress() or self.headers.get("X-Requested-With") != "UmdoislabCentral":
+                return self.respond(403, {"error": "Acesso negado"})
+            body = self.read_json()
+            if body is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            if self.path == "/api/policy/contacts":
+                result = update_contacts(body.get("category"), body.get("numbers"))
+                if result is None:
+                    return self.respond(422, {"error": "Número inválido; use DDI + DDD + número, só dígitos"})
+                return self.respond(200, {"ok": True, "added": len(result)})
+            if self.path == "/api/policy/remove":
+                category, sender = body.get("category"), canonical_number(body.get("number"))
+                if category not in ("test", "excluded") or not sender:
+                    return self.respond(422, {"error": "Contato inválido"})
+                with LOCK, connect() as db:
+                    db.execute("DELETE FROM contact_rules WHERE sender_id=? AND category=?", (sender, category))
+                return self.respond(200, {"ok": True})
+            if self.path == "/api/policy/mode":
+                mode = body.get("mode")
+                if mode not in POLICY_MODES:
+                    return self.respond(422, {"error": "Modo inválido"})
+                with LOCK, connect() as db:
+                    if mode == "new" and not get_policy(db)["baseline_ready"]:
+                        return self.respond(409, {"error": "Sincronize o histórico antes de ativar contatos novos"})
+                    db.execute("""INSERT INTO policy_settings VALUES('mode',?)
+                                  ON CONFLICT(key) DO UPDATE SET value=excluded.value""",(mode,))
+                return self.respond(200, {"ok": True, "mode": mode})
+            try:
+                found = historical_baseline()
+            except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError):
+                return self.respond(503, {"error": "Não foi possível verificar o histórico completo na Evolution"})
+            with LOCK, connect() as db:
+                for sender in found:
+                    db.execute("INSERT OR IGNORE INTO known_contacts VALUES(?)", (sender,))
+                for key, value in (("baseline_ready", "1"), ("baseline_count", str(len(found))), ("baseline_at", now())):
+                    db.execute("""INSERT INTO policy_settings VALUES(?,?)
+                                  ON CONFLICT(key) DO UPDATE SET value=excluded.value""",(key,value))
+            return self.respond(200, {"ok": True, "count": len(found)})
         if self.path == "/bridge/inbound":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})

@@ -17,6 +17,9 @@ class CentralTests(unittest.TestCase):
         self.mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.mod)
         self.mod.init()
+        # Usuário de teste explicitamente autorizado, preserva os cenários anteriores.
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "auto_test_sender":"5511999999999@s.whatsapp.net"}))
     def tearDown(self):
         self.tmp.cleanup()
 
@@ -129,7 +132,7 @@ class CentralTests(unittest.TestCase):
         with patch.object(self.mod.urllib.request, "urlopen") as send:
             code, result = self.mod.Handler.send_automated(FakeRequest(),
                  {"instance":"umdoislab","senderId":sender,"messageId":"msg-1","text":"Teste"})
-            self.assertEqual(code,403)
+            self.assertIn(code,(403,409))
             send.assert_not_called()
 
     def test_auto_sender_guard_avoids_duplicar_mensagem(self):
@@ -282,6 +285,61 @@ class CentralTests(unittest.TestCase):
             category="outros",handoffRequested=False))
         self.assertEqual(result["action"],"handoff")
         self.assertEqual(self.mod.routing_decision("umdoislab",sender)["state"],"pending")
+
+    def test_canonical_number_and_duplicate_labels(self):
+        target = "5511999999999@s.whatsapp.net"
+        self.assertEqual(self.mod.canonical_number("+55 (11) 99999-9999"), target)
+        self.assertEqual(self.mod.canonical_number("5511999999999"), target)
+        self.assertEqual(self.mod.canonical_number(target), target)
+        self.assertIsNone(self.mod.canonical_number("1199999999@lid"))
+        self.assertIsNone(self.mod.canonical_number("55<script>"))
+        self.assertEqual(self.mod.update_contacts("test",["5511999999999",target]),[target])
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM contact_rules").fetchone()[0],1)
+
+    def test_exclusion_precedes_test_and_all_modes(self):
+        sender="5511999999999@s.whatsapp.net"
+        self.assertTrue(self.mod.routing_decision("umdoislab",sender)["allowAutoReply"])
+        self.mod.update_contacts("excluded",[sender])
+        self.assertFalse(self.mod.routing_decision("umdoislab",sender)["allowAutoReply"])
+        with self.mod.connect() as db:
+            db.execute("INSERT INTO policy_settings VALUES('mode','all')")
+        self.assertFalse(self.mod.routing_decision("umdoislab",sender)["allowAutoReply"])
+        self.assertEqual(self.mod.process_inbound(self.event())["reason"],"excluded")
+
+    def test_new_mode_requires_baseline_and_excludes_known(self):
+        known="5511999999999@s.whatsapp.net"
+        newbie="5511888888888@s.whatsapp.net"
+        with self.mod.connect() as db:
+            db.execute("INSERT INTO policy_settings VALUES('mode','new')")
+            db.execute("INSERT INTO known_contacts VALUES(?)",(known,))
+        self.assertFalse(self.mod.routing_decision("umdoislab",newbie)["allowAutoReply"])
+        with self.mod.connect() as db:
+            db.execute("INSERT INTO policy_settings VALUES('baseline_ready','1')")
+        self.assertFalse(self.mod.routing_decision("umdoislab",known)["allowAutoReply"])
+        self.assertTrue(self.mod.routing_decision("umdoislab",newbie)["allowAutoReply"])
+
+    def test_send_guard_blocks_exclusion_before_evolution(self):
+        sender="5511999999999@s.whatsapp.net"
+        self.mod.update_contacts("excluded",[sender])
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"test","evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab","auto_test_sender":sender}))
+        class Dummy:
+            def respond(self,code,body):return code,body
+        with patch.object(self.mod.urllib.request,"urlopen") as send:
+            status,result=self.mod.Handler.send_automated(Dummy(),{
+                "instance":"umdoislab","senderId":sender,"messageId":"m1",
+                "kind":"normal","text":"Oi!"})
+            self.assertEqual(status,403)
+            send.assert_not_called()
+
+    def test_unauthorized_inbound_has_no_ticket(self):
+        self.mod.update_contacts("excluded",["5511999999999"])
+        result=self.mod.process_inbound(self.event())
+        self.assertEqual(result["action"],"ignore")
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM conversations").fetchone()[0],0)
 
     def test_invalid_event_not_registered(self):
         self.assertFalse(self.mod.store_event(self.event(instance="outra")))

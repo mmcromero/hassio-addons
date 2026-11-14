@@ -161,3 +161,32 @@ WooCommerce, notificações de pendências, classificação de mídia e integra�
 com intervenção humana feita diretamente pelo aplicativo WhatsApp. A classificação
 do fluxo de laboratório usa regras locais simples; não deve ser apresentada como
 interpretação por IA. A interface móvel mantém o desenho anteriormente aprovado.
+
+## Política de automação (Central 0.2.0 — branch de revisão)
+
+O painel **Automação** controla o atendimento, separado da conexão técnica da Evolution:
+- **Somente teste:** a lista editável permite vários JIDs. Em migração, o valor antigo
+  `auto_test_sender` continua autorizado para não interromper o teste existente.
+- **Somente novos:** consulta uma referência inicial de contatos/chats da Evolution,
+  e não libera contatos registrados nela. A sincronização é **pré-requisito**, porém
+  a completude dessa referência ainda precisa ser homologada contra o Manager.
+  Não selecionar esta modalidade para público real antes da conferência.
+- **Todos:** permite contatos individuais com JID numérico, exceto os bloqueados.
+- **Lista de exclusão:** sempre prevalece, inclusive quando o atendente humano não
+  assumiu a conversa. Não há envio automático para números excluídos.
+- Números podem ser inseridos em lote com **ponto e vírgula, vírgula ou Enter**;
+  aceita `+55 (11) 99999-9999`, `5511999999999` e o formato completo.
+  Guarda o destino canônico `5511999999999@s.whatsapp.net`. Etiquetas com botão
+  **×** permitem retirar números, sem reiniciar a Central.
+
+**Atenção à atualização:** a versão anterior (0.1.0) ainda está no Home Assistant.
+A 0.2.0 não foi instalada automaticamente. O n8n publicado deve manter seu fluxo
+atual durante a homologação. O JSON atualizado na branch remove a lista fixa
+do próprio n8n e delega todo controle de autorização à Central, que o valida
+novamente antes do envio. O modo inicial continuará restrito a números de teste.
+
+### Nota de backlog — Catálogo de clientes (futuro, fora do escopo atual)
+Considerar uma ficha de clientes alimentada pelo histórico do WhatsApp com
+informações adicionais opcionais e controle de privacidade. Não implementar
+nesta demanda, nem ampliar acesso às mensagens de contatos sem consentimento
+e avaliação da finalidade.
