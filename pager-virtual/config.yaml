@@ -23,5 +23,7 @@ map:
   - data:rw
 options:
   log_level: info
+  public_url: ""
 schema:
   log_level: list(info|debug|warn|error)
+  public_url: str?
