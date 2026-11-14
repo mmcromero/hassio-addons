@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "dev": "node --watch src/server.js",
+    "test": "node --test tests/*.test.js"
   },
   "keywords": ["pager", "kds", "food-service", "restaurant", "sse"],
   "author": "Marco Romero",
