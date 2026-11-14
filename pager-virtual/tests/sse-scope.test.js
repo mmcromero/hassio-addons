@@ -31,3 +31,21 @@ test('cliente acompanha somente token cadastrado', () => {
   assert.equal(b.raw.messages.length, 0);
   a.raw.emit('close'); b.raw.emit('close');
 });
+
+test('KDS revogado encerra stream antes do próximo evento, sem afetar restaurante vizinho', () => {
+  const revoked = client(), other = client();
+  let active = true;
+  revoked.raw.end = () => { revoked.raw.ended = true; revoked.raw.emit('close'); };
+  other.raw.end = () => { other.raw.ended = true; other.raw.emit('close'); };
+  sseManager.addKds('restaurante-a', revoked, () => active);
+  sseManager.addKds('restaurante-b', other, () => true);
+  active = false;
+  sseManager.notifyKds('restaurante-a', 'novo_pedido', { numero: 98 });
+  sseManager.notifyKds('restaurante-b', 'novo_pedido', { numero: 99 });
+  assert.equal(revoked.raw.messages.length, 0);
+  assert.equal(revoked.raw.ended, true);
+  assert.equal(other.raw.messages.length, 1);
+  assert.equal(other.raw.ended, undefined);
+  other.raw.emit('close');
+  assert.equal(sseManager.kdsStreams.size, 0);
+});
