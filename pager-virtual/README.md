@@ -28,3 +28,14 @@ Antes de concluir uma entrega:
 3. Conferir a versão em `config.yaml` e `package.json` e sincronizar os arquivos entre os dois repositórios.
 4. Executar e conferir testes e esteira aplicáveis; não declarar homologação no Home Assistant sem evidência da instalação.
 5. Preservar o banco e registrar o PR/commit que contém cada entrega.
+
+## Próxima entrega — autenticação em preparação (não instalada)
+A branch `feat/pager-auth-staging` reúne a correção do KDS 0.1.4 com:
+- Login de Master Admin, gerente e terminal operacional;
+- Primeiro acesso do proprietário mediante código temporário dos logs privados;
+- Isolamento de pedidos e SSE por restaurante;
+- Cadastro e revogação de terminais pelo gerente;
+- Alteração da própria senha e redefinição de senha de terminal com revogação de sessões.
+
+O código foi sincronizado com o repositório principal e os testes automatizados do add-on foram adicionados à esteira.
+**Não atualizar o Home Assistant com esta branch**, que ainda exige homologação operacional, validação HTTPS/proxy e autorização de publicação. O número 0.1.4 continua sendo o da base técnica, não o número definitivo da próxima entrega.
