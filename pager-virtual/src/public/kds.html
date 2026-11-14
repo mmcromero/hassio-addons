@@ -729,7 +729,25 @@
     fetch(apiPath('/api/auth/me'), { credentials: 'same-origin' })
       .then(r => r.ok ? r.json() : Promise.reject(new Error('Sessão expirada')))
       .then(user => {
-        if (user.papel === 'gerente') document.getElementById('admin-link').style.display = 'inline-flex';
+        if (user.papel === 'gerente' || user.papel === 'master') {
+          const link = document.getElementById('admin-link');
+          link.style.display = 'inline-flex';
+          if (user.papel === 'master') {
+            link.textContent = '← Voltar à administração';
+            link.addEventListener('click', async event => {
+              event.preventDefault();
+              try {
+                const result = await fetch(apiPath('/api/admin/contexto/sair'), {
+                  method: 'POST', credentials: 'same-origin'
+                });
+                if (!result.ok) throw new Error('Falha ao sair do restaurante');
+                location.assign('/admin.html');
+              } catch (error) {
+                alert('Não foi possível voltar ao painel. Tente novamente.');
+              }
+            });
+          }
+        }
       })
       .catch(() => window.location.replace('/login.html'));
     document.getElementById('btn-logout').addEventListener('click', async () => {
