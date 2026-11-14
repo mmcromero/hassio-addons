@@ -68,6 +68,20 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     assert.equal(created.status, 201, await created.text());
     const repeated = await post('/api/setup/master', registration);
     assert.equal(repeated.status, 409);
+    const login = await post('/api/auth/login', {
+      login: 'master-teste', senha: 'senha-super-forte-teste-123'
+    });
+    assert.equal(login.status, 200, await login.text());
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const admin = await fetch(origin + '/admin.html', { headers: { Cookie: cookie } });
+    assert.equal(admin.status, 200);
+    assert.match(await admin.text(), /Administra/);
+    const kds = await fetch(origin + '/kds.html', {
+      headers: { Cookie: cookie }, redirect: 'manual'
+    });
+    assert.equal(kds.status, 302);
+    assert.equal(kds.headers.get('location'), '/admin.html');
+
 
 
   } finally {
