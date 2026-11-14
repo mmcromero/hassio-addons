@@ -19,8 +19,11 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
   const port = await getFreePort();
   const child = spawn(process.execPath, ['src/server.js'], {
     env: { ...process.env, DATA_PATH: dataDir, PORT: String(port), HOST: '127.0.0.1' },
-    stdio: 'ignore'
+    stdio: ['ignore', 'pipe', 'pipe']
   });
+  let logs = '';
+  child.stdout.on('data', part => { logs += part.toString(); });
+  child.stderr.on('data', part => { logs += part.toString(); });
   try {
     let ready = false;
     for (let n = 0; n < 100; n++) {
