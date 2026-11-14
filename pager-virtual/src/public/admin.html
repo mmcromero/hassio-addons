@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090e17"><title>Administração · Bipou</title>
+<style>
+  * { box-sizing:border-box } body { margin:0;padding:18px;background:#090e17;color:#f1f5f9;font:16px system-ui,-apple-system,sans-serif }
+  main { max-width:800px;margin:0 auto } header { display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid #334155;margin-bottom:20px }
+  h1 { margin:0;font-size:1.55rem } h2 { font-size:1.15rem;margin:0 0 18px } .card { background:#131c2e;border:1px solid #30435f;border-radius:16px;padding:20px;margin:16px 0 }
+  label { display:block;font-weight:650;margin:12px 0 6px } input,select { width:100%;font:inherit;min-height:50px;padding:11px 12px;border:2px solid #51627d;border-radius:10px;background:#0b1220;color:white }
+  button,a.action { min-height:48px;display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;background:#3b82f6;color:#fff;border:0;border-radius:10px;font:inherit;font-weight:700;text-decoration:none;cursor:pointer }
+  button.secondary,a.secondary { background:#334155 } button:disabled { opacity:.6;cursor:wait } button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid #93c5fd;outline-offset:3px }
+  form button { width:100%;margin-top:16px } .list { display:grid;gap:10px } .line { display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid #30435f;border-radius:12px }
+  .muted { color:#b1c0d7;font-size:.9rem } .status { min-height:24px;margin-top:12px;color:#c4f2d4 } .error { color:#fca5a5 }
+  [hidden] { display:none !important } .row { display:flex;gap:8px;flex-wrap:wrap }
+</style>
+</head>
+<body>
+<main>
+<header><div><h1>🔔 Administração do Bipou</h1><span class="muted" id="identity">Carregando conta...</span></div>
+<div class="row"><a class="action secondary" href="/kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
+
+<section id="master-area" hidden>
+  <div class="card"><h2>Novo restaurante</h2><form id="restaurant-form">
+  <label for="restaurant-name">Nome do restaurante</label><input id="restaurant-name" required maxlength="120">
+  <label for="restaurant-slug">Identificador</label><input id="restaurant-slug" required maxlength="80" pattern="[a-z0-9-]{3,80}" placeholder="ex.: restaurante-centro">
+  <button type="submit">Cadastrar restaurante</button></form></div>
+  <div class="card"><h2>Gerente inicial</h2><form id="manager-form">
+  <label for="manager-restaurant">Restaurante</label><select id="manager-restaurant" required></select>
+  <label for="manager-name">Nome do gerente</label><input id="manager-name" maxlength="120" required>
+  <label for="manager-login">Login do gerente</label><input id="manager-login" maxlength="120" required autocapitalize="none">
+  <label for="manager-password">Senha inicial</label><input id="manager-password" type="password" minlength="12" required autocomplete="new-password">
+  <button type="submit">Criar acesso do gerente</button></form></div>
+  <div class="card"><h2>Restaurantes cadastrados</h2><div id="restaurants-list" class="list"></div></div>
+</section>
+
+<section id="manager-area" hidden>
+  <div class="card"><h2>Novo terminal operacional</h2><form id="terminal-form">
+  <label for="terminal-name">Nome do terminal</label><input id="terminal-name" placeholder="Ex.: Caixa 1" maxlength="120" required>
+  <label for="terminal-login">Login do terminal</label><input id="terminal-login" maxlength="120" required autocapitalize="none">
+  <label for="terminal-password">Senha de acesso</label><input id="terminal-password" type="password" minlength="12" required autocomplete="new-password">
+  <button type="submit">Criar terminal</button></form></div>
+  <div class="card"><h2>Terminais do restaurante</h2><div id="terminals-list" class="list"></div></div>
+</section>
+<section class="card" id="password-area">
+  <h2>Alterar minha senha</h2>
+  <form id="my-password-form">
+    <label for="current-password">Senha atual</label><input id="current-password" type="password" required autocomplete="current-password">
+    <label for="new-password">Nova senha (mínimo 12 caracteres)</label><input id="new-password" type="password" minlength="12" maxlength="256" required autocomplete="new-password">
+    <button type="submit">Alterar senha</button>
+  </form>
+</section>
+<p id="message" class="status" role="status" aria-live="polite"></p>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const message = (text, error=false) => { $('message').textContent = text; $('message').className = error ? 'status error' : 'status'; };
+  async function api(url, options={}) {
+    const response = await fetch(url, { credentials:'same-origin', ...options });
+    const data = await response.json();
+    if (response.status === 401) { location.replace('/login.html'); throw new Error('Sessão expirada'); }
+    if (!response.ok) throw new Error(data.error || 'Operação não concluída');
+    return data;
+  }
+  async function post(url, data) { return api(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
+  const val = id => $(id).value.trim();
+  async function loadRestaurants() {
+    const data = await api('/api/admin/restaurantes');
+    const list = $('restaurants-list'), select = $('manager-restaurant');
+    list.replaceChildren(); select.replaceChildren();
+    for (const rest of data) {
+      const line = document.createElement('div'); line.className = 'line';
+      const span = document.createElement('span');
+      span.textContent = rest.nome + ' (' + rest.slug + ')' + (rest.ativo ? '' : ' · Inativo');
+      line.appendChild(span); list.appendChild(line);
+      if (rest.ativo) { const op = document.createElement('option'); op.value=rest.id;op.textContent=rest.nome;select.appendChild(op); }
+    }
+    if (!data.length) list.textContent='Nenhum restaurante cadastrado.';
+  }
+  async function loadTerminals() {
+    const data=await api('/api/admin/terminais');
+    const list=$('terminals-list'); list.replaceChildren();
+    for (const terminal of data) {
+      const line=document.createElement('div');line.className='line';
+      const name=document.createElement('span');name.textContent=terminal.nome+' · '+terminal.login+(terminal.ativo?'':' (desativado)');
+      const button=document.createElement('button');button.className='secondary';
+      button.textContent=terminal.ativo?'Desativar':'Reativar';
+      button.addEventListener('click',async()=>{
+        button.disabled=true;
+        try {
+          await api('/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/ativo',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ativo:!terminal.ativo})});
+          message('Acesso do terminal atualizado.');await loadTerminals();
+        } catch(e){message(e.message,true);} finally{button.disabled=false;}
+      });
+      const change = document.createElement('button');change.className='secondary';change.textContent='Redefinir senha';
+      const credentials = document.createElement('form'); credentials.hidden=true;
+      credentials.style.width='100%';
+      const field=document.createElement('input');field.type='password';field.minLength=12;field.maxLength=256;
+      field.required=true;field.autocomplete='new-password';field.placeholder='Nova senha (mín. 12 caracteres)';
+      const save=document.createElement('button');save.type='submit';save.textContent='Salvar nova senha';
+      credentials.append(field,save);
+      change.addEventListener('click',()=>{credentials.hidden=!credentials.hidden;if(!credentials.hidden)field.focus();});
+      credentials.addEventListener('submit',async event=>{
+        event.preventDefault();save.disabled=true;
+        try{
+          await api('/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/senha',{
+            method:'PATCH',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({senha:field.value})
+          });
+          field.value='';credentials.hidden=true;message('Senha do terminal alterada. As sessões antigas foram encerradas.');
+        }catch(e){message(e.message,true);}finally{save.disabled=false;}
+      });
+      line.append(name,button,change,credentials);list.appendChild(line);
+    }
+    if(!data.length)list.textContent='Nenhum terminal cadastrado.';
+  }
+  function submit(formId, work) {
+    $(formId).addEventListener('submit',async event=>{
+      event.preventDefault();
+      const form=event.currentTarget;
+      const button=form.querySelector('button[type="submit"]');
+      button.disabled=true;message('');
+      try { await work();form.reset();message('Registro salvo.'); }
+      catch(e){message(e.message,true);}
+      finally{button.disabled=false;}
+    });
+  }
+  submit('restaurant-form',async()=>{
+    await post('/api/admin/restaurantes',{nome:val('restaurant-name'),slug:val('restaurant-slug')});await loadRestaurants();
+  });
+  submit('manager-form',async()=>{
+    const restId=val('manager-restaurant');
+    await post('/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+  });
+  submit('terminal-form',async()=>{
+    await post('/api/admin/terminais',{nome:val('terminal-name'),login:val('terminal-login'),senha:$('terminal-password').value});
+    await loadTerminals();
+  });
+  submit('my-password-form',async()=>{
+    await post('/api/auth/password',{
+      senha_atual:$('current-password').value,
+      nova_senha:$('new-password').value
+    });
+    location.replace('/login.html');
+  });
+  $('logout').addEventListener('click',async()=>{
+    try {await api('/api/auth/logout',{method:'POST'});}finally{location.replace('/login.html');}
+  });
+  (async()=>{
+    try {
+      const user=await api('/api/auth/me');
+      $('identity').textContent=user.nome+' · '+(user.papel==='master'?'Master Admin':'Gerente');
+      if(user.papel==='master'){$('master-area').hidden=false;await loadRestaurants();}
+      else if(user.papel==='gerente'){$('manager-area').hidden=false;$('go-kds').hidden=false;await loadTerminals();}
+      else location.replace('/kds.html');
+    }catch(e){message(e.message,true);}
+  })();
+</script>
+</body>
+</html>
