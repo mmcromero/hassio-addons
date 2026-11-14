@@ -63,7 +63,9 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Compilar Pager Virtual ARM64 (sem publicação)
-        run: docker buildx build --platform linux/arm64 --progress plain -t pager-virtual:ci pager-virtual/
+        run: docker buildx build --platform linux/arm64 --progress plain --load -t pager-virtual:ci pager-virtual/
+      - name: Smoke da imagem ARM64 com volume persistente e reinício
+        run: bash .github/scripts/smoke-pager.sh
       - name: Verificar sintaxe JavaScript do Pager Virtual
         run: |
           node --check pager-virtual/src/server.js
