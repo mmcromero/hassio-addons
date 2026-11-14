@@ -5,6 +5,16 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [Próxima entrega — em desenvolvimento, NÃO publicada]
+
+- A próxima versão reunirá a correção 0.1.4 do KDS e a autenticação por Master Admin, gerente e terminal operacional.
+- O backend em desenvolvimento terá sessões revogáveis e isolamento de pedidos/SSE por restaurante.
+- O gerente administrará os terminais do seu próprio estabelecimento.
+- Código e testes estão na branch `feat/auth-restaurantes-fundacao` do repositório principal. **Essas alterações de autenticação ainda NÃO foram sincronizadas nem distribuídas pelo add-on.**
+- Pendências: testes integrados, fluxo de primeiro acesso no HA, validação HTTPS/proxy, sincronização de código, compilação ARM64, homologação e atualização final de versão.
+
+---
+
 ## [0.1.4] — 14/11/2026
 
 ### Corrigido
