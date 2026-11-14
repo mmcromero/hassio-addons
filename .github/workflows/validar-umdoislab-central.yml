@@ -21,6 +21,7 @@ jobs:
         run: |
           python -m json.tool umdoislab-central/n8n/central-guard-lab.json > /dev/null
           python -m json.tool umdoislab-central/n8n/atendimento-v1.5-laboratorio.json > /dev/null
+          python -m json.tool umdoislab-central/n8n/atendimento-v1.5-whatsapp-real.json > /dev/null
       - name: Preparar build ARM64
         uses: docker/setup-qemu-action@v3
       - name: Preparar Docker Buildx
