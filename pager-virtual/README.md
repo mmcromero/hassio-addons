@@ -38,4 +38,5 @@ A branch `feat/pager-auth-staging` reúne a correção do KDS 0.1.4 com:
 - Alteração da própria senha e redefinição de senha de terminal com revogação de sessões.
 
 O código foi sincronizado com o repositório principal e os testes automatizados do add-on foram adicionados à esteira.
+O teste de primeiro acesso foi ampliado e aprovado no GitHub Actions, incluindo tentativa por hostname público e cadastro inicial único. O teste automatizado não substitui o teste real de acesso pelo proxy HTTPS nem a instalação no Raspberry Pi.
 **Não atualizar o Home Assistant com esta branch**, que ainda exige homologação operacional, validação HTTPS/proxy e autorização de publicação. O número 0.1.4 continua sendo o da base técnica, não o número definitivo da próxima entrega.
