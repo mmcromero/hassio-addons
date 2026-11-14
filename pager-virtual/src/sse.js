@@ -6,8 +6,8 @@ class SSEManager {
   constructor() {
     // Mapa: token -> Set de conexões de clientes
     this.clientStreams = new Map();
-    // Set de conexões do painel KDS/Cozinha
-    this.kdsStreams = new Set();
+    // restaurante_id -> Set de conexões autorizadas do KDS
+    this.kdsStreams = new Map();
   }
 
   // Registra um cliente ouvindo o status de seu pedido
@@ -27,10 +27,13 @@ class SSEManager {
   }
 
   // Registra um terminal de cozinha/KDS ouvindo atualizações
-  addKds(reply) {
-    this.kdsStreams.add(reply);
+  addKds(restauranteId, reply) {
+    if (!this.kdsStreams.has(restauranteId)) this.kdsStreams.set(restauranteId, new Set());
+    const streams = this.kdsStreams.get(restauranteId);
+    streams.add(reply);
     reply.raw.on('close', () => {
-      this.kdsStreams.delete(reply);
+      streams.delete(reply);
+      if (streams.size === 0) this.kdsStreams.delete(restauranteId);
     });
   }
 
@@ -46,13 +49,11 @@ class SSEManager {
   }
 
   // Notifica as telas da cozinha sobre novos pedidos ou alterações
-  notifyKds(event, data) {
-    if (this.kdsStreams.size > 0) {
-      const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-      for (const reply of this.kdsStreams) {
-        reply.raw.write(payload);
-      }
-    }
+  notifyKds(restauranteId, event, data) {
+    const streams = this.kdsStreams.get(restauranteId);
+    if (!streams?.size) return;
+    const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const reply of streams) reply.raw.write(payload);
   }
 }
 
