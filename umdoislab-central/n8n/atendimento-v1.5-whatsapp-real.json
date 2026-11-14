@@ -1,0 +1,351 @@
+{
+  "name": "Umdoislab v1.5 — WhatsApp e Gemini (contato autorizado)",
+  "nodes": [
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp recebido — Evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        180,
+        280
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "umdoislab-v15",
+        "responseMode": "onReceived",
+        "options": {}
+      }
+    },
+    {
+      "id": "normalizar",
+      "name": "Validar remetente e classificar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        430,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Aceita apenas evento real da Evolution para o contato de teste.\n// Um único contato autorizado. Nunca registre credenciais neste código.\nconst TEST_SENDER = 'CONFIGURAR_JID_TESTE@s.whatsapp.net';\nconst body = $input.first()?.json?.body;\nif (!body || body.instance !== 'umdoislab' || !['messages.upsert','MESSAGES_UPSERT'].includes(String(body.event || ''))) return [];\nconst data = body.data;\nconst key = data?.key;\nconst sender = String(key?.remoteJid || '');\nif (key?.fromMe !== false || sender !== TEST_SENDER || !/^[0-9]{10,15}@s\\.whatsapp\\.net$/.test(sender)) return [];\nif (!key?.id || typeof key.id !== 'string' || key.id.length > 160) return [];\nconst message = data?.message || {};\nconst text = message.conversation\n  ?? message.extendedTextMessage?.text\n  ?? message.imageMessage?.caption\n  ?? message.videoMessage?.caption\n  ?? '';\nif (typeof text !== 'string' || !text.trim()) return []; // áudio/mídia sem texto: fluxo separado no futuro\nconst clean = text.trim().slice(0,500);\nconst t = clean.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase();\nconst humanRequest = /\\b(humano|atendente|falar com (uma )?pessoa|quero atendimento humano|falar com vendedor)\\b/.test(t);\nlet category = 'outros';\nif (humanRequest) category = 'atendimento';\nelse if (/\\b(oi|ola|opa|bom dia|boa tarde|boa noite)\\b/.test(t)) category = 'saudacao';\nelse if (/\\b(mf ?doom|mfdu|quasimoto|dichavador|tchavador|pracinha)\\b/.test(t)) category = 'produto';\nelse if (/\\b(catalogo|catalog)\\b/.test(t)) category = 'catalogo';\nelse if (/\\b(preco|valor|quanto|custa)\\b/.test(t)) category = 'preco';\nelse if (/\\b(entrega|frete|cep|envio)\\b/.test(t)) category = 'entrega';\nelse if (/\\b(pedido|rastreio|compra)\\b/.test(t)) category = 'pedido';\nreturn [{json:{\n instance:'umdoislab',isClientMessage:true,isGroup:false,\n senderId:sender,senderName:String(data.pushName || sender.split('@')[0]).slice(0,100),\n messageId:key.id,messageText:clean,category,summary:'Mensagem recebida: '+category,\n handoffRequested:humanRequest\n}}];"
+      }
+    },
+    {
+      "id": "central",
+      "name": "Consultar e registrar na Central",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://45c28620-umdoislab-central:8099/bridge/inbound",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      }
+    },
+    {
+      "id": "if",
+      "name": "Existe resposta autorizada?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "should",
+              "leftValue": "={{ $json.shouldSend }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "enviar",
+      "name": "Enviar apenas pela Central",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1440,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://45c28620-umdoislab-central:8099/bridge/send-auto",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({instance:$json.instance,senderId:$json.senderId,messageId:$json.messageId,kind:$json.kind,text:$json.text}) }}",
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "silencio",
+      "name": "Silêncio ou mensagem repetida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        420
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return $input.all().map(item=>({json:{action:item.json.action,ignored:true}}));"
+      }
+    },
+    {
+      "id": "stage",
+      "name": "Validar ação antes de resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        280
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const d=$input.first()?.json;\nconst original=$('Validar remetente e classificar').first().json;\nif (!d || !['auto','handoff','offer_choice','resume','silent','ignore'].includes(d.action) || d.messageId!==original.messageId || (d.senderId && d.senderId !== original.senderId)) throw Error('Estado da Central inválido; não responder');\nreturn [{json:{...d}}];"
+      }
+    },
+    {
+      "id": "gemini-gate",
+      "name": "Ação exige Gemini?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        930,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "onlyauto",
+              "leftValue": "={{ $json.action === 'auto' }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini — entender intenção",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1170,
+        90
+      ],
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Classifique SOMENTE a intenção desta mensagem informal em português do Brasil da Umdoislab: {{ $('Validar remetente e classificar').first().json.messageText }}. Responda EXATAMENTE UMA PALAVRA, sem aspas e sem explicação: saudacao, produto, preco, catalogo, entrega, pedido, atendimento, outros. Se for sobre quanto custa, escolha preco; se falar de produto como quasimoto/mfdu/dichavador, produto. Se pedir humano, atendimento. Não produza preço, prazo, estoque, nem resposta ao cliente."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      }
+    },
+    {
+      "id": "gemini-safe",
+      "name": "Validar intenção Gemini e selecionar resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1410,
+        90
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input=$('Validar remetente e classificar').first().json;\nconst decision=$('Consultar e registrar na Central').first().json;\nif (!['auto'].includes(decision.action)) throw Error('Gemini fora do estado automático');\nconst raw=$input.first()?.json?.content?.parts?.map(p=>p.text||'').join('') || '';\nconst intent=raw.toLowerCase().trim().replace(/[^a-z]/g,'');\nconst known=['saudacao','produto','preco','catalogo','entrega','pedido','atendimento','outros'];\nconst category=known.includes(intent)?intent:'outros';\nconst replies={\nsaudacao:'Oi! 😊 Como posso ajudar na Umdoislab?',\ncatalogo:'Você pode ver nossos produtos em https://umdoislab.com.br/. Quer saber sobre algum produto específico?',\nproduto:'Posso ajudar com esse produto! Você quer saber preço, características ou disponibilidade?',\npreco:'Qual produto você quer consultar? Para confirmar preços, precisamos consultar o catálogo.',\nentrega:'Qual é seu CEP e qual produto você procura? Assim podemos verificar a entrega.',\npedido:'Para informações específicas do seu pedido, digite \"atendente\" para falar com uma pessoa.',\natendimento:'Para falar com uma pessoa da Umdoislab, digite \"atendente\".',\noutros:'Pode me explicar um pouquinho melhor? Assim consigo encaminhar sua dúvida.'\n};\nreturn [{json:{instance:input.instance,senderId:input.senderId,messageId:input.messageId,\naction:decision.action,shouldSend:true,kind:category==='outros'?'fallback':'normal',\ntext:replies[category],geminiIntent:category}}];"
+      }
+    },
+    {
+      "id": "passthrough",
+      "name": "Resposta protocolar sem Gemini",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        450
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const state=$input.first().json;\nconst original=$('Validar remetente e classificar').first().json;\nif(!['handoff','offer_choice','resume','silent','ignore'].includes(state.action)) throw Error('Estado protocolar não reconhecido');\nconst kind=state.action==='handoff'?'handoff':state.action==='offer_choice'?'choice':'normal';\nreturn [{json:{instance:original.instance,senderId:original.senderId,messageId:original.messageId,\n action:state.action,shouldSend:!['silent','ignore'].includes(state.action),kind,\n text:state.action==='resume'?'Certo, podemos continuar pelo atendimento automático. 😊 O que você quer saber?':''}}];"
+      }
+    }
+  ],
+  "connections": {
+    "WhatsApp recebido — Evolution": {
+      "main": [
+        [
+          {
+            "node": "Validar remetente e classificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar remetente e classificar": {
+      "main": [
+        [
+          {
+            "node": "Consultar e registrar na Central",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar e registrar na Central": {
+      "main": [
+        [
+          {
+            "node": "Validar ação antes de resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Existe resposta autorizada?": {
+      "main": [
+        [
+          {
+            "node": "Enviar apenas pela Central",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Silêncio ou mensagem repetida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar ação antes de resposta": {
+      "main": [
+        [
+          {
+            "node": "Ação exige Gemini?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ação exige Gemini?": {
+      "main": [
+        [
+          {
+            "node": "Gemini — entender intenção",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta protocolar sem Gemini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — entender intenção": {
+      "main": [
+        [
+          {
+            "node": "Validar intenção Gemini e selecionar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar intenção Gemini e selecionar resposta": {
+      "main": [
+        [
+          {
+            "node": "Existe resposta autorizada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resposta protocolar sem Gemini": {
+      "main": [
+        [
+          {
+            "node": "Existe resposta autorizada?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": []
+}
