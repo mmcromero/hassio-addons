@@ -41,6 +41,8 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     const setup = await fetch('http://127.0.0.1:' + port + '/setup.html');
     assert.equal(setup.status, 200);
     assert.match(await setup.text(), /Primeiro acesso/);
+    const status = await fetch('http://127.0.0.1:' + port + '/api/setup/status');
+    assert.deepEqual(await status.json(), { needs_setup: true });
   } finally {
     child.kill('SIGTERM');
     await new Promise(resolve => child.once('exit', resolve)).catch(() => {});
