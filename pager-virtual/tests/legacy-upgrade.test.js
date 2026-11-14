@@ -82,6 +82,51 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     assert.deepEqual(database.prepare('SELECT * FROM pedidos ORDER BY id').all(), original);
     assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), originalRest);
     assert.equal(database.prepare('SELECT count(*) n FROM usuarios').get().n, 0);
+    database.close();
+    database = undefined;
+
+    // Depois do upgrade, o gerente vinculado ao restaurante legado deve ver os pedidos antigos.
+    process.env.DATA_PATH = dir;
+    const [{ default: db }, { default: Fastify }, authModule, pedidosModule] = await Promise.all([
+      import('../src/db.js'),
+      import('fastify'),
+      import('../src/auth.js'),
+      import('../src/routes/pedidos.js')
+    ]);
+    const current = Date.now();
+    db.prepare(`INSERT INTO usuarios
+      (id, restaurante_id, nome, login, senha_hash, papel, criado_em, atualizado_em)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      'legacy-manager', 'rest_demo_01', 'Gerente legado', 'gerente-legado',
+      await authModule.passwordHash('senha-forte-legado-123'), 'gerente', current, current
+    );
+    const app = Fastify();
+    try {
+      await app.register(authModule.authRoutes);
+      await app.register(pedidosModule.pedidosRoutes);
+      await app.ready();
+      const signed = await app.inject({
+        method: 'POST', url: '/api/auth/login',
+        headers: { host: 'localhost', origin: 'http://localhost' },
+        payload: { login: 'gerente-legado', senha: 'senha-forte-legado-123' }
+      });
+      assert.equal(signed.statusCode, 200, signed.body);
+      const cookie = signed.headers['set-cookie'].split(';')[0];
+      const response = await app.inject({
+        method: 'GET', url: '/api/pedidos',
+        headers: { host: 'localhost', cookie }
+      });
+      assert.equal(response.statusCode, 200, response.body);
+      assert.deepEqual(response.json().map(p => [p.numero, p.token, p.status]), [
+        [41, 'token-persistido-41', 'preparo'],
+        [42, 'token-persistido-42', 'pronto']
+      ]);
+      // Pedido entregue continua armazenado, mas não reaparece na fila ativa.
+      assert.equal(db.prepare("SELECT status FROM pedidos WHERE id='legado-3'").get().status, 'entregue');
+    } finally {
+      await app.close();
+      db.close();
+    }
   } finally {
     if (database) database.close();
     rmSync(dir, { recursive: true, force: true });
