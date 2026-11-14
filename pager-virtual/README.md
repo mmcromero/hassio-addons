@@ -60,3 +60,13 @@ O banco de pedidos é `pager_virtual.db`, no diretório persistente `/data` do c
 6. Só então preparar liberação da versão, com atualização dos dois changelogs, revisão do número de versão, build ARM64 e autorização de publicação.
 
 **Evidência atual:** `tests/sqlite-backup-restore.test.js` foi aprovado com banco sintético em WAL e 120 pedidos. Isso não comprova a integridade do backup real nem a capacidade de restauração do Raspberry Pi. A homologação real permanece pendente.
+
+## Verificação da imagem ARM64 (CI)
+O job `build-pager-arm64` agora carrega a imagem Docker compilada e executa `.github/scripts/smoke-pager.sh` em ambiente descartável. O ensaio deve:
+- Iniciar o contêiner ARM64 e verificar `/api/health`.
+- Criar um restaurante e um pedido sintéticos no SQLite do volume montado em `/data`.
+- Destruir o contêiner, mas **preservar somente o volume de teste**.
+- Iniciar um novo contêiner com o mesmo volume, confirmar integridade do SQLite e verificar que o ID, número, token e status do pedido permanecem iguais.
+- Remover contêiner e volume sintéticos no encerramento do job.
+
+**Limitação:** o ensaio de CI não acessa o Raspberry Pi, o backup real nem o supervisor Home Assistant. A validação final da instalação e do proxy continua pendente.
