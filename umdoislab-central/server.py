@@ -288,7 +288,15 @@ def process_inbound(ev):
                 valid_offer = timedelta(0) <= age <= timedelta(hours=2)
             except (ValueError, TypeError):
                 valid_offer = False
-            handoff = handoff or (valid_offer and is_handoff_yes(message))
+            confirmed_offer = valid_offer and is_handoff_yes(message)
+            handoff = handoff or confirmed_offer
+            if confirmed_offer:
+                previous = db.execute("""SELECT text FROM conversation_turns
+                    WHERE sender_id=? AND role='client'
+                    ORDER BY rowid DESC LIMIT 1""", (sender,)).fetchone()
+                subject = "atendimento"
+                summary = ("Cliente confirmou atendimento humano. Dúvida anterior: "
+                           + previous["text"][:280]) if previous else "Cliente confirmou atendimento humano"
             db.execute("DELETE FROM handoff_offers WHERE sender_id=?", (sender,))
         guard = db.execute("SELECT fallback_count FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
         # Two vague requests in sequence become a human handoff, not a generic answer loop.
