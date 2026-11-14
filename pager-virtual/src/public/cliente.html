@@ -514,11 +514,56 @@
     const toggleContrast = document.getElementById('toggle-contrast');
     const toggleFont = document.getElementById('toggle-font');
 
-    // --- SÍNTESE DE ÁUDIO & VIBRAÇÃO HÁPTICA ---
+    // --- SÍNTESE DE ÁUDIO & VIBRAÇÃO HÁPTICA POTENTE ---
     let audioContext = null;
     let alarmInterval = null;
     let isSoundEnabled = false; // Controle de toggle
     let isCurrentlyReady = false;
+    let wakeLock = null;
+    let backgroundKeeperNode = null;
+
+    // 1. SCREEN WAKE LOCK: Impede que a tela do celular apague/bloqueie sozinha
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator && typeof navigator.wakeLock.request === 'function') {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('[WakeLock] Tela travada acordada com sucesso.');
+          wakeLock.addEventListener('release', () => {
+            console.log('[WakeLock] Tela liberada.');
+          });
+        }
+      } catch (err) {
+        console.warn('[WakeLock] Falha ou não suportado:', err);
+      }
+    }
+
+    // Re-solicita o Wake Lock se a aba voltar para o foco
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible' && !wakeLock && !isCurrentlyReady) {
+        await requestWakeLock();
+      }
+    });
+
+    // 2. BACKGROUND AUDIO KEEPER: Mantém o serviço de áudio vivo em segundo plano
+    function startBackgroundAudioKeeper(ctx) {
+      if (backgroundKeeperNode) return;
+      try {
+        // Gera silêncio inaudível contínuo via oscilador de 1Hz com ganho 0.00001
+        // O Android/iOS interpreta como "tocando mídia" e não suspende o processo em background
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1, ctx.currentTime);
+        gain.gain.setValueAtTime(0.00001, ctx.currentTime);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        backgroundKeeperNode = osc;
+        console.log('[AudioKeeper] Manutenção de áudio em background iniciada.');
+      } catch (e) {
+        console.warn('[AudioKeeper] Erro ao iniciar keep-alive:', e);
+      }
+    }
 
     function getAudioContext() {
       if (!audioContext) {
@@ -528,13 +573,15 @@
       if (audioContext.state === 'suspended') {
         audioContext.resume();
       }
+      startBackgroundAudioKeeper(audioContext);
       return audioContext;
     }
 
-    // Executa vibração segura para dispositivos móveis
+    // Executa vibração contínua e forte no hardware do aparelho
     function triggerVibration(pattern) {
       try {
         if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+          // Padrão longo e potente
           navigator.vibrate(pattern);
         }
       } catch (e) {
@@ -542,42 +589,44 @@
       }
     }
 
-    // Sequência ágil de pager: "tu-tu-tu-tu" rápido e nítido
+    // Sequência penetrante de pager: ondas harmônicas saturadas (Som alto tipo Buzzer)
     function playChime(isReadyAlert = false) {
       if (!isSoundEnabled) return;
       const ctx = getAudioContext();
       if (!ctx) return;
 
       const now = ctx.currentTime;
-      // 4 bipes rápidos e agudos (A5, B5, C#6, E6)
-      const notes = isReadyAlert ? [880, 987.77, 1108.73, 1318.51] : [880, 1108.73];
+      // Frequências penetrantes de sirene/pager industrial (1200Hz a 1800Hz)
+      const notes = isReadyAlert ? [1108, 1318, 1567, 1864] : [880, 1108];
       
       notes.forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
 
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.075);
+        // Onda quadrada/dente de serra tem harmônicos muito mais estridentes que senoide
+        osc.type = isReadyAlert ? 'sawtooth' : 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
 
-        gain.gain.setValueAtTime(0.45, now + idx * 0.075);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.075 + 0.1);
+        // Ganho aumentado no limite de headroom para máxima pressão sonora
+        gain.gain.setValueAtTime(0.9, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.12);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.start(now + idx * 0.075);
-        osc.stop(now + idx * 0.075 + 0.12);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.13);
       });
 
-      // Vibração háptica ritmada com os bipes (em aparelhos compatíveis)
+      // Vibração reforçada e agressiva para sentir no bolso mesmo andando
       if (isReadyAlert) {
-        triggerVibration([80, 40, 80, 40, 80, 40, 150]);
+        triggerVibration([300, 100, 300, 100, 500]);
       } else {
-        triggerVibration(120);
+        triggerVibration(200);
       }
     }
 
-    // Loop rápido do alarme: repete a cada 1.4 segundos (cadência de pager)
+    // Loop rápido do alarme: repete a cada 1.2 segundos (cadência de pager insistente)
     function startAlarmLoop() {
       stopAlarmLoop();
       isCurrentlyReady = true;
@@ -595,11 +644,11 @@
           if (isSoundEnabled) {
             playChime(true);
           } else {
-            // Se o som estiver desativado, ainda vibra o celular e pisca
-            triggerVibration([80, 40, 80, 40, 120]);
+            // Se o som estiver desativado, ainda vibra forte o celular e pisca
+            triggerVibration([300, 100, 300, 100, 500]);
           }
         }
-      }, 1400);
+      }, 1200);
     }
 
     function stopAlarmLoop() {
@@ -613,11 +662,31 @@
     }
 
     // --- TOGGLE DE ATIVAÇÃO / DESATIVAÇÃO DO ALERTA ---
-    function toggleSound() {
+    async function toggleSound() {
       isSoundEnabled = !isSoundEnabled;
 
       if (isSoundEnabled) {
         getAudioContext();
+        await requestWakeLock(); // Trava a tela ligada
+        triggerVibration([200, 100, 200]); // Confirmação tátil de ativação
+        btnSoundTest.className = 'sound-toggle-btn enabled';
+        soundIcon.textContent = '🔊';
+        soundLabel.textContent = 'Alerta Máximo Ativo (Tela & Som Protegidos)';
+        liveAnnouncer.textContent = 'Alerta sonoro máximo e vibração ativados.';
+        playChime(false); // Bipe de confirmação
+      } else {
+        btnSoundTest.className = 'sound-toggle-btn muted';
+        soundIcon.textContent = '🔇';
+        soundLabel.textContent = 'Alerta Silenciado (Toque para Ativar)';
+        liveAnnouncer.textContent = 'Alerta silenciado.';
+        stopAlarmLoop();
+        triggerVibration(0);
+        if (wakeLock) {
+          try { wakeLock.release(); } catch(e){}
+          wakeLock = null;
+        }
+      }
+    }
         btnSoundTest.className = 'sound-toggle-btn enabled';
         soundIcon.textContent = '🔊';
         soundLabel.textContent = 'Alerta Sonoro Ativo (Toque para Desativar)';
