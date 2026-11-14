@@ -7,6 +7,8 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
+- Teste de configuração `PUBLIC_URL=https://...` aprovado: login HTTP local sem `Secure`, login pela origem HTTPS declarada com cookie `Secure`, e rejeição de origem externa. Teste automatizado, sem validação do proxy real.
+
 - Teste integrado com servidor real aprovado no GitHub Actions: dois restaurantes, Master Admin, gerentes, terminais, criação e alteração de pedidos, bloqueio cruzado e revogação de sessão. Sem homologação no Home Assistant.
 
 - Teste automatizado de primeiro acesso concluído no add-on: cadastro único, bloqueio de domínio público, login e autorização do painel. **Homologação no Raspberry Pi/HTTPS real ainda pendente.**
