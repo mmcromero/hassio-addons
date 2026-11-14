@@ -6,6 +6,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
+- Teste automatizado de segurança de dados aprovado: backup SQLite pela API nativa com conexão WAL aberta, verificação de integridade, restauração isolada, migração aditiva, preservação de 120 pedidos e simulação de retorno ao backup anterior. **Banco real do Home Assistant não testado.**
 
 - Após a migração, gerente de restaurante preservado consegue entrar e consultar os pedidos antigos ainda ativos; pedido entregue permanece armazenado sem reaparecer no KDS. Teste integrado aprovado.
 - Migração aditiva do SQLite 0.1.3 validada em CI: preservados integralmente restaurante, pedidos (em preparo/pronto/entregue), números, tokens, datas e status; novas tabelas de usuários e sessões criadas sem credenciais padrão. Sem execução sobre o banco real do Raspberry Pi.
