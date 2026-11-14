@@ -7,7 +7,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
-- Adicionada verificação de execução da imagem ARM64: inicialização HTTP, escrita SQLite em `/data`, reinício do contêiner e recuperação dos mesmos registros. Verificação integrada ao job `build-pager-arm64`; resultado final sujeito à esteira.
+- Adicionada verificação de execução da imagem ARM64: inicialização HTTP, escrita SQLite em `/data`, reinício do contêiner e recuperação dos mesmos registros. Etapa `Smoke da imagem ARM64 com volume persistente e reinício` concluída com sucesso no job `build-pager-arm64` (execução 43590737190).
 
 - Teste automatizado de segurança de dados aprovado: backup SQLite pela API nativa com conexão WAL aberta, verificação de integridade, restauração isolada, migração aditiva, preservação de 120 pedidos e simulação de retorno ao backup anterior. **Banco real do Home Assistant não testado.**
 
