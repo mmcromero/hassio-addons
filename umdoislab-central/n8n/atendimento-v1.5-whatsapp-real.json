@@ -209,7 +209,7 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const original=$('Validar remetente e classificar').first().json;\nconst decision=$('Consultar e registrar na Central').first().json;\nif(decision.action!=='auto')throw Error('Atendimento não autorizado');\nconst parts=$input.first()?.json?.content?.parts;\nconst raw=Array.isArray(parts)?parts.map(x=>x.text||'').join('').trim():'';\nif(!raw || raw.length>900)throw Error('Resposta vazia ou extensa; sem envio');\nconst answer=raw.replace(/[\\\\u0000-\\\\u001f]/g,' ').trim();\nif(!answer || /(?:^|\\\\s)(?:R\\\\$\\\\s*\\\\d|\\\\d+\\\\s*reais)(?:\\\\s|$)/i.test(answer))throw Error('Possível preço sem fonte; sem envio');\nreturn [{json:{instance:original.instance,senderId:original.senderId,messageId:original.messageId,\n action:decision.action,shouldSend:true,kind:'normal',text:answer}}];"
+        "jsCode": "const original=$('Validar remetente e classificar').first().json;\nconst decision=$('Consultar e registrar na Central').first().json;\nif(decision.action!=='auto')throw Error('Atendimento não autorizado');\nconst parts=$input.first()?.json?.content?.parts;\nconst raw=Array.isArray(parts)?parts.map(x=>x.text||'').join('').trim():'';\nif(!raw || raw.length>900)throw Error('Resposta vazia ou extensa; sem envio');\nconst answer=raw.replace(/[\\u0000-\\u001f]/g,' ').trim();\nif(!answer || /(?:^|\\s)(?:R\\$\\s*\\d|\\d+\\s*reais)(?:\\s|$)/i.test(answer))throw Error('Possível preço sem fonte; sem envio');\nreturn [{json:{instance:original.instance,senderId:original.senderId,messageId:original.messageId,\n action:decision.action,shouldSend:true,kind:'normal',text:answer}}];"
       }
     },
     {
