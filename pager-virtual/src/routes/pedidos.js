@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { notifyOrderReady } from '../push.js';
 import db from '../db.js';
 import { sseManager } from '../sse.js';
 import { requireRestaurant, currentUser } from '../auth.js';
@@ -113,6 +114,9 @@ export async function pedidosRoutes(fastify, options) {
 
     // Dispara alerta em tempo real para o celular do cliente
     sseManager.notifyClient(pedido.token, payload);
+    if (status === 'pronto' && pedido.status !== 'pronto') {
+      void notifyOrderReady(pedido).catch(err => fastify.log.warn({ err }, 'Falha ao enviar Web Push'));
+    }
     // Dispara atualização para os painéis KDS
     sseManager.notifyKds(pedido.restaurante_id, 'status_alterado', payload);
 
