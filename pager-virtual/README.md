@@ -47,3 +47,16 @@ O teste de primeiro acesso foi ampliado e aprovado no GitHub Actions, incluindo 
 - O novo banco **não cria contas automaticamente**. Após a primeira entrada como Master Admin, é necessário cadastrar o gerente do restaurante existente, sem cadastrar outro restaurante para substituir o anterior.
 - **Antes de atualizar uma instalação real**, exigir backup íntegro dos arquivos SQLite e teste de restauração em ambiente separado; o teste com banco sintético não valida backup/restore real do Home Assistant.
 - Nenhuma atualização no Home Assistant foi realizada nesta etapa.
+
+## Segurança dos dados antes do upgrade (procedimento de homologação)
+O banco de pedidos é `pager_virtual.db`, no diretório persistente `/data` do complemento. O SQLite usa modo WAL, por isso **não basta copiar só o arquivo `.db` enquanto o processo escreve**. Para obter um snapshot consistente, usar o mecanismo de backup do SQLite com o banco aberto ou interromper o serviço e fazer cópia consistente dos arquivos relacionados, conforme o procedimento de backup do Home Assistant verificado na instalação.
+
+**Critérios de aceite para o ensaio fora da instalação ativa:**
+1. Obter backup do complemento com o banco preservado, sem modificar a instalação de origem.
+2. Restaurar em ambiente isolado, verificar `PRAGMA integrity_check` e `PRAGMA foreign_key_check`, e comparar quantidade, IDs, tokens, estados e datas dos pedidos.
+3. Iniciar a versão nova apenas na cópia restaurada; comparar dados antes e depois da migração.
+4. Criar Master Admin e gerente vinculados ao **mesmo restaurante existente**; confirmar que o KDS mostra os pedidos em preparo e prontos, sem ressuscitar entregues.
+5. Ensaiar o retorno ao snapshot anterior em outra cópia, sem substituir os dados da instalação ativa.
+6. Só então preparar liberação da versão, com atualização dos dois changelogs, revisão do número de versão, build ARM64 e autorização de publicação.
+
+**Evidência atual:** `tests/sqlite-backup-restore.test.js` foi aprovado com banco sintético em WAL e 120 pedidos. Isso não comprova a integridade do backup real nem a capacidade de restauração do Raspberry Pi. A homologação real permanece pendente.
