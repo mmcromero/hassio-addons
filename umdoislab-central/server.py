@@ -42,6 +42,10 @@ def canonical_number(raw):
     value = str(raw or "").strip()
     if value.endswith("@s.whatsapp.net"):
         value = value[:-len("@s.whatsapp.net")]
+    # Aceitar número colado com +, espaços, parênteses ou hífen.
+    if not re.fullmatch(r"[+0-9()\\s-]+", value):
+        return None
+    value = re.sub(r"[^0-9]", "", value)
     if not re.fullmatch(r"[0-9]{10,15}", value):
         return None
     return value + "@s.whatsapp.net"
@@ -112,6 +116,8 @@ def historical_baseline():
             if not 200 <= response.status < 300:
                 raise ValueError("Consulta à Evolution falhou")
             result = json.loads(response.read(5_000_000))
+        # API pode responder lista ou objeto com múltiplos formatos; sem confirmar
+        # lista completa não ativamos os contatos novos.
         if not isinstance(result,list):
             raise ValueError("Resposta de contatos/chats incompatível")
         if len(result) >= 10000:
@@ -469,6 +475,9 @@ class Handler(BaseHTTPRequestHandler):
             with connect() as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
                 guard = db.execute("SELECT * FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
+                # Exclusão e modo de autorização valem também para mensagens protocolares.
+                if not contact_policy(db, sender)["allowed"]:
+                    return self.respond(403, {"error": "Contato bloqueado pela política da Central"})
                 if kind == "choice":
                     allowed = bool(row and row["status"] == "pending"
                         and row["choice_state"] == "offered"
