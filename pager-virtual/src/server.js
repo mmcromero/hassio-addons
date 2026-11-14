@@ -33,7 +33,7 @@ fastify.addHook('onRequest', async (request, reply) => {
     const user = currentUser(request);
     if (!user) return reply.redirect('/login.html');
     if (route === '/admin.html' && user.papel === 'operador') return reply.redirect('/kds.html');
-    if (route === '/kds.html' && user.papel === 'master') return reply.redirect('/admin.html');
+    if (route === '/kds.html' && user.papel === 'master' && !user.restaurante_id) return reply.redirect('/admin.html');
   }
 });
 fastify.get('/', async (request, reply) => {
