@@ -1,5 +1,8 @@
 # Umdoislab — Central de Atendimento (protótipo funcional v0.1.0)
 
+> **ESTADO ATUAL — 14/11/2026:** a Central **0.3.0** foi mostrada em execução no Home Assistant, e o workflow n8n **v1.6** foi mostrado como publicado. As seções históricas deste README sobre Central 0.1.0, 0.2.0, “não instalada” e v1.4/v1.5 não são o estado operacional vigente. Leia [estado operacional atual](../docs/ESTADO-ATUAL-UMDOISLAB.md) e [protocolo de continuidade](../docs/PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md) antes de executar qualquer instrução. A consulta de 546 números à Evolution **não comprova** validação individual; o validador proposto pelo assistente está documentado e **adiado pelo proprietário**. O problema observado de encaminhamento sem nova ficha ainda não tem causa técnica confirmada.
+
+
 Add-on separado do Evolution API. Interface mobile-first via **Home Assistant Ingress**; banco SQLite em `/data/central.sqlite3`; resposta manual pelo backend para Evolution API. **Não instalado no Raspberry** e **não integrado ainda ao workflow v1.4**.
 
 ## Segurança e operação
