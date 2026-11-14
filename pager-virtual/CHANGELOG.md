@@ -7,6 +7,8 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
+- Teste automatizado de primeiro acesso concluído no add-on: cadastro único, bloqueio de domínio público, login e autorização do painel. **Homologação no Raspberry Pi/HTTPS real ainda pendente.**
+
 - A próxima versão reunirá a correção 0.1.4 do KDS e a autenticação por Master Admin, gerente e terminal operacional.
 - O primeiro acesso planejado usa um código temporário nos logs privados do Home Assistant para criar o Master Admin, sem senha padrão.
 - Segurança adicional do primeiro acesso: verificação de origem, hostname local e IP privado para impedir que um proxy público seja confundido com acesso local.
