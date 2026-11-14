@@ -59,7 +59,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     insert.run('legado-1', 'rest_demo_01', 41, 'token-persistido-41', '[]', 'preparo', now, null, null);
     insert.run('legado-2', 'rest_demo_01', 42, 'token-persistido-42', '[]', 'pronto', now, now + 1000, null);
     insert.run('legado-3', 'rest_demo_01', 43, 'token-persistido-43', '[]', 'entregue', now, now + 1000, now + 2000);
-    const original = database.prepare('SELECT * FROM pedidos ORDER BY id').all();
+    const original = database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all();
     const originalRest = database.prepare('SELECT * FROM restaurantes ORDER BY id').all();
     database.close();
     database = undefined;
@@ -67,7 +67,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     const env = { ...process.env, DATA_PATH: dir };
     await executeNode("import db from './src/db.js'; db.close();", env);
     database = new Database(file);
-    assert.deepEqual(database.prepare('SELECT * FROM pedidos ORDER BY id').all(), original);
+    assert.deepEqual(database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all(), original);
     assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), originalRest);
     assert.equal(database.prepare('SELECT count(*) n FROM usuarios').get().n, 0);
     assert.equal(database.prepare('SELECT count(*) n FROM sessoes').get().n, 0);
@@ -79,7 +79,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     // Reiniciar não deve recriar o restaurante, modificar pedidos ou criar credenciais.
     await executeNode("import db from './src/db.js'; db.close();", env);
     database = new Database(file);
-    assert.deepEqual(database.prepare('SELECT * FROM pedidos ORDER BY id').all(), original);
+    assert.deepEqual(database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all(), original);
     assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), originalRest);
     assert.equal(database.prepare('SELECT count(*) n FROM usuarios').get().n, 0);
     database.close();

@@ -375,6 +375,7 @@
         <span id="finished-count">0</span> Finalizados
       </div>
 
+      <button id="btn-sequence-settings" class="btn-sim-order" title="Configurar numeração">⚙️ Numeração</button>
       <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
       <a id="admin-link" href="/admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">⚙️ Administração</a>
       <button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:54px;margin:0;padding:12px 16px">Sair</button>
@@ -392,6 +393,11 @@
       <form id="manual-form">
         <label for="manual-number" style="display:block; text-align:left; margin-bottom:8px; font-weight:700">Número do pedido</label>
         <input id="manual-number" type="number" inputmode="numeric" min="1" step="1" required autocomplete="off" placeholder="Ex.: 44" style="width:100%;font-size:1.8rem;padding:16px;border-radius:12px;border:2px solid #64748b;background:#0f172a;color:#fff;text-align:center;min-height:64px">
+        <label for="manual-name" style="display:block;text-align:left;margin-top:12px">Nome (opcional)</label>
+        <input id="manual-name" maxlength="80" autocomplete="off" placeholder="Nome do cliente" style="width:100%;padding:12px;margin-top:4px">
+        <label for="manual-phone" style="display:block;text-align:left;margin-top:12px">WhatsApp (opcional)</label>
+        <input id="manual-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="DDD + número" style="width:100%;padding:12px;margin-top:4px">
+        <p id="manual-mode-note" style="margin-top:12px;font-size:.85rem"></p>
         <p id="manual-error" role="alert" style="color:#fca5a5;min-height:24px;margin:12px 0"></p>
         <button id="manual-submit" type="submit" class="btn-sim-order" style="width:100%;justify-content:center">✓ Criar pedido</button>
       </form>
@@ -399,6 +405,21 @@
     </div>
   </div>
 
+  <div id="sequence-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuração da numeração">
+    <div class="modal-box">
+      <h2>Numeração de pedidos</h2>
+      <p style="margin:12px 0">Altere somente quando não houver pedidos ativos.</p>
+      <label for="sequence-mode">Modo</label>
+      <select id="sequence-mode" style="width:100%;padding:12px;margin:8px 0">
+        <option value="manual">Manual</option><option value="automatico">Automático</option>
+      </select>
+      <label for="sequence-start">Próximo número</label>
+      <input id="sequence-start" type="number" min="1" step="1" style="width:100%;padding:12px;margin:8px 0">
+      <p id="sequence-error" role="alert" style="color:#fca5a5"></p>
+      <button type="button" id="sequence-save" class="btn-sim-order">Salvar configuração</button>
+      <button type="button" id="sequence-cancel" class="btn-close-modal">Cancelar</button>
+    </div>
+  </div>
   <!-- MODAL DE QR CODE AMPLIADO (DISPLAY DO CAIXA) -->
   <div id="qr-modal" class="modal-backdrop">
     <div class="modal-box">
@@ -453,6 +474,7 @@
             dbId: p.id,
             token: p.token,
             items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Acompanhamento por senha',
+            clienteNome: p.cliente_nome || '', clienteTelefone: p.cliente_telefone || '', restauranteNome: p.restaurante_nome || '',
             status: p.status,
             createdAt: p.created_at
           }));
@@ -476,6 +498,7 @@
               dbId: p.id,
               token: p.token,
               items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Acompanhamento por senha',
+              clienteNome: p.cliente_nome || '', clienteTelefone: p.cliente_telefone || '', restauranteNome: p.restaurante_nome || '',
               status: p.status,
               createdAt: p.created_at
             });
@@ -558,7 +581,7 @@
             </div>
 
             <div class="status-badge ${order.status}">${statusLabel}</div>
-            <div class="order-summary">${escapeHtml(order.items)}</div>
+            <div class="order-summary">${order.clienteNome ? escapeHtml(order.clienteNome) + ' · ' : ''}${escapeHtml(order.items)}</div>
 
             <!-- Miniatura do QR Code que abre o display expandido -->
             <div class="qr-strip" onclick="openQrModal('${order.id}')" title="Toque para ampliar o QR Code deste pedido">
@@ -584,6 +607,7 @@
               </button>
             `}
           </div>
+          ${order.clienteTelefone ? `<button type="button" class="btn-action-kds btn-finish-kds" style="margin-top:8px;width:100%" onclick="shareOrderWhatsApp('${order.dbId}')">📱 Enviar pelo WhatsApp</button>` : ''}
         `;
 
         grid.appendChild(card);
@@ -604,6 +628,20 @@
         }, 10);
       });
     }
+
+    // O WhatsApp apenas abre a conversa: o envio depende do funcionário.
+    window.shareOrderWhatsApp = function(dbId) {
+      const order = activeOrders.find(o => o.dbId === dbId);
+      if (!order || !order.clienteTelefone) return;
+      const pronto = order.status === 'pronto';
+      const estabelecimento = order.restauranteNome ? order.restauranteNome + ': ' : '';
+      const msg = pronto
+        ? `${estabelecimento}Seu pedido #${order.id} está pronto para retirada. Acompanhe: ${getClientUrl(order)}`
+        : `${estabelecimento}Acompanhe seu pedido #${order.id}: ${getClientUrl(order)}`;
+      const phone = String(order.clienteTelefone).replace(/\D/g, '');
+      const international = phone.length <= 11 ? '55' + phone : phone;
+      window.open('https://wa.me/' + international + '?text=' + encodeURIComponent(msg), '_blank', 'noopener,noreferrer');
+    };
 
     // Chamar e finalizar somente após confirmação do servidor.
     window.callOrder = async function(orderId) {
@@ -647,9 +685,43 @@
     // CADASTRO MANUAL: sempre espera confirmação da API; nunca inventa token local.
     const manualModal = document.getElementById('manual-modal');
     const manualInput = document.getElementById('manual-number');
-    document.getElementById('btn-add-manual-order').addEventListener('click', () => {
+    let sequenceConfig = { modo: 'manual', proximo_numero: 1 };
+    async function loadSequence() {
+      const res = await fetch(apiPath('/api/pedidos/sequencia'));
+      if (res.ok) sequenceConfig = await res.json();
+      manualInput.required = sequenceConfig.modo !== 'automatico';
+      manualInput.disabled = sequenceConfig.modo === 'automatico';
+      document.getElementById('manual-mode-note').textContent =
+        sequenceConfig.modo === 'automatico' ? 'Próxima senha automática: ' + sequenceConfig.proximo_numero : 'Digite a senha do pedido.';
+    }
+    document.getElementById('btn-sequence-settings').addEventListener('click', async () => {
+      await loadSequence();
+      document.getElementById('sequence-mode').value = sequenceConfig.modo;
+      document.getElementById('sequence-start').value = sequenceConfig.proximo_numero;
+      document.getElementById('sequence-error').textContent = '';
+      document.getElementById('sequence-modal').classList.add('open');
+    });
+    document.getElementById('sequence-cancel').addEventListener('click', () => document.getElementById('sequence-modal').classList.remove('open'));
+    document.getElementById('sequence-save').addEventListener('click', async () => {
+      const error = document.getElementById('sequence-error');
+      try {
+        const res = await fetch(apiPath('/api/pedidos/sequencia'), {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modo: document.getElementById('sequence-mode').value,
+            proximo_numero: Number(document.getElementById('sequence-start').value) })
+        });
+        const data = await res.json();
+        if (!res.ok) throw Error(data.error || 'Falha ao salvar');
+        sequenceConfig = data;
+        document.getElementById('sequence-modal').classList.remove('open');
+      } catch (e) { error.textContent = e.message; }
+    });
+    document.getElementById('btn-add-manual-order').addEventListener('click', async () => {
+      await loadSequence();
       document.getElementById('manual-error').textContent = '';
       manualInput.value = '';
+      document.getElementById('manual-name').value = '';
+      document.getElementById('manual-phone').value = '';
       manualModal.classList.add('open');
       manualInput.focus();
     });
@@ -658,7 +730,7 @@
       event.preventDefault();
       const numero = Number(manualInput.value);
       const errorEl = document.getElementById('manual-error');
-      if (!Number.isSafeInteger(numero) || numero <= 0) {
+      if (sequenceConfig.modo !== 'automatico' && (!Number.isSafeInteger(numero) || numero <= 0)) {
         errorEl.textContent = 'Digite um número de pedido válido.';
         return;
       }
@@ -669,7 +741,9 @@
         const resposta = await fetch(apiPath('/api/pedidos'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ numero, itens: [] })
+          body: JSON.stringify({ numero: sequenceConfig.modo === 'automatico' ? null : numero, itens: [],
+            cliente_nome: document.getElementById('manual-name').value,
+            cliente_telefone: document.getElementById('manual-phone').value })
         });
         const pedido = await resposta.json();
         if (!resposta.ok) throw new Error(pedido.error || 'Não foi possível criar pedido.');
@@ -677,7 +751,8 @@
         if (!activeOrders.some(o => o.dbId === pedido.id)) {
           activeOrders.push({
             id: String(pedido.numero), dbId: pedido.id, token: pedido.token,
-            items: 'Acompanhamento por senha', status: pedido.status, createdAt: pedido.created_at
+            items: 'Acompanhamento por senha', status: pedido.status, createdAt: pedido.created_at,
+            clienteNome: pedido.cliente_nome || '', clienteTelefone: pedido.cliente_telefone || '', restauranteNome: pedido.restaurante_nome || ''
           });
           renderOrders();
         }

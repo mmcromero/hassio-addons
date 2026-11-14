@@ -105,3 +105,20 @@ db.exec(`
 // Registros antigos são preservados na migração aditiva.
 
 export default db;
+
+// Migração aditiva: dados opcionais de atendimento e numeração manual/automática.
+const pedidoCols = db.prepare('PRAGMA table_info(pedidos)').all().map(c => c.name);
+for (const [col, type] of [['cliente_nome', 'TEXT'], ['cliente_telefone', 'TEXT']]) {
+  if (!pedidoCols.includes(col)) db.exec(`ALTER TABLE pedidos ADD COLUMN ${col} ${type}`);
+}
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sequencias_pedidos (
+    restaurante_id TEXT PRIMARY KEY REFERENCES restaurantes(id),
+    modo TEXT NOT NULL DEFAULT 'manual' CHECK (modo IN ('manual', 'automatico')),
+    proximo_numero INTEGER NOT NULL DEFAULT 1 CHECK (proximo_numero > 0)
+  );
+`);
+// Impede duplicatas ativas mesmo em processos distintos. Dados legados conflitantes
+// exigem correção explícita antes de instalar o índice, nunca exclusão automática.
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_pedidos_ativos_numero
+  ON pedidos(restaurante_id, numero) WHERE status IN ('preparo', 'pronto')`);
