@@ -55,6 +55,13 @@ jobs:
         run: docker buildx build --platform linux/arm64 --progress plain --load -t evolution-api:test evolution-api/
       - name: Testar inicialização e reinício (PostgreSQL + API)
         run: bash .github/scripts/smoke-evolution.sh
+  build-pager-arm64:
+    runs-on: ubuntu-latest
+    needs: syntax
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
       - name: Compilar Pager Virtual ARM64 (sem publicação)
         run: docker buildx build --platform linux/arm64 --progress plain -t pager-virtual:ci pager-virtual/
       - name: Verificar sintaxe JavaScript do Pager Virtual
