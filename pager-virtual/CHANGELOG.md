@@ -6,6 +6,9 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
+
+- Adicionada verificação de execução da imagem ARM64: inicialização HTTP, escrita SQLite em `/data`, reinício do contêiner e recuperação dos mesmos registros. Verificação integrada ao job `build-pager-arm64`; resultado final sujeito à esteira.
+
 - Teste automatizado de segurança de dados aprovado: backup SQLite pela API nativa com conexão WAL aberta, verificação de integridade, restauração isolada, migração aditiva, preservação de 120 pedidos e simulação de retorno ao backup anterior. **Banco real do Home Assistant não testado.**
 
 - Após a migração, gerente de restaurante preservado consegue entrar e consultar os pedidos antigos ainda ativos; pedido entregue permanece armazenado sem reaparecer no KDS. Teste integrado aprovado.
