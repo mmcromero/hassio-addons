@@ -77,3 +77,10 @@ O job `build-pager-arm64` agora carrega a imagem Docker compilada e executa `.gi
 - As rotas SSE do KDS e do cliente assumem explicitamente o controle da conexão HTTP no Fastify; o cliente também tem heartbeat com limpeza ao desconectar.
 - `tests/sse-http.test.js` conecta dois clientes SSE ao processo real e confirma cadastro de pedido, estado inicial e notificação `pronto` no KDS e no pager público.
 - A CI `test-pager-auth` aprovou o teste. O comportamento no proxy HTTPS e em celulares reais ainda precisa ser homologado.
+
+## Revogação de acesso com SSE ativo
+- Quando um gerente desativa um terminal, a sessão deixa de ser válida.
+- Antes de cada evento de pedido enviado ao KDS, o backend consulta novamente a autorização da sessão. O próximo evento não é enviado ao terminal revogado.
+- Se nenhum evento ocorrer, o heartbeat encerra o stream sem autorização em até aproximadamente 25 segundos.
+- O teste `tests/sse-scope.test.js` confirma a revogação e a continuidade da conexão de outro restaurante.
+- A homologação com navegador real e proxy HTTPS permanece pendente.
