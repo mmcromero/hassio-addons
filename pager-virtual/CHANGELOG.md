@@ -6,6 +6,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
+- Segurança SSE do KDS: a sessão é revalidada antes de cada evento; terminal desativado deixa de receber imediatamente o próximo aviso, mesmo antes do heartbeat de 25 segundos. Teste de isolamento e revogação aprovado na CI.
 - Corrigido o ciclo de vida das conexões SSE para assumir explicitamente a resposta no Fastify e limpar heartbeat ao desconectar. Teste HTTP real aprovado: KDS recebe pedido novo e KDS/cliente recebem transição para pronto. CI aprovada; sem teste ainda no proxy do Raspberry Pi.
 
 - Adicionada verificação de execução da imagem ARM64: inicialização HTTP, escrita SQLite em `/data`, reinício do contêiner e recuperação dos mesmos registros. Etapa `Smoke da imagem ARM64 com volume persistente e reinício` concluída com sucesso no job `build-pager-arm64` (execução 43590737190).
