@@ -7,6 +7,7 @@ import { pedidosRoutes } from './routes/pedidos.js';
 import { pushRoutes } from './push.js';
 import { authRoutes, currentUser } from './auth.js';
 import { adminRoutes } from './admin.js';
+import { interessesRoutes } from './interesses.js';
 import { setupRoutes, needsSetup } from './setup.js';
 import db from './db.js';
 
@@ -40,7 +41,7 @@ fastify.get('/', async (request, reply) => {
   if (needsSetup()) return reply.redirect('/setup.html');
   const user = currentUser(request);
   return reply.redirect(user?.papel === 'master' ? '/admin.html' :
-    user ? '/kds.html' : '/login.html');
+    user ? '/kds.html' : '/landing.html');
 });
 await fastify.register(fastifyStatic, {
   root: publicDir,
@@ -51,6 +52,7 @@ await fastify.register(fastifyStatic, {
 await fastify.register(setupRoutes);
 await fastify.register(authRoutes);
 await fastify.register(adminRoutes);
+await fastify.register(interessesRoutes);
 await fastify.register(pedidosRoutes);
 await fastify.register(pushRoutes);
 
