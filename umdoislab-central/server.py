@@ -194,6 +194,13 @@ def init():
         db.execute("""CREATE TABLE IF NOT EXISTS known_contacts(
             sender_id TEXT PRIMARY KEY
         )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS activity_contacts(
+            sender_id TEXT PRIMARY KEY,
+            sender_name TEXT NOT NULL DEFAULT '',
+            last_message TEXT NOT NULL DEFAULT '',
+            last_message_id TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL
+        )""")
         db.execute("""CREATE TABLE IF NOT EXISTS handoff_offers(
             sender_id TEXT PRIMARY KEY,
             message_id TEXT NOT NULL,
@@ -351,6 +358,12 @@ def process_inbound(ev):
                        (name,subject,summary or old["summary"],message,mid,ts,sender))
         db.execute("INSERT INTO inbound_ids(sender_id,message_id,created_at) VALUES(?,?,?)",
                    (sender,mid,ts))
+        db.execute("""INSERT INTO activity_contacts(sender_id,sender_name,last_message,
+                      last_message_id,updated_at) VALUES(?,?,?,?,?)
+                      ON CONFLICT(sender_id) DO UPDATE SET
+                      sender_name=excluded.sender_name,last_message=excluded.last_message,
+                      last_message_id=excluded.last_message_id,updated_at=excluded.updated_at""",
+                   (sender,name,message,mid,ts))
         if message.strip():
             db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
                           VALUES(?,?,?,?,?)""",(sender,mid,"client",message,ts))
@@ -402,6 +415,40 @@ def routing_decision(instance, sender):
     return {"allowAutoReply": permission, "state": status, "choiceState": choice,
             "reason": "allowed" if permission else eligibility["reason"] if not eligibility["allowed"] else "human_active" if status == "human" else "human_pending",
             "needsCustomerChoice": status == "pending" and choice == "idle"}
+
+
+def activity_list(db):
+    """Read-only monitoring of authorized messages received by this Central.
+
+    'responded' means Evolution accepted a bot send, not WhatsApp delivery.
+    Do not infer successful resolution from a sent message.
+    """
+    results = []
+    contacts = db.execute("""SELECT a.*,c.status AS ticket_status,c.subject,
+           c.summary FROM activity_contacts a LEFT JOIN conversations c
+           ON c.sender_id=a.sender_id ORDER BY a.updated_at DESC LIMIT 200""").fetchall()
+    for item in contacts:
+        d = dict(item)
+        last = db.execute("""SELECT role, text, created_at FROM conversation_turns
+            WHERE sender_id=? ORDER BY rowid DESC LIMIT 1""",
+                          (d["sender_id"],)).fetchone()
+        pending_send = db.execute("""SELECT outcome FROM replies
+            WHERE sender_id=? ORDER BY rowid DESC LIMIT 1""",
+                                  (d["sender_id"],)).fetchone()
+        if d["ticket_status"] == "pending":
+            status = "pending"
+        elif d["ticket_status"] == "human":
+            status = "human"
+        elif last and last["role"] == "assistant":
+            status = "accepted"
+        elif pending_send and pending_send["outcome"] in ("uncertain", "requested"):
+            status = "verify"
+        else:
+            status = "unanswered"
+        d["activity_status"] = status
+        d["last_response_at"] = last["created_at"] if last and last["role"] == "assistant" else None
+        results.append(d)
+    return results
 
 
 def public_row(r, detail=False):
@@ -469,6 +516,24 @@ class Handler(BaseHTTPRequestHandler):
                 policy["excluded"] = [r[0] for r in db.execute(
                     "SELECT sender_id FROM contact_rules WHERE category='excluded' ORDER BY sender_id")]
             return self.respond(200, policy)
+        if self.path == "/api/activity":
+            with connect() as db:
+                rows = activity_list(db)
+            return self.respond(200, {"items": rows, "limit": 200,
+                                      "deliveryMeaning": "Evolution accepted; WhatsApp delivery not confirmed"})
+        if self.path.startswith("/api/activity/"):
+            from urllib.parse import unquote
+            sender = unquote(self.path.removeprefix("/api/activity/"))
+            if not valid_sender_for_send(sender):
+                return self.respond(422, {"error": "Contato inválido"})
+            with connect() as db:
+                contact = db.execute("SELECT * FROM activity_contacts WHERE sender_id=?",
+                                     (sender,)).fetchone()
+                turns = db.execute("""SELECT role,text,created_at FROM conversation_turns
+                                  WHERE sender_id=? ORDER BY rowid DESC LIMIT 30""",
+                                   (sender,)).fetchall() if contact else []
+            return self.respond(200, {"item":dict(contact),
+                    "turns":[dict(t) for t in reversed(turns)]}) if contact else self.respond(404, {"error":"Não encontrado"})
         if self.path == "/api/conversations":
             with connect() as db:
                 # Nunca ocultar pendências por causa de muitos atendimentos resolvidos.
