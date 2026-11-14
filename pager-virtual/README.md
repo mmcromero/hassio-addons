@@ -72,3 +72,8 @@ O job `build-pager-arm64` agora carrega a imagem Docker compilada e executa `.gi
 **Resultado confirmado:** o job `build-pager-arm64`, execução 43590737190, aprovou a compilação e a etapa `Smoke da imagem ARM64 com volume persistente e reinício`.
 
 **Limitação:** o ensaio de CI não acessa o Raspberry Pi, o backup real nem o supervisor Home Assistant. A validação final da instalação e do proxy continua pendente.
+
+## Eventos em tempo real — validação de regressão
+- As rotas SSE do KDS e do cliente assumem explicitamente o controle da conexão HTTP no Fastify; o cliente também tem heartbeat com limpeza ao desconectar.
+- `tests/sse-http.test.js` conecta dois clientes SSE ao processo real e confirma cadastro de pedido, estado inicial e notificação `pronto` no KDS e no pager público.
+- A CI `test-pager-auth` aprovou o teste. O comportamento no proxy HTTPS e em celulares reais ainda precisa ser homologado.
