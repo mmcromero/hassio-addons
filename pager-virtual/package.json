@@ -1,6 +1,6 @@
 {
   "name": "pager-virtual",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Sistema de Pager Virtual ultraleve para restaurantes e food service",
   "main": "src/server.js",
   "type": "module",
@@ -17,6 +17,7 @@
     "@fastify/static": "^7.0.4",
     "better-sqlite3": "^11.7.0",
     "fastify": "^4.26.2",
-    "nanoid": "^5.0.6"
+    "nanoid": "^5.0.6",
+    "web-push": "^3.6.7"
   }
 }

@@ -5,6 +5,17 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.6] — 14/11/2026 — notificações Web Push e orientação ao cliente
+
+- Notificação do sistema para pedido pronto via Web Push, associada ao token e autorizada pelo cliente.
+- Service worker, manifesto de aplicativo web, chave VAPID gerada e persistida no armazenamento do complemento.
+- Orientação inicial contextual: Android/navegador compatível pode ativar notificações; sem suporte, iPhone fora do app de Tela de Início ou permissão bloqueada recebe aviso para manter a página aberta.
+- Mantido o SSE e o alarme da página em primeiro plano. Removida a estratégia de áudio silencioso, que não garante execução em segundo plano.
+- Registro de assinaturas e teste automatizado sem enviar mensagens de teste a serviços externos.
+- **Limite:** a entrega e o som das notificações dependem da permissão, do HTTPS, do aparelho e das configurações do sistema. A publicação no GitHub não instala o add-on no Raspberry Pi.
+
+---
+
 ## [0.1.5] — 14/11/2026 — KDS e autenticação de restaurantes
 - Teste HTTP integrado de revogação de KDS aprovado: operador desativado perde a conexão SSE antes do próximo pedido; KDS do gerente continua recebendo notificações. Sem homologação no proxy externo real.
 - Segurança SSE do KDS: a sessão é revalidada antes de cada evento; terminal desativado deixa de receber imediatamente o próximo aviso, mesmo antes do heartbeat de 25 segundos. Teste de isolamento e revogação aprovado na CI.
