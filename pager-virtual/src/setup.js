@@ -30,7 +30,17 @@ export async function setupRoutes(app) {
     const ip = request.ip.replace(/^::ffff:/, '');
     const localIp = ip === '::1' || ip === '127.0.0.1' || /^10\./.test(ip) ||
       /^192\.168\./.test(ip) || /^172\.(1[6-9]|2[0-9]|3[01])\./.test(ip);
-    if (!sameOrigin || !localIp) {
+    // Um proxy público pode apresentar IP interno ao servidor.
+    // A origem do cadastro deve apontar para endereço literal de loopback ou LAN.
+    // Não autorizar hostname público só porque a conexão veio do proxy.
+    let localHost = false;
+    try {
+      const hostname = new URL(origin).hostname.replace(/^\[|\]$/g, '');
+      localHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' ||
+        /^10\./.test(hostname) || /^192\.168\./.test(hostname) ||
+        /^172\.(1[6-9]|2[0-9]|3[01])\./.test(hostname);
+    } catch {}
+    if (!sameOrigin || !localIp || !localHost) {
       return reply.code(403).send({ error: 'Primeiro acesso disponível apenas na rede local' });
     }
     if (Date.now() > expiresAt || failures >= 6) {
