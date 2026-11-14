@@ -69,4 +69,6 @@ O job `build-pager-arm64` agora carrega a imagem Docker compilada e executa `.gi
 - Iniciar um novo contêiner com o mesmo volume, confirmar integridade do SQLite e verificar que o ID, número, token e status do pedido permanecem iguais.
 - Remover contêiner e volume sintéticos no encerramento do job.
 
+**Resultado confirmado:** o job `build-pager-arm64`, execução 43590737190, aprovou a compilação e a etapa `Smoke da imagem ARM64 com volume persistente e reinício`.
+
 **Limitação:** o ensaio de CI não acessa o Raspberry Pi, o backup real nem o supervisor Home Assistant. A validação final da instalação e do proxy continua pendente.
