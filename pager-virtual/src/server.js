@@ -4,6 +4,9 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pedidosRoutes } from './routes/pedidos.js';
+import { authRoutes, currentUser } from './auth.js';
+import { adminRoutes } from './admin.js';
+import { setupRoutes, needsSetup } from './setup.js';
 import db from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,17 +20,36 @@ const fastify = Fastify({
 
 // Habilita CORS para permitir conexões flexíveis
 await fastify.register(cors, {
-  origin: '*'
+  origin: false
 });
 
 // Serve arquivos estáticos da pasta public (Cliente e KDS)
 const publicDir = path.join(__dirname, 'public');
+fastify.addHook('onRequest', async (request, reply) => {
+  const route = request.url.split('?')[0];
+  if (route === '/kds.html' || route === '/admin.html') {
+    if (needsSetup()) return reply.redirect('/setup.html');
+    const user = currentUser(request);
+    if (!user) return reply.redirect('/login.html');
+    if (route === '/admin.html' && user.papel === 'operador') return reply.redirect('/kds.html');
+    if (route === '/kds.html' && user.papel === 'master') return reply.redirect('/admin.html');
+  }
+});
+fastify.get('/', async (request, reply) => {
+  if (needsSetup()) return reply.redirect('/setup.html');
+  const user = currentUser(request);
+  return reply.redirect(user?.papel === 'master' ? '/admin.html' :
+    user ? '/kds.html' : '/login.html');
+});
 await fastify.register(fastifyStatic, {
   root: publicDir,
   prefix: '/'
 });
 
-// Registra rotas de negócio
+// Registra login e rotas operacionais.
+await fastify.register(setupRoutes);
+await fastify.register(authRoutes);
+await fastify.register(adminRoutes);
 await fastify.register(pedidosRoutes);
 
 
