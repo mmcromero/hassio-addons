@@ -22,7 +22,7 @@ No workflow n8n **v1.6 publicado** (captura do proprietário), o Gemini responde
 
 ## Homologação e limites
 - O novo workflow **não foi importado, testado ou publicado no n8n real**.
-- A Central **0.3.0 instalada não tem essa correção**. Para instalar o código corrigido futuramente será necessário definir **nova versão do add-on** (não reutilizar 0.3.0), conferir migração SQLite, backup e compatibilidade com versões existentes.
+- A Central **0.3.0 instalada não tem essa correção**. O add-on desta branch foi preparado como **0.4.0**, ainda não instalado; antes da futura publicação conferir migração SQLite, backup e compatibilidade com versões existentes.
 - **Não publicar a v1.7 antes de atualizar e homologar a Central**, senão `human_offer` será rejeitado na instalação atual. Publicar cópia isolada e evitar dois Webhooks publicados com mesmo path.
 - O modelo pode desobedecer o marcador ou fazer oferta não padronizada: nesse caso a resposta deve **falhar fechada**, sem prometer uma transferência. Isso é melhor do que declarar ação inexistente.
 - O estado de oferta só é persistido depois de 2xx. Em erro de rede de resultado incerto, não repetir automaticamente; investigar se houve entrega.
