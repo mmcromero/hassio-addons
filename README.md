@@ -35,6 +35,7 @@ Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` 
 | Add-on | Versão | Arquitetura | Estado |
 |---|---|---|---|
 | Evolution API — WhatsApp + n8n | 0.1.0 | aarch64 | Candidato, ainda não homologado no Raspberry Pi |
+| Pager Virtual | 0.1.0 | aarch64, amd64 | Candidato a testes no Raspberry Pi 4 |
 
 ## Continuidade e arquitetura de automações
 
