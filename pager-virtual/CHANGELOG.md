@@ -5,6 +5,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.11] — 14/11/2026 — interface administrativa Avisaqui
+
+- Sincronizada a interface `src/public/admin.html` do PR #14 do repositório privado `mmcromero/pager-virtual`.
+- Navegação administrativa para Master e gerente, diálogos de cadastro, estados de carregamento, validação acessível e feedback contextual.
+- Corrigida a confirmação após fechar diálogos, preservada a seleção de restaurante durante atualização e incluído rótulo na redefinição de senha de terminal.
+- Sem alterações previstas no banco, slug `pager_virtual`, porta 8095, rotas de API ou dados persistidos em `/data`.
+- **Estado:** versão preparada em branch; CI, publicação e homologação no Home Assistant dependem de evidência.
+
 ## [0.1.10] — 14/11/2026 — entrada pela landing page
 
 - Corrigido o botão **Abrir página web** do Home Assistant para acessar `/`, em vez de `/kds.html`.
