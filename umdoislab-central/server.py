@@ -520,7 +520,7 @@ class Handler(BaseHTTPRequestHandler):
         if kind in ("normal", "fallback"):
             normalized_out = normalized(message)
             # Gemini nunca pode confirmar operação que o backend não registrou.
-            if re.search(r"\\b(encaminhei|foi encaminhad[oa]|ja encaminh|avisei (um |o )?colega|colega (ja )?recebeu)\\b", normalized_out):
+            if re.search(r"\b(encaminhei|foi encaminhad[oa]|ja encaminh|avisei (um |o )?colega|colega (ja )?recebeu)\b", normalized_out):
                 return self.respond(422, {"error": "Confirmação de encaminhamento sem registro bloqueada"})
             if (("encaminh" in normalized_out or "atendente" in normalized_out or "colega" in normalized_out)
                     and ("quer" in normalized_out or "posso" in normalized_out or "pode" in normalized_out)):
