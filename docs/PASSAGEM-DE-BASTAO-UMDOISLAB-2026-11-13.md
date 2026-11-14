@@ -1,5 +1,8 @@
 # UMDOISLAB — Passagem de bastão: Evolution API, WhatsApp e n8n
 
+> **REGISTRO HISTÓRICO — NÃO USAR COMO ESTADO ATUAL (14/11/2026).** Este documento descreve a fase v1.1 e preserva suas evidências. A referência operacional vigente é [ESTADO-ATUAL-UMDOISLAB.md](ESTADO-ATUAL-UMDOISLAB.md): workflow n8n **v1.6 publicado**, Central HA **0.3.0** em execução e Evolution add-on **0.1.0**. O validador de contatos discutido está **adiado por decisão expressa do proprietário**, e não implementado. A cada pacote ou decisão importante, seguir [PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md](PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md). Os próximos passos e afirmações de ausência de IA abaixo são **históricos**, não instruções de execução atual.
+
+
 **Data da consolidação:** 13/11/2026 (BRT)  
 **Escopo:** documentação operacional e decisões; nenhuma mudança em código, serviços, servidores ou workflows.  
 **Fonte de evidências:** capturas e resultados relatados pelo proprietário durante a configuração, comparados aos arquivos do repositório em 13/11/2026.  
