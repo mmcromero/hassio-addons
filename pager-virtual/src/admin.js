@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import db from './db.js';
-import { passwordHash, requireUser } from './auth.js';
+import { passwordHash, requireUser, changeMasterContext } from './auth.js';
 
 const simpleName = value => typeof value === 'string' && value.trim().length >= 2 && value.trim().length <= 120;
 const loginValid = value => typeof value === 'string' && /^[a-z0-9._@-]{3,120}$/.test(value.trim().toLowerCase());
@@ -43,6 +43,21 @@ export async function adminRoutes(app) {
   app.get('/api/admin/restaurantes', async (request, reply) => {
     if (!mustBe(request, reply, ['master'])) return;
     return db.prepare('SELECT id, nome, slug, ativo FROM restaurantes ORDER BY nome').all();
+  });
+
+  // Master seleciona restaurante na própria sessão; nunca altera a sessão do gerente.
+  app.post('/api/admin/contexto/:restauranteId', async (request, reply) => {
+    if (!mustBe(request, reply, ['master'])) return;
+    if (!changeMasterContext(request, request.params.restauranteId)) {
+      return reply.code(404).send({ error: 'Restaurante ativo não encontrado' });
+    }
+    return { ok: true, restaurante_id: request.params.restauranteId };
+  });
+
+  app.post('/api/admin/contexto/sair', async (request, reply) => {
+    if (!mustBe(request, reply, ['master'])) return;
+    changeMasterContext(request, null);
+    return { ok: true };
   });
 
   app.post('/api/admin/restaurantes', async (request, reply) => {
