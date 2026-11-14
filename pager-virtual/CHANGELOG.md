@@ -7,6 +7,8 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ## [Próxima entrega — em desenvolvimento, NÃO publicada]
 
+- Teste integrado com servidor real aprovado no GitHub Actions: dois restaurantes, Master Admin, gerentes, terminais, criação e alteração de pedidos, bloqueio cruzado e revogação de sessão. Sem homologação no Home Assistant.
+
 - Teste automatizado de primeiro acesso concluído no add-on: cadastro único, bloqueio de domínio público, login e autorização do painel. **Homologação no Raspberry Pi/HTTPS real ainda pendente.**
 
 - A próxima versão reunirá a correção 0.1.4 do KDS e a autenticação por Master Admin, gerente e terminal operacional.
