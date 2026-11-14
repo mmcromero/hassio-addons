@@ -1,5 +1,8 @@
 # CONTINUIDADE — Home Assistant, Evolution API e n8n
 
+> **ATUALIZAÇÃO PRIORITÁRIA — 14/11/2026.** Comece por [ESTADO-ATUAL-UMDOISLAB.md](ESTADO-ATUAL-UMDOISLAB.md) e [PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md](PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md). Os registros abaixo sobre workflow v1.1 são históricos. A operação observada tem **n8n v1.6 publicado**, **Central 0.3.0 instalada**, Evolution add-on **0.1.0**. O validador automático de contatos foi discutido e está **adiado**. Não retornar à v1.1, recriar fluxos antigos, alterar o HA ou reabrir decisões antigas por interpretação deste texto.
+
+
 **Atualizado em:** 2026-11-13  
 **Repositório:** https://github.com/mmcromero/hassio-addons  
 **Situação (13/11/2026):** Evolution API instalada, instância `umdoislab` pareada e classificação v1.1 homologada em produção pelo proprietário; ver [passagem de bastão](PASSAGEM-DE-BASTAO-UMDOISLAB-2026-11-13.md).
