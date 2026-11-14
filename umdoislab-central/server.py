@@ -201,6 +201,16 @@ def init():
             last_message_id TEXT NOT NULL DEFAULT '',
             updated_at TEXT NOT NULL
         )""")
+        # Retrocompatibilidade: conversas já gravadas antes deste painel continuam visíveis.
+        db.execute("""INSERT OR IGNORE INTO activity_contacts(
+                      sender_id,sender_name,last_message,last_message_id,updated_at)
+                      SELECT t.sender_id,COALESCE(c.sender_name,'Contato'),
+                             t.text,t.message_id,t.created_at
+                      FROM conversation_turns t
+                      LEFT JOIN conversations c ON c.sender_id=t.sender_id
+                      WHERE t.role='client' AND t.rowid=(
+                        SELECT MAX(u.rowid) FROM conversation_turns u
+                        WHERE u.sender_id=t.sender_id AND u.role='client')""")
         db.execute("""CREATE TABLE IF NOT EXISTS handoff_offers(
             sender_id TEXT PRIMARY KEY,
             message_id TEXT NOT NULL,
@@ -441,7 +451,9 @@ def activity_list(db):
             status = "human"
         elif last and last["role"] == "assistant":
             status = "accepted"
-        elif pending_send and pending_send["outcome"] in ("uncertain", "requested"):
+        elif (pending_send and pending_send["outcome"] in ("uncertain", "requested")
+              and db.execute("""SELECT MAX(created_at) FROM replies
+                                WHERE sender_id=?""", (d["sender_id"],)).fetchone()[0] >= d["updated_at"]):
             status = "verify"
         else:
             status = "unanswered"
