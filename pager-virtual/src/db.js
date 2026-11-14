@@ -46,17 +46,44 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_pedidos_token ON pedidos(token);
   CREATE INDEX IF NOT EXISTS idx_pedidos_rest_status ON pedidos(restaurante_id, status);
+
+  -- Fundação de autenticação. Sem usuário ou senha pré-cadastrados.
+  CREATE TABLE IF NOT EXISTS usuarios (
+    id TEXT PRIMARY KEY,
+    restaurante_id TEXT,
+    nome TEXT NOT NULL,
+    login TEXT NOT NULL UNIQUE,
+    senha_hash TEXT NOT NULL,
+    papel TEXT NOT NULL CHECK (papel IN ('master', 'gerente', 'operador')),
+    ativo INTEGER NOT NULL DEFAULT 1 CHECK (ativo IN (0, 1)),
+    criado_em INTEGER NOT NULL,
+    atualizado_em INTEGER NOT NULL,
+    FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id),
+    CHECK (
+      (papel = 'master' AND restaurante_id IS NULL) OR
+      (papel IN ('gerente', 'operador') AND restaurante_id IS NOT NULL)
+    )
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_usuarios_restaurante
+  ON usuarios(restaurante_id, papel, ativo);
+
+  CREATE TABLE IF NOT EXISTS sessoes (
+    id TEXT PRIMARY KEY,
+    usuario_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    criado_em INTEGER NOT NULL,
+    expira_em INTEGER NOT NULL,
+    revogado_em INTEGER,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sessoes_usuario
+  ON sessoes(usuario_id, expira_em);
+
 `);
 
-// Seed de restaurante padrão caso não exista
-const defaultRest = db.prepare('SELECT id FROM restaurantes WHERE slug = ?').get('demo');
-if (!defaultRest) {
-  const insertRest = db.prepare(`
-    INSERT INTO restaurantes (id, nome, slug, ativo, created_at)
-    VALUES (?, ?, ?, 1, ?)
-  `);
-  insertRest.run('rest_demo_01', 'Burger House Demo', 'demo', Date.now());
-  console.log('[DB] Restaurante padrão demo inserido com sucesso.');
-}
+// Nenhum restaurante fictício é criado automaticamente.
+// Registros antigos são preservados na migração aditiva.
 
 export default db;
