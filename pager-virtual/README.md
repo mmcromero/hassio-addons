@@ -84,3 +84,17 @@ O job `build-pager-arm64` agora carrega a imagem Docker compilada e executa `.gi
 - Se nenhum evento ocorrer, o heartbeat encerra o stream sem autorização em até aproximadamente 25 segundos.
 - O teste `tests/sse-scope.test.js` confirma a revogação e a continuidade da conexão de outro restaurante.
 - A homologação com navegador real e proxy HTTPS permanece pendente.
+
+## Versão 0.1.6 — notificações em segundo plano (Web Push)
+
+- Quando o cliente acessa o QR Code, o Bipou verifica o suporte do navegador e a permissão de notificações.
+- Em navegadores compatíveis com Web Push e HTTPS, aparece **Ativar notificações** quando a permissão ainda não foi concedida. A solicitação só acontece após o toque do cliente.
+- Após a permissão e o registro da assinatura, a tela deixa de mostrar essa orientação. O servidor envia uma notificação do sistema quando o pedido muda para **pronto**.
+- Se o navegador não oferecer suporte, a permissão for negada ou o iPhone estiver usando a página comum do navegador, a orientação pede que o cliente mantenha a tela aberta e ativa.
+- No iPhone, Web Push exige um app web adicionado à Tela de Início (iOS 16.4+). Um QR Code aberto em aba normal não basta. Não prometemos que adicionar o ícone sozinho vincula o pedido ao app instalado.
+- O som da notificação depende do dispositivo, modo silencioso e permissões. O aviso SSE e o áudio dentro da página continuam disponíveis quando ela está ativa.
+- As chaves VAPID são geradas localmente no primeiro uso e salvas em `/data/push-vapid.json` (fora do Git). Não trocar esse arquivo durante atualizações se quisermos manter as assinaturas.
+- A assinatura é vinculada ao token do pedido e não exige identificação pessoal.
+- A loja de complementos recebe o código via GitHub; o teste em celular ocorre após atualizar o Home Assistant.
+
+**Nota:** Web Push requer origem HTTPS confiável (ou localhost em ambiente local). Abrir o add-on por IP HTTP da rede não habilita Web Push em navegadores comuns.
