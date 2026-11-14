@@ -72,7 +72,24 @@
       const line = document.createElement('div'); line.className = 'line';
       const span = document.createElement('span');
       span.textContent = rest.nome + ' (' + rest.slug + ')' + (rest.ativo ? '' : ' · Inativo');
-      line.appendChild(span); list.appendChild(line);
+      line.appendChild(span);
+      if (rest.ativo) {
+        const enter = document.createElement('button');
+        enter.textContent = 'Entrar no restaurante';
+        enter.title = 'Abrir KDS deste restaurante com sua sessão Master Admin';
+        enter.addEventListener('click', async () => {
+          enter.disabled = true;
+          try {
+            await post('/api/admin/contexto/' + encodeURIComponent(rest.id), {});
+            location.assign('/kds.html');
+          } catch (error) {
+            enter.disabled = false;
+            message(error.message, true);
+          }
+        });
+        line.appendChild(enter);
+      }
+      list.appendChild(line);
       if (rest.ativo) { const op = document.createElement('option'); op.value=rest.id;op.textContent=rest.nome;select.appendChild(op); }
     }
     if (!data.length) list.textContent='Nenhum restaurante cadastrado.';
