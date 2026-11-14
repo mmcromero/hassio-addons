@@ -23,8 +23,17 @@ export async function pedidosRoutes(fastify, options) {
   fastify.post('/api/pedidos', async (request, reply) => {
     const { restaurante_id = 'rest_demo_01', numero, itens = [] } = request.body || {};
 
-    if (!numero) {
-      return reply.code(400).send({ error: 'Número do pedido é obrigatório' });
+    const numeroNormalizado = Number(numero);
+    if (!Number.isSafeInteger(numeroNormalizado) || numeroNormalizado <= 0) {
+      return reply.code(400).send({ error: 'Informe um número de pedido válido' });
+    }
+    const restaurante = db.prepare('SELECT id FROM restaurantes WHERE id = ? AND ativo = 1').get(restaurante_id);
+    if (!restaurante) {
+      return reply.code(400).send({ error: 'Restaurante inválido' });
+    }
+    const duplicado = db.prepare("SELECT id FROM pedidos WHERE restaurante_id = ? AND numero = ? AND status IN ('preparo', 'pronto')").get(restaurante_id, numeroNormalizado);
+    if (duplicado) {
+      return reply.code(409).send({ error: 'Já existe um pedido ativo com esse número', pedido_id: duplicado.id });
     }
 
     const id = nanoid(12);
@@ -36,12 +45,12 @@ export async function pedidosRoutes(fastify, options) {
       VALUES (?, ?, ?, ?, ?, 'preparo', ?)
     `);
 
-    insert.run(id, restaurante_id, numero, token, JSON.stringify(itens), now);
+    insert.run(id, restaurante_id, numeroNormalizado, token, JSON.stringify(itens), now);
 
     const novoPedido = {
       id,
       restaurante_id,
-      numero,
+      numero: numeroNormalizado,
       token,
       itens,
       status: 'preparo',
