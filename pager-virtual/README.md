@@ -40,3 +40,10 @@ A branch `feat/pager-auth-staging` reúne a correção do KDS 0.1.4 com:
 O código foi sincronizado com o repositório principal e os testes automatizados do add-on foram adicionados à esteira.
 O teste de primeiro acesso foi ampliado e aprovado no GitHub Actions, incluindo tentativa por hostname público e cadastro inicial único. O teste automatizado não substitui o teste real de acesso pelo proxy HTTPS nem a instalação no Raspberry Pi.
 **Não atualizar o Home Assistant com esta branch**, que ainda exige homologação operacional, validação HTTPS/proxy e autorização de publicação. O número 0.1.4 continua sendo o da base técnica, não o número definitivo da próxima entrega.
+
+## Migração da versão 0.1.3 — dados existentes
+- Teste automatizado `tests/legacy-upgrade.test.js` reproduz o esquema SQLite 0.1.3 e confirma que o upgrade não altera registros de restaurante nem pedidos.
+- Após criar um acesso de gerente para o restaurante já cadastrado, os pedidos antigos nos estados `preparo` e `pronto` reaparecem no KDS autenticado. Pedidos `entregue` seguem no banco, fora da lista ativa.
+- O novo banco **não cria contas automaticamente**. Após a primeira entrada como Master Admin, é necessário cadastrar o gerente do restaurante existente, sem cadastrar outro restaurante para substituir o anterior.
+- **Antes de atualizar uma instalação real**, exigir backup íntegro dos arquivos SQLite e teste de restauração em ambiente separado; o teste com banco sintético não valida backup/restore real do Home Assistant.
+- Nenhuma atualização no Home Assistant foi realizada nesta etapa.
