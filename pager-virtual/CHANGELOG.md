@@ -5,7 +5,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
-## [Próxima entrega — em desenvolvimento, NÃO publicada]
+## [0.1.5] — 14/11/2026 — KDS e autenticação de restaurantes
 - Teste HTTP integrado de revogação de KDS aprovado: operador desativado perde a conexão SSE antes do próximo pedido; KDS do gerente continua recebendo notificações. Sem homologação no proxy externo real.
 - Segurança SSE do KDS: a sessão é revalidada antes de cada evento; terminal desativado deixa de receber imediatamente o próximo aviso, mesmo antes do heartbeat de 25 segundos. Teste de isolamento e revogação aprovado na CI.
 - Corrigido o ciclo de vida das conexões SSE para assumir explicitamente a resposta no Fastify e limpar heartbeat ao desconectar. Teste HTTP real aprovado: KDS recebe pedido novo e KDS/cliente recebem transição para pronto. CI aprovada; sem teste ainda no proxy do Raspberry Pi.
