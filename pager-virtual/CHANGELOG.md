@@ -10,7 +10,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - A próxima versão reunirá a correção 0.1.4 do KDS e a autenticação por Master Admin, gerente e terminal operacional.
 - O primeiro acesso planejado usa um código temporário nos logs privados do Home Assistant para criar o Master Admin, sem senha padrão.
 - Segurança adicional do primeiro acesso: verificação de origem, hostname local e IP privado para impedir que um proxy público seja confundido com acesso local.
-- Smoke do primeiro acesso ampliado no código-fonte; sincronização desse teste específico ao add-on ainda pendente.
+- Smoke de primeiro acesso incluído no add-on: inicia o servidor, testa código temporário, bloqueia origem externa e segundo cadastro, valida login e acesso ao painel. Teste automatizado aprovado na esteira do PR #19; teste no Raspberry Pi e no proxy real continua pendente.
 - O backend em desenvolvimento já contém sessões revogáveis e isolamento de pedidos/SSE por restaurante; a homologação final ainda está pendente.
 - O gerente poderá administrar terminais e redefinir suas senhas; a troca da própria senha revoga sessões anteriores.
 - Código e testes da branch `feat/auth-restaurantes-fundacao` foram sincronizados para `feat/pager-auth-staging` neste repositório. **Não estão integrados à main nem distribuídos no Home Assistant.**
