@@ -55,3 +55,29 @@ jobs:
         run: docker buildx build --platform linux/arm64 --progress plain --load -t evolution-api:test evolution-api/
       - name: Testar inicialização e reinício (PostgreSQL + API)
         run: bash .github/scripts/smoke-evolution.sh
+  build-pager-arm64:
+    runs-on: ubuntu-latest
+    needs: syntax
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Compilar Pager Virtual ARM64 (sem publicação)
+        run: docker buildx build --platform linux/arm64 --progress plain -t pager-virtual:ci pager-virtual/
+      - name: Verificar sintaxe JavaScript do Pager Virtual
+        run: |
+          node --check pager-virtual/src/server.js
+          node --check pager-virtual/src/db.js
+          node --check pager-virtual/src/sse.js
+          node --check pager-virtual/src/routes/pedidos.js
+          node - <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          for (const name of ['kds', 'cliente']) {
+            const html = fs.readFileSync('pager-virtual/src/public/' + name + '.html', 'utf8');
+            const scripts = html.split('<script>').slice(1).map(part => part.split('</script>')[0]);
+            if (!scripts.length) throw new Error(name + ' sem script inline');
+            for (const script of scripts) new vm.Script(script, { filename: name + '.html' });
+            console.log(name + '.html: JavaScript válido');
+          }
+          JS

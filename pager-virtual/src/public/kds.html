@@ -95,15 +95,16 @@
       border-color: rgba(16, 185, 129, 0.4);
     }
 
-    /* BOTÃO DISCRETO DE SIMULAÇÃO DE NOVO PEDIDO */
+    /* BOTÃO PRINCIPAL DE CADASTRO MANUAL */
     .btn-sim-order {
-      background: #1e293b;
-      color: #93c5fd;
-      border: 1px dashed #3b82f6;
-      padding: 8px 16px;
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid #60a5fa;
+      padding: 16px 20px;
       border-radius: 8px;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 1rem;
+      min-height: 54px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -342,6 +343,16 @@
       border: 2px dashed var(--card-border);
       border-radius: 16px;
     }
+    @media print {
+      @page { size: auto; margin: 5mm; }
+      body > :not(#qr-modal) { display: none !important; }
+      #qr-modal { position: static !important; display: block !important; background: #fff !important; padding: 0 !important; color: #000; }
+      #qr-modal .modal-box { border: none; box-shadow: none; background: white; color: black; width: 100%; max-width: 100%; padding: 8mm; }
+      #qr-modal p, #qr-modal h2 { color: black !important; }
+      #qr-modal .modal-qr { border: none; width: 220px; }
+      #btn-close-modal, #btn-print-qr { display: none !important; }
+      #modal-link-label { color: #000 !important; }
+    }
   </style>
 </head>
 <body>
@@ -351,28 +362,40 @@
     <div class="brand-title">
       <div style="font-size: 2rem;">🍳</div>
       <div>
-        <h1>Burger House Grill · KDS</h1>
+        <h1>Pager Virtual · KDS</h1>
         <span>Painel de Atendimento da Cozinha & Balcão</span>
       </div>
     </div>
 
     <div class="kds-controls">
       <div class="metric-tag active-orders">
-        <span id="active-count">3</span> Pedidos Ativos
+        <span id="active-count">0</span> Pedidos Ativos
       </div>
       <div class="metric-tag finished">
         <span id="finished-count">0</span> Finalizados
       </div>
 
-      <!-- BOTÃO DE TESTE: SIMULA ENTRADA DE NOVO PEDIDO DO PDV -->
-      <button id="btn-add-sim-order" class="btn-sim-order" title="Simula novo pedido recebido da impressora/PDV">
-        ➕ Simular Novo Pedido (PDV)
-      </button>
+      <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
     </div>
   </header>
 
   <!-- GRID DE CARTÕES DE PEDIDOS -->
   <main id="orders-grid" class="orders-grid"></main>
+
+  <!-- MODAL DE CADASTRO MANUAL — TOUCH FRIENDLY -->
+  <div id="manual-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="manual-title">
+    <div class="modal-box">
+      <h2 id="manual-title">Inserir pedido manual</h2>
+      <p style="color:var(--text-muted); margin:10px 0 16px">Digite somente o número da senha ou do pedido.</p>
+      <form id="manual-form">
+        <label for="manual-number" style="display:block; text-align:left; margin-bottom:8px; font-weight:700">Número do pedido</label>
+        <input id="manual-number" type="number" inputmode="numeric" min="1" step="1" required autocomplete="off" placeholder="Ex.: 44" style="width:100%;font-size:1.8rem;padding:16px;border-radius:12px;border:2px solid #64748b;background:#0f172a;color:#fff;text-align:center;min-height:64px">
+        <p id="manual-error" role="alert" style="color:#fca5a5;min-height:24px;margin:12px 0"></p>
+        <button id="manual-submit" type="submit" class="btn-sim-order" style="width:100%;justify-content:center">✓ Criar pedido</button>
+      </form>
+      <button type="button" id="manual-cancel" class="btn-close-modal">Cancelar</button>
+    </div>
+  </div>
 
   <!-- MODAL DE QR CODE AMPLIADO (DISPLAY DO CAIXA) -->
   <div id="qr-modal" class="modal-backdrop">
@@ -387,7 +410,8 @@
       </div>
 
       <p id="modal-link-label" style="font-size: 0.72rem; color: #94a3b8; font-family: monospace; word-break: break-all;"></p>
-      <button id="btn-close-modal" class="btn-close-modal">Fechar Display</button>
+      <button id="btn-print-qr" class="btn-sim-order" style="width:100%;justify-content:center">🖨️ Imprimir QR Code</button>
+      <button id="btn-close-modal" class="btn-close-modal">Fechar</button>
     </div>
   </div>
 
@@ -396,30 +420,32 @@
     // --- INTEGRAÇÃO COM API REAL DO PAGER VIRTUAL & SSE ---
     let activeOrders = [];
     let finishedCount = 0;
-    let orderCounter = 40;
-
-    const orderPool = [
-      { cliente: 'Mesa 04', items: '1x Smash Burger Duplo, 1x Batata Rústica, 1x Coca Zero' },
-      { cliente: 'Balcão', items: '1x Classic Bacon Burger, 1x Suco de Laranja 500ml' },
-      { cliente: 'Retirada', items: '2x Cheeseburger Artesanal, 2x Fritas Crocantes' },
-      { cliente: 'Mesa 12', items: '1x Cheddar Melt Especial, 1x Onion Rings, 1x Milkshake' },
-      { cliente: 'Balcão', items: '1x Salada Caesar com Frango, 1x Água Mineral c/ Gás' },
-      { cliente: 'Retirada', items: '1x Costela BBQ Burger, 1x Batata Canoa com Cheddar' },
-      { cliente: 'Mesa 02', items: '1x Veggie Burger Grão-de-Bico, 1x Suco Verde Detox' }
-    ];
-    let poolIndex = 0;
+    let publicBaseUrl = '';
+    const appBasePath = window.location.pathname.replace(/\/kds\.html$/, '').replace(/\/$/, '');
+    const apiPath = (suffix) => appBasePath + suffix;
+    async function carregarConfiguracao() {
+      try {
+        const resposta = await fetch(apiPath('/api/config/publica'));
+        if (resposta.ok) {
+          const config = await resposta.json();
+          publicBaseUrl = String(config.public_url || '').replace(/\/$/, '');
+        }
+      } catch (erro) {
+        console.warn('URL pública indisponível; usando endereço do KDS', erro);
+      }
+    }
 
     // Busca pedidos ativos diretamente do backend SQLite
     async function carregarPedidos() {
       try {
-        const res = await fetch('/api/pedidos');
+        const res = await fetch(apiPath('/api/pedidos'));
         if (res.ok) {
           const dados = await res.json();
           activeOrders = dados.map(p => ({
             id: String(p.numero),
             dbId: p.id,
             token: p.token,
-            items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Itens da comanda',
+            items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Acompanhamento por senha',
             status: p.status,
             createdAt: p.created_at
           }));
@@ -436,7 +462,7 @@
 
     // Receptor SSE da Cozinha (sincronização em tempo real)
     function conectarSseKds() {
-      const sse = new EventSource('/api/kds/stream');
+      const sse = new EventSource(apiPath('/api/kds/stream'));
       sse.addEventListener('novo_pedido', (e) => {
         try {
           const p = JSON.parse(e.data);
@@ -446,7 +472,7 @@
               id: String(p.numero),
               dbId: p.id,
               token: p.token,
-              items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Itens da comanda',
+              items: Array.isArray(p.itens) && p.itens.length > 0 ? p.itens.join(', ') : 'Acompanhamento por senha',
               status: p.status,
               createdAt: p.created_at
             });
@@ -476,8 +502,8 @@
     }
 
     function getClientUrl(order) {
-      const baseUrl = window.location.origin;
-      return `${baseUrl}/cliente.html?token=${order.token || 'demo'}&pedido=${order.id}&itens=${encodeURIComponent(order.items)}`;
+      const baseUrl = publicBaseUrl || (window.location.origin + appBasePath);
+      return `${baseUrl}/cliente.html?token=${encodeURIComponent(order.token)}&pedido=${encodeURIComponent(order.id)}`;
     }
 
     function getElapsedText(createdAt) {
@@ -500,7 +526,7 @@
             <div style="font-size: 2.5rem; margin-bottom: 8px;">🍽️</div>
             <h3>Cozinha em dia! Nenhum pedido pendente.</h3>
             <p style="font-size: 0.85rem; margin-top: 6px;">
-              Clique em <strong>"➕ Simular Novo Pedido (PDV)"</strong> acima para adicionar mais pedidos.
+              Use <strong>"Inserir pedido manual"</strong> para cadastrar a primeira senha.
             </p>
           </div>
         `;
@@ -576,96 +602,88 @@
       });
     }
 
-    // AÇÃO: Chamar pedido (chama a API real do Pager Virtual)
+    // Chamar e finalizar somente após confirmação do servidor.
     window.callOrder = async function(orderId) {
       const order = activeOrders.find(o => o.id === orderId);
-      if (order) {
+      if (!order || !order.dbId) return;
+      try {
+        const resposta = await fetch(apiPath(`/api/pedidos/${order.dbId}/status`), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'pronto' })
+        });
+        if (!resposta.ok) throw new Error('Falha ao chamar pedido');
         order.status = 'pronto';
         renderOrders();
-        try {
-          if (order.dbId) {
-            await fetch(`/api/pedidos/${order.dbId}/status`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ status: 'pronto' })
-            });
-          }
-        } catch (e) {
-          console.error('Erro ao chamar pedido na API:', e);
-        }
+      } catch (erro) {
+        alert('Não foi possível avisar o cliente. Verifique a conexão e tente novamente.');
       }
     };
 
-    // AÇÃO: Finalizar pedido (marca como entregue na API e remove da tela)
     window.finishOrder = async function(orderId) {
-      const cardEl = document.getElementById('card-' + orderId);
-      if (cardEl) {
-        cardEl.classList.add('fade-out');
-      }
-
       const order = activeOrders.find(o => o.id === orderId);
-      finishedCount++;
-
+      if (!order || !order.dbId) return;
       try {
-        if (order && order.dbId) {
-          await fetch(`/api/pedidos/${order.dbId}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'entregue' })
-          });
+        const resposta = await fetch(apiPath(`/api/pedidos/${order.dbId}/status`), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'entregue' })
+        });
+        if (!resposta.ok) throw new Error('Falha ao finalizar pedido');
+        // A remoção é idempotente: o SSE pode ter chegado antes da resposta HTTP.
+        if (activeOrders.some(o => o.dbId === order.dbId)) {
+          activeOrders = activeOrders.filter(o => o.dbId !== order.dbId);
+          finishedCount++;
+          renderOrders();
         }
-      } catch (e) {
-        console.error('Erro ao finalizar pedido na API:', e);
+      } catch (erro) {
+        alert('Não foi possível finalizar. O pedido foi mantido no painel.');
       }
-
-      setTimeout(() => {
-        activeOrders = activeOrders.filter(o => o.id !== orderId);
-        renderOrders();
-      }, 300);
     };
 
-    // AÇÃO: Adicionar novo pedido (cria registro real no banco SQLite via API)
-    document.getElementById('btn-add-sim-order').addEventListener('click', async () => {
-      orderCounter++;
-      const template = orderPool[poolIndex % orderPool.length];
-      poolIndex++;
-
+    // CADASTRO MANUAL: sempre espera confirmação da API; nunca inventa token local.
+    const manualModal = document.getElementById('manual-modal');
+    const manualInput = document.getElementById('manual-number');
+    document.getElementById('btn-add-manual-order').addEventListener('click', () => {
+      document.getElementById('manual-error').textContent = '';
+      manualInput.value = '';
+      manualModal.classList.add('open');
+      manualInput.focus();
+    });
+    document.getElementById('manual-cancel').addEventListener('click', () => manualModal.classList.remove('open'));
+    document.getElementById('manual-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const numero = Number(manualInput.value);
+      const errorEl = document.getElementById('manual-error');
+      if (!Number.isSafeInteger(numero) || numero <= 0) {
+        errorEl.textContent = 'Digite um número de pedido válido.';
+        return;
+      }
+      const submit = document.getElementById('manual-submit');
+      submit.disabled = true;
+      submit.textContent = 'Criando pedido...';
       try {
-        const res = await fetch('/api/pedidos', {
+        const resposta = await fetch(apiPath('/api/pedidos'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            numero: orderCounter,
-            itens: template.items.split(', ')
-          })
+          body: JSON.stringify({ numero, itens: [] })
         });
-
-        if (res.ok) {
-          const novo = await res.json();
-          // Se o SSE não tiver adicionado ainda, adiciona
-          if (!activeOrders.some(o => o.dbId === novo.id)) {
-            activeOrders.push({
-              id: String(novo.numero),
-              dbId: novo.id,
-              token: novo.token,
-              items: template.items,
-              status: novo.status,
-              createdAt: novo.created_at
-            });
-            renderOrders();
-          }
+        const pedido = await resposta.json();
+        if (!resposta.ok) throw new Error(pedido.error || 'Não foi possível criar pedido.');
+        manualModal.classList.remove('open');
+        if (!activeOrders.some(o => o.dbId === pedido.id)) {
+          activeOrders.push({
+            id: String(pedido.numero), dbId: pedido.id, token: pedido.token,
+            items: 'Acompanhamento por senha', status: pedido.status, createdAt: pedido.created_at
+          });
+          renderOrders();
         }
-      } catch (e) {
-        console.warn('Erro ao criar pedido via API, inserindo em memória:', e);
-        activeOrders.push({
-          id: String(orderCounter),
-          dbId: 'sim_' + Date.now(),
-          token: 'token_' + orderCounter,
-          items: template.items,
-          status: 'preparo',
-          createdAt: Date.now()
-        });
-        renderOrders();
+        openQrModal(String(pedido.numero));
+      } catch (erro) {
+        errorEl.textContent = erro.message || 'Falha de comunicação. Tente novamente.';
+      } finally {
+        submit.disabled = false;
+        submit.textContent = '✓ Criar pedido';
       }
     });
 
@@ -703,9 +721,12 @@
       document.getElementById('qr-modal').classList.remove('open');
     });
 
-    // Inicia ouvindo a API e o SSE
-    carregarPedidos();
-    conectarSseKds();
+    document.getElementById('btn-print-qr').addEventListener('click', () => window.print());
+    // Carrega a URL configurada antes de permitir o primeiro QR.
+    carregarConfiguracao().finally(() => {
+      carregarPedidos();
+      conectarSseKds();
+    });
   </script>
 </body>
 </html>
