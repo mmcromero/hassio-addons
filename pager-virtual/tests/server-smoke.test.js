@@ -53,6 +53,22 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     assert.ok(codeMatch, 'código temporário deve aparecer nos logs locais');
+    const origin = 'http://127.0.0.1:' + port;
+    const registration = { codigo: codeMatch[1], nome: 'Administrador Teste',
+      login: 'master-teste', senha: 'senha-super-forte-teste-123' };
+    const post = (url, payload, sentOrigin = origin) => fetch(origin + url, {
+      method: 'POST',
+      headers: { Origin: sentOrigin, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      redirect: 'manual'
+    });
+    const forbidden = await post('/api/setup/master', registration, 'http://outro-host.example');
+    assert.equal(forbidden.status, 403);
+    const created = await post('/api/setup/master', registration);
+    assert.equal(created.status, 201, await created.text());
+    const repeated = await post('/api/setup/master', registration);
+    assert.equal(repeated.status, 409);
+
 
   } finally {
     child.kill('SIGTERM');
