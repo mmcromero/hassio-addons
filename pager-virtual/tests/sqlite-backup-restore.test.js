@@ -48,14 +48,14 @@ test('backup SQLite consistente durante WAL permite restauração e upgrade sem 
     source.prepare("UPDATE pedidos SET status='pronto', pronto_at=? WHERE id='pedido-2'").run(now + 200);
     source.prepare("UPDATE pedidos SET status='entregue', entregue_at=? WHERE id='pedido-3'").run(now + 300);
     // Não fecha o banco antes da cópia: a conexão permanece aberta em WAL.
-    const original = source.prepare('SELECT * FROM pedidos ORDER BY numero').all();
+    const original = source.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY numero').all();
     assert.equal(original.length, 120);
     await source.backup(backupFile);
     assert.ok(statSync(backupFile).size > 0);
     const snapshot = new Database(backupFile, { readonly: true });
     try {
       assert.equal(snapshot.pragma('integrity_check', { simple: true }), 'ok');
-      assert.deepEqual(snapshot.prepare('SELECT * FROM pedidos ORDER BY numero').all(), original);
+      assert.deepEqual(snapshot.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY numero').all(), original);
       assert.deepEqual(snapshot.pragma('foreign_key_check'), []);
     } finally { snapshot.close(); }
 
@@ -65,7 +65,7 @@ test('backup SQLite consistente durante WAL permite restauração e upgrade sem 
     try {
       assert.equal(recovered.pragma('integrity_check', { simple: true }), 'ok');
       assert.deepEqual(recovered.pragma('foreign_key_check'), []);
-      assert.deepEqual(recovered.prepare('SELECT * FROM pedidos ORDER BY numero').all(), original);
+      assert.deepEqual(recovered.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY numero').all(), original);
       assert.equal(recovered.prepare('SELECT COUNT(*) n FROM usuarios').get().n, 0);
       assert.equal(recovered.prepare('SELECT COUNT(*) n FROM sessoes').get().n, 0);
     } finally { recovered.close(); }
@@ -73,7 +73,7 @@ test('backup SQLite consistente durante WAL permite restauração e upgrade sem 
     // O arquivo de backup não foi alterado pela migração da cópia restaurada.
     const unchanged = new Database(backupFile, { readonly: true });
     try {
-      assert.deepEqual(unchanged.prepare('SELECT * FROM pedidos ORDER BY numero').all(), original);
+      assert.deepEqual(unchanged.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY numero').all(), original);
       assert.equal(unchanged.prepare("SELECT count(*) n FROM sqlite_master WHERE name='usuarios'").get().n, 0);
     } finally { unchanged.close(); }
 
@@ -85,7 +85,7 @@ test('backup SQLite consistente durante WAL permite restauração e upgrade sem 
     const rollback = new Database(rollbackFile, { readonly: true });
     try {
       assert.equal(rollback.pragma('integrity_check', { simple: true }), 'ok');
-      assert.deepEqual(rollback.prepare('SELECT * FROM pedidos ORDER BY numero').all(), original);
+      assert.deepEqual(rollback.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY numero').all(), original);
     } finally { rollback.close(); }
   } finally {
     if (source) source.close();
