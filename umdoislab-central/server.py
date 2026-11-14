@@ -43,7 +43,7 @@ def canonical_number(raw):
     if value.endswith("@s.whatsapp.net"):
         value = value[:-len("@s.whatsapp.net")]
     # Aceitar número colado com +, espaços, parênteses ou hífen.
-    if not re.fullmatch(r"[+0-9()\\s-]+", value):
+    if not re.fullmatch(r"[+0-9()\s-]+", value):
         return None
     value = re.sub(r"[^0-9]", "", value)
     if not re.fullmatch(r"[0-9]{10,15}", value):
