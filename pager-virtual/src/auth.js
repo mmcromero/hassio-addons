@@ -38,10 +38,15 @@ const parseCookie = header => {
 const getSession = token => {
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
   return db.prepare(`
-    SELECT u.id, u.login, u.nome, u.papel, u.restaurante_id
+    SELECT u.id, u.login, u.nome, u.papel,
+      CASE WHEN u.papel = 'master' THEN
+        CASE WHEN mr.ativo = 1 THEN mc.restaurante_id ELSE NULL END
+      ELSE u.restaurante_id END AS restaurante_id
     FROM sessoes s
     JOIN usuarios u ON u.id = s.usuario_id
     LEFT JOIN restaurantes r ON r.id = u.restaurante_id
+    LEFT JOIN master_contextos mc ON mc.sessao_id = s.id AND u.papel = 'master'
+    LEFT JOIN restaurantes mr ON mr.id = mc.restaurante_id
     WHERE s.token_hash = ? AND s.revogado_em IS NULL AND s.expira_em > ?
       AND u.ativo = 1 AND (u.papel = 'master' OR r.ativo = 1)
   `).get(hashToken(token), Date.now()) || null;
@@ -186,9 +191,38 @@ export function requireUser(request, reply) {
 export function requireRestaurant(request, reply) {
   const user = requireUser(request, reply);
   if (!user) return null;
-  if (!user.restaurante_id || user.papel === 'master') {
+  if (!user.restaurante_id) {
     reply.code(403).send({ error: 'Selecione um restaurante autorizado' });
     return null;
   }
   return user;
+}
+
+export function changeMasterContext(request, restauranteId) {
+  const token = parseCookie(request.headers.cookie);
+  if (!/^[a-f0-9]{64}$/.test(token)) return false;
+  const hash = hashToken(token);
+  return db.transaction(() => {
+    const session = db.prepare(`SELECT s.id AS sessao_id, u.id AS usuario_id
+      FROM sessoes s JOIN usuarios u ON u.id = s.usuario_id
+      WHERE s.token_hash = ? AND s.revogado_em IS NULL AND s.expira_em > ?
+        AND u.ativo = 1 AND u.papel = 'master'`).get(hash, Date.now());
+    if (!session) return false;
+    if (restauranteId !== null) {
+      const rest = db.prepare('SELECT id FROM restaurantes WHERE id = ? AND ativo = 1').get(restauranteId);
+      if (!rest) return false;
+      db.prepare(`INSERT INTO master_contextos (sessao_id, restaurante_id, selecionado_em)
+        VALUES (?, ?, ?) ON CONFLICT(sessao_id) DO UPDATE SET
+        restaurante_id = excluded.restaurante_id, selecionado_em = excluded.selecionado_em`)
+        .run(session.sessao_id, rest.id, Date.now());
+    } else {
+      db.prepare('DELETE FROM master_contextos WHERE sessao_id = ?').run(session.sessao_id);
+    }
+    db.prepare(`INSERT INTO master_contexto_eventos
+      (id, usuario_id, sessao_id, restaurante_id, acao, criado_em)
+      VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(randomUUID(), session.usuario_id, session.sessao_id, restauranteId,
+        restauranteId === null ? 'sair' : 'entrar', Date.now());
+    return true;
+  })();
 }

@@ -111,7 +111,38 @@ test('servidor real isola restaurantes e perfis e revoga terminal', { timeout: 3
     assert.equal(disabled.status, 200);
     assert.equal((await call('GET', '/api/auth/me', undefined, caixaA)).status, 401);
     assert.equal((await call('GET', '/api/auth/me', undefined, caixaB)).status, 200);
+
+    // Master não opera pedidos sem seleção explícita.
     assert.equal((await call('GET', '/api/pedidos', undefined, master)).status, 403);
+    assert.equal((await call('GET', '/kds.html', undefined, master)).status, 302);
+    // Somente o Master escolhe um restaurante; gerente não pode alterar o contexto.
+    assert.equal((await call('POST', '/api/admin/contexto/' + restaurants[0], {}, managerA)).status, 403);
+    assert.equal((await call('POST', '/api/admin/contexto/desconhecido', {}, master)).status, 404);
+    const enteredA = await call('POST', '/api/admin/contexto/' + restaurants[0], {}, master);
+    assert.equal(enteredA.status, 200);
+    assert.equal((await call('GET', '/kds.html', undefined, master)).status, 200);
+    assert.equal((await call('GET', '/api/auth/me', undefined, master)).body.restaurante_id, restaurants[0]);
+    const listA = await call('GET', '/api/pedidos', undefined, master);
+    assert.equal(listA.status, 200);
+    assert.ok(listA.body.some(order => order.id === created.body.id));
+    const supportOrder = await call('POST', '/api/pedidos', { numero: 115 }, master);
+    assert.equal(supportOrder.status, 201);
+    assert.equal(supportOrder.body.restaurante_id, restaurants[0]);
+    assert.equal((await call('PATCH', '/api/pedidos/' + supportOrder.body.id + '/status',
+      { status: 'pronto' }, master)).status, 200);
+    // Trocando de restaurante, o Master perde a visão do anterior.
+    assert.equal((await call('POST', '/api/admin/contexto/' + restaurants[1], {}, master)).status, 200);
+    const listSelectedB = await call('GET', '/api/pedidos', undefined, master);
+    assert.equal(listSelectedB.status, 200);
+    assert.equal(listSelectedB.body.length, 0);
+    assert.equal((await call('PATCH', '/api/pedidos/' + supportOrder.body.id + '/status',
+      { status: 'entregue' }, master)).status, 400);
+    // A saída restaura o perfil Master global, sem acesso ao KDS.
+    assert.equal((await call('POST', '/api/admin/contexto/sair', {}, master)).status, 200);
+    assert.equal((await call('GET', '/api/pedidos', undefined, master)).status, 403);
+    assert.equal((await call('GET', '/kds.html', undefined, master)).status, 302);
+    assert.equal((await call('GET', '/api/auth/me', undefined, managerB)).body.restaurante_id, restaurants[1]);
+
   } finally {
     if (server && server.exitCode === null) {
       server.kill('SIGTERM');

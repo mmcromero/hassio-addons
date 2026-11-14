@@ -81,6 +81,24 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessoes_usuario
   ON sessoes(usuario_id, expira_em);
 
+  -- Seleção explícita do restaurante pelo Master Admin, restrita à sessão atual.
+  CREATE TABLE IF NOT EXISTS master_contextos (
+    sessao_id TEXT PRIMARY KEY,
+    restaurante_id TEXT NOT NULL,
+    selecionado_em INTEGER NOT NULL,
+    FOREIGN KEY (sessao_id) REFERENCES sessoes(id) ON DELETE CASCADE,
+    FOREIGN KEY (restaurante_id) REFERENCES restaurantes(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS master_contexto_eventos (
+    id TEXT PRIMARY KEY,
+    usuario_id TEXT NOT NULL,
+    sessao_id TEXT NOT NULL,
+    restaurante_id TEXT,
+    acao TEXT NOT NULL CHECK (acao IN ('entrar', 'sair')),
+    criado_em INTEGER NOT NULL
+  );
+
 `);
 
 // Nenhum restaurante fictício é criado automaticamente.

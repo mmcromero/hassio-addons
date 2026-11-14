@@ -5,6 +5,16 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.7] — 14/11/2026 — acesso contextual do Master Admin
+
+- Botão **Entrar no restaurante** em cada estabelecimento ativo no painel do Master Admin.
+- KDS usa a própria sessão Master com restaurante selecionado, permitindo consultar, criar, chamar e finalizar pedidos sem usuário adicional.
+- **Voltar à administração** encerra o contexto. A seleção afeta apenas a sessão atual, não altera gerentes ou outros restaurantes.
+- Registro de entrada e saída em `master_contexto_eventos`; seleção corrente em `master_contextos`.
+- Teste integrado com dois restaurantes valida seleção, pedido manual, status, isolamento, bloqueio sem contexto e retorno ao painel.
+
+---
+
 ## [0.1.6] — 14/11/2026 — notificações Web Push e orientação ao cliente
 
 - Notificação do sistema para pedido pronto via Web Push, associada ao token e autorizada pelo cliente.
