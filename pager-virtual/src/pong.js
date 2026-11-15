@@ -1,9 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import db from './db.js';
+import { readFileSync } from 'node:fs';
 
 // Protótipo em memória: nenhuma tabela ou pedido é alterado.
 const rooms = new Map();
-const enabled = process.env.AVISAQUI_PONG_EXPERIMENTAL === '1';
+function experimentalEnabled() {
+  if (process.env.AVISAQUI_PONG_EXPERIMENTAL === '1') return true;
+  try {
+    const opts = JSON.parse(readFileSync('/data/options.json', 'utf8'));
+    return opts.pong_experimental === true;
+  } catch { return false; }
+}
+const enabled = experimentalEnabled();
 const WIDTH = 600, HEIGHT = 360;
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const snapshot = (room) => ({
