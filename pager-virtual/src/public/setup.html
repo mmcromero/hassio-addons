@@ -27,6 +27,7 @@
   </form>
 </main>
 <script>
+  const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
   fetch(basePath + '/api/setup/status').then(r=>r.json()).then(data=>{
     if(!data.needs_setup) location.replace(basePath + '/login.html');
   }).catch(()=>{});
