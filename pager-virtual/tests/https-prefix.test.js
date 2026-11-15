@@ -77,3 +77,16 @@ test('landing preserva login e formulário do piloto no prefixo HTTPS e no HTTP 
     assert.equal(new URL('./api/piloto/interesse', page).pathname, api);
   }
 });
+
+test('Pong 0.1.14 é experimental e protegido por limites de recursos', () => {
+  const yaml = readFileSync(join(process.cwd(), 'config.yaml'), 'utf8');
+  const pong = source('pong.js');
+  const client = source('public/cliente.html');
+  assert.match(yaml, /pong_experimental: false/);
+  assert.match(yaml, /pong_experimental: bool/);
+  assert.match(pong, /const MAX_ROOMS = 64/);
+  assert.match(pong, /const MAX_STREAMS_PER_ROOM = 4/);
+  assert.match(pong, /order\.status !== 'preparo'/);
+  assert.match(client, /await import\('\.\/pong\.js'\)/);
+  assert.match(client, /pongExit\?\.\(\)/);
+});
