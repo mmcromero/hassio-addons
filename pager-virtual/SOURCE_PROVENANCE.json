@@ -1,0 +1,308 @@
+{
+  "repository": "mmcromero/pager-virtual",
+  "commit": "f3f8352c71691146bf6594cbafe1f699c418694e",
+  "version": "0.1.17-rc.1",
+  "files": [
+    {
+      "path": ".dockerignore",
+      "source_path": ".dockerignore",
+      "sha256": "af3bd16f8181327467cd170c9927f9f0219bd8997095ddd13e0de67d6d8b1c6d"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "source_path": "distribution/CHANGELOG.md",
+      "sha256": "e863b6d8c55bc3868e8cda5169a5904ae19c8128e908c508c1530a040662ef83"
+    },
+    {
+      "path": "Dockerfile",
+      "source_path": "Dockerfile",
+      "sha256": "2972653c7b61e976f5a2a6d6f4b0d307e9874f13a6835ae4dab0365eb27c658b"
+    },
+    {
+      "path": "README.md",
+      "source_path": "distribution/README.md",
+      "sha256": "7dcf8d0d2bd0b2c70048b78a82e9fa43cc4622c514bb590664e3dd6968f2905d"
+    },
+    {
+      "path": "config.yaml",
+      "source_path": "config.yaml",
+      "sha256": "706a713042d424f84bdc3858715c8ab9037f54c7bf3d5e14be661aec63ca91b0"
+    },
+    {
+      "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
+      "source_path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
+      "sha256": "6f6e46bc8cedbb0b251c0b5f84625a7f94ea59dbad8088a8fe5c0cd726d1394f"
+    },
+    {
+      "path": "docs/AVISAQUI-HTTPS-001-publicacao.md",
+      "source_path": "docs/AVISAQUI-HTTPS-001-publicacao.md",
+      "sha256": "05e555fdf409a6af38f2890467dc888c9ab65440fa8227b4cd7590159fca3127"
+    },
+    {
+      "path": "docs/AVISAQUI-PONG-014.md",
+      "source_path": "docs/AVISAQUI-PONG-014.md",
+      "sha256": "0be626cc6c997162964d8b584022f90371552c978c4c7218c0af76b1b60a816c"
+    },
+    {
+      "path": "docs/AVISAQUI_PRINT_HA_001.md",
+      "source_path": "docs/AVISAQUI_PRINT_HA_001.md",
+      "sha256": "cf7bad94fb6fce75f131576b94153bd7f29a190c12c241a35f11c429144187c7"
+    },
+    {
+      "path": "docs/RC-001.md",
+      "source_path": "distribution/RC-001.md",
+      "sha256": "295c6c36eac20d4b2075b1f72af1bce697686204a5c5971d53b9fa7ad3f2e1de"
+    },
+    {
+      "path": "package-lock.json",
+      "source_path": "package-lock.json",
+      "sha256": "c9ba612bab3c2ea6512e495ef0d15305b948f554f56905031b459c1aa1e29dd3"
+    },
+    {
+      "path": "package.json",
+      "source_path": "package.json",
+      "sha256": "b9f49d417b105087563c63ab0e1be6f9b8f6a0434921fba28fcd20ef4aaea98a"
+    },
+    {
+      "path": "run.sh",
+      "source_path": "run.sh",
+      "sha256": "9738d7ad10544ba6125572235ffc3b93d36854e58f73f7dd03ba1a858fcdc858"
+    },
+    {
+      "path": "scripts/bootstrap-admin.js",
+      "source_path": "scripts/bootstrap-admin.js",
+      "sha256": "3762e953e54ea6237d58f81d6b3a33af5d9c9d6877ca815b883e941b2e1e0dee"
+    },
+    {
+      "path": "src/.gitkeep",
+      "source_path": "src/.gitkeep",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/admin.js",
+      "source_path": "src/admin.js",
+      "sha256": "0de84c8d8b0e3b6847d4f5b70e49bb03b8e85d455dd3069743818e180d03d8d2"
+    },
+    {
+      "path": "src/auth.js",
+      "source_path": "src/auth.js",
+      "sha256": "924f7c61a242287d866efcdc7c09a5a1921165ee9312b047ca405c61d171df68"
+    },
+    {
+      "path": "src/db.js",
+      "source_path": "src/db.js",
+      "sha256": "3d5124ce3cc779d675742cb8791de1ec5b4a0a1e5691753855a833480b7fd4c6"
+    },
+    {
+      "path": "src/interesses.js",
+      "source_path": "src/interesses.js",
+      "sha256": "201461b09e074073fcfcd926a581c1edf4ac69d4923b51ee6399a39e8709f159"
+    },
+    {
+      "path": "src/pong.js",
+      "source_path": "src/pong.js",
+      "sha256": "d77acc2a11683481cef0e9229f3dda8d282b3fba9df9962c57da3f24f3324aa8"
+    },
+    {
+      "path": "src/public/admin.html",
+      "source_path": "src/public/admin.html",
+      "sha256": "a213d749fd2e1aeee8aad4f651217278225daf9757f0482ade0a7c66981369cd"
+    },
+    {
+      "path": "src/public/avisaqui-marca.svg",
+      "source_path": "src/public/avisaqui-marca.svg",
+      "sha256": "0b1bc81f85cecc366a6ce410d2f4a86a4cb22d6b2e56658f7101cfafbb673f76"
+    },
+    {
+      "path": "src/public/cliente.html",
+      "source_path": "src/public/cliente.html",
+      "sha256": "1698b56f0d8cdb9a868242272ca90fda83503ccc3149f7e7408e6a0ce89dd2f5"
+    },
+    {
+      "path": "src/public/icon.svg",
+      "source_path": "src/public/icon.svg",
+      "sha256": "8a04af8860b1beacbc8e4c1941caf6786d03f812b779f42577499542028c2deb"
+    },
+    {
+      "path": "src/public/impressao.html",
+      "source_path": "src/public/impressao.html",
+      "sha256": "073ddf241439ac816a3371c3cdec40f37e9010dd71ea855726bcecea6a376c5e"
+    },
+    {
+      "path": "src/public/kds.html",
+      "source_path": "src/public/kds.html",
+      "sha256": "5f5781e9c173bb840b48718a461a92dd58ff0d4c2201f845da459cb617a8beae"
+    },
+    {
+      "path": "src/public/landing.html",
+      "source_path": "src/public/landing.html",
+      "sha256": "6cdeb72a41d099762d3a4cf3a33f8aa2a994e36e5e63d5b2abc6362553f79b63"
+    },
+    {
+      "path": "src/public/login.html",
+      "source_path": "src/public/login.html",
+      "sha256": "b4b3e7732444aca9d709d4dc3b17cbbf79534cdc1aef3fc58379d4be2abecc54"
+    },
+    {
+      "path": "src/public/manifest.webmanifest",
+      "source_path": "src/public/manifest.webmanifest",
+      "sha256": "87d90d39d158bab62dc804ed82b9e445133e4a3f0343efdc4b51296bdfae1574"
+    },
+    {
+      "path": "src/public/pong.js",
+      "source_path": "src/public/pong.js",
+      "sha256": "0a47bc441e61561920651675ad2cda3766b661da1221a930be387d44d4f92ebb"
+    },
+    {
+      "path": "src/public/push-sw.js",
+      "source_path": "src/public/push-sw.js",
+      "sha256": "0cec848d32785324040102f2d3b45a3c31173a428288e61471a888cfa07b76be"
+    },
+    {
+      "path": "src/public/qrcode.min.js",
+      "source_path": "src/public/qrcode.min.js",
+      "sha256": "c541ef06327885a8415bca8df6071e14189b4855336def4f36db54bde8484f36"
+    },
+    {
+      "path": "src/public/setup.html",
+      "source_path": "src/public/setup.html",
+      "sha256": "8f18ec2aed91bd1d82f29b316c16d03959bacc76f39b6564eab63fe7c0858c61"
+    },
+    {
+      "path": "src/push.js",
+      "source_path": "src/push.js",
+      "sha256": "eaf327a1d1252f56cbb462c5d18797df6cc769cff52d7c9ef3e82d115b25f6fb"
+    },
+    {
+      "path": "src/routes/integracao-impressao.js",
+      "source_path": "src/routes/integracao-impressao.js",
+      "sha256": "ab351a52a9ee29fa3d468a2a86bd8fb8faf835e1a069a4c7576f16a745ae82d1"
+    },
+    {
+      "path": "src/routes/pedidos.js",
+      "source_path": "src/routes/pedidos.js",
+      "sha256": "4df9b19b100848380dc19cdfd516598bcd8c624cb54bad8177cc10fbbc5589ca"
+    },
+    {
+      "path": "src/server.js",
+      "source_path": "src/server.js",
+      "sha256": "a1c19fb8b40c495bfddebc5d20b66f8dd759bfa0204e8e186d631c317e52b78e"
+    },
+    {
+      "path": "src/setup.js",
+      "source_path": "src/setup.js",
+      "sha256": "2b455f0530e563a8bfba6886a31768373a9465879b4b45d6fb25d4e5fcc880b5"
+    },
+    {
+      "path": "src/sse.js",
+      "source_path": "src/sse.js",
+      "sha256": "9136a51c08ae7d9e7d1ae3049b045b4a7937853993770c0ce44edc1f238aed1f"
+    },
+    {
+      "path": "tests/auth-api.test.js",
+      "source_path": "tests/auth-api.test.js",
+      "sha256": "ce976f96b120708a7a8dd7f092db8c016ffb3893c5185e645bca097a5a48b15c"
+    },
+    {
+      "path": "tests/auth-pages.test.js",
+      "source_path": "tests/auth-pages.test.js",
+      "sha256": "b7ac566550c13800a046b6682d2adaa82a60aba333e5fe6536f9ac04ecdd3d34"
+    },
+    {
+      "path": "tests/auth-schema.test.js",
+      "source_path": "tests/auth-schema.test.js",
+      "sha256": "82f21c6c5127dc3ad8090bb482a90ac8d1bf0dd34e2f7dd90417f0d6d3b3cecd"
+    },
+    {
+      "path": "tests/cadastro-rapido.test.js",
+      "source_path": "tests/cadastro-rapido.test.js",
+      "sha256": "3c3aee2eaf54e6ce48e554c9c4b17cc7d5c2f0c2f100ff6c00de76afe4b3458f"
+    },
+    {
+      "path": "tests/https-prefix-auth.test.js",
+      "source_path": "tests/https-prefix-auth.test.js",
+      "sha256": "381b98eec207635090cb8e47f26d2fd5b8eeef0971d663d09a0261cf46432eb7"
+    },
+    {
+      "path": "tests/https-prefix.test.js",
+      "source_path": "tests/https-prefix.test.js",
+      "sha256": "e78d7934c3a55ad836e5c417e4d9a0be755d18c74eb0f0106a758052f6dead00"
+    },
+    {
+      "path": "tests/integracao-impressao.test.js",
+      "source_path": "tests/integracao-impressao.test.js",
+      "sha256": "c3fef9ffb30c9b0da23c0a76bf875d230ea5e959ed5269fac8c63f2cf6d27aea"
+    },
+    {
+      "path": "tests/interesses-piloto.test.js",
+      "source_path": "tests/interesses-piloto.test.js",
+      "sha256": "61d6513edbed0f74a895952216b5f72368b421c3fe6e5c924d7f7b219ccaf0b4"
+    },
+    {
+      "path": "tests/kds-carregamento.test.js",
+      "source_path": "tests/kds-carregamento.test.js",
+      "sha256": "a4492230562af40eb9a0b9d2d70f37c9158a77c6938ac5ed2437bb3a8a9ff14f"
+    },
+    {
+      "path": "tests/legacy-conflicts.test.js",
+      "source_path": "tests/legacy-conflicts.test.js",
+      "sha256": "8ad42711bbf19c3d4b1e64693cdf9ece7cce76dafdc724b4a3fd18ccdac08a49"
+    },
+    {
+      "path": "tests/legacy-upgrade.test.js",
+      "source_path": "tests/legacy-upgrade.test.js",
+      "sha256": "bf4c414bc6c55f43574f6e8c107902847371dfcb5510da21769010e3783b8f08"
+    },
+    {
+      "path": "tests/pong-api.test.js",
+      "source_path": "tests/pong-api.test.js",
+      "sha256": "868f245c61adf7e9db4b73ad2da0704afff6ada579e2fb307616d5304ef3671c"
+    },
+    {
+      "path": "tests/pong-client-path.test.js",
+      "source_path": "tests/pong-client-path.test.js",
+      "sha256": "c01e64e792549ab5619d9168b5abaa9e875e870c84864b68de9abf8acb8d6d9d"
+    },
+    {
+      "path": "tests/pong-routes.test.js",
+      "source_path": "tests/pong-routes.test.js",
+      "sha256": "c5595aad11ca4f5e186fb8da2d1ab19b5278f168f5f7b94f7a5402a02597dcf3"
+    },
+    {
+      "path": "tests/proxy-origin.test.js",
+      "source_path": "tests/proxy-origin.test.js",
+      "sha256": "73fa2e5fa261e94918bb9fbf25a4e30b61b1b10249f84a964acffe4b28f4eea0"
+    },
+    {
+      "path": "tests/push-api.test.js",
+      "source_path": "tests/push-api.test.js",
+      "sha256": "45f66f5d8b865781cad9fbae8599c1977e5266d497af7ca2558413ec452bb5e9"
+    },
+    {
+      "path": "tests/server-roles.test.js",
+      "source_path": "tests/server-roles.test.js",
+      "sha256": "09197c3380a5cb09bb73a89b08570e4c24738a4be22c6dee66e0a61e82b4d986"
+    },
+    {
+      "path": "tests/server-smoke.test.js",
+      "source_path": "tests/server-smoke.test.js",
+      "sha256": "9f5ec80639aa01ab68ab3b50a532d7bd92e3eaf8c6653ad3d49ff7bb069b02a3"
+    },
+    {
+      "path": "tests/sqlite-backup-restore.test.js",
+      "source_path": "tests/sqlite-backup-restore.test.js",
+      "sha256": "9f7399ce7ea0b84238d6452bfad998eba9356e90ca4abce2ee5f9828de081162"
+    },
+    {
+      "path": "tests/sse-http.test.js",
+      "source_path": "tests/sse-http.test.js",
+      "sha256": "40ef83fcb0e3d394c708490c69f0a264073fae702c125f5cd8f542c907e7c5d0"
+    },
+    {
+      "path": "tests/sse-scope.test.js",
+      "source_path": "tests/sse-scope.test.js",
+      "sha256": "7c281e0fda3784130f82ab18a10222acf79d708370fab390b410041450486d44"
+    }
+  ],
+  "ci_patch_source": "distribution/pager-node22-ci.patch"
+}

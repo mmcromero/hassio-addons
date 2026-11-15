@@ -1,3 +1,5 @@
+> **Registro histórico da distribuição anterior.** Não é autorização de publicação, instalação, proxy ou dispensa de backup nesta RC. Consulte docs/rc/RELEASE.md.
+
 # AVISAQUI-HTTPS-001 — publicação controlada da candidata 0.1.13
 
 **Situação:** preparação em PR #28; este documento não é uma ordem de execução.

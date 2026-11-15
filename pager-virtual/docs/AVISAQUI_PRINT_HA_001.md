@@ -1,3 +1,5 @@
+> **Registro histórico da distribuição anterior.** Não é autorização de publicação, instalação, proxy ou dispensa de backup nesta RC. Consulte docs/rc/RELEASE.md.
+
 # AVISAQUI-PRINT-HA-001 — Preparação controlada da integração de impressão
 
 **Estado:** branch de preparação, sem merge ou publicação. **Origem:** [PR #16 no repositório privado](https://github.com/mmcromero/pager-virtual/pull/16), base técnico/visual PR #14.

@@ -120,5 +120,14 @@ db.exec(`
 `);
 // Impede duplicatas ativas mesmo em processos distintos. Dados legados conflitantes
 // exigem correção explícita antes de instalar o índice, nunca exclusão automática.
-db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_pedidos_ativos_numero
-  ON pedidos(restaurante_id, numero) WHERE status IN ('preparo', 'pronto')`);
+try {
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_pedidos_ativos_numero
+    ON pedidos(restaurante_id, numero) WHERE status IN ('preparo', 'pronto')`);
+} catch (error) {
+  if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    db.close();
+    throw new Error('Migração interrompida: existem números ativos duplicados no mesmo restaurante. '
+      + 'Nenhum pedido foi removido. Faça backup consistente e revise os conflitos em cópia isolada antes de tentar novamente.');
+  }
+  throw error;
+}

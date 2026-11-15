@@ -56,3 +56,11 @@ test('cabeçalho X-Forwarded-Proto isolado não habilita cookie Secure no HTTP l
   assert.equal(res.statusCode, 200, res.body);
   assert.doesNotMatch(res.headers['set-cookie'], /; Secure/);
 });
+
+
+test('origem pública com Host diferente não pode autenticar nem definir cookie', async () => {
+  const res = await login({ host: '192.168.0.6:8090', origin: 'https://example.test:8443',
+    'x-forwarded-prefix': '/avisaqui', 'x-forwarded-proto': 'https' });
+  assert.equal(res.statusCode, 403, res.body);
+  assert.equal(res.headers['set-cookie'], undefined);
+});

@@ -5,6 +5,16 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.17-rc.1] — 15/11/2026 — candidata privada, não publicada
+
+- Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.
+- Pendência de impressão mantém HTTP 409 em retries; origem de login exige Host coerente.
+- Migração SQLite com números ativos conflitantes interrompe com orientação explícita, sem exclusão de dados.
+- Fastify 5.12.8, plugins compatíveis e runtime Node.js 22; lockfile para instalações reproduzíveis. Auditoria npm sem vulnerabilidades conhecidas no snapshot desta RC.
+- Docker respeita arquitetura do build; ARM64 e AMD64 devem passar build e smoke isolados antes de aprovação.
+- Rastreabilidade por commit privado e SHA-256; Pong desativado por padrão e agente Windows mantido em laboratório.
+- Versão instalada 0.1.15 conforme proprietário; 0.1.16 não instalada/homologada. Nenhuma instalação ou publicação nesta missão.
+
 ## [0.1.15 — candidata para testes] — correções do Pong após teste da 0.1.14
 - A versão 0.1.14 já foi instalada e testada no Home Assistant pelo proprietário; o Pong apresentou erro "Not Found" na entrada da partida.
 - Corrigida a construção de URL do Pong atrás do prefixo HTTPS /avisaqui/ e melhorado o tratamento de erro HTTP 404.

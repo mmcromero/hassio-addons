@@ -1,3 +1,7 @@
+> **Distribuição derivada da fonte privada.** Desenvolvimento em `mmcromero/pager-virtual`; este diretório distribui somente uma revisão identificada e testada. Consulte `SOURCE_PROVENANCE.json` para commit e hashes e `docs/RC-001.md` para status. Não desenvolver alterações independentes aqui.
+>
+> Fluxo: fonte privada → desenvolvimento → integração/testes → RC privada → aprovação → distribuição pública → validação → publicação. Branches temporárias, PRs obrigatórios; `main` é referência estável. Excluir branches exige validação e autorização posterior. Esta RC não foi publicada nem instalada.
+
 # Pager Virtual — Add-on Home Assistant
 
 Sistema de Pager Virtual ultraleve e em tempo real para restaurantes, praças de alimentação e food service.
