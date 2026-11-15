@@ -33,8 +33,9 @@
     </form>
   </main>
   <script>
-    fetch('/api/setup/status').then(r => r.json()).then(data => {
-      if (data.needs_setup) location.replace('/setup.html');
+    const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
+    fetch(basePath + '/api/setup/status').then(r => r.json()).then(data => {
+      if (data.needs_setup) location.replace(basePath + '/setup.html');
     }).catch(() => {});
     document.getElementById('login-form').addEventListener('submit', async event => {
       event.preventDefault();
@@ -44,7 +45,7 @@
       button.disabled = true;
       button.textContent = 'Entrando...';
       try {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(basePath + '/api/auth/login', {
           method: 'POST', credentials: 'same-origin',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({
