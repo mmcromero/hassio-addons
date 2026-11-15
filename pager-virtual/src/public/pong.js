@@ -9,9 +9,10 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
   close.textContent = 'Sair do jogo';
   close.type = 'button';
   container.append(label, canvas, close);
-  const base = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
-  // API usa o mesmo prefixo público da página; evita divergência de caminhos no proxy.
-  const apiBase = base.endsWith('/public') ? base.slice(0, -7) : base;
+  // Usa o prefixo da página do pedido, não um caminho absoluto que ignora /avisaqui/.
+  const apiBase = location.pathname.endsWith('/cliente.html')
+    ? location.pathname.slice(0, -'/cliente.html'.length)
+    : location.pathname.replace(/\/$/, '');
   const endpoint = apiBase + '/api/jogos/pong';
   let player = '', side = -1, stream = null, active = true, lastMove = 0;
   const ctx = canvas.getContext('2d');
@@ -59,8 +60,8 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, mode })
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(response.status === 404 ? 'Rota do jogo não encontrada (HTTP 404). Verificar versão do servidor e encaminhamento HTTPS.' : (data.error || 'Não foi possível entrar'));
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(response.status === 404 ? 'Rota do jogo não encontrada (HTTP 404). Verificar versão do servidor e encaminhamento HTTPS.' : (data.error || 'Falha ao entrar no jogo (HTTP ' + response.status + ')'));
     player = data.player; side = data.side;
     if (!active) return exit();
     render(data);
