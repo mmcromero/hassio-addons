@@ -9,7 +9,7 @@
   "active_package": {
     "id": "AVISAQUI-PACOTE-002",
     "status": "open",
-    "phase": "development",
+    "phase": "implementation",
     "candidate_version": "0.1.19-rc.1",
     "published_version": "0.1.18-rc.1",
     "branches": {
@@ -17,8 +17,8 @@
       "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-002"
     },
     "prs": {
-      "mmcromero/pager-virtual": null,
-      "mmcromero/hassio-addons": null
+      "mmcromero/pager-virtual": 22,
+      "mmcromero/hassio-addons": 35
     },
     "base_branch": "main",
     "new_features": "allowed_only_within_package_scope",
