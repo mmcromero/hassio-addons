@@ -24,6 +24,8 @@ map:
 options:
   log_level: info
   public_url: ""
+  pong_experimental: false
 schema:
   log_level: list(info|debug|warn|error)
   public_url: str?
+  pong_experimental: bool
