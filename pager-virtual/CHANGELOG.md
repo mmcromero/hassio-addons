@@ -8,6 +8,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ## [0.1.13 — candidata, não publicada] — AVISAQUI-HTTPS-001
 - Suporte planejado à publicação da aplicação em `/avisaqui/` pelo NGINX SSL Proxy existente.
 - Corrigidos URLs de login, administração, KDS, painel de impressão, cliente, Web Push e manifest.
+- Incorporado o painel opcional de diagnóstico do aparelho na página do cliente, originado do PR #18 (`mmcromero/pager-virtual`, merge `7a2612271d2342b29863cd82e5007a60e9da620f`). Apenas HTML/JS do cliente, sem alteração em pedidos ou banco.
 - Validação de origem pública e cookies revista; preservado HTTP local.
 - Modelo NGINX isolado em `docs/AVISAQUI-HTTPS-001-nginx.conf.example`, **não instalado**.
 - Antes de ativar, configurar no add-on `public_url` para `https://romeirop.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
