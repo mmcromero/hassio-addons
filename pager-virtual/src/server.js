@@ -28,21 +28,24 @@ await fastify.register(cors, {
 
 // Serve arquivos estáticos da pasta public (Cliente e KDS)
 const publicDir = path.join(__dirname, 'public');
+// Prefixo informado exclusivamente pelo proxy NGINX na rota HTTPS configurada.
+const requestBasePath = request => request.headers['x-forwarded-prefix'] === '/avisaqui' ? '/avisaqui' : '';
+const pageUrl = (request, page) => requestBasePath(request) + page;
 fastify.addHook('onRequest', async (request, reply) => {
   const route = request.url.split('?')[0];
   if (route === '/kds.html' || route === '/admin.html' || route === '/impressao.html') {
-    if (needsSetup()) return reply.redirect('/setup.html');
+    if (needsSetup()) return reply.redirect(pageUrl(request, '/setup.html'));
     const user = currentUser(request);
-    if (!user) return reply.redirect('/login.html');
-    if ((route === '/admin.html' || route === '/impressao.html') && user.papel === 'operador') return reply.redirect('/kds.html');
-    if (route === '/kds.html' && user.papel === 'master' && !user.restaurante_id) return reply.redirect('/admin.html');
+    if (!user) return reply.redirect(pageUrl(request, '/login.html'));
+    if ((route === '/admin.html' || route === '/impressao.html') && user.papel === 'operador') return reply.redirect(pageUrl(request, '/kds.html'));
+    if (route === '/kds.html' && user.papel === 'master' && !user.restaurante_id) return reply.redirect(pageUrl(request, '/admin.html'));
   }
 });
 fastify.get('/', async (request, reply) => {
-  if (needsSetup()) return reply.redirect('/setup.html');
+  if (needsSetup()) return reply.redirect(pageUrl(request, '/setup.html'));
   const user = currentUser(request);
-  return reply.redirect(user?.papel === 'master' ? '/admin.html' :
-    user ? '/kds.html' : '/landing.html');
+  return reply.redirect(pageUrl(request, user?.papel === 'master' ? '/admin.html' :
+    user ? '/kds.html' : '/landing.html'));
 });
 await fastify.register(fastifyStatic, {
   root: publicDir,
