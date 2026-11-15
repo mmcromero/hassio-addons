@@ -1,5 +1,8 @@
 # Regras obrigatórias da distribuição Avisaqui
 
+> **Fechamento 15/11/2026:** `AVISAQUI-CONSOLIDACAO-RC-001` / 0.1.18-rc.1 está **fechado tecnicamente**, PR público #32 integrado. Versão relatada pelo proprietário como instalada e em execução no Raspberry Pi de homologação; homologação funcional permanece **em andamento**. Proibido continuar desenvolvimento em `release/avisaqui-rc-distribuicao-001` ou reabrir o PR #32; novos ajustes exigem **novo pacote** coordenado e registrado na fonte privada. Não tocar na fábrica isolada de jogos (Issue #21).
+
+
 **É terminantemente proibido desenvolver o Avisaqui de forma fragmentada ou independente neste diretório.** A fonte canônica é `mmcromero/pager-virtual`, privado. O responsável técnico deve resolver integração, conflitos, testes e documentação antes da entrega; não deixar a organização para o proprietário.
 
 - Toda alteração deve ter origem privada identificada e revisada. Usar exportação explícita, conferir `SOURCE_PROVENANCE.json` e comparar os arquivos. Emergência expressamente autorizada exige sincronização imediata de volta ao privado.
