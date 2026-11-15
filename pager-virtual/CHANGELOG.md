@@ -36,7 +36,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - Incorporado o painel opcional de diagnóstico do aparelho na página do cliente, originado do PR #18 (`mmcromero/pager-virtual`, merge `7a2612271d2342b29863cd82e5007a60e9da620f`). Apenas HTML/JS do cliente, sem alteração em pedidos ou banco.
 - Validação de origem pública e cookies revista; preservado HTTP local.
 - Modelo NGINX isolado em `docs/AVISAQUI-HTTPS-001-nginx.conf.example`, **não instalado**.
-- Antes de ativar, configurar no add-on `public_url` para `https://romeirop.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
+- Antes de ativar, configurar no add-on `public_url` para `https://romeropi.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
 - **Ainda não houve merge, publicação nem alteração no Home Assistant.** O suporte HTTPS só está preparado em branch de desenvolvimento.
 
 ## [0.1.12 — candidata, não publicada] — integração Windows → API → KDS (PR #16)

@@ -1,3 +1,5 @@
+> **Correção de endereço:** o hostname `romeropi.duckdns.org` foi confirmado por consultas HTTPS somente leitura em 15/11/2026. O hostname com letras trocadas antes citado neste documento não resolveu no DNS nesta verificação. Consulte `docs/rc/HTTPS-RECOVERY-016.md` no repositório fonte para a evidência; as etapas históricas abaixo não são uma ordem de execução.
+
 > **Registro histórico da distribuição anterior.** Não é autorização de publicação, instalação, proxy ou dispensa de backup nesta RC. Consulte docs/rc/RELEASE.md.
 
 # AVISAQUI-HTTPS-001 — publicação controlada da candidata 0.1.13
@@ -8,7 +10,7 @@
 
 ## Arquitetura
 
-- Público: `https://romeirop.duckdns.org:8443/avisaqui/`
+- Público: `https://romeropi.duckdns.org:8443/avisaqui/`
 - NGINX: Home Assistant SSL Proxy, configuração personalizada `customize.active=true`
 - Destino interno proposto: `http://45c28620-pager-virtual:8095/`
 - Local: `http://192.168.0.6:8090/` (porta publicada pela configuração local)
@@ -21,7 +23,7 @@
 2. Revisar diferenças do PR #28 e autorizar explicitamente merge.
 3. Publicar a candidata 0.1.13 no repositório de add-ons e atualizar **somente** o Pager Virtual no Home Assistant, mediante nova autorização.
 4. Confirmar que `http://192.168.0.6:8090/` continua acessível e que login/KDS continuam funcionais.
-5. Definir em **Pager Virtual → Configuração**: `public_url: https://romeirop.duckdns.org:8443/avisaqui/`; reiniciar **somente** o Pager Virtual, se necessário. O HTTPS ainda não está ativado nessa etapa.
+5. Definir em **Pager Virtual → Configuração**: `public_url: https://romeropi.duckdns.org:8443/avisaqui/`; reiniciar **somente** o Pager Virtual, se necessário. O HTTPS ainda não está ativado nessa etapa.
 6. Criar arquivo **novo e separado** em `/share/nginx_proxy_default_avisaqui.conf` a partir do exemplo. Não sobrescrever outros arquivos.
 7. Validar a sintaxe da configuração e ativar/recarregar apenas o NGINX SSL Proxy, conforme a interface do Home Assistant. Confirmar primeiro acesso Home Assistant e Artesão Digital.
 8. Abrir o endereço público `/avisaqui/` e testar login, logout, navegação, KDS, QR Code, SSE e Web Push em dispositivo externo.

@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "f3f8352c71691146bf6594cbafe1f699c418694e",
+  "commit": "7295565ff9e37d3d1bf6cdfcd074aafcdd5ee4cc",
   "version": "0.1.17-rc.1",
   "files": [
     {
@@ -9,9 +9,14 @@
       "sha256": "af3bd16f8181327467cd170c9927f9f0219bd8997095ddd13e0de67d6d8b1c6d"
     },
     {
+      "path": "AGENTS.md",
+      "source_path": "distribution/AGENTS.md",
+      "sha256": "fb0c3689be452bda88b863194f2aba64a638774664090fe93b212f11091b2bd0"
+    },
+    {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "e863b6d8c55bc3868e8cda5169a5904ae19c8128e908c508c1530a040662ef83"
+      "sha256": "d685f0604d3a15033321a506c766685590da1471cd34a4d1f64576e2314dd60b"
     },
     {
       "path": "Dockerfile",
@@ -21,7 +26,7 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "7dcf8d0d2bd0b2c70048b78a82e9fa43cc4622c514bb590664e3dd6968f2905d"
+      "sha256": "8d404fff48ab4181b6982d22207379add35e8d1e2bbf31a2ef1ead6e734f3961"
     },
     {
       "path": "config.yaml",
@@ -36,7 +41,7 @@
     {
       "path": "docs/AVISAQUI-HTTPS-001-publicacao.md",
       "source_path": "docs/AVISAQUI-HTTPS-001-publicacao.md",
-      "sha256": "05e555fdf409a6af38f2890467dc888c9ab65440fa8227b4cd7590159fca3127"
+      "sha256": "d3be73ba23d79956e200ce1e61764dd00c05d84948742f272430858bafc01153"
     },
     {
       "path": "docs/AVISAQUI-PONG-014.md",
