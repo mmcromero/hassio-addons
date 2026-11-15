@@ -68,8 +68,7 @@ function secureRequest(request) {
   // Acesso HTTP local precisa de cookie sem Secure; HTTPS público recebe Secure.
   // Nunca definir Secure apenas pela configuração global, pois impediria login local.
   return request.protocol === 'https' ||
-    (publicOrigin.startsWith('https://') && request.headers.origin === publicOrigin &&
-      request.headers.host === new URL(publicOrigin).host);
+    (publicOrigin.startsWith('https://') && request.headers.origin === publicOrigin);
 }
 function sessionCookie(token, request) {
   return `${COOKIE}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${Math.floor(SESSION_MS / 1000)}${secureRequest(request) ? '; Secure' : ''}`;
@@ -97,7 +96,7 @@ function validateOrigin(request) {
   try {
     const url = new URL(origin);
     const host = request.headers.host;
-    return url.host === host && (origin === publicOrigin || url.protocol === (request.protocol + ':'));
+    return origin === publicOrigin || (url.host === host && url.protocol === (request.protocol + ':'));
   } catch { return false; }
 }
 export async function authRoutes(app) {
