@@ -781,7 +781,7 @@
     let pongExit = null;
     let pongAllowed = true;
     if (token) {
-      const pongBasePath = window.location.pathname.replace(/\\/cliente\\.html$/, '').replace(/\\/$/, '');
+      const pongBasePath = window.location.pathname.endsWith('/cliente.html') ? window.location.pathname.slice(0, -'/cliente.html'.length) : window.location.pathname.replace(/\/$/, '');
       fetch(pongBasePath + '/api/jogos/pong/disponivel').then(r => {
         if (r.ok && pongAllowed && pongArea.hidden) pongStart.hidden = false;
       }).catch(() => {});
