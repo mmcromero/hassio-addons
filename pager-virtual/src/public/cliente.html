@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f172a">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="./manifest.webmanifest">
   <title>Acompanhamento do seu Pedido — Burger House</title>
   <style>
     :root {
@@ -436,6 +436,20 @@
       <h2 id="order-details-title">Itens do pedido</h2>
       <ul class="item-list"></ul>
     </section>
+    <footer id="diagnosticos" style="margin-top:18px;padding:14px;border-top:1px solid #64748b;font-size:.9rem;">
+      <details>
+        <summary style="cursor:pointer;font-weight:700;">Diagnóstico do aparelho (testes)</summary>
+        <p>Testes locais. Não alteram o pedido nem enviam dados.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+          <button type="button" id="diag-check" class="btn-chip">Verificar recursos</button>
+          <button type="button" id="diag-wake" class="btn-chip">Testar tela acesa</button>
+          <button type="button" id="diag-vibrate" class="btn-chip">Testar vibração</button>
+          <button type="button" id="diag-audio" class="btn-chip">Testar som</button>
+        </div>
+        <output id="diag-result" role="status" aria-live="polite" style="display:block;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;">Toque em Verificar recursos.</output>
+        <p style="font-size:.8rem;">A vibração depende do aparelho e das configurações. Um retorno positivo da API não comprova vibração física. O teste de tela acesa não funciona com bloqueio manual.</p>
+      </details>
+    </footer>
   </main>
 
   <script>
@@ -635,6 +649,75 @@
       }
     }
 
+    // Diagnósticos opcionais: sem alterações no pedido, permissões ou inscrições push.
+    const diagResult = document.getElementById('diag-result');
+    const diagWrite = (message) => { diagResult.textContent = message; };
+    document.getElementById('diag-check').addEventListener('click', () => {
+      const lines = [
+        'Contexto seguro (HTTPS/localhost): ' + (window.isSecureContext ? 'sim' : 'não'),
+        'Endereço HTTPS: ' + (location.protocol === 'https:' ? 'sim' : 'não'),
+        'Wake Lock: ' + (typeof navigator.wakeLock?.request === 'function' ? 'API disponível' : 'indisponível'),
+        'Vibração: ' + (typeof navigator.vibrate === 'function' ? 'API disponível' : 'indisponível'),
+        'Web Audio: ' + (window.AudioContext || window.webkitAudioContext ? 'API disponível' : 'indisponível'),
+        'Service Worker: ' + ('serviceWorker' in navigator ? 'disponível' : 'indisponível'),
+        'Push: ' + ('PushManager' in window ? 'API disponível' : 'indisponível'),
+        'Notificações: ' + ('Notification' in window ? Notification.permission : 'API indisponível'),
+        'Página: ' + document.visibilityState
+      ];
+      diagWrite(lines.join('\n'));
+    });
+    document.getElementById('diag-wake').addEventListener('click', async () => {
+      if (typeof navigator.wakeLock?.request !== 'function') {
+        diagWrite('Wake Lock indisponível neste contexto. Verifique HTTPS e navegador.');
+        return;
+      }
+      try {
+        if (wakeLock && !wakeLock.released) {
+          diagWrite('Wake Lock já está ativo. Observe se a tela permanece acesa.');
+          return;
+        }
+        await requestWakeLock();
+        diagWrite(wakeLock && !wakeLock.released
+          ? 'Wake Lock concedido. Observe se a tela permanece acesa.'
+          : 'Wake Lock não confirmado. Confira o navegador e as condições do aparelho.');
+      } catch (err) {
+        diagWrite('Falha no Wake Lock: ' + (err?.name || 'erro desconhecido'));
+      }
+    });
+    document.getElementById('diag-vibrate').addEventListener('click', () => {
+      if (typeof navigator.vibrate !== 'function') {
+        diagWrite('API de vibração indisponível.');
+        return;
+      }
+      try {
+        const accepted = navigator.vibrate([250, 150, 250]);
+        diagWrite(accepted ? 'Padrão de vibração aceito pela API. Você sentiu vibrar?'
+          : 'O navegador não aceitou o padrão de vibração.');
+      } catch (err) {
+        diagWrite('Falha na vibração: ' + (err?.name || 'erro desconhecido'));
+      }
+    });
+    document.getElementById('diag-audio').addEventListener('click', async () => {
+      try {
+        const ctx = getAudioContext();
+        await ctx.resume();
+        if (ctx.state !== 'running') {
+          diagWrite('Áudio não iniciou. Estado: ' + ctx.state);
+          return;
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        osc.frequency.value = 660;
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.18);
+        diagWrite('Som de teste enviado. Você ouviu o bipe?');
+      } catch (err) {
+        diagWrite('Falha no áudio: ' + (err?.name || 'erro desconhecido'));
+      }
+    });
+
     btnSoundTest.addEventListener('click', toggleSound);
 
     btnSilence.addEventListener('click', () => {
@@ -680,9 +763,9 @@
     }
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
+    const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
     function connectSSE() {
       if (!token) return;
-      const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
       const sseUrl = `${appBasePath}/api/pedidos/stream/${encodeURIComponent(token)}`;
       const eventSource = new EventSource(sseUrl);
 
@@ -731,7 +814,7 @@
       const sub = await pushRegistration.pushManager.subscribe({
         userVisibleOnly: true, applicationServerKey: decodeVapidKey(pushKey)
       });
-      const result = await fetch('/api/push/assinaturas/' + encodeURIComponent(token), {
+      const result = await fetch(appBasePath + '/api/push/assinaturas/' + encodeURIComponent(token), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub.toJSON())
       });
@@ -756,10 +839,10 @@
         return;
       }
       try {
-        const config = await fetch('/api/push/public-key').then(r => r.json());
+        const config = await fetch(appBasePath + '/api/push/public-key').then(r => r.json());
         if (!config.enabled || !config.publicKey) throw new Error('Push não configurado');
         pushKey = config.publicKey;
-        pushRegistration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+        pushRegistration = await navigator.serviceWorker.register(appBasePath + '/push-sw.js', { scope: appBasePath + '/' });
         if (Notification.permission === 'granted') {
           await registerPushSubscription();
         } else {

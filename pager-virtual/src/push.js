@@ -98,7 +98,7 @@ export async function notifyOrderReady(pedido) {
   const payload = JSON.stringify({
     title: 'Bipou — pedido pronto!',
     body: 'Seu pedido #' + pedido.numero + ' está pronto para retirada.',
-    url: '/cliente.html?token=' + encodeURIComponent(pedido.token) + '&pedido=' + encodeURIComponent(pedido.numero),
+    url: (() => { let publicUrl = process.env.PUBLIC_URL || ''; try { if (!publicUrl && fs.existsSync('/data/options.json')) publicUrl = JSON.parse(fs.readFileSync('/data/options.json','utf8')).public_url || ''; return new URL(publicUrl).pathname.replace(/\/$/, '') + '/cliente.html?token=' + encodeURIComponent(pedido.token); } catch { return '/cliente.html?token=' + encodeURIComponent(pedido.token); } })() + '&pedido=' + encodeURIComponent(pedido.numero),
     tag: 'bipou-' + pedido.id
   });
   await Promise.allSettled(subscriptions.map(async row => {

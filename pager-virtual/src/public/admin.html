@@ -50,8 +50,8 @@
 </head>
 <body>
 <main>
-<header><div><h1><img class="brand-logo" src="/avisaqui-marca.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span></div>
-<div class="row"><a class="action secondary" href="/kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
+<header><div><h1><img class="brand-logo" src="./avisaqui-marca.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span></div>
+<div class="row"><a class="action secondary" href="./kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
 
 <section id="master-area" hidden>
   <nav class="admin-nav" aria-label="Áreas do Master Admin"><button type="button" class="admin-tab" data-admin-tab="restaurants" aria-current="page">Restaurantes</button><button type="button" class="admin-tab secondary" data-admin-tab="interests">Interessados no piloto</button><button type="button" class="admin-tab secondary" data-admin-tab="settings">Configurações</button></nav>
@@ -91,6 +91,7 @@
 <p id="message" class="status" role="status" aria-live="polite"></p>
 </main>
 <script>
+const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
   const $ = id => document.getElementById(id);
   // Etapas 1–3: áreas por papel e modais; preservar IDs, rotas e permissões.
   (function organizeMasterSections(){
@@ -211,7 +212,7 @@
   async function loadInteresses() {
     const list=$('interesses-list');list.textContent='Carregando...';
     try {
-      const data=await api('/api/admin/interesses-piloto');
+      const data=await api(basePath + '/api/admin/interesses-piloto');
       list.replaceChildren();$('interesses-count').textContent=data.length+' contato(s) exibido(s)';
       for (const item of data) {
         const line=document.createElement('div');line.className='line';
@@ -300,14 +301,14 @@
   async function api(url, options={}) {
     const response = await fetch(url, { credentials:'same-origin', ...options });
     const data = await response.json();
-    if (response.status === 401) { location.replace('/login.html'); throw new Error('Sessão expirada'); }
+    if (response.status === 401) { location.replace(basePath + '/login.html'); throw new Error('Sessão expirada'); }
     if (!response.ok) throw new Error(data.error || 'Operação não concluída');
     return data;
   }
   async function post(url, data) { return api(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
   const val = id => $(id).value.trim();
   async function loadRestaurants() {
-    const data = await api('/api/admin/restaurantes');
+    const data = await api(basePath + '/api/admin/restaurantes');
     const list = $('restaurants-list'), select = $('manager-restaurant');
     const previousSelection=select.value;
     list.replaceChildren(); select.replaceChildren();
@@ -323,8 +324,8 @@
         enter.addEventListener('click', async () => {
           const status=actionStatus(enter);const release=pendingButton(enter,'Entrando…');status('Abrindo restaurante…');
           try {
-            await post('/api/admin/contexto/' + encodeURIComponent(rest.id), {});
-            location.assign('/kds.html');
+            await post(basePath + '/api/admin/contexto/' + encodeURIComponent(rest.id), {});
+            location.assign(basePath + '/kds.html');
           } catch (error) {
             release();
             status(error.message, true);
@@ -339,7 +340,7 @@
     if (!data.length) list.textContent='Nenhum restaurante cadastrado.';
   }
   async function loadTerminals() {
-    const data=await api('/api/admin/terminais');
+    const data=await api(basePath + '/api/admin/terminais');
     const list=$('terminals-list'); list.replaceChildren();
     for (const terminal of data) {
       const line=document.createElement('div');line.className='line';
@@ -349,7 +350,7 @@
       button.addEventListener('click',async()=>{
         const status=actionStatus(button);const release=pendingButton(button,'Atualizando…');status('Processando…');
         try {
-          await api('/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/ativo',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ativo:!terminal.ativo})});
+          await api(basePath + '/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/ativo',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ativo:!terminal.ativo})});
           status('Acesso atualizado.');
           try { await loadTerminals(); }
           catch(error){status('Acesso atualizado, mas a lista não pôde ser carregada: '+error.message,true);}
@@ -374,7 +375,7 @@
         if(!validateForm(credentials)){status('Confira a nova senha.',true);return;}
         const release=pendingButton(save,'Salvando…');status('Processando…');
         try{
-          await api('/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/senha',{
+          await api(basePath + '/api/admin/terminais/'+encodeURIComponent(terminal.id)+'/senha',{
             method:'PATCH',headers:{'Content-Type':'application/json'},
             body:JSON.stringify({senha:field.value})
           });
@@ -416,36 +417,36 @@
     });
   }
   submit('restaurant-form',async()=>{
-    await post('/api/admin/restaurantes',{nome:val('restaurant-name'),slug:val('restaurant-slug')});
+    await post(basePath + '/api/admin/restaurantes',{nome:val('restaurant-name'),slug:val('restaurant-slug')});
     try { await loadRestaurants(); }
     catch(error){ $('restaurants-list').textContent='Restaurante cadastrado. Não foi possível atualizar a lista: '+error.message; }
   });
   submit('manager-form',async()=>{
     const restId=val('manager-restaurant');
-    await post('/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+    await post(basePath + '/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
   });
   submit('terminal-form',async()=>{
-    await post('/api/admin/terminais',{nome:val('terminal-name'),login:val('terminal-login'),senha:$('terminal-password').value});
+    await post(basePath + '/api/admin/terminais',{nome:val('terminal-name'),login:val('terminal-login'),senha:$('terminal-password').value});
     try { await loadTerminals(); }
     catch(error){ $('terminals-list').textContent='Terminal cadastrado. Não foi possível atualizar a lista: '+error.message; }
   });
   submit('my-password-form',async()=>{
-    await post('/api/auth/password',{
+    await post(basePath + '/api/auth/password',{
       senha_atual:$('current-password').value,
       nova_senha:$('new-password').value
     });
-    location.replace('/login.html');
+    location.replace(basePath + '/login.html');
   });
   $('logout').addEventListener('click',async()=>{
-    try {await api('/api/auth/logout',{method:'POST'});}finally{location.replace('/login.html');}
+    try {await api(basePath + '/api/auth/logout',{method:'POST'});}finally{location.replace(basePath + '/login.html');}
   });
   (async()=>{
     try {
-      const user=await api('/api/auth/me');
+      const user=await api(basePath + '/api/auth/me');
       $('identity').textContent=user.nome+' · '+(user.papel==='master'?'Master Admin':'Gerente');
       if(user.papel==='master'){window.placeAccountSettings('master');$('master-area').hidden=false;await loadRestaurants();await loadInteresses();}
       else if(user.papel==='gerente'){window.placeAccountSettings('gerente');$('manager-area').hidden=false;$('go-kds').hidden=false;await loadTerminals();}
-      else location.replace('/kds.html');
+      else location.replace(basePath + '/kds.html');
     }catch(e){message(e.message,true);}
   })();
 </script>

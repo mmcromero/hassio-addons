@@ -27,8 +27,9 @@
   </form>
 </main>
 <script>
-  fetch('/api/setup/status').then(r=>r.json()).then(data=>{
-    if(!data.needs_setup) location.replace('/login.html');
+  const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
+  fetch(basePath + '/api/setup/status').then(r=>r.json()).then(data=>{
+    if(!data.needs_setup) location.replace(basePath + '/login.html');
   }).catch(()=>{});
   document.getElementById('setup-form').addEventListener('submit',async event=>{
     event.preventDefault();
@@ -36,7 +37,7 @@
     const message=document.getElementById('message');
     button.disabled=true;message.textContent='';
     try{
-      const response=await fetch('/api/setup/master',{
+      const response=await fetch(basePath + '/api/setup/master',{
         method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',
         body:JSON.stringify({
           codigo:document.getElementById('codigo').value.trim(),
@@ -47,7 +48,7 @@
       });
       const data=await response.json();
       if(!response.ok)throw new Error(data.error||'Não foi possível criar o acesso');
-      location.replace('/login.html');
+      location.replace(basePath + '/login.html');
     }catch(err){message.textContent=err.message;button.disabled=false;}
   });
 </script>

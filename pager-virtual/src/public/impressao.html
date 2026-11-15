@@ -32,12 +32,12 @@ const safe=(v)=>String(v).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&g
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json',...opts.headers}});if(!r.ok){let body={};try{body=await r.json()}catch{}throw new Error(body.error||'HTTP '+r.status)}return r.json()}
 async function load(){
 try{
-const [keys,events]=await Promise.all([api('./api/integracoes/impressao/chaves'),api('./api/integracoes/impressao/eventos')]);
+const [keys,events]=await Promise.all([api('api/integracoes/impressao/chaves'),api('api/integracoes/impressao/eventos')]);
 $('keys').innerHTML=keys.length?'':'<li>Nenhuma credencial</li>';
 for(const key of keys){
 const li=document.createElement('li');
 li.innerHTML='<div class="row"><span><code>'+safe(key.id.slice(0,8))+'</code> · '+safe(fmt(key.criado_em))+(key.revogado_em?' · Revogada':' · Ativa')+'</span></div>';
-if(!key.revogado_em){const b=document.createElement('button');b.className='danger';b.textContent='Revogar';b.addEventListener('click',async()=>{if(!confirm('Revogar essa credencial? O agente deixará de enviar pedidos.'))return;try{await api('./api/integracoes/impressao/chaves/'+encodeURIComponent(key.id),{method:'DELETE'});await load()}catch(e){$('notice').textContent=e.message}});li.firstChild.appendChild(b)}
+if(!key.revogado_em){const b=document.createElement('button');b.className='danger';b.textContent='Revogar';b.addEventListener('click',async()=>{if(!confirm('Revogar essa credencial? O agente deixará de enviar pedidos.'))return;try{await api('api/integracoes/impressao/chaves/'+encodeURIComponent(key.id),{method:'DELETE'});await load()}catch(e){$('notice').textContent=e.message}});li.firstChild.appendChild(b)}
 $('keys').appendChild(li)}
 $('events').innerHTML=events.length?'':'<li>Sem pedidos recebidos pelo agente</li>';
 for(const e of events){const li=document.createElement('li');li.textContent='#'+e.numero+' · '+e.situacao+' · '+fmt(e.criado_em)+' · evento '+e.evento_origem.slice(0,10);$('events').appendChild(li)}
@@ -45,7 +45,7 @@ for(const e of events){const li=document.createElement('li');li.textContent='#'+
 }
 $('generate').addEventListener('click',async()=>{
 $('generate').disabled=true;$('notice').textContent='';
-try{const r=await api('./api/integracoes/impressao/chave',{method:'POST',body:'{}'});$('token').textContent=r.token;$('secret').style.display='block';$('notice').textContent='Credencial criada. Copie antes de sair.';await load()}
+try{const r=await api('api/integracoes/impressao/chave',{method:'POST',body:'{}'});$('token').textContent=r.token;$('secret').style.display='block';$('notice').textContent='Credencial criada. Copie antes de sair.';await load()}
 catch(e){$('notice').textContent=e.message}finally{$('generate').disabled=false}
 });
 $('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('token').textContent);$('notice').textContent='Copiada'}catch{$('notice').textContent='Selecione e copie manualmente a credencial'}});
