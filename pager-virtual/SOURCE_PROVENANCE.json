@@ -1,41 +1,51 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "028ed94d4e96377a9808d803d5772ea873f542aa",
-  "version": "0.1.16",
+  "commit": "5ff32c0a31593e089d489401561f12881be218cf",
+  "version": "0.1.17",
   "files": [
     {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "fb0c3689be452bda88b863194f2aba64a638774664090fe93b212f11091b2bd0"
+      "sha256": "c115f9b764cb1689dc1d0596d8cd15357e7e02005f5e8c8470d735aa4ddef16f"
     },
     {
       "path": "CHANGELOG.md",
-      "source_path": "distribution/hotfix-0.1.16/CHANGELOG.md",
-      "sha256": "aa6255e36861784e12b055bb160b007c1d1a6ecbf402ca5a4fc82a59785c9032"
+      "source_path": "distribution/hotfix-0.1.17/CHANGELOG.md",
+      "sha256": "4952977b8daa008456006ab60ac8898fa9f1e493480b8df47db8c40b9134eefc"
     },
     {
       "path": "config.yaml",
-      "source_path": "distribution/hotfix-0.1.16/config.yaml",
-      "sha256": "685be1a31d3f9278a35df70c3d6ad230a1cbb6ba67b300fa725f8ecd23eb9c82"
+      "source_path": "distribution/hotfix-0.1.17/config.yaml",
+      "sha256": "2c248a4789cd09286d1b9d3931336eb0e6abbe37d661f0def190b21cb1e37660"
     },
     {
-      "path": "docs/WEBUI-CATALOGO-016.md",
-      "source_path": "distribution/hotfix-0.1.16/README.md",
-      "sha256": "aa42246eb33f888df1b7aabe074a625474125e6d36ab66a80e41f3459931ceed"
+      "path": "docs/WEBUI-PROXY-017.md",
+      "source_path": "distribution/hotfix-0.1.17/README.md",
+      "sha256": "70b871aef405a2b1550414c694e89e8545704db5a4ab65e0a4c85e60d5b175a5"
     },
     {
-      "path": "src/server.js",
-      "source_path": "src/server.js",
-      "sha256": "75587efec721d4f1fe11af34472a1d3ba3f28fc407eaaf6f122bfcbe87dc3347"
+      "path": "package.json",
+      "source_path": "distribution/hotfix-0.1.17/package.json",
+      "sha256": "df285ecb2904cde10d139b3871575b5bd0df9da529d4d36bfc7326e6a2b7716c"
+    },
+    {
+      "path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "source_path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "source_path": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "sha256": "93f66a738fefd2dc7edcdf386a7abfaa96f919f36fb177eb277e63d894cc0ced"
     },
     {
       "path": "tests/webui-launcher.test.js",
       "source_path": "tests/webui-launcher.test.js",
-      "sha256": "4df9695fe0db44fb642daace087e4f0e65729f885133c1575898912179a7f5c0"
+      "sha256": "719e3648c1c8063531ef563d21ba09d227ed7caf2ad4055e1aa5091570af2e07"
     }
   ],
   "ci_patch_source": null,
-  "scope": "Emergency overlay: catalog/WebUI only",
+  "scope": "Emergency overlay: direct HTTPS WebUI only",
   "base_repository": "mmcromero/hassio-addons",
-  "base_commit": "e6e3a31f756acb0eb60a4e770f9caf579be9a40f"
+  "base_commit": "5ffd90b113c0f69f63a2fb963e79ce4f484cef13"
 }
