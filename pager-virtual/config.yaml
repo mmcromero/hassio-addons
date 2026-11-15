@@ -15,7 +15,7 @@ ports:
   8095/tcp: 8095
 ports_description:
   8095/tcp: "Painel KDS e Página do Cliente (Web)"
-webui: "https://romeropi.duckdns.org:8443/avisaqui/landing.html"
+webui: "http://[HOST]:[PORT:8095]/webui"
 ingress: false
 backup: cold
 map:

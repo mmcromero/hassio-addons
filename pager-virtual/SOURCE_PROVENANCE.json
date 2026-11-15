@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "7295565ff9e37d3d1bf6cdfcd074aafcdd5ee4cc",
+  "commit": "028ed94d4e96377a9808d803d5772ea873f542aa",
   "version": "0.1.17-rc.1",
   "files": [
     {
@@ -31,7 +31,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "706a713042d424f84bdc3858715c8ab9037f54c7bf3d5e14be661aec63ca91b0"
+      "sha256": "b8b64c07f7a1abec1fab235e44afa3727a579ddf1c1959b48bd160d994ebd27c"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -191,7 +191,7 @@
     {
       "path": "src/server.js",
       "source_path": "src/server.js",
-      "sha256": "a1c19fb8b40c495bfddebc5d20b66f8dd759bfa0204e8e186d631c317e52b78e"
+      "sha256": "75587efec721d4f1fe11af34472a1d3ba3f28fc407eaaf6f122bfcbe87dc3347"
     },
     {
       "path": "src/setup.js",
@@ -307,6 +307,11 @@
       "path": "tests/sse-scope.test.js",
       "source_path": "tests/sse-scope.test.js",
       "sha256": "7c281e0fda3784130f82ab18a10222acf79d708370fab390b410041450486d44"
+    },
+    {
+      "path": "tests/webui-launcher.test.js",
+      "source_path": "tests/webui-launcher.test.js",
+      "sha256": "4df9695fe0db44fb642daace087e4f0e65729f885133c1575898912179a7f5c0"
     }
   ],
   "ci_patch_source": "distribution/pager-node22-ci.patch"

@@ -92,6 +92,14 @@ function publicUrlConfigurada() {
 const PUBLIC_URL = publicUrlConfigurada();
 fastify.get('/api/config/publica', async () => ({ public_url: PUBLIC_URL }));
 
+// O Supervisor exige [HOST]/[PORT] no manifesto. O botão passa por esta rota
+// e chega à landing HTTPS definida em public_url, sem fixar domínio no pacote.
+// Sem URL pública, preservar a landing local e eventual prefixo do proxy.
+fastify.get('/webui', async (request, reply) => {
+  reply.header('Cache-Control', 'no-store');
+  return reply.redirect(PUBLIC_URL ? `${PUBLIC_URL}/landing.html` : pageUrl(request, '/landing.html'));
+});
+
 // Rota de Health Check
 fastify.get('/api/health', async () => {
   return { status: 'healthy', uptime: process.uptime(), timestamp: Date.now() };
