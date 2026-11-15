@@ -5,7 +5,15 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
-## [0.1.14 — candidata, não publicada] — Pong experimental e correções HTTPS
+## [0.1.15 — candidata para testes] — correções do Pong após teste da 0.1.14
+- A versão 0.1.14 já foi instalada e testada no Home Assistant pelo proprietário; o Pong apresentou erro "Not Found" na entrada da partida.
+- Corrigida a construção de URL do Pong atrás do prefixo HTTPS /avisaqui/ e melhorado o tratamento de erro HTTP 404.
+- Adicionado modo de um jogador contra o computador, preservando a opção de dois jogadores.
+- Adicionados testes de rotas e prefixo público; resultados de CI e homologação real ainda precisam ser confirmados.
+- A versão foi incrementada em config.yaml e package.json para permitir atualização distinta da 0.1.14.
+- Sem migração de banco ou exclusão de pedidos; manter backup antes da atualização.
+
+## [0.1.14 — instalada e testada no Home Assistant em 14/11/2026 (relato do proprietário)] — Pong experimental e correções HTTPS
 - Incorporado o Pong experimental para dois celulares no mesmo pedido, via SSE e memória temporária (PR #29).
 - Opção `pong_experimental` desativada por padrão; o jogo não altera o banco de dados.
 - Corrigidos link Entrar da landing HTTPS e endpoint do formulário piloto sob `/avisaqui/` (correção do PR #30).
