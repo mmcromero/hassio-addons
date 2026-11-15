@@ -1,6 +1,8 @@
+> **Correção após evidência real do proprietário:** a 0.1.16 abriu `http://romeropi.duckdns.org:8090/webui` e não satisfez o botão. A correção mínima 0.1.17 usa diretamente HTTPS :8443 `/avisaqui/landing.html`, validado pelo getter original do Supervisor com o mapeamento observado. A RC maior passa a 0.1.18-rc.1. Ver `distribution/hotfix-0.1.17/README.md` na fonte.
+
 > **Atualização operacional:** a correção mínima da **0.1.16** foi integrada no repositório da loja pelo PR público #33, commit `5ffd90b113c0f69f63a2fb963e79ce4f484cef13`, com autorização do proprietário. Ela corrige a rejeição do manifesto e o encaminhamento do botão. A RC 0.1.17 desta branch continua separada; nenhuma instalação no Raspberry foi executada.
 
-> **Prioridade operacional:** a distribuição pública principal já declara **0.1.16**, com correção da abertura WebUI HTTPS. Em 15/11/2026, landing, login, API de saúde e proteção da integração de impressão responderam no DuckDNS por consultas somente leitura. A **0.1.17-rc.1** desta branch é a consolidação separada, não uma exigência para oferecer a 0.1.16. Consulte as regras obrigatórias em `AGENTS.md`.
+> **Prioridade operacional:** a distribuição pública principal já declara **0.1.16**, com correção da abertura WebUI HTTPS. Em 15/11/2026, landing, login, API de saúde e proteção da integração de impressão responderam no DuckDNS por consultas somente leitura. A **0.1.18-rc.1** desta branch é a consolidação separada, não uma exigência para oferecer a 0.1.16. Consulte as regras obrigatórias em `AGENTS.md`.
 
 > **Distribuição derivada da fonte privada.** Desenvolvimento em `mmcromero/pager-virtual`; este diretório distribui somente uma revisão identificada e testada. Consulte `SOURCE_PROVENANCE.json` para commit e hashes e `docs/RC-001.md` para status. Não desenvolver alterações independentes aqui.
 >

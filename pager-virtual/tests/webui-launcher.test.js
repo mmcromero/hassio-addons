@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 
 // Home Assistant Supervisor 2026.01.1, supervisor/addons/validate.py,
@@ -11,13 +11,26 @@ import { createServer } from 'node:net';
 // https://github.com/home-assistant/supervisor/blob/2026.01.1/supervisor/addons/validate.py
 const supervisorWebui = /^(?:https?|\[PROTO:\w+\]):\/\/\[HOST\]:\[PORT:\d+\].*$/;
 
-test('manifesto usa WebUI aceito pelo Supervisor, com porta declarada', () => {
+test('manifesto usa WebUI HTTPS direto ao proxy, aceito pelo Supervisor', () => {
   const yaml = readFileSync(new URL('../config.yaml', import.meta.url), 'utf8');
   const value = yaml.match(/^webui:\s*["']([^"']+)["']/m)?.[1];
   assert.ok(value && supervisorWebui.test(value), 'webui inválido para o catálogo do Supervisor: ' + value);
-  const port = value.match(/\[PORT:(\d+)\]/)[1];
-  assert.match(yaml, new RegExp('^  ' + port + '/tcp:', 'm'));
-  assert.ok(value.endsWith('/webui'), 'botão deve usar a rota de abertura dedicada');
+  assert.equal(value, 'https://[HOST]:[PORT:8443]/avisaqui/landing.html');
+});
+
+test('getter original do Supervisor reproduz a captura e monta o destino HTTPS correto', () => {
+  const yaml = readFileSync(new URL('../config.yaml', import.meta.url), 'utf8');
+  const current = yaml.match(/^webui:\s*["']([^"']+)["']/m)?.[1];
+  const resolve = webui => {
+    const result = spawnSync('python3', [
+      new URL('./fixtures/supervisor-webui-2026.01.1.py', import.meta.url).pathname,
+      JSON.stringify({ webui, ports: { '8095/tcp': 8090 }, hostname: 'romeropi.duckdns.org' })
+    ], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout.trim();
+  };
+  assert.equal(resolve('http://[HOST]:[PORT:8095]/webui'), 'http://romeropi.duckdns.org:8090/webui');
+  assert.equal(resolve(current), 'https://romeropi.duckdns.org:8443/avisaqui/landing.html');
 });
 
 test('URL fixa da 0.1.16 anterior é rejeitada pela regra do Supervisor', () => {

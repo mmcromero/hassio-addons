@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "895b886ddb8bbaa0ca9e21342f119f68e35bb515",
-  "version": "0.1.17-rc.1",
+  "commit": "5ff32c0a31593e089d489401561f12881be218cf",
+  "version": "0.1.18-rc.1",
   "files": [
     {
       "path": ".dockerignore",
@@ -11,12 +11,12 @@
     {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "fb0c3689be452bda88b863194f2aba64a638774664090fe93b212f11091b2bd0"
+      "sha256": "c115f9b764cb1689dc1d0596d8cd15357e7e02005f5e8c8470d735aa4ddef16f"
     },
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "ec5630c97f80b48ce9789a59b683c0f45804c5cd794ae28b0c104d3f9fc69703"
+      "sha256": "5a312984baadcaefff67f513d51091792f6c8258342bfd80651a9ca8667d7c42"
     },
     {
       "path": "Dockerfile",
@@ -26,12 +26,12 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "80bf01206d02fd68c1f1d7a98af66aabce5ef8d1873a432da9aab2d571fdc160"
+      "sha256": "50215c46c8573bd3218cfcbe98ae64c4645c60f94ce786a59fc575415cc8e56d"
     },
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "b8b64c07f7a1abec1fab235e44afa3727a579ddf1c1959b48bd160d994ebd27c"
+      "sha256": "8b8f7594458e862526ab2004db75b6f8c524ceadd22817bc70b45c3c01a43153"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -56,17 +56,17 @@
     {
       "path": "docs/RC-001.md",
       "source_path": "distribution/RC-001.md",
-      "sha256": "295c6c36eac20d4b2075b1f72af1bce697686204a5c5971d53b9fa7ad3f2e1de"
+      "sha256": "f2db30986a8a1257f73bb0347ce0f48c4e89d21a1ec71ad40ce62b2f746c3adb"
     },
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "c9ba612bab3c2ea6512e495ef0d15305b948f554f56905031b459c1aa1e29dd3"
+      "sha256": "7de0727c974dfcb87852735e70638a7fa817bcde77d9cdb7f813da7c1d218a54"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "b9f49d417b105087563c63ab0e1be6f9b8f6a0434921fba28fcd20ef4aaea98a"
+      "sha256": "5b819612ed815e8e1143a66a8cea48b2825d8a515cb0b61c9cf0920528dc39c0"
     },
     {
       "path": "run.sh",
@@ -224,6 +224,16 @@
       "sha256": "3c3aee2eaf54e6ce48e554c9c4b17cc7d5c2f0c2f100ff6c00de76afe4b3458f"
     },
     {
+      "path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "source_path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "source_path": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "sha256": "93f66a738fefd2dc7edcdf386a7abfaa96f919f36fb177eb277e63d894cc0ced"
+    },
+    {
       "path": "tests/https-prefix-auth.test.js",
       "source_path": "tests/https-prefix-auth.test.js",
       "sha256": "381b98eec207635090cb8e47f26d2fd5b8eeef0971d663d09a0261cf46432eb7"
@@ -311,7 +321,7 @@
     {
       "path": "tests/webui-launcher.test.js",
       "source_path": "tests/webui-launcher.test.js",
-      "sha256": "4df9695fe0db44fb642daace087e4f0e65729f885133c1575898912179a7f5c0"
+      "sha256": "719e3648c1c8063531ef563d21ba09d227ed7caf2ad4055e1aa5091570af2e07"
     }
   ],
   "ci_patch_source": "distribution/pager-node22-ci.patch"

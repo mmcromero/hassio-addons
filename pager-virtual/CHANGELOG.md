@@ -6,7 +6,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
-## [0.1.17-rc.1] — 15/11/2026 — candidata privada, não publicada
+## [0.1.18-rc.1] — 15/11/2026 — candidata privada, não publicada
 
 - Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.
 - Pendência de impressão mantém HTTP 409 em retries; origem de login exige Host coerente.
@@ -15,6 +15,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - Docker respeita arquitetura do build; ARM64 e AMD64 devem passar build e smoke isolados antes de aprovação.
 - Rastreabilidade por commit privado e SHA-256; Pong desativado por padrão e agente Windows mantido em laboratório.
 - Versão instalada 0.1.15 conforme proprietário; 0.1.16 não instalada/homologada. Nenhuma instalação ou publicação nesta missão.
+
+## [0.1.17] — 15/11/2026 — botão WebUI direto na landing HTTPS
+
+- Corrige o endereço montado pelo Home Assistant: `https://[HOST]:[PORT:8443]/avisaqui/landing.html`.
+- A porta 8443 é a do proxy HTTPS já existente; não é mapeada para a porta 8090 do aplicativo. O Supervisor preserva esse valor quando não há mapeamento Docker correspondente.
+- O botão abre diretamente a landing HTTPS, inclusive com sessão autenticada. Não depende de acessar HTTP :8090 nem executar redirecionamento no aplicativo.
+- Regressão usa o getter original do Supervisor para reproduzir o endereço incorreto mostrado pelo proprietário e validar o endereço final correto.
+- Somente manifesto, versão e testes/documentação; servidor, dados, dependências, impressão, proxy/DNS e portas expostas preservados.
 
 ## [0.1.16 — correção de catálogo e botão WebUI] — 15/11/2026
 
