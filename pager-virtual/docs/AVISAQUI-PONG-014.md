@@ -6,11 +6,19 @@
 
 Investigar se o tempo de espera de um pedido pode ser mais agradável com uma atividade compartilhada entre dois clientes, sem prejudicar a função principal: informar o andamento do pedido e avisar quando estiver pronto. É um experimento de produto, **não uma funcionalidade comercial homologada**. A decisão de manter, redesenhar ou retirar depende de testes de usabilidade, desempenho e estabilidade.
 
+## Evolução implementada na branch (ainda sem homologação)
+
+A interface oferece **Pong: duas pessoas** e **Pong: contra o computador**. No modo solo, o servidor controla a raquete direita com velocidade limitada; o cliente controla a esquerda. Uma sala por pedido mantém seu modo até ser encerrada. A escolha não muda o banco de pedidos. O modo solo **ainda não foi testado em celular real**.
+
+## Falha relatada em 15/11/2026
+
+Capturas do pedido #204 mostram botão visível, tela do jogo com **Not Found** e carregamento persistente. A resposta indica erro em uma requisição da entrada no jogo; não há log HTTP do servidor/proxy para confirmar sua origem. A branch passou a exibir mensagem explícita para HTTP 404 e inclui teste automatizado de GET disponibilidade e POST entrada com token inexistente (esperado HTTP 409). **Não declarar a causa raiz corrigida sem reproduzir o fluxo HTTPS real.**
+
 ## Experiência pretendida
 
 1. Dois aparelhos abrem a página do cliente pelo **mesmo QR Code/token de pedido**.
-2. Se a função estiver ativada e o pedido estiver em `preparo`, aparece o acesso opcional ao Pong.
-3. Cada aparelho ocupa uma das duas posições e controla uma raquete por toque/arraste; o servidor mantém bola, placar e estado compartilhados.
+2. Se a função estiver ativada e o pedido estiver em `preparo`, aparecem as opções de jogar sozinho contra o computador ou com outra pessoa.
+3. No modo dupla, cada aparelho ocupa uma posição e controla uma raquete; no modo solo, o servidor controla a raquete adversária. O servidor mantém bola, placar e estado.
 4. A partida termina quando o pedido sai de `preparo`; o aviso do pedido continua prioritário.
 5. Quem não abre o jogo usa a página do cliente normalmente. O módulo visual é carregado sob demanda.
 
