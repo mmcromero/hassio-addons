@@ -454,7 +454,7 @@
       <div id="pong-content"></div>
     </section>
     <div id="pong-launch" style="text-align:center;margin:16px 0">
-      <button id="pong-start" type="button" class="btn-chip" hidden>🎮 Jogar Pong com outra pessoa</button>
+      <button id="pong-start" type="button" class="btn-chip" hidden>🎮 Pong: duas pessoas</button> <button id="pong-solo" type="button" class="btn-chip" hidden>🎮 Pong: contra o computador</button>
     </div>
   </main>
 
@@ -739,6 +739,7 @@
         pongExit?.();
         pongArea.hidden = true;
         pongStart.hidden = true;
+        pongSolo.hidden = true;
       }
       stopAlarmLoop();
       appCard.classList.remove('flash-alert');
@@ -776,6 +777,7 @@
 
     // Jogo opcional: arquivo só é baixado após o toque.
     const pongStart = document.getElementById('pong-start');
+    const pongSolo = document.getElementById('pong-solo');
     const pongArea = document.getElementById('pong-area');
     const pongContent = document.getElementById('pong-content');
     let pongExit = null;
@@ -783,27 +785,33 @@
     if (token) {
       const pongBasePath = window.location.pathname.endsWith('/cliente.html') ? window.location.pathname.slice(0, -'/cliente.html'.length) : window.location.pathname.replace(/\/$/, '');
       fetch(pongBasePath + '/api/jogos/pong/disponivel').then(r => {
-        if (r.ok && pongAllowed && pongArea.hidden) pongStart.hidden = false;
+        if (r.ok && pongAllowed && pongArea.hidden) { pongStart.hidden = false; pongSolo.hidden = false; }
       }).catch(() => {});
     }
-    pongStart.addEventListener('click', async () => {
+    async function abrirPong(mode) {
       if (!pongAllowed) return;
       pongStart.disabled = true;
+      pongSolo.disabled = true;
       pongStart.textContent = 'Carregando jogo...';
       pongArea.hidden = false;
       try {
         const { iniciarPong } = await import('./pong.js');
-        pongExit = await iniciarPong({ token, container: pongContent, onExit: () => {
+        pongExit = await iniciarPong({ token, mode, container: pongContent, onExit: () => {
           pongArea.hidden = true;
           pongStart.disabled = false;
+          pongSolo.disabled = false;
           pongStart.hidden = !pongAllowed;
-          pongStart.textContent = '🎮 Jogar Pong com outra pessoa';
+          pongSolo.hidden = !pongAllowed;
+          pongStart.textContent = '🎮 Pong: duas pessoas';
         } });
       } catch {
         pongContent.textContent = 'Não foi possível carregar o jogo.';
         pongStart.disabled = false;
+        pongSolo.disabled = false;
       }
-    });
+    }
+    pongStart.addEventListener('click', () => abrirPong('dupla'));
+    pongSolo.addEventListener('click', () => abrirPong('solo'));
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
     const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
