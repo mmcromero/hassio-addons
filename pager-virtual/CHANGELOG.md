@@ -5,6 +5,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+
+## [0.1.16 — correção de catálogo e botão WebUI] — 15/11/2026
+
+- Corrige `webui` para o formato `[HOST]`/`[PORT]` exigido pelo Supervisor. A URL absoluta anterior é rejeitada na validação do catálogo e pode impedir a oferta da atualização.
+- O botão abre `/webui`, que redireciona para a landing usando `public_url` (HTTPS quando configurado), com fallback local e preservação de `/avisaqui/`.
+- Acrescenta regressões de manifesto e abertura da WebUI, sem alterações de autenticação, SQLite, pedidos, impressão ou dependências.
+- Correção da candidata 0.1.16 ainda não instalada/homologada pelo proprietário. Não inclui a RC de consolidação 0.1.17-rc.1 nem muda proxy/DNS/portas.
+
 ## [0.1.15 — candidata para testes] — correções do Pong após teste da 0.1.14
 - A versão 0.1.14 já foi instalada e testada no Home Assistant pelo proprietário; o Pong apresentou erro "Not Found" na entrada da partida.
 - Corrigida a construção de URL do Pong atrás do prefixo HTTPS /avisaqui/ e melhorado o tratamento de erro HTTP 404.
