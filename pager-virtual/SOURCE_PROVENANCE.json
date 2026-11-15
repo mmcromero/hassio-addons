@@ -1,12 +1,17 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "929ec9679daeb55adff85fff0c66470455264d5b",
+  "commit": "cc8cb292399df7c8e9c036cbb503785f4a7901e5",
   "version": "0.1.18-rc.1",
   "files": [
     {
       "path": ".dockerignore",
       "source_path": ".dockerignore",
       "sha256": "af3bd16f8181327467cd170c9927f9f0219bd8997095ddd13e0de67d6d8b1c6d"
+    },
+    {
+      "path": ".gitignore",
+      "source_path": "distribution/governance/product.gitignore",
+      "sha256": "2c6b1cf86d1721e5ece756fa232e2704e95cb62579367a2bb7d7f57a41a8468d"
     },
     {
       "path": ".governance/approved-pager-ci.patch",
@@ -291,7 +296,7 @@
     {
       "path": "tests/package-policy.test.py",
       "source_path": "tests/package-policy.test.py",
-      "sha256": "d07abc714be53321cc06301d9c84584eb85ec157ad55b11bb56c078e00b8ea9f"
+      "sha256": "e59d0defac9da41d110983fd71e0d14ce5c7892931f5fca1b2329044c0359e17"
     },
     {
       "path": "tests/pong-api.test.js",

@@ -1,0 +1,3 @@
+# Artefatos gerados por ferramentas/testes; não fazem parte da distribuição.
+__pycache__/
+*.py[cod]
