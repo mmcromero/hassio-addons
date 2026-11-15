@@ -1,5 +1,5 @@
 name: "Pager Virtual"
-version: "0.1.15"
+version: "0.1.16"
 slug: pager_virtual
 description: "Sistema de Pager Virtual ultraleve e em tempo real para restaurantes"
 url: "https://github.com/mmcromero/pager-virtual"
@@ -15,7 +15,7 @@ ports:
   8095/tcp: 8095
 ports_description:
   8095/tcp: "Painel KDS e Página do Cliente (Web)"
-webui: "http://[HOST]:[PORT:8095]/"
+webui: "https://romeropi.duckdns.org:8443/avisaqui/landing.html"
 ingress: false
 backup: cold
 map:
