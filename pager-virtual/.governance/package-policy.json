@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "product": "Avisaqui",
+  "limits": {
+    "active_core_packages": 1,
+    "development_remote_branches_per_package": 1,
+    "distribution_remote_branches_per_package": 1
+  },
+  "active_package": {
+    "id": "AVISAQUI-CONSOLIDACAO-RC-001",
+    "status": "open",
+    "phase": "rc_review",
+    "candidate_version": "0.1.18-rc.1",
+    "published_version": "0.1.17",
+    "branches": {
+      "mmcromero/pager-virtual": "release/avisaqui-rc-consolidacao-001",
+      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-001"
+    },
+    "prs": {
+      "mmcromero/pager-virtual": 20,
+      "mmcromero/hassio-addons": 32
+    },
+    "base_branch": "main",
+    "new_features": "frozen_until_next_package"
+  },
+  "publication_authority": {
+    "coordination": "Governança",
+    "named_github_responsible": "to_be_registered",
+    "release_approval": "proprietário até delegação formal registrada"
+  },
+  "emergency_exceptions": [],
+  "public_scope": {
+    "prefix": "pager-virtual/",
+    "allowed_root_files": [
+      ".github/workflows/avisaqui-governance.yml",
+      ".github/workflows/validate-addons.yml"
+    ],
+    "approved_existing_ci_patch": ".governance/approved-pager-ci.patch"
+  },
+  "implementation_status": {
+    "policy": "documented",
+    "ci_gate": "prepared_on_rc_prs",
+    "github_branch_creation_block": "not_enabled",
+    "github_required_check": "not_enabled"
+  },
+  "timezone": "America/Sao_Paulo"
+}

@@ -1,0 +1,29 @@
+name: Governança do pacote Avisaqui
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'pager-virtual/**'
+      - '.github/workflows/avisaqui-governance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Testar regras de pacote
+        working-directory: pager-virtual
+        run: python3 tests/package-policy.test.py
+      - name: Validar branch, versão e escopo
+        working-directory: pager-virtual
+        env:
+          POLICY_REPOSITORY: ${{ github.repository }}
+          POLICY_BRANCH: ${{ github.head_ref || github.ref_name }}
+          POLICY_BASE: ${{ github.base_ref || 'main' }}
+          POLICY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          POLICY_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/check-package-policy.py --repository "$POLICY_REPOSITORY" --branch "$POLICY_BRANCH" --base "$POLICY_BASE" --base-sha "$POLICY_BASE_SHA" --head-sha "$POLICY_HEAD_SHA"

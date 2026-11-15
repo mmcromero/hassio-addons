@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "c7352078ea40764257ee0041ff292d025740925c",
+  "commit": "929ec9679daeb55adff85fff0c66470455264d5b",
   "version": "0.1.18-rc.1",
   "files": [
     {
@@ -9,9 +9,19 @@
       "sha256": "af3bd16f8181327467cd170c9927f9f0219bd8997095ddd13e0de67d6d8b1c6d"
     },
     {
+      "path": ".governance/approved-pager-ci.patch",
+      "source_path": ".governance/approved-pager-ci.patch",
+      "sha256": "a1d7f94633806898f88deadb900d8b7dd5a12a6668413672e22d7cab8d30881e"
+    },
+    {
+      "path": ".governance/package-policy.json",
+      "source_path": "distribution/governance/package-policy.json",
+      "sha256": "58ccc37acea1942286d6a295e3b3975a7688759e961732846b1536071c30197f"
+    },
+    {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "c115f9b764cb1689dc1d0596d8cd15357e7e02005f5e8c8470d735aa4ddef16f"
+      "sha256": "a16523a2bbfe6d632bdce4980e604aadd55f912302941945501bbcbcc0c86705"
     },
     {
       "path": "CHANGELOG.md",
@@ -26,7 +36,7 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "e407bdad48c31e844e63fcb9bffac8c3e889eff85b32c19aad46dd810e15a2e7"
+      "sha256": "2119871cd57aa1f0f91aeac269cf7c82161b34cdbea12e0eaa47528702669620"
     },
     {
       "path": "config.yaml",
@@ -54,6 +64,11 @@
       "sha256": "cf7bad94fb6fce75f131576b94153bd7f29a190c12c241a35f11c429144187c7"
     },
     {
+      "path": "docs/GOVERNANCA-DO-PACOTE.md",
+      "source_path": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
+      "sha256": "2bf1d06fdba9efb80e1ee09de831168431c8dfe6b102a820a06083489b622112"
+    },
+    {
       "path": "docs/RC-001.md",
       "source_path": "distribution/RC-001.md",
       "sha256": "f86561b055d0eb3fae3a75f7217cf329c225e06edbc116a179e547ca7ffee273"
@@ -77,6 +92,11 @@
       "path": "scripts/bootstrap-admin.js",
       "source_path": "scripts/bootstrap-admin.js",
       "sha256": "3762e953e54ea6237d58f81d6b3a33af5d9c9d6877ca815b883e941b2e1e0dee"
+    },
+    {
+      "path": "scripts/check-package-policy.py",
+      "source_path": "scripts/check-package-policy.py",
+      "sha256": "3b7b18a2d9d2c643cc0062a788d8a4fe5885aeb1c8808d768e91ed00c65684a0"
     },
     {
       "path": "src/.gitkeep",
@@ -269,6 +289,11 @@
       "sha256": "bf4c414bc6c55f43574f6e8c107902847371dfcb5510da21769010e3783b8f08"
     },
     {
+      "path": "tests/package-policy.test.py",
+      "source_path": "tests/package-policy.test.py",
+      "sha256": "d07abc714be53321cc06301d9c84584eb85ec157ad55b11bb56c078e00b8ea9f"
+    },
+    {
       "path": "tests/pong-api.test.js",
       "source_path": "tests/pong-api.test.js",
       "sha256": "868f245c61adf7e9db4b73ad2da0704afff6ada579e2fb307616d5304ef3671c"
@@ -324,5 +349,12 @@
       "sha256": "719e3648c1c8063531ef563d21ba09d227ed7caf2ad4055e1aa5091570af2e07"
     }
   ],
-  "ci_patch_source": "distribution/pager-node22-ci.patch"
+  "ci_patch_source": "distribution/pager-node22-ci.patch",
+  "repository_files": [
+    {
+      "path": ".github/workflows/avisaqui-governance.yml",
+      "source_path": "distribution/governance/avisaqui-governance.yml",
+      "sha256": "bfca1b669c376c7d4992ed5a7bc5b7a00b053acdcb2965662656b946561f03cd"
+    }
+  ]
 }
