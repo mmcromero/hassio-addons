@@ -5,12 +5,12 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
-## [não lançada] — preparação da integração Windows → API → KDS (PR #16)
+## [0.1.12 — candidata, não publicada] — integração Windows → API → KDS (PR #16)
 
 - Rotas de recepção de pedido com chave de agente por restaurante, revogação, idempotência e atualização SSE no KDS.
 - Tela `impressao.html` de credenciais e últimos eventos; atalho no KDS para gerente/master.
 - Testes de API e separação de restaurantes adicionados. Agente Windows continua no repositório fonte; não integrar ao contêiner ARM64.
-- **Sem alteração de versão:** manifestos mantidos em `0.1.11` nesta branch de preparação. Nenhum merge, publicação ou instalação no Home Assistant.
+- **Candidata 0.1.12:** manifestos da branch preparados; nenhum merge, publicação ou instalação no Home Assistant.
 - Limites: OCR apenas número, captura legada por arquivo fixo, reimpressão não automática, duplicados pendentes de decisão visual. Não modifica impressão física nem o banco real.
 - Evidência e plano de validação: `docs/AVISAQUI_PRINT_HA_001.md`.
 
