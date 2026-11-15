@@ -5,6 +5,7 @@ import { createServer } from 'node:net';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { request } from 'node:http';
 
 async function freePort() {
   const sock = createServer();
@@ -45,10 +46,21 @@ test('origem HTTPS de proxy usa cookie Secure sem impedir login HTTP local', { t
 
     const credentials = { login: 'admin-proxy-test', senha: 'senha-proxy-forte-123!' };
     async function login(origin, host) {
-      return fetch(local + '/api/auth/login', {
-        method: 'POST',
-        headers: { Origin: origin, Host: host, 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
+      // node:http preserva Host explícito ao simular o encaminhamento do proxy.
+      return new Promise((resolve, reject) => {
+        const req = request(local + '/api/auth/login', {
+          method: 'POST',
+          headers: { Origin: origin, Host: host, 'Content-Type': 'application/json' }
+        }, response => {
+          const chunks = [];
+          response.on('data', chunk => chunks.push(chunk));
+          response.on('end', () => resolve(new Response(Buffer.concat(chunks), {
+            status: response.statusCode, headers: response.headers
+          })));
+          response.on('error', reject);
+        });
+        req.on('error', reject);
+        req.end(JSON.stringify(credentials));
       });
     }
     const localLogin = await login(local, '127.0.0.1:' + port);

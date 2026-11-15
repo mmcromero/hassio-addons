@@ -58,6 +58,13 @@ test('novo evento com número já ativo é pendência e não duplica',async()=>{
  assert.equal(res.statusCode,409,res.body);
  assert.equal(db.prepare("SELECT COUNT(*) total FROM integracao_impressao_eventos WHERE situacao='PENDENTE_DUPLICADO'").get().total,1);
 });
+test('retry após resposta incerta preserva pendência de duplicado',async()=>{
+ const res=await post('/api/integracoes/impressao/pedidos',{evento_id:'lab-evento-501-b',numero:501},ah);
+ assert.equal(res.statusCode,409,res.body);
+ assert.equal(res.json().situacao,'PENDENTE_DUPLICADO');
+ assert.equal(res.json().repetido,true);
+ assert.equal(db.prepare("SELECT COUNT(*) total FROM integracao_impressao_eventos WHERE situacao='PENDENTE_DUPLICADO'").get().total,1);
+});
 test('restaurante B não acessa pedidos, chaves ou eventos de A',async()=>{
  assert.ok(!(await get('/api/pedidos',{cookie:cb})).json().some(p=>p.numero===501));
  assert.equal((await get('/api/integracoes/impressao/eventos',{cookie:cb})).json().length,0);

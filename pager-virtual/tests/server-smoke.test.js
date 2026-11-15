@@ -22,8 +22,8 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     stdio: ['ignore', 'pipe', 'pipe']
   });
   let logs = '';
-  child.stdout.on('data', part => { logs += part.toString(); });
-  child.stderr.on('data', part => { logs += part.toString(); });
+  child.stdout.on('data', chunk => { logs += chunk.toString(); });
+  child.stderr.on('data', chunk => { logs += chunk.toString(); });
   try {
     let ready = false;
     for (let n = 0; n < 100; n++) {
@@ -44,45 +44,46 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     const setup = await fetch('http://127.0.0.1:' + port + '/setup.html');
     assert.equal(setup.status, 200);
     assert.match(await setup.text(), /Primeiro acesso/);
-    const status = await fetch('http://127.0.0.1:' + port + '/api/setup/status');
-    assert.deepEqual(await status.json(), { needs_setup: true });
     let codeMatch;
-    for (let attempt = 0; attempt < 30; attempt++) {
+    for (let i = 0; i < 30; i++) {
       codeMatch = logs.match(/BIPOU PRIMEIRO ACESSO.*?([a-f0-9]{48})/);
       if (codeMatch) break;
       await new Promise(resolve => setTimeout(resolve, 100));
     }
-    assert.ok(codeMatch, 'código temporário deve aparecer nos logs locais');
+    assert.ok(codeMatch, 'código inicial precisa aparecer nos logs privados');
     const origin = 'http://127.0.0.1:' + port;
+    const headers = { Origin: origin, 'Content-Type': 'application/json' };
+    const request = (url, payload, overrideOrigin = origin) => fetch(origin + url, {
+      method: 'POST', headers: { ...headers, Origin: overrideOrigin },
+      body: JSON.stringify(payload), redirect: 'manual'
+    });
     const registration = { codigo: codeMatch[1], nome: 'Administrador Teste',
       login: 'master-teste', senha: 'senha-super-forte-teste-123' };
-    const post = (url, payload, sentOrigin = origin) => fetch(origin + url, {
+    const deniedExternal = await request('/api/setup/master', registration, 'http://exemplo-publico.com');
+    assert.equal(deniedExternal.status, 403);
+    const deniedPublicHost = await fetch(origin + '/api/setup/master', {
       method: 'POST',
-      headers: { Origin: sentOrigin, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-      redirect: 'manual'
-    });
-    const forbidden = await post('/api/setup/master', registration, 'http://outro-host.example');
-    assert.equal(forbidden.status, 403);
-    const spoof = await fetch(origin + '/api/setup/master', {
-      method: 'POST',
-      headers: {
-        Host: 'site-publico.example', Origin: 'http://site-publico.example',
-        'Content-Type': 'application/json'
-      },
+      headers: { Host: 'site-publico.example', Origin: 'http://site-publico.example',
+        'Content-Type': 'application/json' },
       body: JSON.stringify(registration)
     });
-    assert.equal(spoof.status, 403);
+    assert.equal(deniedPublicHost.status, 403);
 
-    const created = await post('/api/setup/master', registration);
+    const created = await request('/api/setup/master', registration);
     assert.equal(created.status, 201, await created.text());
-    const repeated = await post('/api/setup/master', registration);
+    const repeated = await request('/api/setup/master', registration);
     assert.equal(repeated.status, 409);
-    const login = await post('/api/auth/login', {
+    const needs = await fetch(origin + '/api/setup/status');
+    assert.equal((await needs.json()).needs_setup, false);
+    const unauth = await fetch(origin + '/admin.html', { redirect: 'manual' });
+    assert.equal(unauth.status, 302);
+    assert.equal(unauth.headers.get('location'), '/login.html');
+    const signedIn = await request('/api/auth/login', {
       login: 'master-teste', senha: 'senha-super-forte-teste-123'
     });
-    assert.equal(login.status, 200, await login.text());
-    const cookie = login.headers.get('set-cookie').split(';')[0];
+    assert.equal(signedIn.status, 200, await signedIn.text());
+    const cookie = signedIn.headers.get('set-cookie').split(';')[0];
+    assert.ok(cookie.startsWith('bipou_session='));
     const admin = await fetch(origin + '/admin.html', { headers: { Cookie: cookie } });
     assert.equal(admin.status, 200);
     assert.match(await admin.text(), /Administra/);
@@ -91,9 +92,6 @@ test('servidor inicia e primeiro acesso redireciona para configuração segura',
     });
     assert.equal(masterKds.status, 302);
     assert.equal(masterKds.headers.get('location'), '/admin.html');
-
-
-
   } finally {
     child.kill('SIGTERM');
     await new Promise(resolve => child.once('exit', resolve)).catch(() => {});

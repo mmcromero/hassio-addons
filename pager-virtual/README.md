@@ -1,3 +1,17 @@
+> **Pacote único:** seguir [a política de governança](docs/GOVERNANCA-DO-PACOTE.md) e `.governance/package-policy.json`. Uma RC privada compartilhada e uma distribuição por pacote; não criar branches remotas por pessoa ou correção. Os checks são preparados nesta RC e não equivalem a proteção nativa ativa.
+
+> **0.1.17 publicada:** PR público #34 integrado em `adb22b8e1b5cf5fd3cbb815d6ef81a2de4da5d74` com autorização específica do proprietário. O manifesto publicado gera diretamente `https://romeropi.duckdns.org:8443/avisaqui/landing.html` com hostname/mapeamento observados. Servidor, dados e impressão não foram alterados. A RC maior permanece separada em 0.1.18-rc.1; não houve instalação remota.
+
+> **Correção após evidência real do proprietário:** a 0.1.16 abriu `http://romeropi.duckdns.org:8090/webui` e não satisfez o botão. A correção mínima 0.1.17 usa diretamente HTTPS :8443 `/avisaqui/landing.html`, validado pelo getter original do Supervisor com o mapeamento observado. A RC maior passa a 0.1.18-rc.1. Ver `distribution/hotfix-0.1.17/README.md` na fonte.
+
+> **Atualização operacional:** a correção mínima da **0.1.16** foi integrada no repositório da loja pelo PR público #33, commit `5ffd90b113c0f69f63a2fb963e79ce4f484cef13`, com autorização do proprietário. Ela corrige a rejeição do manifesto e o encaminhamento do botão. A RC 0.1.17 desta branch continua separada; nenhuma instalação no Raspberry foi executada.
+
+> **Prioridade operacional:** a distribuição pública principal já declara **0.1.16**, com correção da abertura WebUI HTTPS. Em 15/11/2026, landing, login, API de saúde e proteção da integração de impressão responderam no DuckDNS por consultas somente leitura. A **0.1.18-rc.1** desta branch é a consolidação separada, não uma exigência para oferecer a 0.1.16. Consulte as regras obrigatórias em `AGENTS.md`.
+
+> **Distribuição derivada da fonte privada.** Desenvolvimento em `mmcromero/pager-virtual`; este diretório distribui somente uma revisão identificada e testada. Consulte `SOURCE_PROVENANCE.json` para commit e hashes e `docs/RC-001.md` para status. Não desenvolver alterações independentes aqui.
+>
+> Fluxo: fonte privada → desenvolvimento → integração/testes → RC privada → aprovação → distribuição pública → validação → publicação. Branches temporárias, PRs obrigatórios; `main` é referência estável. Excluir branches exige validação e autorização posterior. Esta RC não foi publicada nem instalada.
+
 # Pager Virtual — Add-on Home Assistant
 
 Sistema de Pager Virtual ultraleve e em tempo real para restaurantes, praças de alimentação e food service.

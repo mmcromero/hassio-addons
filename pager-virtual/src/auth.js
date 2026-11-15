@@ -96,7 +96,7 @@ function validateOrigin(request) {
   try {
     const url = new URL(origin);
     const host = request.headers.host;
-    return origin === publicOrigin || (url.host === host && url.protocol === (request.protocol + ':'));
+    return url.host === host && (origin === publicOrigin || url.protocol === (request.protocol + ':'));
   } catch { return false; }
 }
 export async function authRoutes(app) {

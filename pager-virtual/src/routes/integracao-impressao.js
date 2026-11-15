@@ -101,7 +101,10 @@ export async function integracaoImpressaoRoutes(app) {
     const create = db.transaction(() => {
       const previous = db.prepare('SELECT pedido_id,situacao,numero FROM integracao_impressao_eventos WHERE chave_id=? AND evento_origem=?')
         .get(credential.id, evento_id);
-      if (previous) return { status: 200, body: { repetido: true, pedido_id: previous.pedido_id, situacao: previous.situacao } };
+      if (previous) return {
+        status: previous.situacao === 'CRIADO' ? 200 : 409,
+        body: { repetido: true, pedido_id: previous.pedido_id, situacao: previous.situacao }
+      };
       const existing = db.prepare("SELECT id FROM pedidos WHERE restaurante_id=? AND numero=? AND status IN ('preparo','pronto')")
         .get(credential.restaurante_id, numero);
       if (existing) {
