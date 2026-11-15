@@ -1,5 +1,8 @@
 # Governança obrigatória do pacote Avisaqui
 
+> **Atualização 15/11/2026 — FECHADO TECNICAMENTE:** pacote `AVISAQUI-CONSOLIDACAO-RC-001`, versão `0.1.18-rc.1`, PR privado #20 e PR público #32 integrados. O proprietário confirmou a versão instalada e em execução no Home Assistant do Raspberry Pi de **homologação**. **Homologação funcional ainda em andamento**; divergências de UX serão tratadas em novo pacote. Não reutilizar os PRs/branches de RC antiga. Aguardar Governança registrar o novo pacote principal. Referência canônica: `mmcromero/pager-virtual/docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md`.
+
+
 Enquanto um pacote estiver aberto, todos os desenvolvedores do aplicativo devem concentrar código, correções, testes e documentação na **mesma RC privada**. Este diretório público recebe somente a distribuição derivada de um commit privado identificado. Não criar branches remotas por pessoa, funcionalidade, correção ou documento.
 
 Registro vigente: `.governance/package-policy.json`.
@@ -12,7 +15,7 @@ Registro vigente: `.governance/package-policy.json`.
 - A governança coordena escopo/revisão/encerramento; o desenvolvedor resolve programação e conflitos. Publicações e exclusões exigem a autorização/delegação aplicável.
 - Publicar somente o SHA aprovado e testado, preservar dados/HTTPS e não alterar outros produtos deste repositório.
 
-Pacote atual: `AVISAQUI-CONSOLIDACAO-RC-001`, candidata **0.1.18-rc.1**. Distribuição de trabalho: `release/avisaqui-rc-distribuicao-001`, PR #32. A versão **0.1.17** publicada é a correção mínima do botão e não a liberação desta RC maior.
+Pacote anterior: `AVISAQUI-CONSOLIDACAO-RC-001`, **fechado**. A distribuição **0.1.18-rc.1** foi integrada pelo PR #32; não criar novo desenvolvimento na antiga branch `release/avisaqui-rc-distribuicao-001`. O próximo pacote só começa após registro de ID, escopo, responsáveis, nova branch e novo PR.
 
 O check `scripts/check-package-policy.py` valida branch, versão e escopo. O workflow dedicado é preparado por origem privada e não modifica outros produtos. **CI/documentação não impedem fisicamente criar branches ou fazer merge sem proteção nativa.** A governança deve conferir plano, acessos, revisores e checks obrigatórios antes de declarar os controles ativados.
 
