@@ -450,6 +450,12 @@
         <p style="font-size:.8rem;">A vibração depende do aparelho e das configurações. Um retorno positivo da API não comprova vibração física. O teste de tela acesa não funciona com bloqueio manual.</p>
       </details>
     </footer>
+    <section id="pong-area" hidden style="margin:20px auto;max-width:620px;text-align:center">
+      <div id="pong-content"></div>
+    </section>
+    <div id="pong-launch" style="text-align:center;margin:16px 0">
+      <button id="pong-start" type="button" class="btn-chip" hidden>🎮 Jogar Pong com outra pessoa</button>
+    </div>
   </main>
 
   <script>
@@ -728,6 +734,12 @@
 
     // --- TRANSIÇÕES DE ESTADO DO CLIENTE ---
     function applyStatus(status) {
+      pongAllowed = status === 'preparo';
+      if (!pongAllowed) {
+        pongExit?.();
+        pongArea.hidden = true;
+        pongStart.hidden = true;
+      }
       stopAlarmLoop();
       appCard.classList.remove('flash-alert');
 
@@ -761,6 +773,36 @@
         liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' retirado com sucesso. Bom apetite!';
       }
     }
+
+    // Jogo opcional: arquivo só é baixado após o toque.
+    const pongStart = document.getElementById('pong-start');
+    const pongArea = document.getElementById('pong-area');
+    const pongContent = document.getElementById('pong-content');
+    let pongExit = null;
+    let pongAllowed = true;
+    if (token) {
+      fetch(appBasePath + '/api/jogos/pong/disponivel').then(r => {
+        if (r.ok && pongAllowed && pongArea.hidden) pongStart.hidden = false;
+      }).catch(() => {});
+    }
+    pongStart.addEventListener('click', async () => {
+      if (!pongAllowed) return;
+      pongStart.disabled = true;
+      pongStart.textContent = 'Carregando jogo...';
+      pongArea.hidden = false;
+      try {
+        const { iniciarPong } = await import('./pong.js');
+        pongExit = await iniciarPong({ token, container: pongContent, onExit: () => {
+          pongArea.hidden = true;
+          pongStart.disabled = false;
+          pongStart.hidden = !pongAllowed;
+          pongStart.textContent = '🎮 Jogar Pong com outra pessoa';
+        } });
+      } catch {
+        pongContent.textContent = 'Não foi possível carregar o jogo.';
+        pongStart.disabled = false;
+      }
+    });
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
     const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
