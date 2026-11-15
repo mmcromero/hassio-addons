@@ -70,7 +70,10 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
     stream.addEventListener('encerrado', exit);
     stream.onerror = () => { if (active) label.textContent = 'Reconectando à partida...'; };
   } catch (error) {
-    if (active) label.textContent = error.message;
+    if (active) {
+      label.textContent = error.message;
+      close.textContent = 'Voltar';
+    }
   }
   return exit;
 }
