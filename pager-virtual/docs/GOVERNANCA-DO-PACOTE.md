@@ -1,5 +1,8 @@
 # Governança obrigatória do pacote Avisaqui
 
+> **PACOTE 002 ABERTO (15/11/2026):** candidato `0.1.19-rc.1`. Esta branch `release/avisaqui-rc-distribuicao-002` é **somente a distribuição derivada** da RC privada `mmcromero/pager-virtual:release/avisaqui-rc-002`. Não publicar ou mesclar este PR enquanto o código privado não estiver integrado, exportado com origem/hashes atualizados e aprovado. Os arquivos atuais servem como base de preparação, **não como exportação final validada**. A fábrica independente de jogos permanece isolada. Plano completo na fonte privada: `docs/governanca/AVISAQUI-PACOTE-002.md`.
+
+
 > **Atualização 15/11/2026 — FECHADO TECNICAMENTE:** pacote `AVISAQUI-CONSOLIDACAO-RC-001`, versão `0.1.18-rc.1`, PR privado #20 e PR público #32 integrados. O proprietário confirmou a versão instalada e em execução no Home Assistant do Raspberry Pi de **homologação**. **Homologação funcional ainda em andamento**; divergências de UX serão tratadas em novo pacote. Não reutilizar os PRs/branches de RC antiga. Aguardar Governança registrar o novo pacote principal. Referência canônica: `mmcromero/pager-virtual/docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md`.
 
 
@@ -15,7 +18,7 @@ Registro vigente: `.governance/package-policy.json`.
 - A governança coordena escopo/revisão/encerramento; o desenvolvedor resolve programação e conflitos. Publicações e exclusões exigem a autorização/delegação aplicável.
 - Publicar somente o SHA aprovado e testado, preservar dados/HTTPS e não alterar outros produtos deste repositório.
 
-Pacote anterior: `AVISAQUI-CONSOLIDACAO-RC-001`, **fechado**. A distribuição **0.1.18-rc.1** foi integrada pelo PR #32; não criar novo desenvolvimento na antiga branch `release/avisaqui-rc-distribuicao-001`. O próximo pacote só começa após registro de ID, escopo, responsáveis, nova branch e novo PR.
+Pacote anterior: `AVISAQUI-CONSOLIDACAO-RC-001`, **fechado**. A distribuição **0.1.18-rc.1** foi integrada pelo PR #32. Pacote atual: **`AVISAQUI-PACOTE-002`**, versão candidata `0.1.19-rc.1`, com branch/PR únicos registrados na política. Não reutilizar a branch `release/avisaqui-rc-distribuicao-001`.
 
 O check `scripts/check-package-policy.py` valida branch, versão e escopo. O workflow dedicado é preparado por origem privada e não modifica outros produtos. **CI/documentação não impedem fisicamente criar branches ou fazer merge sem proteção nativa.** A governança deve conferir plano, acessos, revisores e checks obrigatórios antes de declarar os controles ativados.
 
