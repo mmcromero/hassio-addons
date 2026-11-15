@@ -12,7 +12,7 @@
 Os scripts Python do agente Windows continuam no **repositório privado** `pager-virtual/scripts/impressao_windows/` e no artefato CI do PR #16. Não são copiados para o add-on ARM64: rodam exclusivamente no computador do caixa. A nova API recebe número e itens extraídos, não dados RAW/fiscais.
 
 ## Invariantes operacionais
-- **Versão do add-on em branch: 0.1.11, sem bump ainda.** Uma próxima versão deve ser definida quando a publicação for autorizada.
+- **Versão candidata nesta branch: 0.1.12.** A instalação atual não foi consultada nem alterada; versão candidata não implica publicação.
 - Preservados slug `pager_virtual`, nome de pasta `pager-virtual/`, porta 8095, `/data`, Dockerfile, run.sh, options, esquema de autenticação existente.
 - As duas novas tabelas são criadas aditivamente pela rota durante a inicialização. Nenhuma tabela legada é apagada nem dados migrados destrutivamente.
 - Não executar scripts que alterem o Raspberry Pi; nenhuma instalação automática via este PR.
