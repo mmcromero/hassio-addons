@@ -51,3 +51,14 @@ test('proxy usa prefixo apenas no HTTPS e mantém Fastify escutando na porta int
   assert.match(nginx, /proxy_pass http:\/\/45c28620-pager-virtual:8095\//);
   assert.match(nginx, /proxy_buffering off;/);
 });
+
+test('diagnóstico do aparelho preservado no cliente com a rota HTTPS', () => {
+  const html = source('public/cliente.html');
+  assert.match(html, /id="diagnosticos"/);
+  for (const id of ['diag-check', 'diag-wake', 'diag-vibrate', 'diag-audio', 'diag-result']) {
+    assert.match(html, new RegExp('id="' + id + '"'));
+    if (id !== 'diag-result') assert.match(html, new RegExp("getElementById\\('" + id + "'\\)"));
+  }
+  assert.match(html, /const appBasePath = window\.location\.pathname/);
+  assert.match(html, /navigator\.serviceWorker\.register\(appBasePath/);
+});
