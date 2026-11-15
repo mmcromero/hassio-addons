@@ -6,6 +6,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.17] — 15/11/2026 — botão WebUI direto na landing HTTPS
+
+- Corrige o endereço montado pelo Home Assistant: `https://[HOST]:[PORT:8443]/avisaqui/landing.html`.
+- A porta 8443 é a do proxy HTTPS já existente; não é mapeada para a porta 8090 do aplicativo. O Supervisor preserva esse valor quando não há mapeamento Docker correspondente.
+- O botão abre diretamente a landing HTTPS, inclusive com sessão autenticada. Não depende de acessar HTTP :8090 nem executar redirecionamento no aplicativo.
+- Regressão usa o getter original do Supervisor para reproduzir o endereço incorreto mostrado pelo proprietário e validar o endereço final correto.
+- Somente manifesto, versão e testes/documentação; servidor, dados, dependências, impressão, proxy/DNS e portas expostas preservados.
+
 ## [0.1.16 — correção de catálogo e botão WebUI] — 15/11/2026
 
 - Corrige `webui` para o formato `[HOST]`/`[PORT]` exigido pelo Supervisor. A URL absoluta anterior é rejeitada na validação do catálogo e pode impedir a oferta da atualização.
