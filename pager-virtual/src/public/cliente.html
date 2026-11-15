@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f172a">
-  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="manifest" href="./manifest.webmanifest">
   <title>Acompanhamento do seu Pedido — Burger House</title>
   <style>
     :root {
@@ -731,7 +731,7 @@
       const sub = await pushRegistration.pushManager.subscribe({
         userVisibleOnly: true, applicationServerKey: decodeVapidKey(pushKey)
       });
-      const result = await fetch('/api/push/assinaturas/' + encodeURIComponent(token), {
+      const result = await fetch(appBasePath + '/api/push/assinaturas/' + encodeURIComponent(token), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub.toJSON())
       });
@@ -756,10 +756,10 @@
         return;
       }
       try {
-        const config = await fetch('/api/push/public-key').then(r => r.json());
+        const config = await fetch(appBasePath + '/api/push/public-key').then(r => r.json());
         if (!config.enabled || !config.publicKey) throw new Error('Push não configurado');
         pushKey = config.publicKey;
-        pushRegistration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+        pushRegistration = await navigator.serviceWorker.register(appBasePath + '/push-sw.js', { scope: appBasePath + '/' });
         if (Notification.permission === 'granted') {
           await registerPushSubscription();
         } else {
