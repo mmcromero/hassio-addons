@@ -13,6 +13,8 @@ function experimentalEnabled() {
 }
 const enabled = experimentalEnabled();
 const WIDTH = 600, HEIGHT = 360;
+const MAX_ROOMS = 64;
+const MAX_STREAMS_PER_ROOM = 4;
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const snapshot = (room) => ({
   status: room.status, ball: room.ball, paddles: room.paddles,
@@ -61,9 +63,13 @@ setInterval(() => {
   for (const [key, room] of rooms) {
     if (Date.now() - room.lastSeen > 30 * 60_000) { stop(room); rooms.delete(key); continue; }
     if (room.status !== 'encerrado') {
-      const order = orderFor(room.token);
-      if (!order || order.status !== 'preparo') stop(room);
-      else { advance(room); if (room.listeners.size) send(room); }
+      if (!room.lastOrderCheck || Date.now() - room.lastOrderCheck >= 1000) {
+        room.lastOrderCheck = Date.now();
+        const order = orderFor(room.token);
+        if (!order || order.status !== 'preparo') { stop(room); continue; }
+      }
+      advance(room);
+      if (room.listeners.size) send(room);
     }
   }
 }, 50).unref();
@@ -78,6 +84,7 @@ export async function pongRoutes(app) {
     let room = rooms.get(order.id);
     if (room?.status === 'encerrado') { rooms.delete(order.id); room = null; }
     if (!room) {
+      if (rooms.size >= MAX_ROOMS) return reply.code(503).send({ error: 'Limite de partidas simultâneas atingido' });
       room = { token, status: 'aguardando', players: [null, null], paddles: [180, 180],
         ball: { x: 300, y: 180, vx: 3.5, vy: 2 }, scores: [0, 0],
         listeners: new Set(), lastSeen: Date.now() };
@@ -126,6 +133,7 @@ export async function pongRoutes(app) {
     if (!room || order.status !== 'preparo' || !room.players.includes(req.params.player)) {
       return reply.code(403).send({ error: 'Partida indisponível' });
     }
+    if (room.listeners.size >= MAX_STREAMS_PER_ROOM) return reply.code(429).send({ error: 'Limite de conexões da partida atingido' });
     reply.hijack();
     reply.raw.setHeader('Content-Type', 'text/event-stream');
     reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
