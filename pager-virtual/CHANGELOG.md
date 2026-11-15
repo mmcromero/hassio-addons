@@ -5,6 +5,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+
 ## [0.1.17-rc.1] — 15/11/2026 — candidata privada, não publicada
 
 - Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.
@@ -14,6 +15,13 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - Docker respeita arquitetura do build; ARM64 e AMD64 devem passar build e smoke isolados antes de aprovação.
 - Rastreabilidade por commit privado e SHA-256; Pong desativado por padrão e agente Windows mantido em laboratório.
 - Versão instalada 0.1.15 conforme proprietário; 0.1.16 não instalada/homologada. Nenhuma instalação ou publicação nesta missão.
+
+## [0.1.16 — correção de catálogo e botão WebUI] — 15/11/2026
+
+- Corrige `webui` para o formato `[HOST]`/`[PORT]` exigido pelo Supervisor. A URL absoluta anterior é rejeitada na validação do catálogo e pode impedir a oferta da atualização.
+- O botão abre `/webui`, que redireciona para a landing usando `public_url` (HTTPS quando configurado), com fallback local e preservação de `/avisaqui/`.
+- Acrescenta regressões de manifesto e abertura da WebUI, sem alterações de autenticação, SQLite, pedidos, impressão ou dependências.
+- Correção da candidata 0.1.16 ainda não instalada/homologada pelo proprietário. Não inclui a RC de consolidação 0.1.17-rc.1 nem muda proxy/DNS/portas.
 
 ## [0.1.15 — candidata para testes] — correções do Pong após teste da 0.1.14
 - A versão 0.1.14 já foi instalada e testada no Home Assistant pelo proprietário; o Pong apresentou erro "Not Found" na entrada da partida.
@@ -36,7 +44,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - Incorporado o painel opcional de diagnóstico do aparelho na página do cliente, originado do PR #18 (`mmcromero/pager-virtual`, merge `7a2612271d2342b29863cd82e5007a60e9da620f`). Apenas HTML/JS do cliente, sem alteração em pedidos ou banco.
 - Validação de origem pública e cookies revista; preservado HTTP local.
 - Modelo NGINX isolado em `docs/AVISAQUI-HTTPS-001-nginx.conf.example`, **não instalado**.
-- Antes de ativar, configurar no add-on `public_url` para `https://romeropi.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
+- Antes de ativar, configurar no add-on `public_url` para `https://romeirop.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
 - **Ainda não houve merge, publicação nem alteração no Home Assistant.** O suporte HTTPS só está preparado em branch de desenvolvimento.
 
 ## [0.1.12 — candidata, não publicada] — integração Windows → API → KDS (PR #16)
