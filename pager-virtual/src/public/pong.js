@@ -1,4 +1,4 @@
-export async function iniciarPong({ token, container, onExit }) {
+export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) {
   container.innerHTML = '';
   const label = document.createElement('p');
   label.textContent = 'Conectando ao Pong...';
@@ -9,14 +9,16 @@ export async function iniciarPong({ token, container, onExit }) {
   close.textContent = 'Sair do jogo';
   close.type = 'button';
   container.append(label, canvas, close);
-  const base = location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
-  const endpoint = base + '/api/jogos/pong';
+  const base = new URL('.', import.meta.url).pathname.replace(/\/$/, '');
+  // API usa o mesmo prefixo público da página; evita divergência de caminhos no proxy.
+  const apiBase = base.endsWith('/public') ? base.slice(0, -7) : base;
+  const endpoint = apiBase + '/api/jogos/pong';
   let player = '', side = -1, stream = null, active = true, lastMove = 0;
   const ctx = canvas.getContext('2d');
   function render(state) {
     if (!active) return;
     label.textContent = state.status === 'aguardando' ? 'Aguardando o segundo celular...' :
-      'Você controla a raquete ' + (side === 0 ? 'esquerda' : 'direita') + '.';
+      (mode === 'solo' ? 'Você joga contra o computador.' : 'Você controla a raquete ' + (side === 0 ? 'esquerda' : 'direita') + '.');
     ctx.fillStyle = '#102b39'; ctx.fillRect(0, 0, 600, 360);
     ctx.strokeStyle = '#3c6977'; ctx.setLineDash([8, 8]);
     ctx.beginPath(); ctx.moveTo(300, 0); ctx.lineTo(300, 360); ctx.stroke(); ctx.setLineDash([]);
@@ -55,10 +57,10 @@ export async function iniciarPong({ token, container, onExit }) {
   try {
     const response = await fetch(endpoint + '/entrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token, mode })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Não foi possível entrar');
+    if (!response.ok) throw new Error(response.status === 404 ? 'Rota do jogo não encontrada (HTTP 404). Verificar versão do servidor e encaminhamento HTTPS.' : (data.error || 'Não foi possível entrar'));
     player = data.player; side = data.side;
     if (!active) return exit();
     render(data);
