@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pedidosRoutes } from './routes/pedidos.js';
+import { pongRoutes } from './pong.js';
 import { integracaoImpressaoRoutes } from './routes/integracao-impressao.js';
 import { pushRoutes } from './push.js';
 import { authRoutes, currentUser } from './auth.js';
@@ -58,6 +59,7 @@ await fastify.register(authRoutes);
 await fastify.register(adminRoutes);
 await fastify.register(interessesRoutes);
 await fastify.register(pedidosRoutes);
+await fastify.register(pongRoutes);
 await fastify.register(integracaoImpressaoRoutes);
 await fastify.register(pushRoutes);
 

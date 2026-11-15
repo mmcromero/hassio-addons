@@ -5,6 +5,13 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.14 — candidata, não publicada] — Pong experimental e correções HTTPS
+- Incorporado o Pong experimental para dois celulares no mesmo pedido, via SSE e memória temporária (PR #29).
+- Opção `pong_experimental` desativada por padrão; o jogo não altera o banco de dados.
+- Corrigidos link Entrar da landing HTTPS e endpoint do formulário piloto sob `/avisaqui/` (correção do PR #30).
+- Teste de regressão para URLs da landing com e sem o prefixo HTTPS.
+- Homologação real do Pong e publicação no Home Assistant ainda pendentes.
+
 ## [0.1.13 — candidata, não publicada] — AVISAQUI-HTTPS-001
 - Suporte planejado à publicação da aplicação em `/avisaqui/` pelo NGINX SSL Proxy existente.
 - Corrigidos URLs de login, administração, KDS, painel de impressão, cliente, Web Push e manifest.

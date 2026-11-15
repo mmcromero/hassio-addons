@@ -62,3 +62,31 @@ test('diagnóstico do aparelho preservado no cliente com a rota HTTPS', () => {
   assert.match(html, /const appBasePath = window\.location\.pathname/);
   assert.match(html, /navigator\.serviceWorker\.register\(appBasePath/);
 });
+
+test('landing preserva login e formulário do piloto no prefixo HTTPS e no HTTP local', () => {
+  const html = source('public/landing.html');
+  assert.match(html, /href="\.\/login\.html"/);
+  assert.match(html, /fetch\('\.\/api\/piloto\/interesse'/);
+  for (const [page, login, api] of [
+    ['https://romeropi.duckdns.org:8443/avisaqui/landing.html',
+      '/avisaqui/login.html', '/avisaqui/api/piloto/interesse'],
+    ['http://192.168.0.6:8090/landing.html',
+      '/login.html', '/api/piloto/interesse']
+  ]) {
+    assert.equal(new URL('./login.html', page).pathname, login);
+    assert.equal(new URL('./api/piloto/interesse', page).pathname, api);
+  }
+});
+
+test('Pong 0.1.14 é experimental e protegido por limites de recursos', () => {
+  const yaml = readFileSync(join(process.cwd(), 'config.yaml'), 'utf8');
+  const pong = source('pong.js');
+  const client = source('public/cliente.html');
+  assert.match(yaml, /pong_experimental: false/);
+  assert.match(yaml, /pong_experimental: bool/);
+  assert.match(pong, /const MAX_ROOMS = 64/);
+  assert.match(pong, /const MAX_STREAMS_PER_ROOM = 4/);
+  assert.match(pong, /order\.status !== 'preparo'/);
+  assert.match(client, /await import\('\.\/pong\.js'\)/);
+  assert.match(client, /pongExit\?\.\(\)/);
+});
