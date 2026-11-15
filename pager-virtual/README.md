@@ -8,6 +8,11 @@ Sistema de Pager Virtual ultraleve e em tempo real para restaurantes, praças de
 - **Painel KDS da Cozinha:** Visualização multi-pedidos com fila cronológica rigorosa (FIFO) e ações rápidas com 1 toque.
 - **Banco de Dados Resiliente:** SQLite em modo WAL gravado com segurança na partição persistente `/data`.
 
+
+## Pong experimental — versão 0.1.14
+
+O jogo opcional para dois celulares é um **protótipo não homologado**. A chave administrativa `pong_experimental` inicia em `false`; a alteração exige reiniciar o add-on. O jogo não altera pedidos nem grava pontuação no banco. Consulte **[AVISAQUI-PONG-014.md](docs/AVISAQUI-PONG-014.md)** para objetivos, funcionamento, limites, testes e propostas futuras.
+
 ## Instalação
 1. Adicione este repositório à Loja de Add-ons do Home Assistant.
 2. Localize **Pager Virtual** e clique em **Instalar**.
