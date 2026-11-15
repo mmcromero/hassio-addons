@@ -5,6 +5,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.13 — candidata, não publicada] — AVISAQUI-HTTPS-001
+- Suporte planejado à publicação da aplicação em `/avisaqui/` pelo NGINX SSL Proxy existente.
+- Corrigidos URLs de login, administração, KDS, painel de impressão, cliente, Web Push e manifest.
+- Validação de origem pública e cookies revista; preservado HTTP local.
+- Modelo NGINX isolado em `docs/AVISAQUI-HTTPS-001-nginx.conf.example`, **não instalado**.
+- Antes de ativar, configurar no add-on `public_url` para `https://romeirop.duckdns.org:8443/avisaqui/` e validar login externo, SSE, QR Code, Web Push e agente Windows.
+- **Ainda não houve merge, publicação nem alteração no Home Assistant.** O suporte HTTPS só está preparado em branch de desenvolvimento.
+
 ## [0.1.12 — candidata, não publicada] — integração Windows → API → KDS (PR #16)
 
 - Rotas de recepção de pedido com chave de agente por restaurante, revogação, idempotência e atualização SSE no KDS.
