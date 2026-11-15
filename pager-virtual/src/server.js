@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pedidosRoutes } from './routes/pedidos.js';
+import { integracaoImpressaoRoutes } from './routes/integracao-impressao.js';
 import { pushRoutes } from './push.js';
 import { authRoutes, currentUser } from './auth.js';
 import { adminRoutes } from './admin.js';
@@ -29,11 +30,11 @@ await fastify.register(cors, {
 const publicDir = path.join(__dirname, 'public');
 fastify.addHook('onRequest', async (request, reply) => {
   const route = request.url.split('?')[0];
-  if (route === '/kds.html' || route === '/admin.html') {
+  if (route === '/kds.html' || route === '/admin.html' || route === '/impressao.html') {
     if (needsSetup()) return reply.redirect('/setup.html');
     const user = currentUser(request);
     if (!user) return reply.redirect('/login.html');
-    if (route === '/admin.html' && user.papel === 'operador') return reply.redirect('/kds.html');
+    if ((route === '/admin.html' || route === '/impressao.html') && user.papel === 'operador') return reply.redirect('/kds.html');
     if (route === '/kds.html' && user.papel === 'master' && !user.restaurante_id) return reply.redirect('/admin.html');
   }
 });
@@ -54,6 +55,7 @@ await fastify.register(authRoutes);
 await fastify.register(adminRoutes);
 await fastify.register(interessesRoutes);
 await fastify.register(pedidosRoutes);
+await fastify.register(integracaoImpressaoRoutes);
 await fastify.register(pushRoutes);
 
 

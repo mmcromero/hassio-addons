@@ -377,6 +377,7 @@
 
       <button id="btn-sequence-settings" class="btn-sim-order" title="Configurar numeração">⚙️ Numeração</button>
       <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
+      <a id="printing-integration-link" href="./impressao.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">🖨️ Integração de impressão</a>
       <a id="admin-link" href="/admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">⚙️ Administração</a>
       <button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:54px;margin:0;padding:12px 16px">Sair</button>
     </div>
@@ -451,6 +452,18 @@
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       })[char]);
     }
+    async function configurarAtalhoImpressao() {
+      try {
+        const response = await fetch(apiPath('/api/auth/me'));
+        if (!response.ok) return;
+        const user = await response.json();
+        if ((user.papel === 'gerente' || user.papel === 'master') && user.restaurante_id) {
+          document.getElementById('printing-integration-link').style.display = 'inline-flex';
+        }
+      } catch {}
+    }
+    configurarAtalhoImpressao();
+
     async function carregarConfiguracao() {
       try {
         const resposta = await fetch(apiPath('/api/config/publica'));
