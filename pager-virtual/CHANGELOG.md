@@ -5,6 +5,12 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.14 — candidata, não publicada] — correção da página inicial HTTPS
+- Corrigido o link **Entrar** da landing para manter `/avisaqui/login.html` no proxy HTTPS.
+- Corrigido o envio do formulário do piloto para manter `/avisaqui/api/piloto/interesse`.
+- Preservado o acesso HTTP local pela porta 8090 e adicionados testes de regressão.
+- Sem mudanças no banco, nas permissões ou no NGINX.
+
 ## [0.1.13 — candidata, não publicada] — AVISAQUI-HTTPS-001
 - Suporte planejado à publicação da aplicação em `/avisaqui/` pelo NGINX SSL Proxy existente.
 - Corrigidos URLs de login, administração, KDS, painel de impressão, cliente, Web Push e manifest.
