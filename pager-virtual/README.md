@@ -2,6 +2,17 @@
 
 Sistema de Pager Virtual ultraleve e em tempo real para restaurantes, praças de alimentação e food service.
 
+## Fonte canônica de publicação e atualização — AVISAQUI-DEPLOY-HA-001
+
+**ATENÇÃO para novos desenvolvedores:** este repositório `mmcromero/hassio-addons` é o repositório **real do add-on do Avisaqui** registrado no Home Assistant. A pasta de distribuição é `pager-virtual/` e o slug é `pager_virtual`. O código-fonte de desenvolvimento e PRs está no repositório privado `mmcromero/pager-virtual`.
+
+- **Nome público:** Avisaqui; **identidade técnica mantida:** Pager Virtual / `pager-virtual` / `pager_virtual`. Não criar outro add-on por causa da mudança de marca.
+- **Validação existente:** [`.github/workflows/validate-addons.yml`](../.github/workflows/validate-addons.yml), com validação de manifesto, build ARM64, smoke de persistência/reinício e testes `npm test`.
+- **Histórico verificado:** commit `64a191de3e7bc5533fd40d6ae58bc97181d7cca5` registrou a versão `0.1.10` e `webui: /`. O proprietário informou que a versão instalada no Raspberry Pi é `0.1.10`; a confirmação de instalação não vem desse commit.
+- **Não confundir:** o `gerar-pacote.yml` de `mmcromero/fabrica-de-ideias-kanban` é do Kanban e cria um artefato ZIP, sem instalar o Avisaqui. Não foi identificado workflow de ZIP do Avisaqui; o fluxo existente é a publicação dos arquivos nesta pasta, via repositório da loja.
+- **Para atualizar:** revisar o PR privado, sincronizar apenas arquivos necessários em branch deste repositório, manter slug, pasta, portas, opções e `/data`, atualizar `config.yaml`, `package.json` e `CHANGELOG.md`, executar a CI e verificar resultados. Instalação no Home Assistant e homologação real exigem evidências próprias e backup recuperável do SQLite/WAL.
+- **Manual completo:** [`docs/AVISAQUI_DEPLOY_HA_001.md`](https://github.com/mmcromero/pager-virtual/blob/feat/avisaqui-ux-admin-001/docs/AVISAQUI_DEPLOY_HA_001.md) no repositório privado. Antes de alterar o fluxo, consultar o manual e o histórico de ambos os repositórios.
+
 ## Funcionalidades
 - **Notificações em Tempo Real (SSE):** Alerta sonoro de alta frequência (Web Audio API) e vibração ritmada no bolso do cliente quando a comida fica pronta.
 - **Página Casca (< 50 KB):** Carrega instantaneamente em smartphones com conexão 3G de subsolo, lendo itens e comanda diretamente dos parâmetros do QR Code.
