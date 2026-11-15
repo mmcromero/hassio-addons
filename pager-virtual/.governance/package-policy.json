@@ -7,25 +7,24 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-CONSOLIDACAO-RC-001",
-    "status": "closed",
-    "phase": "technical_package_closed_homologation_open",
-    "candidate_version": "0.1.18-rc.1",
+    "id": "AVISAQUI-PACOTE-002",
+    "status": "open",
+    "phase": "development",
+    "candidate_version": "0.1.19-rc.1",
     "published_version": "0.1.18-rc.1",
     "branches": {
-      "mmcromero/pager-virtual": "release/avisaqui-rc-consolidacao-001",
-      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-001"
+      "mmcromero/pager-virtual": "release/avisaqui-rc-002",
+      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-002"
     },
     "prs": {
-      "mmcromero/pager-virtual": 20,
-      "mmcromero/hassio-addons": 32
+      "mmcromero/pager-virtual": null,
+      "mmcromero/hassio-addons": null
     },
     "base_branch": "main",
-    "new_features": "prohibited_in_closed_package",
-    "closed_on": "2026-11-15",
-    "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md",
-    "private_merge_sha": "3e5c6d350cb610ba3c598f85122253ba047ace05",
-    "public_merge_sha": "fcb8453132adff8665a793761a6c1a8ce5a580b2"
+    "new_features": "allowed_only_within_package_scope",
+    "opened_on": "2026-11-15",
+    "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-002.md",
+    "status_notes": "pacote de correções da homologação e conclusão/evolução de funcionalidades; integração de jogos condicionada a revisão do trabalho isolado da Issue #21"
   },
   "publication_authority": {
     "coordination": "Governança",
@@ -43,15 +42,20 @@
   },
   "implementation_status": {
     "policy": "documented",
-    "ci_gate": "implemented_not_required",
+    "ci_gate": "running_on_package_prs_when_created",
     "github_branch_creation_block": "not_enabled",
     "github_required_check": "not_enabled"
   },
   "timezone": "America/Sao_Paulo",
-  "next_core_package": {
-    "status": "not_open",
-    "base_branch": "main",
-    "scope": "to_be_registered_by_governance",
-    "rules": "criar novo identificador, uma branch privada e uma distribuição pública; não reutilizar PRs #20/#32"
-  }
+  "package_history": [
+    {
+      "id": "AVISAQUI-CONSOLIDACAO-RC-001",
+      "status": "closed",
+      "version": "0.1.18-rc.1",
+      "private_merge_sha": "3e5c6d350cb610ba3c598f85122253ba047ace05",
+      "public_merge_sha": "fcb8453132adff8665a793761a6c1a8ce5a580b2",
+      "closed_on": "2026-11-15",
+      "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md"
+    }
+  ]
 }
