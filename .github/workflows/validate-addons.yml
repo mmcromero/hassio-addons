@@ -72,6 +72,8 @@ jobs:
           node --check pager-virtual/src/db.js
           node --check pager-virtual/src/sse.js
           node --check pager-virtual/src/routes/pedidos.js
+          node --check pager-virtual/src/pong.js
+          node --check pager-virtual/src/public/pong.js
           node - <<'JS'
           const fs = require('fs');
           const vm = require('vm');
