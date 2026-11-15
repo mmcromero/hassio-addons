@@ -6,7 +6,7 @@ self.addEventListener('push', event => {
     tag: data.tag || 'bipou-pedido',
     icon: new URL('icon.svg', self.registration.scope).pathname,
     badge: new URL('icon.svg', self.registration.scope).pathname,
-    data: { url: typeof data.url === 'string' && data.url.startsWith(new URL('cliente.html?', self.registration.scope).pathname) ?
+    data: { url: typeof data.url === 'string' && data.url.startsWith(new URL('cliente.html', self.registration.scope).pathname + '?') ?
       data.url : new URL('cliente.html', self.registration.scope).pathname }
   }));
 });
