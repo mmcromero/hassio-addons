@@ -1,6 +1,6 @@
 {
   "name": "pager-virtual",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Sistema de Pager Virtual ultraleve para restaurantes e food service",
   "main": "src/server.js",
   "type": "module",
