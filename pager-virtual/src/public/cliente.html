@@ -680,9 +680,9 @@
     }
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
+    const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
     function connectSSE() {
       if (!token) return;
-      const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');
       const sseUrl = `${appBasePath}/api/pedidos/stream/${encodeURIComponent(token)}`;
       const eventSource = new EventSource(sseUrl);
 
