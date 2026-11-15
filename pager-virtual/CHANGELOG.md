@@ -6,6 +6,15 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.19-rc.1] — candidata do pacote AVISAQUI-PACOTE-002 — NÃO PUBLICADA
+
+- Preparada a RC compartilhada para correções de homologação da 0.1.18-rc.1 e evolução de funcionalidades incompletas.
+- **Sem funcionalidades novas implementadas nesta preparação**; cada mudança real deve ser registrada aqui por desenvolvedor e verificada com testes e evidência.
+- A fábrica independente de jogos (Issue privada #21) permanece isolada; eventual integração exige aprovação registrada e comparação de conteúdo.
+- Esta versão candidata **não está instalada** no Home Assistant e não pode ser integrada à main da loja antes de exportação comprovada.
+
+
+
 ## [0.1.18-rc.1] — 15/11/2026 — candidata privada, não publicada
 
 - Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.
