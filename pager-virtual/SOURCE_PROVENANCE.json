@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "5ff32c0a31593e089d489401561f12881be218cf",
+  "commit": "c7352078ea40764257ee0041ff292d025740925c",
   "version": "0.1.18-rc.1",
   "files": [
     {
@@ -26,7 +26,7 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "50215c46c8573bd3218cfcbe98ae64c4645c60f94ce786a59fc575415cc8e56d"
+      "sha256": "e407bdad48c31e844e63fcb9bffac8c3e889eff85b32c19aad46dd810e15a2e7"
     },
     {
       "path": "config.yaml",
@@ -56,7 +56,7 @@
     {
       "path": "docs/RC-001.md",
       "source_path": "distribution/RC-001.md",
-      "sha256": "f2db30986a8a1257f73bb0347ce0f48c4e89d21a1ec71ad40ce62b2f746c3adb"
+      "sha256": "f86561b055d0eb3fae3a75f7217cf329c225e06edbc116a179e547ca7ffee273"
     },
     {
       "path": "package-lock.json",
