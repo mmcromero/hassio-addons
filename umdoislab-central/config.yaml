@@ -1,5 +1,5 @@
 name: "Umdoislab — Central de Atendimento"
-version: "0.4.0"
+version: "0.4.1"
 slug: umdoislab_central
 description: "Painel mobile-first para atendimento humano da Umdoislab"
 arch:
