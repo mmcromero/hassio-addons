@@ -1,4 +1,5 @@
 # Arquitetura proposta — automações leves e processamento externo
+> **GUIA PARA NOVAS AUTOMAÇÕES n8n (16/11/2026):** antes de usar o n8n do Home Assistant em outro projeto, leia [N8N-HOME-ASSISTANT-INVENTARIO.md](N8N-HOME-ASSISTANT-INVENTARIO.md). Esse guia separa a instalação geral do n8n dos add-ons Umdoislab e identifica dados de configuração, backup e persistência que ainda precisam ser verificados. Os exemplos históricos abaixo não são prova da versão/configuração atual.
 
 **Decisão registrada:** 2026-11-13  
 **Estado:** diretriz aprovada conceitualmente; **sem implementação de serviço externo**.
