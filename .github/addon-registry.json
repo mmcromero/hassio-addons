@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "catalog": "mmcromero/hassio-addons",
+  "addons": [
+    {"id":"evolution-api","directory":"evolution-api","slug":"evolution_api","architectures":["aarch64"],"arm64_build_job":"build-arm64","source_repo":"https://github.com/evolution-foundation/evolution-api"},
+    {"id":"pager-virtual","directory":"pager-virtual","slug":"pager_virtual","architectures":["aarch64","amd64"],"arm64_build_job":"build-pager-arm64","source_repo":"https://github.com/mmcromero/pager-virtual"}
+  ]
+}
