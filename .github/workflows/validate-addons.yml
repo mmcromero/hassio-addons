@@ -7,9 +7,13 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: validate-addons-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   syntax:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Verificar manifests
@@ -45,7 +49,10 @@ jobs:
               assert p.name not in {'options.json','secrets.yaml','secrets.yml','.env'} and not {'instances','postgres'}.intersection(p.parts), f'Arquivo proibido: {f}'
           PY
   build-arm64:
+    # Build pesado somente sob acionamento manual autorizado.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: syntax
     steps:
       - uses: actions/checkout@v4
@@ -56,7 +63,10 @@ jobs:
       - name: Testar inicialização e reinício (PostgreSQL + API)
         run: bash .github/scripts/smoke-evolution.sh
   build-pager-arm64:
+    # Build pesado somente sob acionamento manual autorizado.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: syntax
     steps:
       - uses: actions/checkout@v4
@@ -88,6 +98,7 @@ jobs:
 
   test-pager-auth:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: syntax
     steps:
       - uses: actions/checkout@v4
