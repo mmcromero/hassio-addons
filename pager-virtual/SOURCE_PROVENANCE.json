@@ -41,12 +41,12 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "6eaf80abd5d4f21cc9ffdcfb36d89a63f08e9e84aa3c7ed94da48618861fba84"
+      "sha256": "3d14af16bd889b1fa0be661e3b32184dc2f9fb47060de1c8f6bbedb60b084b95"
     },
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "3f48686d908f4d34bb1b75a7177698a9de09b454672c465dce50b9761040346d"
+      "sha256": "d273d9ecc512cbf5fb345f89bb6e510b529edf3975d30a966eabb5e55f4d5068"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -71,7 +71,7 @@
     {
       "path": "docs/GOVERNANCA-DO-PACOTE.md",
       "source_path": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
-      "sha256": "b202acedbd2f8e12b28b834fb1444729f3b930276d4eb1fb3548119124930ded"
+      "sha256": "e20954f755db443ff1c942c9654517cf7aa84a9ee3f669e96a5b62c089afc8c3"
     },
     {
       "path": "docs/RC-001.md",
@@ -91,7 +91,7 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "000cb4ad40eb02b09ca2efa2f4f878e94652c89b629e961f6c607ea9f126e471"
+      "sha256": "83c313dfeb358afe1996f388f1fa1dbe674830de9067d4fbb779a0807fc1d206"
     },
     {
       "path": "package.json",
