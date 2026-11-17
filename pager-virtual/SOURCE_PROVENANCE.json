@@ -236,7 +236,12 @@
     {
       "path": "src/public/games/manifest.json",
       "source_path": "src/public/games/manifest.json",
-      "sha256": "3d74bdbbd85dd65232b22a3b8386899dbb9a24d51d09ba48ad94dc76de52dfae"
+      "sha256": "c2f02fee6266c8fa0000000068e101c887eb8b1cb76f9c62264c881cb4a96078"
+    },
+    {
+      "path": "src/public/games/pong-local-isolado.html",
+      "source_path": "src/public/games/pong-local-isolado.html",
+      "sha256": "6851bee52afca8b50000000068e101c80b88d15190254b4d8708cd606049160d"
     },
     {
       "path": "src/public/games/protocolo-v1.js",
@@ -251,12 +256,12 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "29a1399232b46ea58ac315baa9d8b0819593d3d8b12d17fff87e6205d5450666"
+      "sha256": "32e7802fc2b14f330000000068e101c82d68dd8943e3f8e0745559304160864b"
     },
     {
       "path": "src/public/kds.html",
       "source_path": "src/public/kds.html",
-      "sha256": "69efa4e19c78f3fb83fa4a48ac1bf55d3631aa131fc60e2475a06251229cd8f6"
+      "sha256": "bbd7439b989e26030000000068e101c83cbc727df6f7c146ca64ed6425cb97bb"
     },
     {
       "path": "src/public/landing.html",
