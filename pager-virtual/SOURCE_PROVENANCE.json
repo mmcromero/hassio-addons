@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "8c34fcdea8733966909563bc8067f1470543c9eb",
+  "commit": "0278b65b54a9813c4841d238dc32920f9c2635d7",
   "version": "0.1.19-rc.1",
   "files": [
     {
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "7fe2bff84ea163be2f4147b45978ce2fdb0b2ce4c732dc0caac18184537ac02b"
+      "sha256": "d6493c8056fb091d08ea6fc7eb31e5640cbaad864930374012f11a7be2336f8f"
     },
     {
       "path": "AGENTS.md",
@@ -71,7 +71,7 @@
     {
       "path": "docs/GOVERNANCA-DO-PACOTE.md",
       "source_path": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
-      "sha256": "6b824410dc1e42edfe331bcc04c4c30273e8534df75b5edcf0ae1d5d2a3d9ea9"
+      "sha256": "b202acedbd2f8e12b28b834fb1444729f3b930276d4eb1fb3548119124930ded"
     },
     {
       "path": "docs/RC-001.md",
@@ -111,7 +111,7 @@
     {
       "path": "scripts/check-package-policy.py",
       "source_path": "scripts/check-package-policy.py",
-      "sha256": "3b7b18a2d9d2c643cc0062a788d8a4fe5885aeb1c8808d768e91ed00c65684a0"
+      "sha256": "de69963d5ae0c8cb7a1f70f772aea5dad1b1e0d6b72292b721eed21fa4734f66"
     },
     {
       "path": "src/.gitkeep",
@@ -356,7 +356,7 @@
     {
       "path": "tests/package-policy.test.py",
       "source_path": "tests/package-policy.test.py",
-      "sha256": "e59d0defac9da41d110983fd71e0d14ce5c7892931f5fca1b2329044c0359e17"
+      "sha256": "69e167bf0abd5a38cd3de7591b4952fcf7f814278f07e5070b619cd10caf4f39"
     },
     {
       "path": "tests/pong-api.test.js",

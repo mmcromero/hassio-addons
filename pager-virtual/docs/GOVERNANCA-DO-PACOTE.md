@@ -23,3 +23,9 @@ Pacote anterior: `AVISAQUI-CONSOLIDACAO-RC-001`, **fechado**. A distribuição *
 O check `scripts/check-package-policy.py` valida branch, versão e escopo. O workflow dedicado é preparado por origem privada e não modifica outros produtos. **CI/documentação não impedem fisicamente criar branches ou fazer merge sem proteção nativa.** A governança deve conferir plano, acessos, revisores e checks obrigatórios antes de declarar os controles ativados.
 
 Branches históricas permanecem preservadas até revisão/encerramento autorizado. O inventário e a passagem de bastão completos ficam no repositório privado, em `docs/governanca/`. Nenhuma branch é apagada por este documento.
+
+## Baseline compartilhada preservada no pacote 002 (17/11/2026)
+
+Por instrução expressa do proprietário para reconciliar o PR #35 preservando as alterações compartilhadas, a política registra quatro arquivos preexistentes do commit público `bc668b669a0a6474f69f09175b28edd39d6e7694`, com caminho exato e SHA-256: cadastro, validador de cadastro, workflow compartilhado e contrato HA-ADDONS-CI-001. O gate compara os bytes do HEAD candidato; arquivo alterado/ausente ou novo caminho continua reprovado. Não há wildcard, dispensa de check, ampliação para diretórios de outros produtos nem autorização para alterar/executar infraestrutura. O patch histórico Node 22 continua válido para políticas sem essa baseline. Mudança futura nesses quatro arquivos requer revisão/registro próprio; não atualizar hashes automaticamente para obter PASS.
+
+Isso resolve a divergência de escopo preexistente, sem comprovar build ARM64, CI executada, aprovação de proteções ou autorização de publicação. Os checks nativos pendentes continuam pendentes.
