@@ -436,6 +436,94 @@ class Handler(BaseHTTPRequestHandler):
         auth = self.headers.get("Authorization", "")
         return len(secret) >= 24 and hmac.compare_digest(auth, "Bearer " + secret)
 
+    def admin_bridge(self):
+        """Separate credential for administrative replies; not the commercial bridge."""
+        cfg = options()
+        secret = str(cfg.get("admin_reply_secret") or "")
+        commercial = str(cfg.get("bridge_secret") or "")
+        evolution = str(cfg.get("evolution_api_key") or "")
+        expected = "Bearer " + secret
+        provided = self.headers.get("Authorization", "")
+        return (len(secret) >= 32 and secret != commercial and secret != evolution
+                and hmac.compare_digest(provided, expected))
+
+    def authorize_admin_command(self, data):
+        """Authorize sender using the Central's sole owner configuration.
+
+        This is an authenticated decision, not a source of phone numbers.
+        The caller independently validates the Evolution event and its
+        own inbound HTTP authentication before requesting this decision.
+        Only STATUS is executable; other recognized verbs remain blocked.
+        """
+        cfg = options()
+        owner = str(cfg.get("admin_owner_jid") or "")
+        instance = str(cfg.get("evolution_instance") or "")
+        if set(data) != {"senderId", "instance", "messageId", "command"}:
+            return self.respond(422, {"error": "Pedido de autorizacao invalido"})
+        sender, mid, command = data["senderId"], data["messageId"], data["command"]
+        if (not isinstance(sender, str) or not valid_sender_for_send(sender)
+                or not isinstance(mid, str) or not 1 <= len(mid) <= 160
+                or not re.fullmatch(r"[A-Za-z0-9_.:@+-]+", mid)
+                or not isinstance(command, str) or command not in ("status", "testar", "liberar")
+                or data["instance"] != instance):
+            return self.respond(200, {"authorized": False, "command": "none"})
+        permitted = valid_sender_for_send(owner) and hmac.compare_digest(sender, owner)
+        # Return only an authorization decision, never the configured JID.
+        return self.respond(200, {"authorized": bool(permitted), "command": command if permitted else "none"})
+
+    def send_admin_status(self, data):
+        """Only read-only status replies to the configured owner. Exclusions stay intact."""
+        cfg = options()
+        owner = str(cfg.get("admin_owner_jid") or "")
+        instance = str(cfg.get("evolution_instance") or "")
+        key = str(cfg.get("evolution_api_key") or "")
+        base = str(cfg.get("evolution_url") or "").rstrip("/")
+        if not valid_sender_for_send(owner) or not key or not base.startswith(("http://", "https://")):
+            return self.respond(503, {"error": "Canal administrativo não configurado"})
+        if not re.fullmatch(r"[A-Za-z0-9_-]+", instance):
+            return self.respond(503, {"error": "Instância administrativa inválida"})
+        if (data.get("senderId") != owner or data.get("instance") != instance
+                or data.get("command") != "status"
+                or set(data) != {"instance", "senderId", "messageId", "command", "text"}):
+            return self.respond(403, {"error": "Comando ou destino administrativo inválido"})
+        mid = data.get("messageId")
+        message = data.get("text")
+        if (not isinstance(mid, str) or not 1 <= len(mid) <= 160
+                or not re.fullmatch(r"[A-Za-z0-9_.:@+-]+", mid)
+                or not isinstance(message, str) or not 1 <= len(message.strip()) <= 1200):
+            return self.respond(422, {"error": "Mensagem administrativa inválida"})
+        # Keys are segregated from the existing customer auto-reply dedupe table.
+        delivery_key = "admin-status-" + hashlib.sha256(
+            (owner + "|" + instance + "|" + mid).encode("utf-8")).hexdigest()
+        with LOCK:
+            with connect() as db:
+                if db.execute("SELECT 1 FROM replies WHERE request_id=?", (delivery_key,)).fetchone():
+                    return self.respond(409, {"error": "Resposta administrativa já solicitada"})
+                db.execute("INSERT INTO replies VALUES(?,?,?,?,?)",
+                           (delivery_key, owner, now(), "requested", "admin_status"))
+            # Do NOT call contact_policy(): excluded contacts must never receive commercial replies,
+            # but a separately authorized administrative status may be delivered to the owner.
+            url = base + "/message/sendText/" + instance
+            payload = json.dumps({"number": owner.split("@")[0],
+                                  "text": message.strip()}).encode("utf-8")
+            req = urllib.request.Request(url, data=payload,
+                headers={"Content-Type": "application/json", "apikey": key}, method="POST")
+            try:
+                with urllib.request.urlopen(req, timeout=12) as response:
+                    response.read(8192)
+                    if not 200 <= response.status < 300:
+                        raise ValueError("Evolution rejected request")
+                with connect() as db:
+                    db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?",
+                               (delivery_key,))
+                return self.respond(200, {"ok": True, "delivery": "accepted_not_confirmed",
+                                          "kind": "admin_status"})
+            except Exception:
+                with connect() as db:
+                    db.execute("UPDATE replies SET outcome='uncertain' WHERE request_id=?",
+                               (delivery_key,))
+                return self.respond(502, {"error": "Envio administrativo incerto; não reenviar"})
+
     def read_json(self):
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -611,6 +699,20 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def do_POST(self):
+        if self.path == "/bridge/authorize-admin-command":
+            if not self.admin_bridge():
+                return self.respond(403, {"error": "Acesso administrativo negado"})
+            payload = self.read_json()
+            if payload is None:
+                return self.respond(400, {"error": "JSON invalido"})
+            return self.authorize_admin_command(payload)
+        if self.path == "/bridge/send-admin-status":
+            if not self.admin_bridge():
+                return self.respond(403, {"error": "Acesso administrativo negado"})
+            payload = self.read_json()
+            if payload is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            return self.send_admin_status(payload)
         if self.path == "/bridge/context":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
