@@ -6,7 +6,7 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
-## [0.1.19-rc.1] — candidata do pacote AVISAQUI-PACOTE-002 — NÃO PUBLICADA
+## [0.1.19-rc.1] — 17/11/2026 — PUBLICADA NO GITHUB (pacote AVISAQUI-PACOTE-002)
 
 ### Funcionalidades e experiência entregues na RC
 - **Biblioteca opcional com 16 títulos:** Pong original e Jogo da Velha disponíveis; outros 14 jogos exibidos como **Em construção**. Jogos carregados sob demanda e encerrados quando o pedido deixa **Em preparo**, sem substituir o aviso de pedido pronto.
@@ -18,10 +18,10 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 - **Aplicação:** 109/109 testes Node aprovados no SHA privado `80ff0c19cbdef877dffd54fa95b1e29787d6da79`. Alterações posteriores na fonte final são documentais, de exportação e política, conforme auditoria do Tech Lead; **não afirmar nova execução Node no HEAD final**.
 - **Integridade da distribuição:** exportação e verificação de 85 arquivos com hashes SHA-256 e origem privada registrada; política de pacote verificada localmente e documentos/arquivos compartilhados preservados.
 - **ARM64:** build de imagem e smoke de inicialização, API health, escrita SQLite sintética, reinício e persistência aprovados no Codespaces, conforme evidência registrada no PR #35; não equivale a execução de GitHub Actions ou teste no Home Assistant ativo.
-- **Pendências de liberação:** revisar aceites de UX, Segurança e Homologação no cenário real; validar proteções/required checks efetivos do GitHub; conferir backup e recuperação antes da instalação; obter autorização expressa de merge, publicação e instalação em etapas distintas.
-- **Não contém:** implantação do pareamento Windows pair-v1 de laboratório, mudança de impressora/spooler ou alteração de dados reais. A candidata ainda não foi integrada à `main` nem instalada no Home Assistant.
+- **Estado da publicação:** PR #22 privado integrado (`f3e93faa7cdd107d976d7f60c6250103b6e53a1a`), PR #35 da loja integrado (`5977b1b6522dbc7682e1ef8e672c14c52c9c4bd2`), por autorização do proprietário. A CI do catálogo foi corrigida em `d12135bd`; [run #44068193157](https://github.com/mmcromero/hassio-addons/actions/runs/44068193157) concluída com sucesso nos jobs executados. Builds ARM64 não rodaram nessa run; o smoke Codespaces anterior permanece a evidência técnica de build.
+- **Limites:** não inclui implantação do pareamento Windows pair-v1, mudança de impressora/spooler ou alteração de dados reais. **A versão está publicada na `main` do GitHub, mas a instalação no Home Assistant Raspberry Pi e a homologação móvel/HTTPS/recuperação ainda não foram comprovadas.**
 
-## [0.1.18-rc.1] — 15/11/2026 — candidata privada, não publicada
+## [0.1.18-rc.1] — 15/11/2026 — integrada ao GitHub e instalada no Raspberry Pi (relato do proprietário)
 
 - Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.
 - Pendência de impressão mantém HTTP 409 em retries; origem de login exige Host coerente.
