@@ -21,17 +21,17 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "d6493c8056fb091d08ea6fc7eb31e5640cbaad864930374012f11a7be2336f8f"
+      "sha256": "604735254e5d1697a65d413b47891eab51eba101084ecc756a3b29f70d690fee"
     },
     {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "85711d37e951ac639ee5ea6e6840c080eba7d9505c005bd709baed2ca0d7bf48"
+      "sha256": "8b2766fa2c5b7de76477b92628c7ea0d944c13d646b6cbd5b70ca373af302185"
     },
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "da2be8b76a5ecf91e3b3a4b4c424100e6d779015dbd8982d6c129ed1304e4a51"
+      "sha256": "a00024b6b74a7c38291d5389ace713a876205945b3a846d0c58525f417554d2d"
     },
     {
       "path": "Dockerfile",
