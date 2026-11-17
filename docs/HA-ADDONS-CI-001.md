@@ -40,3 +40,11 @@
 
 ## Estado do Avisaqui
 A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` contém contenção inicial em `.github/workflows/validate-addons.yml`: build ARM64 manual com escolha explícita de Avisaqui ou Evolution, limites de execução e cancelamento de PRs substituíveis. **Ainda não homologada nem aplicada à main.** A arquitetura definitiva deve evoluir para registro de aplicativos, sem hardcode de apenas dois nomes.
+
+## Implementação de cadastro — 16/11/2026
+- Fonte de verdade no catálogo: `.github/addon-registry.json`, com IDs, diretórios, slugs, arquiteturas e job de build.
+- Verificador: `.github/scripts/validate-addon-registry.py`. Compara cadastro com manifests reais e exige que **todo diretório com config.yaml** tenha cadastro. Valida seleção manual e falha quando ID não cadastrado.
+- Workflow `.github/workflows/validate-addons.yml`: valida cadastro após instalação de PyYAML e antes de builds ARM64; a seleção manual atual continua restrita a `pager-virtual` e `evolution-api`. Para um terceiro add-on, cadastrar e adaptar job/input em revisão própria: **não existe ainda geração automática de jobs para novos aplicativos**.
+- Repositórios consultados no inventário: `mmcromero/hassio-addons`, `mmcromero/fabricacao-e-orcamentos-ha`, `mmcromero/fabrica-de-ideias-kanban`, `mmcromero/fabricacao_e_orcamentos`, além de pesquisa de código em repositórios acessíveis. **Portal WhatsApp**: origem/distribuição não identificadas com evidência suficiente. Não confundir com Evolution API, que usa WhatsApp.
+- A adoção em lojas independentes depende de PRs/branches próprios, testes e revisão de compatibilidade. Nenhuma migração foi autorizada.
+- **Evidência pendente:** execução local do verificador sobre checkout completo e validação de YAML; CI e builds finais não executados. Sem homologação nem publicação.
