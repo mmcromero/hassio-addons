@@ -424,6 +424,26 @@
       "sha256": "d65aea0d8f3fd42a8bbc19e0c5c9aabbb9f3dfe29b9a959168e63f62d9367514"
     },
     {
+      "path": "tests/pairing-backend-backup-restore.test.js",
+      "source_path": "tests/pairing-backend-backup-restore.test.js",
+      "sha256": "6f478592b11d00f6760e974977085ae41e4da2d917adce62dd35615580b1c267"
+    },
+    {
+      "path": "tests/pairing-backend-http-python.test.js",
+      "source_path": "tests/pairing-backend-http-python.test.js",
+      "sha256": "f324aebff02f5947f87e6eea520031b41072f8bf6bb43c6a1e83a01687e318ad"
+    },
+    {
+      "path": "tests/pairing-backend-https-headers.test.js",
+      "source_path": "tests/pairing-backend-https-headers.test.js",
+      "sha256": "7c65c6e4c6c5bd7fd7e62aee635f56d1483f07c327569265b117f7c201f75c3c"
+    },
+    {
+      "path": "tests/pairing-backend-integrated-host-lab.test.js",
+      "source_path": "tests/pairing-backend-integrated-host-lab.test.js",
+      "sha256": "c727790fd7084a042dbfb2f390632da24627b7697017168cece0c08acd935c0e"
+    },
+    {
       "path": "tests/pong-api.test.js",
       "source_path": "tests/pong-api.test.js",
       "sha256": "6da8fac13687151ca7ce69487aea3d0ef021b3910996506ed89a36cd558f7f90"
