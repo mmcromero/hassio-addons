@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "b46b3b13525bcc7c5f2898961b50b86f39aac95a483f809fadc8f4681c6ad6e8"
+      "sha256": "9a8700f71d05fe9716e25b5c7a5eec56bf5953b05e69d452ba08f87775e18d85"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "b1319150d06ca5e09f232300706eba83aeac8e16003a3d04a7c16058416d5041"
+      "sha256": "5b3ef44d94086742c9f80b04cd92f33d9e267cd35598f878a317d1ae75484841"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "a286904886271f9efd33cea16e62d05d41452224b13172eb92d7a091b172e5ae"
+      "sha256": "66811c17343f3dde2dff40d05b1ce47f176eae7c1bacedaba68477aa01c14778"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "4c947e853b64a62a39bde44495e4353354caa5f2635f85ee1b7de5fca71ca832"
+      "sha256": "d6e034e07db6c7445d5f41c04e27c1499a9cb19c9fd384519d2ef3811025fd44"
     },
     {
       "path": "run.sh",
