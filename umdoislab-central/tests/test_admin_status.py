@@ -100,6 +100,31 @@ class TestAdminStatus(unittest.TestCase):
         self.assertEqual(sent.call_count, 1)
         self.assertEqual([status for status, _ in self.results], [502, 409])
 
+    def test_http_route_rejects_missing_admin_auth_before_reading_body(self):
+        self.handler.path = "/bridge/send-admin-status"
+        self.handler.headers = {}
+        with patch.object(self.handler, "read_json") as read_json:
+            with patch.object(self.handler, "send_admin_status") as send_admin:
+                self.handler.do_POST()
+        self.assertEqual(self.results[-1][0], 403)
+        read_json.assert_not_called()
+        send_admin.assert_not_called()
+
+    def test_http_route_with_admin_auth_dispatches_to_guarded_method(self):
+        self.handler.path = "/bridge/send-admin-status"
+        with patch.object(self.handler, "read_json", return_value=self.payload):
+            with patch.object(self.handler, "send_admin_status") as send_admin:
+                self.handler.do_POST()
+        send_admin.assert_called_once_with(self.payload)
+
+    def test_replay_same_message_id_cannot_change_status_text(self):
+        altered = dict(self.payload, text="Outro relatório")
+        with patch.object(self.mod.urllib.request, "urlopen", return_value=FakeResponse()) as sent:
+            self.handler.send_admin_status(self.payload)
+            self.handler.send_admin_status(altered)
+        self.assertEqual(sent.call_count, 1)
+        self.assertEqual([status for status, _ in self.results], [200, 409])
+
     def test_invalid_message_id_and_fields(self):
         with patch.object(self.mod.urllib.request, "urlopen") as sent:
             for mid in ("", "bad id", "x" * 161):
