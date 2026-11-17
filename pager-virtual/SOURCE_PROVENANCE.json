@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "ea32502d910783aca1474afdea460301dca85a41",
+  "commit": "93e7742c0f72fe322c8d01d8624b0cfed41b4ab4",
   "version": "0.1.20-rc.3",
   "files": [
     {
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "a45379200bbf853414fad3534e81f6ca521f65e45af04f6767752a2da3b06c67"
+      "sha256": "c9e37f89e4ba41e43c7f304e6366296d3149b96465742762d113ad5a6eed3d6e"
     },
     {
       "path": "AGENTS.md",
