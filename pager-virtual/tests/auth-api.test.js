@@ -101,6 +101,34 @@ test('Gerente cria terminal somente no próprio restaurante e pode revogar', asy
   assert.equal(disabledLogin.statusCode, 401);
 });
 
+test('identidade do gerente usa apenas o nome real de seu restaurante', async () => {
+  const a = await login('gerente-a');
+  const b = await login('gerente-b');
+  const userA = (await send('GET', '/api/auth/me', undefined, a)).json();
+  const userB = (await send('GET', '/api/auth/me', undefined, b)).json();
+  assert.equal(userA.restaurante_id, restaurantA);
+  assert.equal(userA.restaurante_nome, 'RestA');
+  assert.equal(userB.restaurante_id, restaurantB);
+  assert.equal(userB.restaurante_nome, 'RestB');
+  assert.notEqual(userA.restaurante_nome, userB.restaurante_nome);
+});
+
+test('master só recebe identidade do restaurante após selecionar contexto autorizado', async () => {
+  const cookie = await login('admin-main');
+  const before = (await send('GET', '/api/auth/me', undefined, cookie)).json();
+  assert.equal(before.restaurante_id, null);
+  assert.equal(before.restaurante_nome, null);
+  const select = await send('POST', '/api/admin/contexto/' + restaurantA, {}, cookie);
+  assert.equal(select.statusCode, 200, select.body);
+  const during = (await send('GET', '/api/auth/me', undefined, cookie)).json();
+  assert.equal(during.restaurante_id, restaurantA);
+  assert.equal(during.restaurante_nome, 'RestA');
+  const leave = await send('POST', '/api/admin/contexto/sair', {}, cookie);
+  assert.equal(leave.statusCode, 200, leave.body);
+  const afterLeave = (await send('GET', '/api/auth/me', undefined, cookie)).json();
+  assert.equal(afterLeave.restaurante_nome, null);
+});
+
 test('logout revoga a sessão e bloqueia o próximo acesso', async () => {
   const cookie = await login('gerente-a');
   assert.equal((await send('GET', '/api/auth/me', undefined, cookie)).statusCode, 200);
@@ -114,6 +142,29 @@ test('requisições de alteração sem Origin são recusadas', async () => {
   assert.equal(response.statusCode, 403);
 });
 
+
+test('metadados cross-site e no-cors não atravessam proteção de origem', async () => {
+  const cookie = await login('gerente-a');
+  for (const headers of [
+    { 'sec-fetch-site': 'cross-site' },
+    { 'sec-fetch-mode': 'no-cors' },
+  ]) {
+    const deniedLogin = await app.inject({
+      method: 'POST', url: '/api/auth/login',
+      headers: { ...host, ...headers },
+      payload: { login: 'gerente-a', senha: 'senha-super-forte-123!' }
+    });
+    assert.equal(deniedLogin.statusCode, 403, deniedLogin.body);
+    const deniedWrite = await app.inject({
+      method: 'POST', url: '/api/pedidos',
+      headers: { ...host, ...headers, cookie },
+      payload: { numero: 9876 }
+    });
+    assert.equal(deniedWrite.statusCode, 403, deniedWrite.body);
+  }
+  const legitimate = await send('POST', '/api/pedidos', { numero: 9877 }, cookie);
+  assert.equal(legitimate.statusCode, 201, legitimate.body);
+});
 
 test('gerente redefine senha somente do seu terminal e derruba sessões antigas', async () => {
   const managerA = await login('gerente-a');
