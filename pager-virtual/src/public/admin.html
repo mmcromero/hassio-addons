@@ -83,7 +83,7 @@
 </head>
 <body>
 <main>
-<header><div><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span></div>
+<header><div><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span><div id="restaurant-identity" class="card" hidden style="display:none;padding:10px 14px;margin:10px 0 0;font-weight:700" role="status" aria-live="polite"></div></div>
 <div class="row"><a class="action secondary" href="./kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
 
 <section id="master-area" hidden>
@@ -104,7 +104,7 @@
 </section>
 
 <section id="manager-area" hidden>
-  <nav class="admin-nav" aria-label="Áreas do gerente"><button type="button" class="admin-tab" data-manager-tab="terminals" aria-current="page">Terminais</button><button type="button" class="admin-tab secondary" data-manager-tab="settings">Configurações</button></nav>
+  <nav class="admin-nav" aria-label="Áreas do gerente"><button type="button" class="admin-tab" data-manager-tab="terminals" aria-current="page">Terminais</button><button type="button" class="admin-tab secondary" data-manager-tab="settings">Configurações</button><a class="action secondary" href="./impressao.html" id="manager-print-link" style="display:inline-flex;align-items:center;justify-content:center;min-height:48px">🖨️ Integração de impressão</a></nav>
   <div id="manager-panels" class="admin-panels"></div>
   <div class="card"><h2>Novo terminal operacional</h2><form id="terminal-form">
   <label for="terminal-name">Nome do terminal</label><input id="terminal-name" placeholder="Ex.: Caixa 1" maxlength="120" required>
@@ -206,6 +206,10 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     terminals.setAttribute('aria-label','Terminais');
     const settings=document.createElement('section');
     settings.id='manager-panel-settings';settings.className='admin-panel';settings.hidden=true;
+    const printCard=document.createElement('div');printCard.className='card';
+    const printTitle=document.createElement('h2');printTitle.textContent='Integração de impressão';
+    const printLink=document.createElement('a');printLink.className='action secondary';printLink.href='./impressao.html';printLink.textContent='🖨️ Configurar impressora Windows';
+    printCard.append(printTitle,printLink);settings.append(printCard);
     settings.setAttribute('aria-label','Configurações');
     const toolbar=document.createElement('div');toolbar.className='admin-toolbar';
     const heading=document.createElement('h2');heading.textContent='Terminais';
@@ -483,6 +487,16 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     try {
       const user=await api(basePath + '/api/auth/me');
       $('identity').textContent=user.nome+' · '+(user.papel==='master'?'Master Admin':'Gerente');
+      const restaurantName=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
+      const restaurantIdentity=$('restaurant-identity');
+      if(user.restaurante_id && restaurantName){
+        restaurantIdentity.textContent='Restaurante: '+restaurantName;
+        restaurantIdentity.hidden=false;restaurantIdentity.style.display='block';
+      }else if(user.papel==='gerente'){
+        restaurantIdentity.textContent='Restaurante não identificado. Contate a administração.';
+        restaurantIdentity.hidden=false;restaurantIdentity.style.display='block';
+        $('manager-print-link').hidden=true;$('manager-print-link').style.display='none';
+      }
       if(user.papel==='master'){window.placeAccountSettings('master');$('master-area').hidden=false;await loadRestaurants();await loadInteresses();}
       else if(user.papel==='gerente'){window.placeAccountSettings('gerente');$('manager-area').hidden=false;$('go-kds').hidden=false;await loadTerminals();}
       else location.replace(basePath + '/kds.html');
