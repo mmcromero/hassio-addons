@@ -53,6 +53,45 @@ class TestAdminStatus(unittest.TestCase):
                         "messageId": "MSG-1", "command": "status",
                         "text": "Avisaqui: quatro demandas consultadas"}
 
+    def test_authorization_uses_central_owner_only_and_does_not_return_number(self):
+        with patch.object(self.mod.urllib.request, "urlopen") as network:
+            self.handler.authorize_admin_command({
+                "senderId": self.owner, "instance": "umdoislab",
+                "messageId": "MSG-1", "command": "status"})
+        self.assertEqual(self.results[-1], (200, {"authorized": True, "command": "status"}))
+        self.assertNotIn(self.owner, str(self.results[-1][1]))
+        network.assert_not_called()
+
+    def test_authorization_rejects_unrecognized_sender_and_bad_fields(self):
+        payload = {"senderId": "5511888888888@s.whatsapp.net",
+                   "instance": "umdoislab", "messageId": "MSG-1", "command": "status"}
+        self.handler.authorize_admin_command(payload)
+        self.assertEqual(self.results[-1], (200, {"authorized": False, "command": "none"}))
+        for bad in (dict(payload, senderId=self.owner, instance="other"),
+                    dict(payload, senderId=self.owner, command="delete"),
+                    dict(payload, senderId=self.owner, messageId="bad id")):
+            self.handler.authorize_admin_command(bad)
+            self.assertEqual(self.results[-1][1]["authorized"], False)
+        self.handler.authorize_admin_command(dict(payload, extra="surprise"))
+        self.assertEqual(self.results[-1][0], 422)
+
+    def test_authorization_endpoint_rejects_missing_admin_auth(self):
+        self.handler.path = "/bridge/authorize-admin-command"
+        self.handler.headers = {}
+        with patch.object(self.handler, "read_json") as read_json:
+            self.handler.do_POST()
+        self.assertEqual(self.results[-1][0], 403)
+        read_json.assert_not_called()
+
+    def test_authorization_endpoint_dispatches_when_authenticated(self):
+        self.handler.path = "/bridge/authorize-admin-command"
+        payload = {"senderId": self.owner, "instance": "umdoislab",
+                   "messageId": "MSG-1", "command": "status"}
+        with patch.object(self.handler, "read_json", return_value=payload):
+            with patch.object(self.handler, "authorize_admin_command") as check:
+                self.handler.do_POST()
+        check.assert_called_once_with(payload)
+
     def test_admin_secret_is_distinct_from_commercial_secret(self):
         self.assertTrue(self.handler.admin_bridge())
         self.handler.headers = {"Authorization": "Bearer " + self.cfg["bridge_secret"]}
