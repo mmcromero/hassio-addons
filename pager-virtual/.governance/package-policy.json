@@ -10,20 +10,20 @@
     "id": "AVISAQUI-PACOTE-003",
     "status": "open",
     "phase": "published_test_release",
-    "candidate_version": "0.1.20-rc.2",
+    "candidate_version": "0.1.20-rc.3",
     "published_version": "0.1.20-rc.2",
     "branches": {
-      "mmcromero/pager-virtual": "fix/avisaqui-impressao-ux-rc003",
+      "mmcromero/pager-virtual": "release/avisaqui-login-rc3",
       "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-003"
     },
     "prs": {
-      "mmcromero/pager-virtual": 30
+      "mmcromero/pager-virtual": 33
     },
     "base_branch": "main",
     "new_features": "allowed_only_within_package_scope",
     "opened_on": "2026-11-17",
     "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-003.md",
-    "status_notes": "Publicação excepcional autorizada pelo proprietário após merge PR30 9bc8802f6a734f143e3b11eb6ae54253b4bcaec3; rc.2 distingue atualização do HA da rc.1 já pública. Sem alteração de runtime, instalação ou afirmação de gates dispensados como PASS."
+    "status_notes": "RC003 0.1.20-rc.3: correção do formulário de login PR #32 integrada e versão PR #33 integrada. Distribuição autorizada para homologação; publicado anteriormente 0.1.20-rc.2. Não afirmar alerta do Chrome resolvido sem teste real; Windows por ZIP exclusivamente."
   },
   "publication_authority": {
     "coordination": "Governança",
