@@ -119,3 +119,9 @@ O restante da loja pública, incluindo Evolution e outros add-ons, não é objet
 ## Referência de precedência — decisões do proprietário 17/11/2026
 
 **Decisões Avisaqui consolidadas na fonte privada:** [DECISOES_DO_PROPRIETARIO_2026-11-17.md](https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/DECISOES_DO_PROPRIETARIO_2026-11-17.md). Para Avisaqui, **apenas distribuição RC alimenta o único add-on de testes no HA**; não publicar novas candidatas na main pública da loja até nova ordem. Manter a main pública pelos demais add-ons sem confundir seu histórico com homologação. Esta atualização é documental, sem build, Actions ou instalação.
+
+
+
+## Exceção canônica de fase: Avisaqui é laboratório, não produção (17/11/2026)
+
+**HOME ASSISTANT É DESENVOLVIMENTO E TESTES PARA AVISAQUI. NÃO EXISTE AVISAQUI EM PRODUÇÃO.** Para RC de laboratório, aplicar a norma `mmcromero/pager-virtual/docs/governanca/AVISAQUI-DEV-ESTEIRA-ENXUTA-001.md`: teste dirigido do diff, verificação de credenciais/segurança/escopo, exportação/hashes **uma vez** e build da arquitetura de destino **uma vez por candidata**, sem GitHub Actions de rotina/cota incerta nem suíte completa em cada microcommit. Banco fictício do **Avisaqui** pode ser reiniciado/recriado caso incompatível, sem migração/backup de produção; escopo de operação limitado ao Avisaqui e autorização real para o reset. **Outros add-ons (Evolution etc.), Home Assistant, segredos, dados pessoais reais e infraestrutura permanecem protegidos.** `main` pública não é canal de testes Avisaqui. Publicar apenas branch RC autorizada, sem tocar nos demais apps. Meta de 15–34 min é estimativa de planejamento, não medida nem garantia; homologação vem após instalação. Normas históricas de produção incompatíveis com testes fictícios de Avisaqui não prevalecem neste escopo.
