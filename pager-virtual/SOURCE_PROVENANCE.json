@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "ba811a6d41b8569389e0f813cb88907652772cc6",
-  "version": "0.1.19-rc.1",
+  "commit": "d4406367095839619c1063f6dcff271d01375f80",
+  "version": "0.1.20-rc.1",
   "files": [
     {
       "path": ".dockerignore",
@@ -537,6 +537,11 @@
       "path": "tests/ux-identidade-rc002.test.js",
       "source_path": "tests/ux-identidade-rc002.test.js",
       "sha256": "a8e9cd17d47fb3b0fea65d07f1eb27cc00120d8c4c9493cfa12d8438641e14db"
+    },
+    {
+      "path": "tests/ux-impressao-pair-rc003.test.js",
+      "source_path": "tests/ux-impressao-pair-rc003.test.js",
+      "sha256": "5a7ab7081e16c7aa7258e8ab650caabb3ce9a1770bfb69755ed753e5e49af0cd"
     },
     {
       "path": "tests/webui-launcher.test.js",
