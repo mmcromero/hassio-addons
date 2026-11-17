@@ -18,6 +18,11 @@ test('login preserva autenticação e marca',()=>{
  const s=page('login.html');
  assert.ok(s.includes('id="login-form"') && s.includes('/api/auth/login'));
  assert.ok(s.includes('avisaqui-marca-transparente.svg') && s.includes('<h1>Entrar</h1>'));
+ // Sem JavaScript, o browser não pode enviar campos de senha por GET na URL.
+ assert.match(s, /<form\b[^>]*\bid="login-form"[^>]*\bmethod="post"/i);
+ // O fluxo com JavaScript continua fazendo POST autenticado para a API local.
+ assert.match(s, /fetch\(basePath \+ '\/api\/auth\/login', \{/);
+ assert.ok(s.includes("method: 'POST', credentials: 'same-origin'"));
 });
 test('primeiro acesso preserva API e marcador legado do log',()=>{
  const s=page('setup.html');

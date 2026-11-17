@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "052db7da7503c51c94f7106cef5e55cd075b20fc",
-  "version": "0.1.20-rc.2",
+  "commit": "ea32502d910783aca1474afdea460301dca85a41",
+  "version": "0.1.20-rc.3",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "46b4dcb5c5ef35f720c955af833226b5a730ecd5021eb4c5d08c869cf6415b5c"
+      "sha256": "a45379200bbf853414fad3534e81f6ca521f65e45af04f6767752a2da3b06c67"
     },
     {
       "path": "AGENTS.md",
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "b46b3b13525bcc7c5f2898961b50b86f39aac95a483f809fadc8f4681c6ad6e8"
+      "sha256": "9a8700f71d05fe9716e25b5c7a5eec56bf5953b05e69d452ba08f87775e18d85"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "b1319150d06ca5e09f232300706eba83aeac8e16003a3d04a7c16058416d5041"
+      "sha256": "5b3ef44d94086742c9f80b04cd92f33d9e267cd35598f878a317d1ae75484841"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "a286904886271f9efd33cea16e62d05d41452224b13172eb92d7a091b172e5ae"
+      "sha256": "66811c17343f3dde2dff40d05b1ce47f176eae7c1bacedaba68477aa01c14778"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "4c947e853b64a62a39bde44495e4353354caa5f2635f85ee1b7de5fca71ca832"
+      "sha256": "d6e034e07db6c7445d5f41c04e27c1499a9cb19c9fd384519d2ef3811025fd44"
     },
     {
       "path": "run.sh",
@@ -201,7 +201,7 @@
     {
       "path": "src/public/admin.html",
       "source_path": "src/public/admin.html",
-      "sha256": "8f805a27fe2d381f6a6caef4d4162217099eab837513457d0cbf58b6249b5042"
+      "sha256": "d49713b455909980e826050481d51d2263b71bf5cb591c49719014a7ca3da233"
     },
     {
       "path": "src/public/avisaqui-marca-transparente.svg",
@@ -261,7 +261,7 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "6399e0bb9bec0471d3f3bf759cd326792dd7515f44b79720ad64d61d0d3c2393"
+      "sha256": "8472a24d64238cb1ab14fa51cc61f6eea4066a196e3e1cc7e866effabf5e4f82"
     },
     {
       "path": "src/public/kds.html",
@@ -276,7 +276,7 @@
     {
       "path": "src/public/login.html",
       "source_path": "src/public/login.html",
-      "sha256": "8cb751f86b36fca41710b656cf7e6799ae59d6d0e34ffe2534c7ccd70fae6078"
+      "sha256": "c20963b1b3124098d24fead1ded2644fcda1c634c8e6c8cf0df9a5b48c540ac4"
     },
     {
       "path": "src/public/manifest.webmanifest",
@@ -326,7 +326,7 @@
     {
       "path": "src/server.js",
       "source_path": "src/server.js",
-      "sha256": "b9e42a52bce4fcc7e62576352910f8730d47e073d80a969cb03841f015f1c6c4"
+      "sha256": "ae565d1be53e4c706b54a04585fced6d29516ef2f0ada7c58dca0598404abc5b"
     },
     {
       "path": "src/setup.js",
@@ -551,7 +551,7 @@
     {
       "path": "tests/ux-identidade-rc002.test.js",
       "source_path": "tests/ux-identidade-rc002.test.js",
-      "sha256": "a8e9cd17d47fb3b0fea65d07f1eb27cc00120d8c4c9493cfa12d8438641e14db"
+      "sha256": "bdc141d5f19acfacb89b1b0d1c9e5ba3987bbce9642d78431465d222051e8660"
     },
     {
       "path": "tests/ux-impressao-pair-rc003.test.js",

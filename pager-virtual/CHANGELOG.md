@@ -6,6 +6,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.20-rc.3] — 17/11/2026 — segurança do formulário de login
+
+- Avisaqui: fallback nativo de formulário de login usa POST e não GET, mesmo sem JavaScript; regressão incluída.
+- Mantida autenticação JSON por POST na mesma origem; sem alteração de credenciais, cookies, banco ou proxy.
+- O alerta de reutilização de senha do Chrome não é considerado corrigido sem observação no navegador afetado após atualização.
+- ZIP Windows permanece o único formato autorizado; nenhum executável foi criado ou exigido.
+- Homologação Windows e HTTPS ativo será feita pelo proprietário após publicação do pacote; não registrar PASS fictício.
+
 ## [0.1.20-rc.2] — 17/11/2026 — publicação de teste autorizada (PR #30)
 
 - Distribuição integral das correções de impressão, ACK e configuração HA do merge privado `9bc8802f6a734f143e3b11eb6ae54253b4bcaec3`.
