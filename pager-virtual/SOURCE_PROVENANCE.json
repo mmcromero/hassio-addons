@@ -149,6 +149,26 @@
       "sha256": "201461b09e074073fcfcd926a581c1edf4ac69d4923b51ee6399a39e8709f159"
     },
     {
+      "path": "src/pairing/backend/assets/autorizar-pair-lab.html",
+      "source_path": "src/pairing/backend/assets/autorizar-pair-lab.html",
+      "sha256": "1577e693199b77efdd4d0e0befcfbfff6d167c9e2256077a4e8496995be8ad3b"
+    },
+    {
+      "path": "src/pairing/backend/integrated-host-lab.js",
+      "source_path": "src/pairing/backend/integrated-host-lab.js",
+      "sha256": "00020565f5be2ef0e0543b2157bd0a373a6730b030eddf4b7dee54d3eaeb7b15"
+    },
+    {
+      "path": "src/pairing/backend/manager-page-lab.js",
+      "source_path": "src/pairing/backend/manager-page-lab.js",
+      "sha256": "d4b53d10d461068e83f18819c98f2952ec7034bfb72d9aaa8b3a4d353b6f2e92"
+    },
+    {
+      "path": "src/pairing/backend/protocol-v2.js",
+      "source_path": "src/pairing/backend/protocol-v2.js",
+      "sha256": "8ac45163d960df8e93220e91de8f9e25d5b2877eba4c9f0f4e9db537b44b0028"
+    },
+    {
       "path": "src/pong.js",
       "source_path": "src/pong.js",
       "sha256": "18b3761c40030df4eb1a19453eb9c5206b001eceedec9d9155702502123929d8"
