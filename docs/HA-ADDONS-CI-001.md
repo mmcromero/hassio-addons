@@ -114,3 +114,8 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 **Branch pública existente conferida:** `release/avisaqui-rc-distribuicao-003` com `pager-virtual/config.yaml` versão `0.1.20-rc.3`, `repository.yaml` e manifesto de proveniência. Canal para cadastrar no Supervisor quando autorizado: `https://github.com/mmcromero/hassio-addons#release/avisaqui-rc-distribuicao-003`. A documentação HA confirma suporte a `#branch`, mas ID distinto e migração não automática. **Não declarar canal instalado/testado sem evidência do Raspberry.** Preservar backup dos dados antes de desinstalar versão anterior.
 
 O restante da loja pública, incluindo Evolution e outros add-ons, não é objeto de exclusão/migração. Esta alteração é **documental**, não instalação, criação de branch, merge ou disparo de Actions.
+
+
+## Referência de precedência — decisões do proprietário 17/11/2026
+
+**Decisões Avisaqui consolidadas na fonte privada:** [DECISOES_DO_PROPRIETARIO_2026-11-17.md](https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/DECISOES_DO_PROPRIETARIO_2026-11-17.md). Para Avisaqui, **apenas distribuição RC alimenta o único add-on de testes no HA**; não publicar novas candidatas na main pública da loja até nova ordem. Manter a main pública pelos demais add-ons sem confundir seu histórico com homologação. Esta atualização é documental, sem build, Actions ou instalação.
