@@ -20,9 +20,13 @@ options:
   evolution_instance: "umdoislab"
   evolution_api_key: ""
   auto_test_sender: "CONTATO_TESTE_NAO_CONFIGURADO"
+  admin_reply_secret: ""
+  admin_owner_jid: ""
 schema:
   bridge_secret: password
   evolution_url: str
   evolution_instance: str
   evolution_api_key: password
   auto_test_sender: str
+  admin_reply_secret: password
+  admin_owner_jid: str
