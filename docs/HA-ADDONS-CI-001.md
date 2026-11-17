@@ -105,3 +105,12 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 - Esta política está **documentada, sem implantação técnica da nova topologia**. Não criar branch, disparar Actions, mudar canal da loja ou acessar Home Assistant por este adendo.
 
 **Fonte oficial da compatibilidade por branch:** https://contributors.home-assistant.io/apps/guides/repository/
+
+
+## Decisão posterior — Avisaqui exclusivamente RC no Home Assistant
+
+**Ordem do proprietário (17/11/2026):** o Avisaqui da `main` pública **não será mais instalado nem atualizado no HA até segunda ordem**; somente a branch RC fornece o **único Avisaqui para testes**. Nenhuma nova candidata Avisaqui deve entrar na `main` da loja. Após homologação, guardar o código aprovado na `main` privada, sem obrigação de publicar uma segunda instalação estável.
+
+**Branch pública existente conferida:** `release/avisaqui-rc-distribuicao-003` com `pager-virtual/config.yaml` versão `0.1.20-rc.3`, `repository.yaml` e manifesto de proveniência. Canal para cadastrar no Supervisor quando autorizado: `https://github.com/mmcromero/hassio-addons#release/avisaqui-rc-distribuicao-003`. A documentação HA confirma suporte a `#branch`, mas ID distinto e migração não automática. **Não declarar canal instalado/testado sem evidência do Raspberry.** Preservar backup dos dados antes de desinstalar versão anterior.
+
+O restante da loja pública, incluindo Evolution e outros add-ons, não é objeto de exclusão/migração. Esta alteração é **documental**, não instalação, criação de branch, merge ou disparo de Actions.
