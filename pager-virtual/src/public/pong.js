@@ -1,14 +1,27 @@
 export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) {
-  container.innerHTML = '';
+  container.replaceChildren();
+  const raiz = document.createElement('section'); raiz.className = 'pong-root';
   const label = document.createElement('p');
+  label.setAttribute('role', 'status');
   label.textContent = 'Conectando ao Pong...';
   const canvas = document.createElement('canvas');
   canvas.width = 600; canvas.height = 360;
-  canvas.style.cssText = 'width:100%;max-width:600px;touch-action:none;background:#102b39;border-radius:12px';
+  canvas.style.cssText = 'display:block;width:100%;height:100%;min-width:0;touch-action:none;background:#102b39;border-radius:8px';
+  const faixa = document.createElement('div');
+  faixa.setAttribute('role', 'group');
+  faixa.style.cssText = 'flex:0 0 clamp(40px,8%,62px);display:flex;align-items:center;justify-content:center;background:#263e55;border:2px solid #65d4f0;border-radius:12px;color:#e0f2fe;touch-action:none;user-select:none;writing-mode:vertical-rl;font-size:12px;letter-spacing:1px';
+  faixa.textContent = 'AZUL';
+  faixa.setAttribute('aria-label', 'Controle da raquete azul');
+  const arena = document.createElement('div'); arena.className = 'pong-arena';
+  arena.style.cssText = 'display:flex;align-items:stretch;gap:5px;min-height:0;min-width:0;width:100%;flex:1';
+  arena.append(faixa, canvas);
+  const partida = document.createElement('div'); partida.className = 'pong-partida';
+  partida.append(arena);
   const close = document.createElement('button');
   close.textContent = 'Sair do jogo';
   close.type = 'button';
-  container.append(label, canvas, close);
+  raiz.append(label, partida, close);
+  container.append(raiz);
   // Usa o prefixo da página do pedido, não um caminho absoluto que ignora /avisaqui/.
   const apiBase = location.pathname.endsWith('/cliente.html')
     ? location.pathname.slice(0, -'/cliente.html'.length)
@@ -64,8 +77,12 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
       if ([403, 409].includes(response.status)) exit();
     } catch { label.textContent = 'Conexão instável. Tentando novamente...'; }
   }
-  canvas.addEventListener('pointerdown', move);
-  canvas.addEventListener('pointermove', event => { if (event.buttons || event.pointerType === 'touch') move(event); });
+  for (const controle of [canvas, faixa]) {
+    controle.addEventListener('pointerdown', move);
+    controle.addEventListener('pointermove', event => {
+      if (event.buttons || event.pointerType === 'touch') move(event);
+    });
+  }
   try {
     const response = await fetch(endpoint + '/entrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -74,6 +91,12 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(response.status === 404 ? 'Rota do jogo não encontrada (HTTP 404). Verificar versão do servidor e encaminhamento HTTPS.' : (data.error || 'Falha ao entrar no jogo (HTTP ' + response.status + ')'));
     player = data.player; side = data.side;
+    if (side === 1) {
+      faixa.textContent = 'LARANJA';
+      faixa.style.borderColor = '#ffb66d';
+      faixa.setAttribute('aria-label', 'Controle da raquete laranja');
+      arena.append(faixa);
+    }
     // O pedido pode ficar pronto enquanto /entrar está em trânsito.
     // Mesmo com a tela encerrada, liberar o participante criado pela resposta tardia.
     if (!active) {
