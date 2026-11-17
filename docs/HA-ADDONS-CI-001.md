@@ -92,3 +92,16 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 **Conduta futura mandatória:** aplicar GOV-STD-001 v0.9 §13, publicada no repositório canônico: medir probabilidade, impacto, reversibilidade e custo de atraso; separar hipótese de defeito confirmado; não bloquear produto A por risco hipotético em produto B. Com autorização para o ato e risco residual admissível, executar o lote completo, verificar eventos e logs pós-merge, corrigir apenas problemas concretos. Manter NO-GO para segurança crítica, perda de dados, operação sem autorização ou falta de rollback quando necessário. Não iniciar builds pesados ou cobrança para testar hipótese sem motivo.
 
 **Estados distintos:** GitHub publicado; CI da loja corrigida; runtime Evolution do Raspberry NÃO INSPECIONADO; instalação/homologação do Pager no Raspberry PENDENTE. Não reabrir PRs já integrados para simular progresso.
+
+
+## Novo fluxo de publicação Avisaqui — main preservada
+
+**Decisão expressa do proprietário em 17/11/2026; política canônica privada:** `mmcromero/pager-virtual/docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md`.
+
+- **`main` pública é catálogo ESTÁVEL**, somente versões já testadas em canal RC e homologadas no ambiente de destino, mediante autorização da promoção. Não fazer merge de versão de teste em `main` por conveniência.
+- **`release-candidate` pública é canal de testes**, derivado integralmente por `scripts/export-distribution.py` da RC privada, com inventário e hashes; candidatos são publicados para homologação nessa branch. Não alterar Evolution API ou outros add-ons ao atualizar somente Pager.
+- **Home Assistant permite `https://github.com/mmcromero/hassio-addons#release-candidate`** como URL de repositório de outra branch *quando ela realmente existir*. Isso cria **identificador de repositório e de add-on diferente** do endereço sem sufixo. A instalação existente não deve ser trocada, removida ou duplicada por esta decisão documental. Exige plano operacional com backup, coexistência/slug, validação de dados e autorização própria.
+- **Promoção:** após ensaio real e aceite da candidata, comparar SHA/versão/hashes e integrar o conteúdo aprovado em `main` com autorização. Falha volta a desenvolvimento, sem contaminar main. Os registros antigos de RC publicadas em main permanecem históricos; **não afirmar que todas as versões hoje em main foram homologadas**.
+- Esta política está **documentada, sem implantação técnica da nova topologia**. Não criar branch, disparar Actions, mudar canal da loja ou acessar Home Assistant por este adendo.
+
+**Fonte oficial da compatibilidade por branch:** https://contributors.home-assistant.io/apps/guides/repository/
