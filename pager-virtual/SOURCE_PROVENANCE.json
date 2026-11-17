@@ -271,7 +271,7 @@
     {
       "path": "src/public/login.html",
       "source_path": "src/public/login.html",
-      "sha256": "daee5e2dd5bd913b8d983a6a4986bf3d98aa78beefcecc85049d2e2a45073a70"
+      "sha256": "8cb751f86b36fca41710b656cf7e6799ae59d6d0e34ffe2534c7ccd70fae6078"
     },
     {
       "path": "src/public/manifest.webmanifest",
@@ -281,7 +281,7 @@
     {
       "path": "src/public/pong.js",
       "source_path": "src/public/pong.js",
-      "sha256": "56767274699a38a42caddd3fed69c28b9f61633720cf6764e6f1d70e6dcce3f5"
+      "sha256": "90ce13d34ca5950941db7ab4dd301742faab4953d7b075304a9a152e4482017d"
     },
     {
       "path": "src/public/push-sw.js",
@@ -316,7 +316,7 @@
     {
       "path": "src/server.js",
       "source_path": "src/server.js",
-      "sha256": "75587efec721d4f1fe11af34472a1d3ba3f28fc407eaaf6f122bfcbe87dc3347"
+      "sha256": "72b0cd56a4cc73654971b28aa14b6ccf17f42f171e764b0bdcd96fa106175bf0"
     },
     {
       "path": "src/setup.js",
@@ -331,7 +331,7 @@
     {
       "path": "tests/auth-api.test.js",
       "source_path": "tests/auth-api.test.js",
-      "sha256": "ce976f96b120708a7a8dd7f092db8c016ffb3893c5185e645bca097a5a48b15c"
+      "sha256": "0da1a96e2d51468744245c2e4f8995ac2c0c96dc5c560a00335ce6753a413829"
     },
     {
       "path": "tests/auth-pages.test.js",
