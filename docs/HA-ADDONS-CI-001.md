@@ -72,3 +72,23 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 - **Risco residual:** o job de auth pode ficar verde sem executar npm em PR sem alterações do Pager; antes de homologar, revisar required checks reais e se a política aceita esse contexto condicional. Alterações em dependências compartilhadas fora dos caminhos monitorados podem exigir ampliar a lista. Não fazer merge sem essa revisão.
 - O check `package-policy` mantém seus filtros; não foram removidos nem houve alteração de proteção. O catálogo JSON não cria jobs automaticamente. Builds ARM64 permanecem manuais.
 - **Homologação pendente:** checkout completo, análise sintática de YAML/expressões, testes locais do detector em cenários PR/push/sem base, leitura das regras de proteção e execução final de CI somente após restauração de capacidade e autorização. **Não significa fechamento do pacote.**
+
+
+## Incidente pós-publicação Avisaqui 002 — análise de risco proporcional (17/11/2026)
+
+**Fatos verificados:** PR privado #22 integrado no SHA f3e93faa7cdd107d976d7f60c6250103b6e53a1a; PR público #35 integrado em 5977b1b6522dbc7682e1ef8e672c14c52c9c4bd2. Versão do Pager 0.1.19-rc.1 publicada na main da loja GitHub, **não instalada no Home Assistant por esta operação**.
+
+**Análise de risco que deveria ter antecedido o merge:**
+
+| Risco | Evidência real | Decisão proporcional |
+|---|---|---|
+| Quebrar o runtime Evolution | Nenhum arquivo em evolution-api/ foi alterado pelo PR | Não bloquear a publicação do Avisaqui nem reiniciar Evolution |
+| Mudar a geração futura de builds Evolution | Workflow compartilhado passou a usar workflow_dispatch para build ARM64, com seleção manual de evolution-api | Risco operacional de acionamento futuro; proprietário foi informado e aceitou o impacto |
+| CI compartilhada falhar | Falha real no run 44067864444: registry omitia umdoislab-central | Corrigir somente o cadastro |
+| Instância Evolution no Raspberry ter regressão | Sem inspeção direta do serviço; proprietário relatou que estava funcionando | Não declarar homologação funcional nem tocar em dados/instalação sem evidência |
+
+**Correção e prova:** o arquivo .github/addon-registry.json recebeu só a entrada do add-on **já existente** umdoislab-central, slug umdoislab_central, arquitetura aarch64, commit d12135bd4b353668156d33dc71e8f39b08cdadf3. A execução automática de GitHub Actions [44068193157](https://github.com/mmcromero/hassio-addons/actions/runs/44068193157) concluiu completed/success: jobs syntax e test-pager-auth passaram. Os builds ARM64 ficaram **skipped conforme seleção manual**; não apresentar esses skips como build aprovado na execução.
+
+**Conduta futura mandatória:** aplicar GOV-STD-001 v0.9 §13, publicada no repositório canônico: medir probabilidade, impacto, reversibilidade e custo de atraso; separar hipótese de defeito confirmado; não bloquear produto A por risco hipotético em produto B. Com autorização para o ato e risco residual admissível, executar o lote completo, verificar eventos e logs pós-merge, corrigir apenas problemas concretos. Manter NO-GO para segurança crítica, perda de dados, operação sem autorização ou falta de rollback quando necessário. Não iniciar builds pesados ou cobrança para testar hipótese sem motivo.
+
+**Estados distintos:** GitHub publicado; CI da loja corrigida; runtime Evolution do Raspberry NÃO INSPECIONADO; instalação/homologação do Pager no Raspberry PENDENTE. Não reabrir PRs já integrados para simular progresso.
