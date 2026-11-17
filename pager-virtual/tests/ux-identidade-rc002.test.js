@@ -40,3 +40,21 @@ test('clipboard tem fallback sem afirmar cópia quando API falha',()=>{
  assert.ok(s.includes('selection.addRange(range)'));
  assert.ok(s.includes('Pressione Ctrl+C'));
 });
+
+test('gerente tem acesso visível à impressão e identidade do estabelecimento',()=>{
+ const admin=page('admin.html'), kds=page('kds.html');
+ assert.match(admin,/<a[^>]*href="\.\/impressao\.html"[^>]*id="manager-print-link"/);
+ assert.ok(admin.includes('id="restaurant-identity"'));
+ assert.ok(admin.includes("restaurantIdentity.textContent='Restaurante: '+restaurantName"));
+ assert.ok(admin.includes("printLink.href='./impressao.html'"));
+ assert.ok(kds.includes('id="restaurant-context"'));
+ assert.ok(kds.includes("context.textContent='Restaurante: '+name"));
+ assert.ok(kds.includes('id="printing-integration-link"'));
+});
+
+test('contexto de sessão fornece nome seguro sem consulta livre a outro restaurante',()=>{
+ const s=readFileSync(new URL('../src/auth.js',import.meta.url),'utf8');
+ assert.ok(s.includes('ELSE r.nome END AS restaurante_nome'));
+ assert.ok(s.includes('CASE WHEN mr.ativo = 1 THEN mr.nome ELSE NULL END'));
+ assert.ok(s.includes('return user;'));
+});
