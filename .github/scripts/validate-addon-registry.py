@@ -3,6 +3,7 @@
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -20,11 +21,17 @@ def main():
         raise ValueError("Registry must contain add-ons")
     ids, slugs, directories = set(), set(), set()
     for addon in addons:
+        if not isinstance(addon, dict):
+            raise ValueError('Invalid registry entry')
         addon_id, directory, slug = (addon.get(k) for k in ("id", "directory", "slug"))
         if not all(isinstance(v, str) and v for v in (addon_id, directory, slug)):
             raise ValueError("Missing required registry field")
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', addon_id) or not re.fullmatch(r'[a-z0-9][a-z0-9_-]*', slug):
+            raise ValueError('Invalid add-on ID or slug')
         if addon_id in ids or slug in slugs or directory in directories:
             raise ValueError("Duplicate add-on ID, slug or directory")
+        if not re.fullmatch(r'[a-z0-9][a-z0-9_-]*', directory):
+            raise ValueError('Invalid directory')
         if pathlib.PurePosixPath(directory).is_absolute() or ".." in pathlib.PurePosixPath(directory).parts or "/" in addon_id:
             raise ValueError("Invalid directory or ID")
         config = ROOT / directory / "config.yaml"
@@ -33,10 +40,13 @@ def main():
         # Compare exact slug with manifest, using the same YAML parser as syntax job.
         import yaml
         manifest = yaml.safe_load(config.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            raise ValueError(f'Invalid manifest for {addon_id}')
         if manifest.get("slug") != slug:
             raise ValueError(f"Slug mismatch for {addon_id}")
         arch = manifest.get("arch", [])
-        if not isinstance(arch, list) or set(arch) != set(addon.get("architectures", [])):
+        registered_arch = addon.get('architectures')
+        if not isinstance(arch, list) or not isinstance(registered_arch, list) or not registered_arch or not all(isinstance(v, str) for v in arch + registered_arch) or set(arch) != set(registered_arch):
             raise ValueError(f"Architecture mismatch for {addon_id}")
         if not (ROOT / directory / "Dockerfile").is_file() and not manifest.get("image"):
             raise ValueError(f"Missing Dockerfile/image for {addon_id}")
@@ -55,6 +65,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (ValueError, OSError, json.JSONDecodeError, ImportError) as exc:
+    except (ValueError, OSError, json.JSONDecodeError, ImportError, TypeError) as exc:
         print(f"REGISTRY ERROR: {exc}", file=sys.stderr)
         sys.exit(1)
