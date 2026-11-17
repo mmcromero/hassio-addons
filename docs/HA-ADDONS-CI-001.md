@@ -65,3 +65,10 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 5. O `syntax` instala PyYAML dinamicamente; falhas de dependência/rede ou timeout de 10 min podem bloquear PRs. Fixar versão/cache apenas após revisão de compatibilidade.
 6. O `test-pager-auth` continua rodando para mudanças em outros add-ons. Melhorar isolamento por paths sem suprimir required checks; pendente.
 7. Não há prova de execução do script remoto exato em checkout completo; **validação local integral e CI continuam pendentes**.
+
+## Preparação de homologação sem fechamento do pacote — 16/11/2026
+- **Autorização recebida:** corrigir riscos de CI e preparar homologação, **sem encerrar o pacote Avisaqui**, sem merge/deploy/publicação. Desenvolvimento de outras equipes continua.
+- `validate-addons.yml`: job `test-pager-auth` mantém seu nome/ID para preservar o contexto do check. Novo passo de detecção de mudanças usa base de PR ou SHA anterior do push; se a base não estiver disponível ou o evento não for reconhecido, **executa os testes**. Em alteração exclusiva de outros add-ons, mantém o job presente e evita npm/testes Pager. O job de sintaxe/cadastro continua obrigatório na mesma execução. O comando de instalação passa de `npm install` para `npm ci` (lockfile existente). Commit `2ff878d8bf502c471319870817fe475429ce614a`.
+- **Risco residual:** o job de auth pode ficar verde sem executar npm em PR sem alterações do Pager; antes de homologar, revisar required checks reais e se a política aceita esse contexto condicional. Alterações em dependências compartilhadas fora dos caminhos monitorados podem exigir ampliar a lista. Não fazer merge sem essa revisão.
+- O check `package-policy` mantém seus filtros; não foram removidos nem houve alteração de proteção. O catálogo JSON não cria jobs automaticamente. Builds ARM64 permanecem manuais.
+- **Homologação pendente:** checkout completo, análise sintática de YAML/expressões, testes locais do detector em cenários PR/push/sem base, leitura das regras de proteção e execução final de CI somente após restauração de capacidade e autorização. **Não significa fechamento do pacote.**
