@@ -5,11 +5,12 @@
     {
       "id": "pong",
       "title": "Pong",
-      "description": "Rebata a bola e marque pontos.",
+      "description": "Contra o computador ou duas pessoas no aparelho; duelo online quando disponível.",
       "version": "0.2.0",
       "status": "external",
       "modes": [
         "solo",
+        "dupla-local",
         "multiplayer-online"
       ],
       "minPlayers": 1,
