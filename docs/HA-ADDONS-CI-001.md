@@ -48,3 +48,20 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 - Repositórios consultados no inventário: `mmcromero/hassio-addons`, `mmcromero/fabricacao-e-orcamentos-ha`, `mmcromero/fabrica-de-ideias-kanban`, `mmcromero/fabricacao_e_orcamentos`, além de pesquisa de código em repositórios acessíveis. **Portal WhatsApp**: origem/distribuição não identificadas com evidência suficiente. Não confundir com Evolution API, que usa WhatsApp.
 - A adoção em lojas independentes depende de PRs/branches próprios, testes e revisão de compatibilidade. Nenhuma migração foi autorizada.
 - **Evidência pendente:** execução local do verificador sobre checkout completo e validação de YAML; CI e builds finais não executados. Sem homologação nem publicação.
+
+## Revisão de integração e riscos — 16/11/2026
+
+**Artesão Digital identificado com evidência direta:** fonte `mmcromero/fabricacao_e_orcamentos/apps/umdoislab/pilot/config.yaml`; workflow `.github/workflows/artesao-publicar-ha.yml`; pacote de destino `mmcromero/fabricacao-e-orcamentos-ha/apps/artesaos-piloto`; slug `artesaos_piloto` segundo script `scripts/prepare-ha-aarch64.py`. O workflow aceita `workflow_call`, `workflow_dispatch` e push em `publish/ha/**`; executa QEMU ARM64, timeout 120 min, e faz commit/push na main da loja após validações. **Não disparar como teste**. O histórico `pix-qr-ha.yml` também publica na main por push de branch específica, com versão fixa; manter inativo, não usar como fluxo genérico.
+
+**Kanban confirmado:** loja `mmcromero/fabrica-de-ideias-kanban`, add-on `kanban/config.yaml`, slug `kanban`; `validar.yml` executa testes e Docker build em PR/push (timeout 20 min); `gerar-pacote.yml` é manual, exige SHA+versão, gera ZIP e hashes (timeout 15 min), sem publicação automática. Não substituir sem revisão.
+
+**Portal WhatsApp:** buscas de código por portal/whatsapp e nomes de diretórios conhecidos não produziram prova de add-on separado. Status NÃO IDENTIFICADO; nenhuma migração ou cadastro inventado.
+
+**Riscos dos required checks e do validador:**
+1. O job `syntax` existente permanece com o mesmo ID, mas passou a depender do novo cadastro. Se existir um terceiro diretório `config.yaml` não cadastrado, o check passará a falhar; é comportamento seguro, mas exige inventário completo da árvore antes de merge.
+2. A escolha manual do `workflow_dispatch` permanece hardcoded em dois IDs. O cadastro JSON **não** cria jobs automaticamente. Novo add-on requer revisão de workflow e check de build apropriado.
+3. `avisaqui-governance.yml` só roda em PR quando caminhos de Avisaqui mudam. Um PR que altere apenas o validador/registro pode não gerar esse check; se ele for obrigatório, verificar regras de proteção antes de integrar. Não mudar filtros para forçar bypass.
+4. Builds ARM64 agora são pulados em PRs; caso algum deles seja required check, pode bloquear a integração. Confirmar branch protection/rulesets e contexto real de checks antes do merge. O conector disponível não demonstrou leitura dessas regras.
+5. O `syntax` instala PyYAML dinamicamente; falhas de dependência/rede ou timeout de 10 min podem bloquear PRs. Fixar versão/cache apenas após revisão de compatibilidade.
+6. O `test-pager-auth` continua rodando para mudanças em outros add-ons. Melhorar isolamento por paths sem suprimir required checks; pendente.
+7. Não há prova de execução do script remoto exato em checkout completo; **validação local integral e CI continuam pendentes**.
