@@ -196,7 +196,7 @@
     {
       "path": "src/public/admin.html",
       "source_path": "src/public/admin.html",
-      "sha256": "35c1da22f0a94a8a4ddaa907e7d2afef69e7d9d260ec64630897ad4b9e9f3734"
+      "sha256": "8f805a27fe2d381f6a6caef4d4162217099eab837513457d0cbf58b6249b5042"
     },
     {
       "path": "src/public/avisaqui-marca-transparente.svg",
@@ -211,12 +211,12 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "d1dc3c79bb05c892fcb829925d06e31c401b5feebca0410022116fa0b50f8c74"
+      "sha256": "d87f5161e8299eaf4c2d952b9969f43aa1ccde0fad62c9a5ecf03923953d336a"
     },
     {
       "path": "src/public/games/biblioteca.js",
       "source_path": "src/public/games/biblioteca.js",
-      "sha256": "89eff828041bc188f224a795659daedce01303cea0cd60baa701f9affa111158"
+      "sha256": "a7ad64dc226ae8666a74c0ec6fb24312e8c07f0785bbbb227db3ee2276bdcb29"
     },
     {
       "path": "src/public/games/catalogo.js",
@@ -226,7 +226,7 @@
     {
       "path": "src/public/games/jogo-da-velha-isolado.html",
       "source_path": "src/public/games/jogo-da-velha-isolado.html",
-      "sha256": "a901017686c5d6141df1f3310394614dea563a50eef82ba4443d09f0aac294b8"
+      "sha256": "a4a529f6c22a1a11e2122e4bb2e815e86b248aff6539c97871200cc4cdfc821a"
     },
     {
       "path": "src/public/games/jogo-da-velha.js",
