@@ -444,6 +444,26 @@
       "sha256": "c727790fd7084a042dbfb2f390632da24627b7697017168cece0c08acd935c0e"
     },
     {
+      "path": "tests/pairing-backend-manager-page-lab.test.js",
+      "source_path": "tests/pairing-backend-manager-page-lab.test.js",
+      "sha256": "7aefe1219a8ba88f8757a5f32492277ade1783bd54c88938df66ccf8fb0acb69"
+    },
+    {
+      "path": "tests/pairing-backend-schema.test.js",
+      "source_path": "tests/pairing-backend-schema.test.js",
+      "sha256": "c3e6cf710d8d3e4dd04690bc336a55ad3b256ed88cc8b7b7be5cfe6e5e9934b9"
+    },
+    {
+      "path": "tests/pairing-backend-session-lab.test.js",
+      "source_path": "tests/pairing-backend-session-lab.test.js",
+      "sha256": "eff61b1827cb1154929aee3dc1107a9d44ec4063ccddc1d018e2f0f1eef7f4b5"
+    },
+    {
+      "path": "tests/pairing-backend-v1.test.js",
+      "source_path": "tests/pairing-backend-v1.test.js",
+      "sha256": "a808e5de8fbc35f92ec3545fd687ca265e7089f31a42fd827686fbd1c4665455"
+    },
+    {
       "path": "tests/pong-api.test.js",
       "source_path": "tests/pong-api.test.js",
       "sha256": "6da8fac13687151ca7ce69487aea3d0ef021b3910996506ed89a36cd558f7f90"
