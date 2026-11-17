@@ -6,6 +6,13 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.20-rc.1] — 17/11/2026 — RC003 EM PREPARAÇÃO, NÃO PUBLICADA
+
+- Telas reais de autorização e computadores vinculados conectadas às APIs opt-in de laboratório; validação local do fluxo cliente Python → QR/referência → autorização gerencial → resgate → ACK → renomeação/revogação.
+- Corrigida a resposta duplicada 403/401 causada pelo hook assíncrono de cabeçalhos; preservados headers, CSP específica, papéis e isolamento.
+- Monitor Windows passa pelo leitor protegido de configuração existente: credencial pair-v1 incompleta/corrompida não pode ser ignorada em favor do legado; pair-v1 segue bloqueado no monitor até integração autorizada.
+- Bancos e credenciais legados preservados; opt-in OFF por padrão, sem toggle de ativação no add-on. Não comprova Windows físico/DPAPI, impressão, proxy público ou build ARM64.
+
 ## [0.1.19-rc.1] — 17/11/2026 — PUBLICADA NO GITHUB (pacote AVISAQUI-PACOTE-002)
 
 ### Funcionalidades e experiência entregues na RC
