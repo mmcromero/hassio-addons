@@ -7,24 +7,23 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-002",
+    "id": "AVISAQUI-PACOTE-003",
     "status": "open",
     "phase": "implementation",
-    "candidate_version": "0.1.19-rc.1",
-    "published_version": "0.1.18-rc.1",
+    "candidate_version": "0.1.20-rc.1",
+    "published_version": "0.1.19-rc.1",
     "branches": {
-      "mmcromero/pager-virtual": "release/avisaqui-rc-002",
-      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-002"
+      "mmcromero/pager-virtual": "release/avisaqui-rc-003",
+      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-003"
     },
     "prs": {
-      "mmcromero/pager-virtual": 22,
-      "mmcromero/hassio-addons": 35
+      "mmcromero/pager-virtual": 28
     },
     "base_branch": "main",
     "new_features": "allowed_only_within_package_scope",
-    "opened_on": "2026-11-15",
-    "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-002.md",
-    "status_notes": "pacote de correções da homologação e conclusão/evolução de funcionalidades; integração de jogos condicionada a revisão do trabalho isolado da Issue #21"
+    "opened_on": "2026-11-17",
+    "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-003.md",
+    "status_notes": "Correção urgente: integrar as telas funcionais de Windows/pareamento não entregues ao pacote 002; manter UX, segurança, fonte privada canônica e testes do fluxo realmente alterado; não confundir protótipo simulado com integração real."
   },
   "publication_authority": {
     "coordination": "Governança",
@@ -38,19 +37,7 @@
       ".github/workflows/avisaqui-governance.yml",
       ".github/workflows/validate-addons.yml"
     ],
-    "approved_existing_ci_patch": ".governance/approved-pager-ci.patch",
-    "preserved_shared_baseline": {
-      "repository": "mmcromero/hassio-addons",
-      "commit": "bc668b669a0a6474f69f09175b28edd39d6e7694",
-      "authorization_reference": "Proprietário: AVISAQUI-PACOTE-002 — Recuperar fluxo de build pelo Codex (17/11/2026), item 4: resolver divergências de política preservando alterações compartilhadas, sem contornar regras.",
-      "purpose": "Preservação byte a byte do conteúdo compartilhado preexistente; não autoriza novas alterações de infraestrutura, outros produtos ou execução de CI.",
-      "files": {
-        ".github/addon-registry.json": "16866d228e2866f92b9fbcb523856fe770a3cd29a19cdadc754559f04ddaddfd",
-        ".github/scripts/validate-addon-registry.py": "61426f24eed9ce7e44ab4bbeb501a2206b4d0e5ca68dcc8f784ea40761d35255",
-        ".github/workflows/validate-addons.yml": "4dc4ded6f94bbb48035d6f227e63f44a5b07022864374e714b62968b10a84412",
-        "docs/HA-ADDONS-CI-001.md": "00266e2fe99693cda70881c360a79f3411a407d8e49fd58eabd651f95c362afe"
-      }
-    }
+    "approved_existing_ci_patch": ".governance/approved-pager-ci.patch"
   },
   "implementation_status": {
     "policy": "documented",
@@ -68,6 +55,16 @@
       "public_merge_sha": "fcb8453132adff8665a793761a6c1a8ce5a580b2",
       "closed_on": "2026-11-15",
       "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md"
+    },
+    {
+      "id": "AVISAQUI-PACOTE-002",
+      "status": "closed_git_integration",
+      "version": "0.1.19-rc.1",
+      "private_merge_sha": "f3e93faa7cdd107d976d7f60c6250103b6e53a1a",
+      "public_merge_sha": "5977b1b6522dbc7682e1ef8e672c14c52c9c4bd2",
+      "closed_on": "2026-11-17",
+      "operational_installation": "not_verified",
+      "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-002.md"
     }
   ]
 }

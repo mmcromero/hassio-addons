@@ -362,7 +362,7 @@
     <div class="brand-title">
       <div>
         <h1>Pedidos em atendimento</h1>
-        <span>Cozinha e balcão</span>
+        <span>Cozinha e balcão</span><div id="restaurant-context" role="status" aria-live="polite" style="display:none;margin-top:8px;font-size:1rem;font-weight:750;color:#f8fafc;background:#1e3a5f;padding:8px 12px;border-radius:10px"></div>
       </div>
     </div>
 
@@ -458,6 +458,15 @@
         const user = await response.json();
         if ((user.papel === 'gerente' || user.papel === 'master') && user.restaurante_id) {
           document.getElementById('printing-integration-link').style.display = 'inline-flex';
+        }
+        const name=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
+        const context=document.getElementById('restaurant-context');
+        if(user.restaurante_id && name){
+          context.textContent='Restaurante: '+name;
+          context.style.display='block';
+        }else if(user.papel==='gerente'){
+          context.textContent='Restaurante não identificado. Contate a administração.';
+          context.style.display='block';
         }
       } catch {}
     }

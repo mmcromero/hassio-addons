@@ -43,6 +43,9 @@
       --font-scale: 1.15rem;
     }
 
+    /* Elementos ocultos nao podem ocupar espaco em layouts flex/grid. */
+    [hidden] { display: none !important; }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -801,9 +804,11 @@
         const resposta = await fetch(baseJogos + '/api/jogos/pong/disponivel', {
           cache: 'no-store', credentials: 'omit'
         });
-        return resposta.ok;
+        // Uma rota ausente indica que o Pong experimental pode estar desativado.
+        // A biblioteca local (incluindo Jogo da Velha) continua independente.
+        return { disponivel: resposta.ok, codigo: resposta.status };
       } catch {
-        return false;
+        return { disponivel: false, codigo: 0 };
       }
     }
     gamesOpen.addEventListener('click', async () => {
@@ -817,11 +822,20 @@
         gamesContent.hidden = false;
         const biblioteca = criarBibliotecaJogos({
           container: gamesContent,
+          etiquetaPedido: 'Pedido #' + orderNumber + ' · Em preparo',
+          onExit: () => {
+            // Fechar a tela cheia deve voltar à comanda e permitir abrir novamente.
+            if (atual === gamesGeneration) fecharJogos();
+          },
           iniciarPong: async (container, mode) => {
             if (!pongAllowed) return () => {};
-            const disponivel = await consultarPongDisponivel();
+            const disponibilidade = await consultarPongDisponivel();
             if (!pongAllowed || atual !== gamesGeneration) return () => {};
-            if (!disponivel) throw new Error('Pong indisponível');
+            if (!disponibilidade.disponivel) {
+              throw new Error(disponibilidade.codigo === 404
+                ? 'Pong indisponível: confira se o modo experimental está habilitado no add-on.'
+                : 'Pong indisponível neste momento. Tente novamente.');
+            }
             const { iniciarPong } = await import('./pong.js');
             if (!pongAllowed || atual !== gamesGeneration) return () => {};
             const sair = await iniciarPong({ token, mode, container, onExit: () => {

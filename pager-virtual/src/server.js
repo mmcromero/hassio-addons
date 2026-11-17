@@ -22,6 +22,28 @@ const fastify = Fastify({
   }
 });
 
+// Proteções comuns a páginas e APIs servidas pelo Fastify.
+// CSP de páginas específicas permanece por rota: jogos isolados usam iframe,
+// e HTTPS/HSTS depende do proxy público, pois há acesso HTTP local.
+// Não há I/O neste hook. Finalizar sincronicamente preserva reply.sent nos
+// adaptadores que já enviaram 401/403 e impede uma segunda resposta de ACL.
+fastify.addHook('onSend', (_request, reply, payload, done) => {
+  if (!reply.hasHeader('X-Content-Type-Options'))
+    reply.header('X-Content-Type-Options', 'nosniff');
+  if (!reply.hasHeader('Referrer-Policy'))
+    reply.header('Referrer-Policy', 'no-referrer');
+  // Nunca aplicar DENY globalmente: os jogos locais usam iframe sandbox.
+  // Proteger somente as interfaces administrativas e de autenticação.
+  const route = _request.url.split('?')[0];
+  if (['/login.html', '/setup.html', '/admin.html', '/kds.html', '/impressao.html'].includes(route)) {
+    if (!reply.hasHeader('X-Frame-Options'))
+      reply.header('X-Frame-Options', 'DENY');
+    if (!reply.hasHeader('Content-Security-Policy'))
+      reply.header('Content-Security-Policy', "frame-ancestors 'none'");
+  }
+  done(null, payload);
+});
+
 // Habilita CORS para permitir conexões flexíveis
 await fastify.register(cors, {
   origin: false
@@ -90,6 +112,36 @@ function publicUrlConfigurada() {
 }
 
 const PUBLIC_URL = publicUrlConfigurada();
+
+// PAIR-V1 RC003: somente opt-in explícito. O modo padrão não importa o plugin,
+// não executa a migração de pareamento e preserva o fluxo manual existente.
+// NÃO habilitar em host comercial antes dos portões Segurança/Privacidade.
+if (process.env.AVISAQUI_PAIR_V1_ENABLED === 'true') {
+  const publicOrigin = process.env.AVISAQUI_PAIR_V1_PUBLIC_ORIGIN;
+  const mountPrefix = process.env.AVISAQUI_PAIR_V1_MOUNT_PREFIX;
+  const fields = ['APPROVAL_MS', 'CHALLENGE_MS', 'RECOVERY_MS'];
+  const durations = fields.map(key => {
+    const raw = process.env['AVISAQUI_PAIR_V1_' + key];
+    if (!raw || !/^[1-9][0-9]*$/.test(raw)) {
+      throw new Error('Política temporal do pair-v1 incompleta: ' + key);
+    }
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value <= 1000 || value > 7 * 86400000) {
+      throw new Error('Política temporal do pair-v1 inválida: ' + key);
+    }
+    return value;
+  });
+  if (!publicOrigin || !PUBLIC_URL || publicOrigin.replace(/\/$/, '') !== PUBLIC_URL ||
+      !['', '/avisaqui'].includes(mountPrefix)) {
+    throw new Error('Pair-v1 requer origem HTTPS pública e prefixo interno explícitos e compatíveis');
+  }
+  // O validador interno exige HTTPS e pathname /avisaqui.
+  const { registerPairV1IntegratedLab } = await import('./pairing/backend/integrated-host-lab.js');
+  await registerPairV1IntegratedLab(fastify, {
+    db, publicOrigin, mountPrefix,
+    policy: { approvalMs: durations[0], challengeMs: durations[1], recoveryMs: durations[2] }
+  });
+}
 fastify.get('/api/config/publica', async () => ({ public_url: PUBLIC_URL }));
 
 // O Supervisor exige [HOST]/[PORT] no manifesto. O botão passa por esta rota

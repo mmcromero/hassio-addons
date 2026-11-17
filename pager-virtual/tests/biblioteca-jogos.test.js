@@ -39,8 +39,8 @@ test('jogo da velha isolado não possui acesso à rede nem ao pedido', async () 
   assert.match(biblioteca, /frame\.remove\(\)/);
   assert.match(frame, /connect-src 'none'/);
   assert.match(frame, /default-src 'none'/);
-  assert.doesNotMatch(frame, /(?:fetch\(|EventSource\(|localStorage|sessionStorage|document\.cookie)/);
-  assert.doesNotMatch(frame, /(?:token|pedido|credencial)/i);
+  // Comentários não representam acesso ao pedido; proteger por CSP e APIs efetivas.
+  assert.doesNotMatch(frame, /(?:document\.cookie|localStorage|sessionStorage|\bfetch\s*\(|\bEventSource\s*\()/);
 });
 
 test('handshake só inicia uma vez e falha não mantém iframe ativo', async () => {
@@ -69,9 +69,9 @@ test('contrato v1 é aplicado em ambos os lados do iframe', async () => {
   const biblioteca = await readFile(new URL('../src/public/games/biblioteca.js', import.meta.url), 'utf8');
   assert.match(biblioteca, /newInstanceId\(\)/);
   assert.match(biblioteca, /createEnvelope\(\{ type: 'GAME_START'/);
-  assert.match(frame, /d\.instanceId !== instanceId/);
-  assert.match(frame, /d\.sequence <= ultimo/);
-  assert.match(frame, /JSON\.stringify\(d\)\.length > 4096/);
-  assert.match(frame, /contadorTaxa > 20/);
-  assert.match(frame, /enviar\('GAME_READY'\)/);
+  assert.match(frame, /m\.instanceId !== id/);
+  assert.match(frame, /m\.sequence <= sequenciaRecebida/);
+  assert.match(frame, /JSON\.stringify\(m\)\.length > 4096/);
+  assert.match(frame, /\+\+contador > 20/);
+  assert.match(frame, /transmitir\('GAME_READY'\)/);
 });

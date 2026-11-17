@@ -58,7 +58,14 @@
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Não foi possível entrar');
-        location.replace(basePath + (data.papel === 'master' ? '/admin.html' : '/kds.html'));
+        // Retorno permitido exclusivamente à aprovação de solicitação Pair-v1.
+        // Não seguir URLs externas ou caminhos arbitrários vindos da query.
+        const returnTo = new URLSearchParams(location.search).get('return_to');
+        const validReturn = typeof returnTo === 'string' &&
+          /^\/avisaqui\/autorizar\?solicitacao=[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(returnTo);
+        if (validReturn && (data.papel === 'gerente' || data.papel === 'master'))
+          location.replace(returnTo);
+        else location.replace(basePath + (data.papel === 'master' ? '/admin.html' : '/kds.html'));
       } catch (e) { error.textContent = e.message || 'Falha de conexão'; }
       finally { button.disabled = false; button.textContent = 'Entrar'; }
     });

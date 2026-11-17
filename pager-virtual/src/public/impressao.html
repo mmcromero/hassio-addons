@@ -11,22 +11,66 @@ button:focus-visible,a:focus-visible{outline:3px solid #93c5fd;outline-offset:3p
 code,pre{word-break:break-all;overflow-wrap:anywhere}pre{background:#0b1220;padding:12px;border:1px solid #475569;border-radius:10px;white-space:pre-wrap}
 small,.muted{color:#b1c0d7}#notice{min-height:24px}#secret{display:none}ul{list-style:none;padding:0}li{border-bottom:1px solid #334155;padding:12px 0}
 .row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.brand-header{display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid #30435f;padding:0 0 13px;margin-bottom:18px}
+.brand-logo{width:min(190px,55vw);height:auto}
+.context{border:1px solid #46617d;background:#172438;border-radius:12px;padding:12px 16px;margin-bottom:16px}
+.context strong{display:block;font-size:1.06rem}.context span{color:#b1c0d7;font-size:.87rem}
+details.legacy{margin:16px 0;border:1px solid #30435f;border-radius:16px;background:#131c2e}
+details.legacy>summary{cursor:pointer;padding:17px 20px;font-weight:700}
+details.legacy>section{border:0;border-top:1px solid #30435f;margin:0;border-radius:0}
+@media(max-width:440px){body{padding:12px}.card{padding:15px}button,a.link{min-height:44px}}
 </style></head><body><main>
-<div class="row"><h1>🔔 Avisaqui · Integração de impressão</h1><a class="link" href="./kds.html">Voltar ao KDS</a></div>
+<header class="brand-header"><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"><button id="logout" class="secondary" type="button">Sair</button></header>
+<div id="restaurant-context" class="context" aria-live="polite"><strong id="restaurant-name">Consultando restaurante…</strong><span id="restaurant-role"></span></div>
+<div class="row"><h1>Integração de impressão</h1><a class="link" href="./kds.html">Voltar ao KDS</a></div>
 <p>Configure o agente Windows para enviar números de pedidos ao KDS. A impressão física continua independente.</p>
-<section class="card"><h2>1. Credencial do agente</h2>
+<section class="card" aria-labelledby="computadores-title">
+<h2 id="computadores-title">Computadores vinculados (pareamento QR)</h2>
+<p>No computador Windows, abra a tela de pareamento. No celular do gerente, leia o QR Code, entre na conta do restaurante e confirme o código de 8 dígitos exibido no Windows. Após a autorização, o computador ainda precisa concluir o resgate e a confirmação do vínculo.</p>
+<p class="muted">Os computadores autorizados aparecem aqui quando o pareamento QR estiver habilitado. Enquanto isso, o cadastro manual de credenciais continua separado.</p>
+<button id="refresh-devices" class="secondary" type="button">Atualizar computadores</button>
+<p id="devices-status" class="muted" role="status" aria-live="polite"></p>
+<ul id="devices"><li>Aguardando consulta…</li></ul>
+</section>
+<details class="legacy"><summary>Credenciais antigas — configuração manual</summary>
+<section class="card"><h2>Credencial do agente (modo anterior)</h2>
 <p>Crie uma credencial exclusiva para este restaurante. Ela será exibida apenas uma vez.</p>
 <button id="generate">Gerar credencial</button><p id="notice" role="status"></p>
 <div id="secret"><p><strong>Copie agora e guarde somente no computador do caixa:</strong></p>
 <pre id="token" tabindex="-1"></pre><button id="copy" class="secondary">Copiar credencial</button><p class="muted">Não envie essa chave pelo chat ou em capturas de tela.</p></div>
-<h2>Credenciais existentes</h2><ul id="keys"><li>Carregando…</li></ul></section>
-<section class="card"><h2>2. Últimos recebimentos</h2>
+<h2>Credenciais existentes</h2><ul id="keys"><li>Carregando…</li></ul></section></details>
+<section class="card"><h2>Últimos recebimentos</h2>
 <p class="muted">A tela atualiza enquanto estiver aberta. Os novos pedidos aparecem automaticamente no KDS via SSE.</p>
 <button id="refresh" class="secondary">Atualizar agora</button><ul id="events"><li>Carregando…</li></ul></section>
-<section class="card"><h2>3. Agente Windows</h2>
+<section class="card"><h2>Agente Windows</h2>
 <p>Na configuração do agente, informe a URL HTTPS do seu Avisaqui e a credencial copiada. O monitor deverá estar aberto para observar novas impressões de teste. Não envie notas fiscais reais nesta fase.</p></section>
 </main><script>
 const $=id=>document.getElementById(id);
+const basePath=location.pathname.startsWith('/avisaqui/')?'/avisaqui':'';
+async function loadIdentity(){
+ try{
+  const response=await fetch(basePath+'/api/auth/me',{credentials:'same-origin',cache:'no-store'});
+  if(response.status===401){location.replace(basePath+'/login.html');return}
+  if(!response.ok)throw new Error('Acesso indisponível');
+  const user=await response.json();
+  if(!['gerente','master'].includes(user.papel)||!user.restaurante_id){
+   $('restaurant-name').textContent='Selecione um restaurante autorizado';
+   $('restaurant-role').textContent='A gestão de computadores exige um restaurante ativo.';
+   return;
+  }
+  $('restaurant-name').textContent=user.restaurante_nome||'Restaurante não identificado';
+  $('restaurant-role').textContent=user.papel==='master'?'Master Admin':'Gerente';
+ }catch{
+  $('restaurant-name').textContent='Não foi possível consultar o restaurante';
+  $('restaurant-role').textContent='Verifique a sua sessão antes de alterar dispositivos.';
+ }
+}
+$('logout').addEventListener('click',async()=>{
+ try{await fetch(basePath+'/api/auth/logout',{method:'POST',credentials:'same-origin'});}finally{
+  location.replace(basePath+'/login.html');
+ }
+});
+loadIdentity();
 const fmt=value=>new Date(value).toLocaleString('pt-BR');
 const safe=(v)=>String(v).replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
 async function api(path,opts={}){const r=await fetch(path,{...opts,headers:{'Content-Type':'application/json',...opts.headers}});if(!r.ok){let body={};try{body=await r.json()}catch{}throw new Error(body.error||'HTTP '+r.status)}return r.json()}
@@ -64,5 +108,68 @@ $('copy').addEventListener('click',async()=>{
   }catch{$('notice').textContent='Não foi possível copiar. Selecione a credencial acima e use Ctrl+C.'}
  }
 });
-$('refresh').addEventListener('click',load);load();setInterval(load,10000);
+async function loadDevices(){
+ const status=$('devices-status'),list=$('devices');
+ status.textContent='Consultando computadores…';
+ try{
+  const devices=await api('api/agentes/dispositivos');
+  if(!Array.isArray(devices))throw new Error('Resposta inválida do servidor');
+  list.replaceChildren();
+  for(const device of devices){
+   const li=document.createElement('li');
+   const name=document.createElement('strong');
+   name.textContent=device.caixa_nome || 'Computador sem nome';
+   const description=document.createElement('span');
+   // last_seen_em isolado não confirma presença online; não prometer status.
+   description.textContent=' · '+(device.revogado_em?'Revogado':'Vinculado')+
+     (device.last_seen_em?' · Último contato: '+fmt(device.last_seen_em):' · Sem comunicação registrada');
+   li.append(name,description);
+   if(!device.revogado_em){
+    const actions=document.createElement('div');actions.className='row';actions.style.marginTop='10px';
+    const rename=document.createElement('button');rename.type='button';rename.className='secondary';rename.textContent='Renomear';
+    rename.setAttribute('aria-label','Renomear '+name.textContent);
+    rename.addEventListener('click',async()=>{
+     const newName=prompt('Nome deste computador / caixa:',device.caixa_nome || '');
+     if(newName===null)return;
+     const trimmed=newName.trim();
+     if(!trimmed || trimmed.length>120 || /[\u0000-\u001f\u007f]/.test(trimmed)){
+      status.textContent='Informe um nome válido de até 120 caracteres.';return;
+     }
+     if(trimmed===device.caixa_nome)return;
+     rename.disabled=true;
+     try{
+      await api('api/agentes/dispositivos/'+encodeURIComponent(device.id),{
+       method:'PATCH',body:JSON.stringify({caixa_nome:trimmed})
+      });
+      await loadDevices();
+     }catch(e){status.textContent='Não foi possível renomear: '+e.message;rename.disabled=false}
+    });
+    const revoke=document.createElement('button');revoke.type='button';revoke.className='danger';revoke.textContent='Revogar computador';
+    revoke.setAttribute('aria-label','Revogar '+name.textContent);
+    revoke.addEventListener('click',async()=>{
+     if(!confirm('Revogar o computador "'+name.textContent+'"? Ele perderá a autorização de pareamento. Esta ação não pode ser desfeita.'))return;
+     revoke.disabled=true;
+     try{
+      await api('api/agentes/dispositivos/'+encodeURIComponent(device.id),{
+       method:'DELETE',body:JSON.stringify({confirmar:true})
+      });
+      await loadDevices();
+     }catch(e){status.textContent='Não foi possível revogar: '+e.message;revoke.disabled=false}
+    });
+    actions.append(rename,revoke);li.append(actions);
+   }
+   list.append(li);
+  }
+  if(!devices.length){const li=document.createElement('li');li.textContent='Nenhum computador vinculado';list.append(li)}
+  status.textContent='Lista atualizada.';
+ }catch(e){
+  list.replaceChildren();
+  const li=document.createElement('li');
+  li.textContent='O pareamento QR ainda não está disponível neste servidor.';
+  list.append(li);
+  status.textContent='Não foi possível consultar computadores. O fluxo manual permanece separado.';
+ }
+}
+$('refresh-devices').addEventListener('click',loadDevices);
+$('refresh').addEventListener('click',load);load();loadDevices();setInterval(load,10000);
 </script></body></html>

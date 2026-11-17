@@ -23,6 +23,16 @@ class PackagePolicy(unittest.TestCase):
         branch = branch or self.policy['active_package']['branches'][repository]
         return module.validate(self.policy, repository, branch, base, **options)
 
+    def shared_baseline(self):
+        # Fixture da capacidade do validador. Uma RC nova não deve herdar
+        # exceções de arquivos compartilhados de um pacote já encerrado.
+        baseline = {'repository': self.public, 'commit': '1' * 40,
+                    'authorization_reference': 'fixture de autorização explícita',
+                    'files': {'.github/addon-registry.json': 'a' * 64,
+                              '.github/workflows/validate-addons.yml': 'b' * 64}}
+        self.policy['public_scope']['preserved_shared_baseline'] = baseline
+        return baseline
+
     def test_accepts_shared_rc(self):
         self.assertEqual(self.check(), [])
         self.assertEqual(self.check(self.public), [])
@@ -75,26 +85,26 @@ class PackagePolicy(unittest.TestCase):
         self.assertTrue(self.check(self.public, existing_ci_diff=patch.replace("'22'", "'24'"), **options))
 
     def test_preserved_shared_files_require_exact_content(self):
-        files = self.policy['public_scope']['preserved_shared_baseline']['files']
+        files = self.shared_baseline()['files']
         self.assertEqual(self.check(self.public, paths=list(files), shared_file_hashes=files), [])
         for path in files:
             changed = dict(files, **{path: '0' * 64})
             self.assertTrue(self.check(self.public, paths=list(files), shared_file_hashes=changed))
 
     def test_missing_shared_file_or_missing_hash_fails_closed(self):
-        files = self.policy['public_scope']['preserved_shared_baseline']['files']
+        files = self.shared_baseline()['files']
         for path in files:
             missing = {key: value for key, value in files.items() if key != path}
             self.assertTrue(self.check(self.public, paths=list(files), shared_file_hashes=missing))
         self.assertTrue(self.check(self.public, paths=list(files)))
 
     def test_shared_baseline_does_not_allow_new_paths_or_other_products(self):
-        files = self.policy['public_scope']['preserved_shared_baseline']['files']
+        files = self.shared_baseline()['files']
         for path in ['.github/scripts/outro.py', 'docs/outro.md', 'evolution-api/config.yaml']:
             self.assertTrue(self.check(self.public, paths=[*files, path], shared_file_hashes=files))
 
     def test_shared_baseline_requires_traceable_authorization(self):
-        baseline = self.policy['public_scope']['preserved_shared_baseline']
+        baseline = self.shared_baseline()
         files = baseline['files']
         for key in ['repository', 'commit', 'authorization_reference']:
             value = baseline[key]
@@ -103,6 +113,7 @@ class PackagePolicy(unittest.TestCase):
             baseline[key] = value
 
     def test_historical_patch_cannot_hide_modified_preserved_workflow(self):
+        self.shared_baseline()
         patch = (ROOT / '.governance/approved-pager-ci.patch').read_text()
         self.assertTrue(self.check(self.public, paths=['.github/workflows/validate-addons.yml'],
                                    existing_ci_diff=patch, approved_ci_patch=patch,

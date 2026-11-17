@@ -41,7 +41,10 @@ const getSession = token => {
     SELECT u.id, u.login, u.nome, u.papel,
       CASE WHEN u.papel = 'master' THEN
         CASE WHEN mr.ativo = 1 THEN mc.restaurante_id ELSE NULL END
-      ELSE u.restaurante_id END AS restaurante_id
+      ELSE u.restaurante_id END AS restaurante_id,
+      CASE WHEN u.papel = 'master' THEN
+        CASE WHEN mr.ativo = 1 THEN mr.nome ELSE NULL END
+      ELSE r.nome END AS restaurante_nome
     FROM sessoes s
     JOIN usuarios u ON u.id = s.usuario_id
     LEFT JOIN restaurantes r ON r.id = u.restaurante_id
@@ -93,6 +96,12 @@ function tooMany(key) {
 function validateOrigin(request) {
   const origin = request.headers.origin;
   if (!origin) return false;
+  // Defesa complementar à origem: browsers legítimos não podem executar
+  // mutações autenticadas a partir de contexto cross-site ou no-cors.
+  // Headers ausentes são aceitos para compatibilidade com clientes legados;
+  // o Origin continua obrigatório para operações mutáveis.
+  if (request.headers['sec-fetch-site'] === 'cross-site' ||
+      request.headers['sec-fetch-mode'] === 'no-cors') return false;
   try {
     const url = new URL(origin);
     const host = request.headers.host;
