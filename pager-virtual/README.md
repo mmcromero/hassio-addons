@@ -1,4 +1,5 @@
-> **RC003 EM PREPARAÇÃO — NÃO PUBLICADA:** `0.1.20-rc.1`, fonte privada `release/avisaqui-rc-003`, PR #28. Telas e APIs de pareamento disponíveis somente com opt-in em laboratório isolado; desabilitado por padrão. Não habilitar contra banco ativo. Windows físico/DPAPI, ARM64, Segurança e autorização de publicação são portões separados. Pacote 002 já integrado; não reutilizar suas RCs.
+> **Distribuição de teste 0.1.20-rc.2 — PR30:** publicação excepcional expressamente autorizada pelo proprietário após merge `9bc8802f`. Runtime preservado; versão distinta permite atualização pelo Home Assistant. Pareamento OFF por padrão; sem instalação remota. ARM64 deste lote, Windows físico e aceite Segurança não comprovados.
+
 
 > **Pacote único:** seguir [a política de governança](docs/GOVERNANCA-DO-PACOTE.md) e `.governance/package-policy.json`. Uma RC privada compartilhada e uma distribuição por pacote; não criar branches remotas por pessoa ou correção. Os checks são preparados nesta RC e não equivalem a proteção nativa ativa.
 

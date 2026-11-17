@@ -1,6 +1,8 @@
 # Regras obrigatórias da distribuição Avisaqui
 
-> **Pacote ativo 003:** candidata `0.1.20-rc.1`, fonte privada `release/avisaqui-rc-003` / PR #28. Branch pública reservada `release/avisaqui-rc-distribuicao-003`. Pacote 002 integrado; não reutilizar PRs #22/#35. Este lote não autoriza alterar a distribuição pública, publicar, instalar ou habilitar pair-v1 comercialmente. Preparação local não comprova build ARM64 nem homologação.
+> **Publicação excepcional autorizada — 17/11/2026:** distribuição de teste `0.1.20-rc.2` derivada do merge privado PR30 `9bc8802f`, com atualização somente de metadados. Proprietário dispensou os gates pendentes exclusivamente para esta publicação; não são PASS. Sem instalação/ativação do Raspberry. PR30 está integrado; não continuar desenvolvimento em sua branch. Referências de preparação/restrição anteriores abaixo são históricas e não revogam a ordem expressa desta entrega.
+
+> **Lote vigente PR30:** fonte `fix/avisaqui-impressao-ux-rc003`, versão `0.1.20-rc.1`. Preparar somente exportação local e validação ARM64 no SHA final. Não atualizar o repositório público por esta tarefa, nem fazer merge/deploy/instalação. Preservar opt-in OFF e exigir configuração explícita; PR28 é histórico.
 
 
 > **Fechamento 15/11/2026:** `AVISAQUI-CONSOLIDACAO-RC-001` / 0.1.18-rc.1 está **fechado tecnicamente**, PR público #32 integrado. Versão relatada pelo proprietário como instalada e em execução no Raspberry Pi de homologação; homologação funcional permanece **em andamento**. Proibido continuar desenvolvimento em `release/avisaqui-rc-distribuicao-001` ou reabrir o PR #32; novos ajustes exigem **novo pacote** coordenado e registrado na fonte privada. Não tocar na fábrica isolada de jogos (Issue #21).

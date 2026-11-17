@@ -6,7 +6,21 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.20-rc.2] — 17/11/2026 — publicação de teste autorizada (PR #30)
+
+- Distribuição integral das correções de impressão, ACK e configuração HA do merge privado `9bc8802f6a734f143e3b11eb6ae54253b4bcaec3`.
+- Versão avançada da rc.1 já pública para permitir ao Home Assistant detectar a atualização; runtime preservado byte a byte em relação ao merge.
+- Pareamento segue OFF por padrão; ativação depende de origem/prefixo/prazos explícitos e operação separada. Nenhuma alteração do Raspberry ou banco real.
+- Proprietário autorizou publicação excepcional dispensando gates pendentes; ARM64 deste lote, Windows físico e aceite Segurança não foram executados e não são PASS.
+
 ## [0.1.20-rc.1] — 17/11/2026 — RC003 EM PREPARAÇÃO, NÃO PUBLICADA
+
+### PR30 — correção em preparação, sem publicação
+
+- Tela de impressão alinhada à estrutura aprovada do PR71: cartões/métricas reais, ação de vincular, download Windows indisponível, histórico e credenciais antigas recolhidas. Confirmação de vínculo depende de ACK persistido, sem inventar online/fila.
+- Opções HA carregadas pelo entrypoint Node real antes de SQLite; opt-in OFF padrão, política completa obrigatória, prefixo removido `/` normalizado. Wrapper sem dependência de bashio ausente na imagem.
+- Validação ARM64 isolada vinculada ao SHA final; sem push, merge, Actions, instalação automática de QEMU ou reutilização de imagem antiga.
+
 
 - Telas reais de autorização e computadores vinculados conectadas às APIs opt-in de laboratório; validação local do fluxo cliente Python → QR/referência → autorização gerencial → resgate → ACK → renomeação/revogação.
 - Corrigida a resposta duplicada 403/401 causada pelo hook assíncrono de cabeçalhos; preservados headers, CSP específica, papéis e isolamento.

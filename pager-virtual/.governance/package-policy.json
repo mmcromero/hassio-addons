@@ -9,21 +9,21 @@
   "active_package": {
     "id": "AVISAQUI-PACOTE-003",
     "status": "open",
-    "phase": "implementation",
-    "candidate_version": "0.1.20-rc.1",
-    "published_version": "0.1.19-rc.1",
+    "phase": "published_test_release",
+    "candidate_version": "0.1.20-rc.2",
+    "published_version": "0.1.20-rc.2",
     "branches": {
-      "mmcromero/pager-virtual": "release/avisaqui-rc-003",
+      "mmcromero/pager-virtual": "fix/avisaqui-impressao-ux-rc003",
       "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-003"
     },
     "prs": {
-      "mmcromero/pager-virtual": 28
+      "mmcromero/pager-virtual": 30
     },
     "base_branch": "main",
     "new_features": "allowed_only_within_package_scope",
     "opened_on": "2026-11-17",
     "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-003.md",
-    "status_notes": "Correção urgente: integrar as telas funcionais de Windows/pareamento não entregues ao pacote 002; manter UX, segurança, fonte privada canônica e testes do fluxo realmente alterado; não confundir protótipo simulado com integração real."
+    "status_notes": "Publicação excepcional autorizada pelo proprietário após merge PR30 9bc8802f6a734f143e3b11eb6ae54253b4bcaec3; rc.2 distingue atualização do HA da rc.1 já pública. Sem alteração de runtime, instalação ou afirmação de gates dispensados como PASS."
   },
   "publication_authority": {
     "coordination": "Governança",

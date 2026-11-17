@@ -1,5 +1,5 @@
 name: "Pager Virtual"
-version: "0.1.20-rc.1"
+version: "0.1.20-rc.2"
 slug: pager_virtual
 description: "Sistema de Pager Virtual ultraleve e em tempo real para restaurantes"
 url: "https://github.com/mmcromero/pager-virtual"
@@ -25,7 +25,17 @@ options:
   log_level: info
   public_url: ""
   pong_experimental: false
+  pair_v1_enabled: false
+  pair_v1_mount_prefix: "/avisaqui"
+  pair_v1_approval_ms: ""
+  pair_v1_challenge_ms: ""
+  pair_v1_recovery_ms: ""
 schema:
   log_level: list(info|debug|warn|error)
   public_url: str?
   pong_experimental: bool
+  pair_v1_enabled: bool
+  pair_v1_mount_prefix: list(/|/avisaqui)
+  pair_v1_approval_ms: str?
+  pair_v1_challenge_ms: str?
+  pair_v1_recovery_ms: str?

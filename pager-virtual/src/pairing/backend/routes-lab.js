@@ -122,9 +122,11 @@ export function buildPairV1LabRoutes({ db, publicOrigin, policy, managerFromRequ
       const actor=manager(req,reply); if (!actor) return;
       // GET exige sessão e tenant válidos; Origin pode estar ausente em navegadores legítimos.
       // Origin presente e Fetch Metadata cross-site continuam sujeitos ao bloqueio.
-      const rows=db.prepare(`SELECT id,caixa_nome,criado_em,revogado_em,last_seen_em
-        FROM integracao_impressao_dispositivos WHERE restaurante_id=?
-        ORDER BY criado_em DESC LIMIT 100`).all(actor.restaurante_id);
+      const rows=db.prepare(`SELECT d.id,d.caixa_nome,d.criado_em,d.revogado_em,d.last_seen_em,
+          r.ack_em AS confirmado_em
+        FROM integracao_impressao_dispositivos d
+        LEFT JOIN integracao_pareamento_resgates r ON r.dispositivo_id=d.id
+        WHERE d.restaurante_id=? ORDER BY d.criado_em DESC LIMIT 100`).all(actor.restaurante_id);
       return reply.send(rows);
     });
     app.patch('/api/agentes/dispositivos/:id', async (req, reply) => {

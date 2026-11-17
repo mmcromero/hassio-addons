@@ -307,6 +307,7 @@ test('Windows/UX: listagem não inventa heartbeat ou fila e exige ACK para confi
     assert.equal(response.statusCode,200);
     const rows=response.json();
     assert.equal(rows.length,1);
+    assert.equal(rows[0].confirmado_em,null,'resgate sem ACK não confirma vínculo');
     assert.equal(rows[0].last_seen_em,null,
       'resgate sem evento autenticado não representa comunicação observada');
     assert.equal(Object.hasOwn(rows[0],'eventos_pendentes'),false,
@@ -319,6 +320,7 @@ test('Windows/UX: listagem não inventa heartbeat ou fila e exige ACK para confi
     assert.equal(confirmed.json().state,'CONFIRMADO');
     const after=await list();
     assert.equal(after.statusCode,200);
+    assert.equal(typeof after.json()[0].confirmado_em,'number','ACK persistido confirma vínculo');
     assert.equal(after.json()[0].last_seen_em,null,
       'ACK confirma vínculo, não prova heartbeat recente');
     assert.equal(Object.hasOwn(after.json()[0],'eventos_pendentes'),false);

@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "d4406367095839619c1063f6dcff271d01375f80",
-  "version": "0.1.20-rc.1",
+  "commit": "052db7da7503c51c94f7106cef5e55cd075b20fc",
+  "version": "0.1.20-rc.2",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,17 +21,17 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "604735254e5d1697a65d413b47891eab51eba101084ecc756a3b29f70d690fee"
+      "sha256": "46b4dcb5c5ef35f720c955af833226b5a730ecd5021eb4c5d08c869cf6415b5c"
     },
     {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "8b2766fa2c5b7de76477b92628c7ea0d944c13d646b6cbd5b70ca373af302185"
+      "sha256": "1db2da29f9b88e9cffd71c59fcdb332b17409f49fbf212c838eb93d16ee1480a"
     },
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "a00024b6b74a7c38291d5389ace713a876205945b3a846d0c58525f417554d2d"
+      "sha256": "b46b3b13525bcc7c5f2898961b50b86f39aac95a483f809fadc8f4681c6ad6e8"
     },
     {
       "path": "Dockerfile",
@@ -41,12 +41,12 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "3d14af16bd889b1fa0be661e3b32184dc2f9fb47060de1c8f6bbedb60b084b95"
+      "sha256": "2ec34b57cd083df89e918a6aa0ec9f08635600473ee64444e7cddbf751568fdb"
     },
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "d273d9ecc512cbf5fb345f89bb6e510b529edf3975d30a966eabb5e55f4d5068"
+      "sha256": "b1319150d06ca5e09f232300706eba83aeac8e16003a3d04a7c16058416d5041"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,17 +91,17 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "83c313dfeb358afe1996f388f1fa1dbe674830de9067d4fbb779a0807fc1d206"
+      "sha256": "a286904886271f9efd33cea16e62d05d41452224b13172eb92d7a091b172e5ae"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "f05d0b1b554c8585a2529d45694929c036e052dec390b052bce5c057249e3ea2"
+      "sha256": "4c947e853b64a62a39bde44495e4353354caa5f2635f85ee1b7de5fca71ca832"
     },
     {
       "path": "run.sh",
       "source_path": "run.sh",
-      "sha256": "9738d7ad10544ba6125572235ffc3b93d36854e58f73f7dd03ba1a858fcdc858"
+      "sha256": "9e2cca2f39f8de68f009b5981b9ffedeab7412605482c2485cf5b11d5af834fe"
     },
     {
       "path": "scripts/bootstrap-admin.js",
@@ -139,6 +139,11 @@
       "sha256": "6baf86d89159c3881c6af0e4a59eb3f50c8996773d3b09cc7157add1d42e5b46"
     },
     {
+      "path": "src/bootstrap-config.js",
+      "source_path": "src/bootstrap-config.js",
+      "sha256": "09a712d748d0478ef13129fd7fe198ad44d0a28ff2fe8b21088cdbef44a898ba"
+    },
+    {
       "path": "src/db.js",
       "source_path": "src/db.js",
       "sha256": "3d5124ce3cc779d675742cb8791de1ec5b4a0a1e5691753855a833480b7fd4c6"
@@ -171,7 +176,7 @@
     {
       "path": "src/pairing/backend/routes-lab.js",
       "source_path": "src/pairing/backend/routes-lab.js",
-      "sha256": "59ab968449720259795ae4f905934d66fd1246c445c5624dfbbf7a02559565d0"
+      "sha256": "9aed17c04994ed1298e87c81218e8221b40265bd3aa99cbd5c200f1e3277f218"
     },
     {
       "path": "src/pairing/backend/schema.js",
@@ -256,7 +261,7 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "a91aabbda36c65d012a6704def8a5a05588510bd74c5135625cd8c28b49b3a98"
+      "sha256": "6399e0bb9bec0471d3f3bf759cd326792dd7515f44b79720ad64d61d0d3c2393"
     },
     {
       "path": "src/public/kds.html",
@@ -314,9 +319,14 @@
       "sha256": "eaa72124a1430e1d1fa021f874da53efaf6f27748b5791e7e9045de6501c1fe7"
     },
     {
+      "path": "src/runtime-config.js",
+      "source_path": "src/runtime-config.js",
+      "sha256": "806895188ce9ca9a62b3cd6546231a7b8e8f6bd73be3a7ada2875c3db98e39bc"
+    },
+    {
       "path": "src/server.js",
       "source_path": "src/server.js",
-      "sha256": "72b0cd56a4cc73654971b28aa14b6ccf17f42f171e764b0bdcd96fa106175bf0"
+      "sha256": "b9e42a52bce4fcc7e62576352910f8730d47e073d80a969cb03841f015f1c6c4"
     },
     {
       "path": "src/setup.js",
@@ -416,7 +426,7 @@
     {
       "path": "tests/pairing-backend-api-lab.test.js",
       "source_path": "tests/pairing-backend-api-lab.test.js",
-      "sha256": "976bde9da9e37194709384a5e442989a527dc6ad4c158df145fb784d11f2e847"
+      "sha256": "5a71510803cc64b7d6bcf39bbaca468e8d3b7cf9c74bcaa52bb2798716967370"
     },
     {
       "path": "tests/pairing-backend-asset-rc003.test.js",
@@ -467,6 +477,11 @@
       "path": "tests/pairing-crypto.test.js",
       "source_path": "tests/pairing-crypto.test.js",
       "sha256": "f32e040714c79dc09f6b6b83a5083eedb61b3f6408ceb7a314d6a3775edd9379"
+    },
+    {
+      "path": "tests/pairing-ha-optin-config.test.js",
+      "source_path": "tests/pairing-ha-optin-config.test.js",
+      "sha256": "62a85a7c06b74bcaa46db9bef58eec24d806f256b411eec039aa8a16e9520765"
     },
     {
       "path": "tests/pairing-server-optin-rc003.test.js",

@@ -1,3 +1,4 @@
+import './bootstrap-config.js';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
@@ -142,7 +143,10 @@ if (process.env.AVISAQUI_PAIR_V1_ENABLED === 'true') {
     policy: { approvalMs: durations[0], challengeMs: durations[1], recoveryMs: durations[2] }
   });
 }
-fastify.get('/api/config/publica', async () => ({ public_url: PUBLIC_URL }));
+fastify.get('/api/config/publica', async () => ({
+  public_url: PUBLIC_URL,
+  pair_v1_enabled: process.env.AVISAQUI_PAIR_V1_ENABLED === 'true'
+}));
 
 // O Supervisor exige [HOST]/[PORT] no manifesto. O botão passa por esta rota
 // e chega à landing HTTPS definida em public_url, sem fixar domínio no pacote.
