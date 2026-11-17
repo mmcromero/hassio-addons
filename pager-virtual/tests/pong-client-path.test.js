@@ -16,8 +16,14 @@ test('interface contém os modos solo e dupla, com tratamento explícito de 404'
   const html = readFileSync(new URL('../src/public/cliente.html', import.meta.url), 'utf8');
   const js = readFileSync(new URL('../src/public/pong.js', import.meta.url), 'utf8');
   const biblioteca = readFileSync(new URL('../src/public/games/biblioteca.js', import.meta.url), 'utf8');
-  assert.match(biblioteca, /\['solo', 'Contra o computador'\]/);
-  assert.match(biblioteca, /\['dupla', 'Duas pessoas'\]/);
+  // O hub abre o modo solo local e o duelo online; a escolha de dois
+  // jogadores locais agora ocorre dentro do iframe isolado.
+  assert.match(biblioteca, /\['solo', 'Jogar'\]/);
+  assert.match(biblioteca, /\['dupla', 'Duelo online'\]/);
+  const frame = readFileSync(new URL('../src/public/games/jogo-da-velha-isolado.html', import.meta.url), 'utf8');
+  assert.match(frame, /modo==='dupla-local'/);
+  assert.match(frame, /'1 jogador'/);
+  assert.match(frame, /'2 jogadores'/);
   assert.match(html, /iniciarPong: async \(container, mode\) =>/);
   assert.match(html, /await iniciarPong\(\{ token, mode, container/);
   assert.match(js, /response\.status === 404/);
