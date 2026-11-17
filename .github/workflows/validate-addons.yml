@@ -44,6 +44,10 @@ jobs:
               assert (addon/'Dockerfile').is_file() or cfg.get('image'), f'{addon}: falta Dockerfile ou image'
               print(addon, cfg['version'], cfg['arch'])
           PY
+      - name: Validar cadastro e seleção de add-on
+        env:
+          SELECTED_ADDON: ${{ github.event_name == 'workflow_dispatch' && inputs.addon || '' }}
+        run: python3 .github/scripts/validate-addon-registry.py ${SELECTED_ADDON:+--addon "$SELECTED_ADDON"}
       - name: Checar scripts
         run: find . -name run.sh -type f -exec sh -n '{}' ';'
       - name: Detectar arquivos sensíveis rastreados
