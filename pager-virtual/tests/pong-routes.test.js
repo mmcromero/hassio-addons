@@ -32,7 +32,7 @@ test('Pong registra GET disponibilidade e POST entrada no mesmo prefixo de API',
     const available = await fetch(base + '/api/jogos/pong/disponivel');
     assert.equal(available.status, 200);
     const join = await fetch(base + '/api/jogos/pong/entrar', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: base },
       body: JSON.stringify({ token: 'token-inexistente', mode: 'solo' })
     });
     assert.equal(join.status, 409, 'POST deve existir e rejeitar pedido inexistente, não retornar 404');

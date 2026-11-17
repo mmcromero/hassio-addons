@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Jogo da Velha</title>
+<style>
+body{font:16px system-ui,sans-serif;text-align:center;margin:12px;background:#102b39;color:white}
+#grade{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:320px;margin:16px auto}
+button{min-height:65px;border:1px solid #9bc5d0;border-radius:10px;background:#f4fbff;color:#102b39;font-size:1.8rem;touch-action:manipulation}
+#reiniciar{font-size:1rem;padding:8px 18px}
+</style></head><body><h2>Jogo da Velha</h2><p id="status" role="status">Aguardando início</p>
+<div id="grade" aria-label="Tabuleiro"></div><button id="reiniciar" type="button">Nova partida</button>
+<script>
+(() => {
+  'use strict';
+  let porta = null, instanceId = null, modo = 'solo', casas = Array(9).fill(null), turno = 'X', ativo = false, ultimo = -1;
+  let janelaTaxa = Date.now(), contadorTaxa = 0;
+  const enviar = (type, payload = {}) => porta?.postMessage({ protocol:'avisaqui.games', version:1, type, instanceId, sequence:0, payload });
+  function valido(d) {
+    if (!d || Object.getPrototypeOf(d) !== Object.prototype ||
+        Object.keys(d).sort().join(',') !== 'instanceId,payload,protocol,sequence,type,version' ||
+        d.protocol !== 'avisaqui.games' || d.version !== 1 || d.instanceId !== instanceId ||
+        !Number.isSafeInteger(d.sequence) || d.sequence < 0 || d.sequence <= ultimo ||
+        !d.payload || Object.getPrototypeOf(d.payload) !== Object.prototype ||
+        JSON.stringify(d).length > 4096) return false;
+    if (d.type === 'GAME_START') return !ativo && Object.keys(d.payload).length === 1 && ['solo','dupla-local'].includes(d.payload.mode);
+    return d.type === 'GAME_STOP' && Object.keys(d.payload).length === 0;
+  }
+  const status = document.getElementById('status');
+  const grade = document.getElementById('grade');
+  const botoes = Array.from({length:9}, (_,i) => {
+    const b = document.createElement('button'); b.type = 'button'; grade.append(b);
+    b.addEventListener('click', () => jogar(i)); return b;
+  });
+  const linhas = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+  function vencedor(tab) {
+    for (const [a,b,c] of linhas) if (tab[a] && tab[a]===tab[b] && tab[b]===tab[c]) return tab[a];
+    return tab.every(Boolean) ? 'empate' : null;
+  }
+  function melhor(tab, jogador, profundidade) {
+    const fim = vencedor(tab);
+    if (fim) return fim==='O' ? 10-profundidade : fim==='X' ? profundidade-10 : 0;
+    const notas = tab.map((v,i) => {
+      if (v) return null;
+      const prox = [...tab]; prox[i] = jogador;
+      return melhor(prox, jogador==='O'?'X':'O', profundidade+1);
+    }).filter(v => v !== null);
+    return jogador==='O' ? Math.max(...notas) : Math.min(...notas);
+  }
+  function cpu() {
+    let indice=-1, nota=-Infinity;
+    casas.forEach((v,i) => {
+      if (v) return;
+      const prox=[...casas];prox[i]='O';
+      const atual=melhor(prox,'X',1);
+      if (atual>nota) {nota=atual;indice=i;}
+    });
+    if (indice>=0) casas[indice]='O';
+  }
+  function desenhar() {
+    const fim = vencedor(casas);
+    status.textContent = !ativo ? 'Jogo encerrado' : fim==='empate' ? 'Empate!' : fim ? 'Vitória de '+fim : 'Vez de '+turno;
+    botoes.forEach((b,i) => { b.textContent=casas[i]||'·';b.disabled=!ativo||!!fim||!!casas[i]||(modo==='solo'&&turno==='O');b.setAttribute('aria-label','Casa '+(i+1)+': '+(casas[i]||'vazia')); });
+  }
+  function jogar(i) {
+    if (!ativo || casas[i] || vencedor(casas) || (modo==='solo'&&turno!=='X')) return;
+    casas[i]=turno;turno=turno==='X'?'O':'X';
+    if (modo==='solo'&&!vencedor(casas)) {cpu();turno='X';}
+    desenhar();
+  }
+  function parar() { ativo=false;porta?.close();porta=null;desenhar(); }
+  document.getElementById('reiniciar').addEventListener('click', () => {if (!ativo)return;casas=Array(9).fill(null);turno='X';desenhar();});
+  window.addEventListener('message', event => {
+    if (porta || event.source!==window.parent || event.data?.type!=='AVISAQUI_GAME_INIT' ||
+        typeof event.data.instanceId !== 'string' || event.data.instanceId.length > 128 ||
+        Object.keys(event.data).sort().join(',') !== 'instanceId,type' || event.ports.length!==1) return;
+    instanceId = event.data.instanceId;
+    porta=event.ports[0];porta.onmessage = msg => {
+      const agora = Date.now();
+      if (agora - janelaTaxa >= 1000) { janelaTaxa = agora; contadorTaxa = 0; }
+      if (++contadorTaxa > 20 || !valido(msg.data)) { parar(); return; }
+      const d=msg.data;
+      ultimo=d.sequence;
+      if (d.type==='GAME_STOP') {parar();return;}
+      if (d.type==='GAME_START') {
+        modo=d.payload.mode;casas=Array(9).fill(null);turno='X';ativo=true;desenhar();
+      }
+    };
+    porta.start();
+    enviar('GAME_READY');
+  });
+  desenhar();
+})();
+</script></body></html>

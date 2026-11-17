@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { notifyOrderReady } from '../push.js';
+import { stopPongForOrder } from '../pong.js';
 import db from '../db.js';
 import { sseManager } from '../sse.js';
 import { requireRestaurant, currentUser } from '../auth.js';
@@ -138,6 +139,7 @@ export async function pedidosRoutes(fastify, options) {
       updateSql = 'UPDATE pedidos SET status = ?, entregue_at = ?, cliente_nome = NULL, cliente_telefone = NULL WHERE id = ?';
     }
     db.prepare(updateSql).run(...params);
+    if (status !== 'preparo') stopPongForOrder(pedido.id);
 
     const payload = {
       id: pedido.id,

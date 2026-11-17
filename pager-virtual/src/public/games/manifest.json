@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "0.3.0",
+  "games": [
+    {
+      "id": "pong",
+      "title": "Pong",
+      "description": "Rebata a bola e marque pontos.",
+      "version": "0.2.0",
+      "status": "external",
+      "modes": [
+        "solo",
+        "multiplayer-online"
+      ],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": true,
+      "orientation": "paisagem"
+    },
+    {
+      "id": "jogo-da-velha",
+      "title": "Jogo da Velha",
+      "description": "Alinhe três símbolos para vencer.",
+      "theme": "gastronomia-leve",
+      "modes": [
+        "solo",
+        "dupla-local"
+      ],
+      "module": "./jogo-da-velha.js",
+      "status": "experimental",
+      "version": "0.2.0",
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "jogo-da-memoria",
+      "title": "Jogo da Memória",
+      "description": "Encontre os pares de cartas.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "cobrinha",
+      "title": "Cobrinha",
+      "description": "Pegue os itens e cresça sem bater.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "quebra-cabeca",
+      "title": "Quebra-cabeça",
+      "description": "Monte a imagem peça por peça.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "forca",
+      "title": "Jogo da Forca",
+      "description": "Descubra a palavra antes do fim.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "campo-minado",
+      "title": "Campo Minado",
+      "description": "Revele as casas sem tocar nas minas.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "ligue-os-pontos",
+      "title": "Ligue os Pontos",
+      "description": "Feche quadrados e marque pontos.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "batalha-naval",
+      "title": "Batalha Naval",
+      "description": "Encontre os navios escondidos.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "quiz-relampago",
+      "title": "Quiz Relâmpago",
+      "description": "Responda perguntas e some pontos.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 4,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "sudoku",
+      "title": "Sudoku",
+      "description": "Complete a grade com lógica.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "blocos",
+      "title": "Blocos",
+      "description": "Encaixe peças e complete linhas.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "corrida-de-carros",
+      "title": "Corrida de Carros",
+      "description": "Desvie dos obstáculos na pista.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "paisagem"
+    },
+    {
+      "id": "air-hockey",
+      "title": "Air Hockey",
+      "description": "Marque gols na mesa de disco.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "paisagem"
+    },
+    {
+      "id": "labirinto",
+      "title": "Labirinto",
+      "description": "Encontre a saída pelo caminho certo.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 1,
+      "requiresServer": false,
+      "orientation": "retrato"
+    },
+    {
+      "id": "jogo-das-diferencas",
+      "title": "Sete Diferenças",
+      "description": "Encontre o que mudou nas imagens.",
+      "version": "0.0.0",
+      "status": "construction",
+      "modes": [],
+      "minPlayers": 1,
+      "maxPlayers": 2,
+      "requiresServer": false,
+      "orientation": "retrato"
+    }
+  ]
+}
