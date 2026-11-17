@@ -1,5 +1,8 @@
 # UMDOISLAB — Estado operacional e passagem de bastão atual
 
+> **GATE DE LIBERAÇÃO A TODOS OS CLIENTES (17/11/2026):** antes de mudar a Central para o modo `all`, revisar e cumprir [CENTRAL-WA-RELEASE-001.md](CENTRAL-WA-RELEASE-001.md). Webhook Evolution→n8n foi observado com `Authentication: None`; proteção externa não foi verificada. A separação entre comandos do proprietário e atendimento comercial também é obrigatória. O registro no Git é documental, sem mudança do ambiente.
+
+
 **Consolidação:** 14/11/2026 (BRT)  
 **Prioridade:** este arquivo prevalece sobre descrições históricas de v1.1, v1.4 e versões de laboratório em documentos antigos.  
 **Tipo:** inventário baseado em capturas fornecidas pelo proprietário + código conferido no GitHub. **Não é auditoria direta do Raspberry, n8n ou banco do Home Assistant.**
