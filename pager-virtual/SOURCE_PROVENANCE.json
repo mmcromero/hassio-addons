@@ -96,7 +96,7 @@
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "ad68b54767b6537c82519396b22ea7449f2fc821bbc8ac6f58274508957bc8fe"
+      "sha256": "f05d0b1b554c8585a2529d45694929c036e052dec390b052bce5c057249e3ea2"
     },
     {
       "path": "run.sh",
@@ -114,6 +114,16 @@
       "sha256": "de69963d5ae0c8cb7a1f70f772aea5dad1b1e0d6b72292b721eed21fa4734f66"
     },
     {
+      "path": "scripts/impressao_windows/cliente_pair_v1.py",
+      "source_path": "scripts/impressao_windows/cliente_pair_v1.py",
+      "sha256": "b02343ba1a649e00066fd8ca7170b6b20c94042a6bdcfb7d49d47aaa4013c897"
+    },
+    {
+      "path": "scripts/impressao_windows/pair_v1.py",
+      "source_path": "scripts/impressao_windows/pair_v1.py",
+      "sha256": "1ac9036caf0e8300786a1990e7169502dc108c563d0bafa14fed5cc98f94c192"
+    },
+    {
       "path": "src/.gitkeep",
       "source_path": "src/.gitkeep",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -126,7 +136,7 @@
     {
       "path": "src/auth.js",
       "source_path": "src/auth.js",
-      "sha256": "924f7c61a242287d866efcdc7c09a5a1921165ee9312b047ca405c61d171df68"
+      "sha256": "6baf86d89159c3881c6af0e4a59eb3f50c8996773d3b09cc7157add1d42e5b46"
     },
     {
       "path": "src/db.js",
