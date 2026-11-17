@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "f742f183fb5bedac3bbb181b65960c86b13cd431",
+  "commit": "ba811a6d41b8569389e0f813cb88907652772cc6",
   "version": "0.1.19-rc.1",
   "files": [
     {
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "fedf176151e40a0c9531ade41965792ca080ed3143110c160bd6fcf659679ca8"
+      "sha256": "da2be8b76a5ecf91e3b3a4b4c424100e6d779015dbd8982d6c129ed1304e4a51"
     },
     {
       "path": "Dockerfile",
