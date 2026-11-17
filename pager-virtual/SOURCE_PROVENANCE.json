@@ -169,6 +169,26 @@
       "sha256": "8ac45163d960df8e93220e91de8f9e25d5b2877eba4c9f0f4e9db537b44b0028"
     },
     {
+      "path": "src/pairing/backend/routes-lab.js",
+      "source_path": "src/pairing/backend/routes-lab.js",
+      "sha256": "59ab968449720259795ae4f905934d66fd1246c445c5624dfbbf7a02559565d0"
+    },
+    {
+      "path": "src/pairing/backend/schema.js",
+      "source_path": "src/pairing/backend/schema.js",
+      "sha256": "3db2d5681e0fc6734e87df32314dd47f51af935c231006a1c3f71ce96af5b6a3"
+    },
+    {
+      "path": "src/pairing/backend/session-adapter.js",
+      "source_path": "src/pairing/backend/session-adapter.js",
+      "sha256": "0af8cfedcd1eac09b7b635250a6a4deade83280202d3acd7a0a3c5a1dfe39460"
+    },
+    {
+      "path": "src/pairing/crypto.js",
+      "source_path": "src/pairing/crypto.js",
+      "sha256": "ed0edfbb634a3e522f9cf3f325e6cf38d58cb1c91477edf5f67b7e7d8a4ea84a"
+    },
+    {
       "path": "src/pong.js",
       "source_path": "src/pong.js",
       "sha256": "18b3761c40030df4eb1a19453eb9c5206b001eceedec9d9155702502123929d8"
