@@ -6,6 +6,21 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.19-rc.1] — candidata do pacote AVISAQUI-PACOTE-002 — NÃO PUBLICADA
+
+### Funcionalidades e experiência entregues na RC
+- **Biblioteca opcional com 16 títulos:** Pong original e Jogo da Velha disponíveis; outros 14 jogos exibidos como **Em construção**. Jogos carregados sob demanda e encerrados quando o pedido deixa **Em preparo**, sem substituir o aviso de pedido pronto.
+- **Jogo da Velha isolado** em iframe `sandbox="allow-scripts"` sem `allow-same-origin`, com CSP restritiva e comunicação controlada. O Pong legado mantém API/SSE próprios e requer os controles de segurança correspondentes.
+- **Interfaces administrativas e do cliente:** ajustes mobile-first no Master Admin, identificação visual, navegação e compatibilidade dos fluxos do pedido/alerta; preservar autorização e contexto do restaurante.
+- **Correções de jogos/Pong e SSE:** encerramento e fluxo de navegação revisados, inclusive retorno tardio e eventos de estado; a execução no navegador real Android/iOS permanece objeto de homologação.
+
+### Evidências e limites
+- **Aplicação:** 109/109 testes Node aprovados no SHA privado `80ff0c19cbdef877dffd54fa95b1e29787d6da79`. Alterações posteriores na fonte final são documentais, de exportação e política, conforme auditoria do Tech Lead; **não afirmar nova execução Node no HEAD final**.
+- **Integridade da distribuição:** exportação e verificação de 85 arquivos com hashes SHA-256 e origem privada registrada; política de pacote verificada localmente e documentos/arquivos compartilhados preservados.
+- **ARM64:** build de imagem e smoke de inicialização, API health, escrita SQLite sintética, reinício e persistência aprovados no Codespaces, conforme evidência registrada no PR #35; não equivale a execução de GitHub Actions ou teste no Home Assistant ativo.
+- **Pendências de liberação:** revisar aceites de UX, Segurança e Homologação no cenário real; validar proteções/required checks efetivos do GitHub; conferir backup e recuperação antes da instalação; obter autorização expressa de merge, publicação e instalação em etapas distintas.
+- **Não contém:** implantação do pareamento Windows pair-v1 de laboratório, mudança de impressora/spooler ou alteração de dados reais. A candidata ainda não foi integrada à `main` nem instalada no Home Assistant.
+
 ## [0.1.18-rc.1] — 15/11/2026 — candidata privada, não publicada
 
 - Recuperação da origem canônica privada: autenticação, administração, KDS, impressão experimental, Web Push, HTTPS e Pong solo/dupla.

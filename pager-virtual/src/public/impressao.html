@@ -18,7 +18,7 @@ small,.muted{color:#b1c0d7}#notice{min-height:24px}#secret{display:none}ul{list-
 <p>Crie uma credencial exclusiva para este restaurante. Ela será exibida apenas uma vez.</p>
 <button id="generate">Gerar credencial</button><p id="notice" role="status"></p>
 <div id="secret"><p><strong>Copie agora e guarde somente no computador do caixa:</strong></p>
-<pre id="token"></pre><button id="copy" class="secondary">Copiar credencial</button><p class="muted">Não envie essa chave pelo chat ou em capturas de tela.</p></div>
+<pre id="token" tabindex="-1"></pre><button id="copy" class="secondary">Copiar credencial</button><p class="muted">Não envie essa chave pelo chat ou em capturas de tela.</p></div>
 <h2>Credenciais existentes</h2><ul id="keys"><li>Carregando…</li></ul></section>
 <section class="card"><h2>2. Últimos recebimentos</h2>
 <p class="muted">A tela atualiza enquanto estiver aberta. Os novos pedidos aparecem automaticamente no KDS via SSE.</p>
@@ -48,6 +48,21 @@ $('generate').disabled=true;$('notice').textContent='';
 try{const r=await api('api/integracoes/impressao/chave',{method:'POST',body:'{}'});$('token').textContent=r.token;$('secret').style.display='block';$('notice').textContent='Credencial criada. Copie antes de sair.';await load()}
 catch(e){$('notice').textContent=e.message}finally{$('generate').disabled=false}
 });
-$('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('token').textContent);$('notice').textContent='Copiada'}catch{$('notice').textContent='Selecione e copie manualmente a credencial'}});
+$('copy').addEventListener('click',async()=>{
+ const token=$('token').textContent;
+ if(!token){$('notice').textContent='Nenhuma credencial disponível para copiar';return}
+ try{
+  if(!navigator.clipboard || typeof navigator.clipboard.writeText!=='function')throw new Error('Clipboard API indisponível');
+  await navigator.clipboard.writeText(token);
+  $('notice').textContent='Credencial copiada';
+ }catch{
+  try{
+   const range=document.createRange();range.selectNodeContents($('token'));
+   const selection=window.getSelection();if(!selection)throw new Error('Seleção indisponível');
+   selection.removeAllRanges();selection.addRange(range);
+   $('notice').textContent='Credencial selecionada. Pressione Ctrl+C para copiar.';
+  }catch{$('notice').textContent='Não foi possível copiar. Selecione a credencial acima e use Ctrl+C.'}
+ }
+});
 $('refresh').addEventListener('click',load);load();setInterval(load,10000);
 </script></body></html>

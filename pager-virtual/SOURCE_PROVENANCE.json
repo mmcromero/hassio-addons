@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "4f181a2adfffcc40c2cb0be7557f518768390443",
-  "version": "0.1.18-rc.1",
+  "commit": "f742f183fb5bedac3bbb181b65960c86b13cd431",
+  "version": "0.1.19-rc.1",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,17 +21,17 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "58ccc37acea1942286d6a295e3b3975a7688759e961732846b1536071c30197f"
+      "sha256": "d6493c8056fb091d08ea6fc7eb31e5640cbaad864930374012f11a7be2336f8f"
     },
     {
       "path": "AGENTS.md",
       "source_path": "distribution/AGENTS.md",
-      "sha256": "a16523a2bbfe6d632bdce4980e604aadd55f912302941945501bbcbcc0c86705"
+      "sha256": "85711d37e951ac639ee5ea6e6840c080eba7d9505c005bd709baed2ca0d7bf48"
     },
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "5a312984baadcaefff67f513d51091792f6c8258342bfd80651a9ca8667d7c42"
+      "sha256": "fedf176151e40a0c9531ade41965792ca080ed3143110c160bd6fcf659679ca8"
     },
     {
       "path": "Dockerfile",
@@ -41,12 +41,12 @@
     {
       "path": "README.md",
       "source_path": "distribution/README.md",
-      "sha256": "2119871cd57aa1f0f91aeac269cf7c82161b34cdbea12e0eaa47528702669620"
+      "sha256": "6eaf80abd5d4f21cc9ffdcfb36d89a63f08e9e84aa3c7ed94da48618861fba84"
     },
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "8b8f7594458e862526ab2004db75b6f8c524ceadd22817bc70b45c3c01a43153"
+      "sha256": "3f48686d908f4d34bb1b75a7177698a9de09b454672c465dce50b9761040346d"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -71,7 +71,7 @@
     {
       "path": "docs/GOVERNANCA-DO-PACOTE.md",
       "source_path": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
-      "sha256": "2bf1d06fdba9efb80e1ee09de831168431c8dfe6b102a820a06083489b622112"
+      "sha256": "b202acedbd2f8e12b28b834fb1444729f3b930276d4eb1fb3548119124930ded"
     },
     {
       "path": "docs/RC-001.md",
@@ -79,14 +79,24 @@
       "sha256": "f86561b055d0eb3fae3a75f7217cf329c225e06edbc116a179e547ca7ffee273"
     },
     {
+      "path": "docs/WEBUI-CATALOGO-016.md",
+      "source_path": "distribution/hotfix-0.1.16/README.md",
+      "sha256": "aa42246eb33f888df1b7aabe074a625474125e6d36ab66a80e41f3459931ceed"
+    },
+    {
+      "path": "docs/WEBUI-PROXY-017.md",
+      "source_path": "distribution/hotfix-0.1.17/README.md",
+      "sha256": "70b871aef405a2b1550414c694e89e8545704db5a4ab65e0a4c85e60d5b175a5"
+    },
+    {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "7de0727c974dfcb87852735e70638a7fa817bcde77d9cdb7f813da7c1d218a54"
+      "sha256": "000cb4ad40eb02b09ca2efa2f4f878e94652c89b629e961f6c607ea9f126e471"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "5b819612ed815e8e1143a66a8cea48b2825d8a515cb0b61c9cf0920528dc39c0"
+      "sha256": "ad68b54767b6537c82519396b22ea7449f2fc821bbc8ac6f58274508957bc8fe"
     },
     {
       "path": "run.sh",
@@ -101,7 +111,7 @@
     {
       "path": "scripts/check-package-policy.py",
       "source_path": "scripts/check-package-policy.py",
-      "sha256": "3b7b18a2d9d2c643cc0062a788d8a4fe5885aeb1c8808d768e91ed00c65684a0"
+      "sha256": "de69963d5ae0c8cb7a1f70f772aea5dad1b1e0d6b72292b721eed21fa4734f66"
     },
     {
       "path": "src/.gitkeep",
@@ -131,12 +141,17 @@
     {
       "path": "src/pong.js",
       "source_path": "src/pong.js",
-      "sha256": "d77acc2a11683481cef0e9229f3dda8d282b3fba9df9962c57da3f24f3324aa8"
+      "sha256": "18b3761c40030df4eb1a19453eb9c5206b001eceedec9d9155702502123929d8"
     },
     {
       "path": "src/public/admin.html",
       "source_path": "src/public/admin.html",
-      "sha256": "a213d749fd2e1aeee8aad4f651217278225daf9757f0482ade0a7c66981369cd"
+      "sha256": "35c1da22f0a94a8a4ddaa907e7d2afef69e7d9d260ec64630897ad4b9e9f3734"
+    },
+    {
+      "path": "src/public/avisaqui-marca-transparente.svg",
+      "source_path": "src/public/avisaqui-marca-transparente.svg",
+      "sha256": "ec0f73d252acf5f28458fe9c56e8d79b7bea9b635285a707b85ccd5f4d6b2e3e"
     },
     {
       "path": "src/public/avisaqui-marca.svg",
@@ -146,7 +161,37 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "1698b56f0d8cdb9a868242272ca90fda83503ccc3149f7e7408e6a0ce89dd2f5"
+      "sha256": "d1dc3c79bb05c892fcb829925d06e31c401b5feebca0410022116fa0b50f8c74"
+    },
+    {
+      "path": "src/public/games/biblioteca.js",
+      "source_path": "src/public/games/biblioteca.js",
+      "sha256": "89eff828041bc188f224a795659daedce01303cea0cd60baa701f9affa111158"
+    },
+    {
+      "path": "src/public/games/catalogo.js",
+      "source_path": "src/public/games/catalogo.js",
+      "sha256": "d20c580a5e60a5ee5ef280dde38a561264748231d0b2e698f84c47a620385c2b"
+    },
+    {
+      "path": "src/public/games/jogo-da-velha-isolado.html",
+      "source_path": "src/public/games/jogo-da-velha-isolado.html",
+      "sha256": "a901017686c5d6141df1f3310394614dea563a50eef82ba4443d09f0aac294b8"
+    },
+    {
+      "path": "src/public/games/jogo-da-velha.js",
+      "source_path": "src/public/games/jogo-da-velha.js",
+      "sha256": "79e8ae6611e0ab7f7adda2ddf547771fe3eb804943fe6a216ebec25e01f2cdad"
+    },
+    {
+      "path": "src/public/games/manifest.json",
+      "source_path": "src/public/games/manifest.json",
+      "sha256": "3d74bdbbd85dd65232b22a3b8386899dbb9a24d51d09ba48ad94dc76de52dfae"
+    },
+    {
+      "path": "src/public/games/protocolo-v1.js",
+      "source_path": "src/public/games/protocolo-v1.js",
+      "sha256": "4b6b15711d786ffdd9f698fdf391f4c5c2cb25137605a17bacc52d540c30f22d"
     },
     {
       "path": "src/public/icon.svg",
@@ -156,12 +201,12 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "073ddf241439ac816a3371c3cdec40f37e9010dd71ea855726bcecea6a376c5e"
+      "sha256": "29a1399232b46ea58ac315baa9d8b0819593d3d8b12d17fff87e6205d5450666"
     },
     {
       "path": "src/public/kds.html",
       "source_path": "src/public/kds.html",
-      "sha256": "5f5781e9c173bb840b48718a461a92dd58ff0d4c2201f845da459cb617a8beae"
+      "sha256": "69efa4e19c78f3fb83fa4a48ac1bf55d3631aa131fc60e2475a06251229cd8f6"
     },
     {
       "path": "src/public/landing.html",
@@ -171,7 +216,7 @@
     {
       "path": "src/public/login.html",
       "source_path": "src/public/login.html",
-      "sha256": "b4b3e7732444aca9d709d4dc3b17cbbf79534cdc1aef3fc58379d4be2abecc54"
+      "sha256": "daee5e2dd5bd913b8d983a6a4986bf3d98aa78beefcecc85049d2e2a45073a70"
     },
     {
       "path": "src/public/manifest.webmanifest",
@@ -181,7 +226,7 @@
     {
       "path": "src/public/pong.js",
       "source_path": "src/public/pong.js",
-      "sha256": "0a47bc441e61561920651675ad2cda3766b661da1221a930be387d44d4f92ebb"
+      "sha256": "56767274699a38a42caddd3fed69c28b9f61633720cf6764e6f1d70e6dcce3f5"
     },
     {
       "path": "src/public/push-sw.js",
@@ -196,7 +241,7 @@
     {
       "path": "src/public/setup.html",
       "source_path": "src/public/setup.html",
-      "sha256": "8f18ec2aed91bd1d82f29b316c16d03959bacc76f39b6564eab63fe7c0858c61"
+      "sha256": "dc05cf63a38c8571a1513a3b01f338a2789af6a6541e87b306bfeee4e206ee03"
     },
     {
       "path": "src/push.js",
@@ -211,7 +256,7 @@
     {
       "path": "src/routes/pedidos.js",
       "source_path": "src/routes/pedidos.js",
-      "sha256": "4df9b19b100848380dc19cdfd516598bcd8c624cb54bad8177cc10fbbc5589ca"
+      "sha256": "eaa72124a1430e1d1fa021f874da53efaf6f27748b5791e7e9045de6501c1fe7"
     },
     {
       "path": "src/server.js",
@@ -244,9 +289,19 @@
       "sha256": "82f21c6c5127dc3ad8090bb482a90ac8d1bf0dd34e2f7dd90417f0d6d3b3cecd"
     },
     {
+      "path": "tests/biblioteca-jogos.test.js",
+      "source_path": "tests/biblioteca-jogos.test.js",
+      "sha256": "b413cb300d8a48fad1923d8dd92fa578cef1fbd610f58aaad0525f096fa7e678"
+    },
+    {
       "path": "tests/cadastro-rapido.test.js",
       "source_path": "tests/cadastro-rapido.test.js",
       "sha256": "3c3aee2eaf54e6ce48e554c9c4b17cc7d5c2f0c2f100ff6c00de76afe4b3458f"
+    },
+    {
+      "path": "tests/catalogo-jogos.test.js",
+      "source_path": "tests/catalogo-jogos.test.js",
+      "sha256": "30c38306f999cdcc4983f1e6918147e8679abd641ff7b1fa8539603c5e4d7fd8"
     },
     {
       "path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
@@ -266,7 +321,7 @@
     {
       "path": "tests/https-prefix.test.js",
       "source_path": "tests/https-prefix.test.js",
-      "sha256": "e78d7934c3a55ad836e5c417e4d9a0be755d18c74eb0f0106a758052f6dead00"
+      "sha256": "75287f620a876816b91da25b6d76fa9a7ee67c2548b0c8f017e44af22f37f534"
     },
     {
       "path": "tests/integracao-impressao.test.js",
@@ -277,6 +332,11 @@
       "path": "tests/interesses-piloto.test.js",
       "source_path": "tests/interesses-piloto.test.js",
       "sha256": "61d6513edbed0f74a895952216b5f72368b421c3fe6e5c924d7f7b219ccaf0b4"
+    },
+    {
+      "path": "tests/jogo-da-velha.test.js",
+      "source_path": "tests/jogo-da-velha.test.js",
+      "sha256": "8833e6aa56e935b94057fa5463f8c60aef81b65398a87682e32b9e0af7c7de70"
     },
     {
       "path": "tests/kds-carregamento.test.js",
@@ -296,22 +356,32 @@
     {
       "path": "tests/package-policy.test.py",
       "source_path": "tests/package-policy.test.py",
-      "sha256": "e59d0defac9da41d110983fd71e0d14ce5c7892931f5fca1b2329044c0359e17"
+      "sha256": "69e167bf0abd5a38cd3de7591b4952fcf7f814278f07e5070b619cd10caf4f39"
     },
     {
       "path": "tests/pong-api.test.js",
       "source_path": "tests/pong-api.test.js",
-      "sha256": "868f245c61adf7e9db4b73ad2da0704afff6ada579e2fb307616d5304ef3671c"
+      "sha256": "6da8fac13687151ca7ce69487aea3d0ef021b3910996506ed89a36cd558f7f90"
+    },
+    {
+      "path": "tests/pong-browser-contract.test.js",
+      "source_path": "tests/pong-browser-contract.test.js",
+      "sha256": "3898ad6f0267c11a352553f1b7fb7e2e53ee33dedb6735a172fe02e151ed3194"
     },
     {
       "path": "tests/pong-client-path.test.js",
       "source_path": "tests/pong-client-path.test.js",
-      "sha256": "c01e64e792549ab5619d9168b5abaa9e875e870c84864b68de9abf8acb8d6d9d"
+      "sha256": "8562577311b15ead158dafa0a205bef3324647a0b7f5b8919b10abde569e3f53"
     },
     {
       "path": "tests/pong-routes.test.js",
       "source_path": "tests/pong-routes.test.js",
-      "sha256": "c5595aad11ca4f5e186fb8da2d1ab19b5278f168f5f7b94f7a5402a02597dcf3"
+      "sha256": "d9cc22ce2b7948b1e71ac4e5261ddbfb3ee014e81ceed4df759ba5ba83e30a9a"
+    },
+    {
+      "path": "tests/protocolo-jogos-v1.test.js",
+      "source_path": "tests/protocolo-jogos-v1.test.js",
+      "sha256": "b8043f68bb82d4967cb842161b95035d5cdfed03a271ee4d139c8fde1f69a51e"
     },
     {
       "path": "tests/proxy-origin.test.js",
@@ -347,6 +417,11 @@
       "path": "tests/sse-scope.test.js",
       "source_path": "tests/sse-scope.test.js",
       "sha256": "7c281e0fda3784130f82ab18a10222acf79d708370fab390b410041450486d44"
+    },
+    {
+      "path": "tests/ux-identidade-rc002.test.js",
+      "source_path": "tests/ux-identidade-rc002.test.js",
+      "sha256": "a532d276ec234e49621ad6b1ab728c78eb48b0e4ab3d492e3c7f237e4d69a730"
     },
     {
       "path": "tests/webui-launcher.test.js",

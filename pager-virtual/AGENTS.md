@@ -1,5 +1,8 @@
 # Regras obrigatórias da distribuição Avisaqui
 
+> **Pacote 002 aberto:** RC privada `mmcromero/pager-virtual:release/avisaqui-rc-002`, candidata `0.1.19-rc.1`; distribuição exclusiva `release/avisaqui-rc-distribuicao-002`. O PR público é **draft** e não autoriza instalação nem publicação antes de exportação final com SHA/hashes conferidos. Não desenvolver código diretamente aqui. Jogos da Issue #21 permanecem isolados até decisão técnica de integração. O pacote 001 continua fechado.
+
+
 > **Fechamento 15/11/2026:** `AVISAQUI-CONSOLIDACAO-RC-001` / 0.1.18-rc.1 está **fechado tecnicamente**, PR público #32 integrado. Versão relatada pelo proprietário como instalada e em execução no Raspberry Pi de homologação; homologação funcional permanece **em andamento**. Proibido continuar desenvolvimento em `release/avisaqui-rc-distribuicao-001` ou reabrir o PR #32; novos ajustes exigem **novo pacote** coordenado e registrado na fonte privada. Não tocar na fábrica isolada de jogos (Issue #21).
 
 

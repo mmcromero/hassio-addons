@@ -16,7 +16,7 @@
   .action-feedback { min-height:22px;margin:8px 0 0;color:#c4f2d4 }
   .action-feedback.error { color:#fca5a5 }
   .muted { color:#b1c0d7;font-size:.9rem } .status { min-height:24px;margin-top:12px;color:#c4f2d4 } .error { color:#fca5a5 }
-  .brand-logo { display:block;width:min(300px,65vw);height:auto;border-radius:10px }
+  .brand-logo { display:block;width:min(190px,55vw);height:auto;border:0;border-radius:0;background:transparent }
   .admin-nav { display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px }
   .admin-tab { flex:1 1 190px }
   .admin-panel { min-width:0 }
@@ -46,11 +46,44 @@
     .admin-tab { flex:1 1 120px;padding:10px 8px;font-size:.9rem }
   }
   [hidden] { display:none !important } .row { display:flex;gap:8px;flex-wrap:wrap }
+
+  /* AVISAQUI-PACOTE-002: melhorias mobile-first do Master Admin */
+  #master-area { min-width:0 }
+  .master-stats { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 18px }
+  .master-stat { min-width:0;padding:14px;border:1px solid #30435f;border-radius:14px;background:#131c2e }
+  .master-stat strong { display:block;font-size:1.65rem;line-height:1.2;font-variant-numeric:tabular-nums }
+  .master-stat span { display:block;margin-top:4px;color:#b1c0d7;font-size:.85rem }
+  #master-area #restaurants-list .line { align-items:center;flex-wrap:nowrap;min-width:0;gap:12px }
+  #master-area #restaurants-list .line > span { flex:1;min-width:0;overflow-wrap:anywhere }
+  #master-area #restaurants-list button { flex:0 0 auto }
+  #master-area .admin-toolbar { gap:10px }
+  #master-area .admin-toolbar h2 { flex:1 1 100%;margin:0 }
+  #master-area .admin-toolbar button { font-size:.9rem;min-height:44px;padding:9px 12px }
+  @media(max-width:700px) {
+    header { flex-wrap:nowrap;align-items:center;padding-bottom:12px;margin-bottom:16px }
+    header > div:first-child { min-width:0;flex:1 }
+    .brand-logo { width:min(180px,48vw);max-width:100%;height:auto }
+    #identity { display:block;font-size:.78rem;margin-top:4px;overflow-wrap:anywhere }
+    header .row { flex-wrap:nowrap }
+    header .row button,header .row a { min-height:44px;padding:8px 12px }
+    #master-area .admin-nav { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:16px }
+    #master-area .admin-tab { min-width:0;min-height:50px;padding:8px 5px;font-size:clamp(.69rem,2.75vw,.84rem);line-height:1.25;white-space:normal;overflow-wrap:anywhere }
+    #master-area .admin-toolbar { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px }
+    #master-area .admin-toolbar h2 { grid-column:1/-1 }
+    #master-area .admin-toolbar button { width:100%;min-width:0;white-space:normal }
+    #master-area #restaurants-list .line { padding:11px 12px }
+    #master-area #restaurants-list button { min-height:42px;padding:8px 10px;font-size:.82rem }
+    #master-area .card { padding:14px;margin:0 }
+  }
+  @media(max-width:350px) {
+    #master-area #restaurants-list .line { flex-wrap:wrap }
+    #master-area #restaurants-list button { width:100% }
+  }
 </style>
 </head>
 <body>
 <main>
-<header><div><h1><img class="brand-logo" src="./avisaqui-marca.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span></div>
+<header><div><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span></div>
 <div class="row"><a class="action secondary" href="./kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
 
 <section id="master-area" hidden>
@@ -113,6 +146,10 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     }
     // Cadastro sob demanda: listas permanecem visíveis, formulários abrem em modais.
     const restaurantPanel=$('admin-panel-restaurants');
+    const stats=document.createElement('div');
+    stats.id='master-stats';stats.className='master-stats';stats.setAttribute('aria-label','Resumo da administração');
+    stats.innerHTML='<div class="master-stat"><strong id="master-restaurants-count" aria-live="polite">—</strong><span>Restaurantes</span></div><div class="master-stat"><strong id="master-interests-count" aria-live="polite">—</strong><span>Interessados no piloto</span></div>';
+    restaurantPanel.prepend(stats);
     const toolbar=document.createElement('div');toolbar.className='admin-toolbar';
     const title=document.createElement('h2');title.textContent='Restaurantes';
     const newButton=document.createElement('button');newButton.type='button';newButton.textContent='+ Novo restaurante';
@@ -214,6 +251,7 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     try {
       const data=await api(basePath + '/api/admin/interesses-piloto');
       list.replaceChildren();$('interesses-count').textContent=data.length+' contato(s) exibido(s)';
+      $('master-interests-count').textContent=String(data.length);
       for (const item of data) {
         const line=document.createElement('div');line.className='line';
         const info=document.createElement('div');
@@ -311,6 +349,7 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     const data = await api(basePath + '/api/admin/restaurantes');
     const list = $('restaurants-list'), select = $('manager-restaurant');
     const previousSelection=select.value;
+    $('master-restaurants-count').textContent=String(data.length);
     list.replaceChildren(); select.replaceChildren();
     for (const rest of data) {
       const line = document.createElement('div'); line.className = 'line';

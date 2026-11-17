@@ -7,25 +7,24 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-CONSOLIDACAO-RC-001",
-    "status": "closed",
-    "phase": "technical_package_closed_homologation_open",
-    "candidate_version": "0.1.18-rc.1",
+    "id": "AVISAQUI-PACOTE-002",
+    "status": "open",
+    "phase": "implementation",
+    "candidate_version": "0.1.19-rc.1",
     "published_version": "0.1.18-rc.1",
     "branches": {
-      "mmcromero/pager-virtual": "release/avisaqui-rc-consolidacao-001",
-      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-001"
+      "mmcromero/pager-virtual": "release/avisaqui-rc-002",
+      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-002"
     },
     "prs": {
-      "mmcromero/pager-virtual": 20,
-      "mmcromero/hassio-addons": 32
+      "mmcromero/pager-virtual": 22,
+      "mmcromero/hassio-addons": 35
     },
     "base_branch": "main",
-    "new_features": "prohibited_in_closed_package",
-    "closed_on": "2026-11-15",
-    "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md",
-    "private_merge_sha": "3e5c6d350cb610ba3c598f85122253ba047ace05",
-    "public_merge_sha": "fcb8453132adff8665a793761a6c1a8ce5a580b2"
+    "new_features": "allowed_only_within_package_scope",
+    "opened_on": "2026-11-15",
+    "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-002.md",
+    "status_notes": "pacote de correções da homologação e conclusão/evolução de funcionalidades; integração de jogos condicionada a revisão do trabalho isolado da Issue #21"
   },
   "publication_authority": {
     "coordination": "Governança",
@@ -39,19 +38,36 @@
       ".github/workflows/avisaqui-governance.yml",
       ".github/workflows/validate-addons.yml"
     ],
-    "approved_existing_ci_patch": ".governance/approved-pager-ci.patch"
+    "approved_existing_ci_patch": ".governance/approved-pager-ci.patch",
+    "preserved_shared_baseline": {
+      "repository": "mmcromero/hassio-addons",
+      "commit": "bc668b669a0a6474f69f09175b28edd39d6e7694",
+      "authorization_reference": "Proprietário: AVISAQUI-PACOTE-002 — Recuperar fluxo de build pelo Codex (17/11/2026), item 4: resolver divergências de política preservando alterações compartilhadas, sem contornar regras.",
+      "purpose": "Preservação byte a byte do conteúdo compartilhado preexistente; não autoriza novas alterações de infraestrutura, outros produtos ou execução de CI.",
+      "files": {
+        ".github/addon-registry.json": "16866d228e2866f92b9fbcb523856fe770a3cd29a19cdadc754559f04ddaddfd",
+        ".github/scripts/validate-addon-registry.py": "61426f24eed9ce7e44ab4bbeb501a2206b4d0e5ca68dcc8f784ea40761d35255",
+        ".github/workflows/validate-addons.yml": "4dc4ded6f94bbb48035d6f227e63f44a5b07022864374e714b62968b10a84412",
+        "docs/HA-ADDONS-CI-001.md": "00266e2fe99693cda70881c360a79f3411a407d8e49fd58eabd651f95c362afe"
+      }
+    }
   },
   "implementation_status": {
     "policy": "documented",
-    "ci_gate": "implemented_not_required",
+    "ci_gate": "running_on_package_prs_when_created",
     "github_branch_creation_block": "not_enabled",
     "github_required_check": "not_enabled"
   },
   "timezone": "America/Sao_Paulo",
-  "next_core_package": {
-    "status": "not_open",
-    "base_branch": "main",
-    "scope": "to_be_registered_by_governance",
-    "rules": "criar novo identificador, uma branch privada e uma distribuição pública; não reutilizar PRs #20/#32"
-  }
+  "package_history": [
+    {
+      "id": "AVISAQUI-CONSOLIDACAO-RC-001",
+      "status": "closed",
+      "version": "0.1.18-rc.1",
+      "private_merge_sha": "3e5c6d350cb610ba3c598f85122253ba047ace05",
+      "public_merge_sha": "fcb8453132adff8665a793761a6c1a8ce5a580b2",
+      "closed_on": "2026-11-15",
+      "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md"
+    }
+  ]
 }

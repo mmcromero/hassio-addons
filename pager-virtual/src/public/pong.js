@@ -32,10 +32,21 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(state.ball.x, state.ball.y, 8, 0, Math.PI * 2); ctx.fill();
   }
+  function solicitarSaida(participante) {
+    if (!participante) return;
+    void fetch(endpoint + '/sair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player: participante }),
+      credentials: 'same-origin',
+      keepalive: true
+    }).catch(() => {});
+  }
   function exit() {
+    if (!active) return;
     active = false;
     stream?.close();
-    if (player) void fetch(endpoint + '/sair', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, player }), keepalive: true }).catch(() => {});
+    solicitarSaida(player);
     container.replaceChildren();
     onExit?.();
   }
@@ -48,9 +59,9 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
     try {
       const response = await fetch(endpoint + '/mover', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, player, y })
+        body: JSON.stringify({ player, y }), credentials: 'same-origin'
       });
-      if (response.status === 409) exit();
+      if ([403, 409].includes(response.status)) exit();
     } catch { label.textContent = 'Conexão instável. Tentando novamente...'; }
   }
   canvas.addEventListener('pointerdown', move);
@@ -58,14 +69,19 @@ export async function iniciarPong({ token, container, onExit, mode = 'dupla' }) 
   try {
     const response = await fetch(endpoint + '/entrar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, mode })
+      body: JSON.stringify({ token, mode }), credentials: 'same-origin'
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(response.status === 404 ? 'Rota do jogo não encontrada (HTTP 404). Verificar versão do servidor e encaminhamento HTTPS.' : (data.error || 'Falha ao entrar no jogo (HTTP ' + response.status + ')'));
     player = data.player; side = data.side;
-    if (!active) return exit();
+    // O pedido pode ficar pronto enquanto /entrar está em trânsito.
+    // Mesmo com a tela encerrada, liberar o participante criado pela resposta tardia.
+    if (!active) {
+      solicitarSaida(player);
+      return exit;
+    }
     render(data);
-    stream = new EventSource(endpoint + '/eventos/' + encodeURIComponent(token) + '/' + encodeURIComponent(player));
+    stream = new EventSource(endpoint + '/eventos/' + encodeURIComponent(player));
     stream.onmessage = event => render(JSON.parse(event.data));
     stream.addEventListener('encerrado', exit);
     stream.onerror = () => { if (active) label.textContent = 'Reconectando à partida...'; };

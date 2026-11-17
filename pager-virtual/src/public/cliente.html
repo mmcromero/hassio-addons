@@ -63,6 +63,13 @@
       overflow-x: hidden;
     }
 
+    /* UX-M017 — marca transparente, cabeçalho compacto mobile; nenhuma mudança na lógica de pedidos */
+    .restaurant-header { flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px; }
+    .brand-logo-client { display:block;width:150px;max-width:65%;height:auto;object-fit:contain;background:transparent; }
+    .restaurant-info h1 { font-size:1.05rem; }
+    .restaurant-info p { margin:0;font-size:.85rem; }
+    @media(max-width:375px) { .brand-logo-client { width:135px; } .restaurant-header { padding:11px 13px; } }
+
     /* EFEITO VISÃO PERIFÉRICA: Iluminação nas bordas da tela em amarelo (Edge Lighting) */
     .edge-glow-overlay {
       position: fixed;
@@ -390,9 +397,9 @@
   <!-- Cartão do Pager do Cliente -->
   <main id="app-card" class="app-card">
     <header class="restaurant-header">
-      <div class="logo-badge" aria-hidden="true">🔔</div>
+      <img class="brand-logo-client" src="./avisaqui-marca-transparente.svg" alt="Avisaqui">
       <div class="restaurant-info">
-        <h1>Pager Virtual</h1>
+        <h1>Seu pedido</h1>
         <p>Acompanhamento do seu pedido</p>
       </div>
     </header>
@@ -450,12 +457,10 @@
         <p style="font-size:.8rem;">A vibração depende do aparelho e das configurações. Um retorno positivo da API não comprova vibração física. O teste de tela acesa não funciona com bloqueio manual.</p>
       </details>
     </footer>
-    <section id="pong-area" hidden style="margin:20px auto;max-width:620px;text-align:center">
-      <div id="pong-content"></div>
+    <section id="games-area" style="margin:20px auto;max-width:620px;text-align:center">
+      <button id="games-open" type="button" class="btn-chip" hidden>🎮 Jogar enquanto aguarda</button>
+      <div id="games-content" hidden></div>
     </section>
-    <div id="pong-launch" style="text-align:center;margin:16px 0">
-      <button id="pong-start" type="button" class="btn-chip" hidden>🎮 Pong: duas pessoas</button> <button id="pong-solo" type="button" class="btn-chip" hidden>🎮 Pong: contra o computador</button>
-    </div>
   </main>
 
   <script>
@@ -735,12 +740,8 @@
     // --- TRANSIÇÕES DE ESTADO DO CLIENTE ---
     function applyStatus(status) {
       pongAllowed = status === 'preparo';
-      if (!pongAllowed) {
-        pongExit?.();
-        pongArea.hidden = true;
-        pongStart.hidden = true;
-        pongSolo.hidden = true;
-      }
+      if (!pongAllowed) fecharJogos();
+      else gamesOpen.hidden = !!gamesExit || gamesOpen.disabled;
       stopAlarmLoop();
       appCard.classList.remove('flash-alert');
 
@@ -775,43 +776,79 @@
       }
     }
 
-    // Jogo opcional: arquivo só é baixado após o toque.
-    const pongStart = document.getElementById('pong-start');
-    const pongSolo = document.getElementById('pong-solo');
-    const pongArea = document.getElementById('pong-area');
-    const pongContent = document.getElementById('pong-content');
-    let pongExit = null;
-    let pongAllowed = true;
-    if (token) {
-      const pongBasePath = window.location.pathname.endsWith('/cliente.html') ? window.location.pathname.slice(0, -'/cliente.html'.length) : window.location.pathname.replace(/\/$/, '');
-      fetch(pongBasePath + '/api/jogos/pong/disponivel').then(r => {
-        if (r.ok && pongAllowed && pongArea.hidden) { pongStart.hidden = false; pongSolo.hidden = false; }
-      }).catch(() => {});
+    // Biblioteca opcional: jogos e manifesto somente após toque do cliente.
+    const gamesOpen = document.getElementById('games-open');
+    const gamesContent = document.getElementById('games-content');
+    let gamesExit = null;
+    let gamesGeneration = 0;
+    let pongAllowed = false;
+    function fecharJogos() {
+      gamesGeneration++;
+      const sair = gamesExit;
+      gamesExit = null;
+      try { sair?.(); } catch (erro) { console.warn('Falha ao encerrar jogo:', erro); }
+      gamesContent.replaceChildren();
+      gamesContent.hidden = true;
+      gamesOpen.hidden = !pongAllowed;
+      gamesOpen.disabled = false;
     }
-    async function abrirPong(mode) {
-      if (!pongAllowed) return;
-      pongStart.disabled = true;
-      pongSolo.disabled = true;
-      pongStart.textContent = 'Carregando jogo...';
-      pongArea.hidden = false;
+    // Reconsulta ao iniciar: uma falha de rede na abertura da página não bloqueia o Pong para sempre.
+    const baseJogos = window.location.pathname.endsWith('/cliente.html')
+      ? window.location.pathname.slice(0, -'/cliente.html'.length)
+      : window.location.pathname.replace(/\/$/, '');
+    async function consultarPongDisponivel() {
       try {
-        const { iniciarPong } = await import('./pong.js');
-        pongExit = await iniciarPong({ token, mode, container: pongContent, onExit: () => {
-          pongArea.hidden = true;
-          pongStart.disabled = false;
-          pongSolo.disabled = false;
-          pongStart.hidden = !pongAllowed;
-          pongSolo.hidden = !pongAllowed;
-          pongStart.textContent = '🎮 Pong: duas pessoas';
-        } });
+        const resposta = await fetch(baseJogos + '/api/jogos/pong/disponivel', {
+          cache: 'no-store', credentials: 'omit'
+        });
+        return resposta.ok;
       } catch {
-        pongContent.textContent = 'Não foi possível carregar o jogo.';
-        pongStart.disabled = false;
-        pongSolo.disabled = false;
+        return false;
       }
     }
-    pongStart.addEventListener('click', () => abrirPong('dupla'));
-    pongSolo.addEventListener('click', () => abrirPong('solo'));
+    gamesOpen.addEventListener('click', async () => {
+      if (!pongAllowed || !token || gamesExit || gamesOpen.disabled) return;
+      const atual = ++gamesGeneration;
+      gamesOpen.disabled = true;
+      gamesOpen.textContent = 'Carregando biblioteca...';
+      try {
+        const { criarBibliotecaJogos } = await import('./games/biblioteca.js');
+        if (!pongAllowed || atual !== gamesGeneration) return;
+        gamesContent.hidden = false;
+        const biblioteca = criarBibliotecaJogos({
+          container: gamesContent,
+          iniciarPong: async (container, mode) => {
+            if (!pongAllowed) return () => {};
+            const disponivel = await consultarPongDisponivel();
+            if (!pongAllowed || atual !== gamesGeneration) return () => {};
+            if (!disponivel) throw new Error('Pong indisponível');
+            const { iniciarPong } = await import('./pong.js');
+            if (!pongAllowed || atual !== gamesGeneration) return () => {};
+            const sair = await iniciarPong({ token, mode, container, onExit: () => {
+              // A saída pelo botão interno do Pong volta à lista, sem recriar o jogo.
+              if (pongAllowed && atual === gamesGeneration) {
+                const voltar = gamesContent.querySelector('button[data-games-back]');
+                voltar?.click();
+              }
+            } });
+            if (!pongAllowed || atual !== gamesGeneration) { sair?.(); return () => {}; }
+            return sair;
+          }
+        });
+        gamesExit = biblioteca.encerrar;
+        gamesOpen.hidden = true;
+      } catch {
+        if (atual === gamesGeneration) {
+          gamesContent.hidden = false;
+          gamesContent.textContent = 'Não foi possível abrir a biblioteca. Seu pedido continua sendo acompanhado.';
+        }
+      } finally {
+        if (atual === gamesGeneration) {
+          gamesOpen.disabled = false;
+          gamesOpen.textContent = '🎮 Jogar enquanto aguarda';
+        }
+      }
+    });
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
     const appBasePath = window.location.pathname.replace(/\/cliente\.html$/, '').replace(/\/$/, '');

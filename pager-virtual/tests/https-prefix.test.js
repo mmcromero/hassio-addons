@@ -88,5 +88,7 @@ test('Pong 0.1.14 é experimental e protegido por limites de recursos', () => {
   assert.match(pong, /const MAX_STREAMS_PER_ROOM = 4/);
   assert.match(pong, /order\.status !== 'preparo'/);
   assert.match(client, /await import\('\.\/pong\.js'\)/);
-  assert.match(client, /pongExit\?\.\(\)/);
+  assert.match(client, /if \(!pongAllowed\) fecharJogos\(\)/);
+  assert.match(client, /try \{ sair\?\.\(\); \} catch/);
+  assert.match(client, /gamesContent\.replaceChildren\(\)/);
 });

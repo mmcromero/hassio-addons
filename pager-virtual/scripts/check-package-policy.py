@@ -5,6 +5,7 @@ a governança precisa cadastrá-lo como obrigatório nas proteções do GitHub.
 """
 import argparse
 from datetime import date, datetime
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -24,7 +25,8 @@ def normalized_patch(value):
 
 
 def validate(policy, repository, branch, base, paths=(), versions=None,
-             existing_ci_diff=None, approved_ci_patch=None, today=None):
+             existing_ci_diff=None, approved_ci_patch=None, today=None,
+             shared_file_hashes=None):
     errors = []
     if policy.get('schema_version') != 1:
         errors.append('Versão de política inválida.')
@@ -65,10 +67,23 @@ def validate(policy, repository, branch, base, paths=(), versions=None,
         scope = policy.get('public_scope', {})
         prefix = scope.get('prefix', 'pager-virtual/')
         allowed_root = set(scope.get('allowed_root_files', []))
+        baseline = scope.get('preserved_shared_baseline', {})
+        preserved = baseline.get('files', {})
+        if preserved and (baseline.get('repository') != repository
+                          or not re.fullmatch(r'[0-9a-f]{40}', baseline.get('commit', ''))
+                          or not baseline.get('authorization_reference')):
+            errors.append('Baseline compartilhada sem origem/autorização válida.')
         for path in paths:
+            if path in preserved:
+                wanted = preserved[path]
+                if (not re.fullmatch(r'[0-9a-f]{64}', wanted)
+                        or (shared_file_hashes or {}).get(path) != wanted):
+                    errors.append('Arquivo compartilhado diverge da baseline preservada: ' + path)
+                continue
             if not path.startswith(prefix) and path not in allowed_root:
                 errors.append('Alteração fora do produto Avisaqui: ' + path)
-        if '.github/workflows/validate-addons.yml' in paths:
+        if ('.github/workflows/validate-addons.yml' in paths
+                and '.github/workflows/validate-addons.yml' not in preserved):
             if (not approved_ci_patch or normalized_patch(existing_ci_diff or '')
                     != normalized_patch(approved_ci_patch)):
                 errors.append('Workflow compartilhado difere do único patch de CI autorizado do Avisaqui.')
@@ -96,9 +111,19 @@ def main():
     version = re.search(r'''(?m)^version:\s*["']?([^"'\s#]+)''', (project / 'config.yaml').read_text())
     patch_path = project / policy['public_scope']['approved_existing_ci_patch']
     actual_patch = git('diff', base, args.head_sha, '--', '.github/workflows/validate-addons.yml')
+    # Conferir bytes do commit candidato, não do checkout: impede que uma cópia
+    # local correta esconda adulteração/remoção do arquivo no HEAD entregue.
+    shared_file_hashes = {}
+    if args.repository == 'mmcromero/hassio-addons':
+        for path in policy['public_scope'].get('preserved_shared_baseline', {}).get('files', {}):
+            result = subprocess.run(['git', '-C', repo_root, 'show', args.head_sha + ':' + path],
+                                    capture_output=True)
+            if result.returncode == 0:
+                shared_file_hashes[path] = hashlib.sha256(result.stdout).hexdigest()
     errors = validate(policy, args.repository, args.branch, args.base, paths,
                       {'package': package.get('version'), 'manifest': version[1] if version else None},
-                      actual_patch, patch_path.read_text() if patch_path.exists() else None)
+                      actual_patch, patch_path.read_text() if patch_path.exists() else None,
+                      shared_file_hashes=shared_file_hashes)
     if errors:
         for error in errors:
             print('ERRO: ' + error)
