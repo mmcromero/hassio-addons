@@ -464,6 +464,16 @@
       "sha256": "a808e5de8fbc35f92ec3545fd687ca265e7089f31a42fd827686fbd1c4665455"
     },
     {
+      "path": "tests/pairing-crypto.test.js",
+      "source_path": "tests/pairing-crypto.test.js",
+      "sha256": "f32e040714c79dc09f6b6b83a5083eedb61b3f6408ceb7a314d6a3775edd9379"
+    },
+    {
+      "path": "tests/pairing-server-optin-rc003.test.js",
+      "source_path": "tests/pairing-server-optin-rc003.test.js",
+      "sha256": "2548afa5d8afac3a5c493a4039fa5ec1fec92329cae00b462cb2afbabdbd88aa"
+    },
+    {
       "path": "tests/pong-api.test.js",
       "source_path": "tests/pong-api.test.js",
       "sha256": "6da8fac13687151ca7ce69487aea3d0ef021b3910996506ed89a36cd558f7f90"
@@ -476,7 +486,7 @@
     {
       "path": "tests/pong-client-path.test.js",
       "source_path": "tests/pong-client-path.test.js",
-      "sha256": "8562577311b15ead158dafa0a205bef3324647a0b7f5b8919b10abde569e3f53"
+      "sha256": "8c7892439f9de4d511cf436b1fdd78cc4c4676d1c20a31d68391bcdf197888ec"
     },
     {
       "path": "tests/pong-routes.test.js",
@@ -526,7 +536,7 @@
     {
       "path": "tests/ux-identidade-rc002.test.js",
       "source_path": "tests/ux-identidade-rc002.test.js",
-      "sha256": "a532d276ec234e49621ad6b1ab728c78eb48b0e4ab3d492e3c7f237e4d69a730"
+      "sha256": "a8e9cd17d47fb3b0fea65d07f1eb27cc00120d8c4c9493cfa12d8438641e14db"
     },
     {
       "path": "tests/webui-launcher.test.js",
