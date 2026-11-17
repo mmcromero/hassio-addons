@@ -37,6 +37,8 @@ fastify.addHook('onSend', (_request, reply, payload, done) => {
   // Proteger somente as interfaces administrativas e de autenticação.
   const route = _request.url.split('?')[0];
   if (['/login.html', '/setup.html', '/admin.html', '/kds.html', '/impressao.html'].includes(route)) {
+    reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    reply.header('Pragma', 'no-cache');
     if (!reply.hasHeader('X-Frame-Options'))
       reply.header('X-Frame-Options', 'DENY');
     if (!reply.hasHeader('Content-Security-Policy'))
