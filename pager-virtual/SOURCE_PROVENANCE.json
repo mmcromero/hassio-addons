@@ -346,7 +346,7 @@
     {
       "path": "tests/biblioteca-jogos.test.js",
       "source_path": "tests/biblioteca-jogos.test.js",
-      "sha256": "b413cb300d8a48fad1923d8dd92fa578cef1fbd610f58aaad0525f096fa7e678"
+      "sha256": "39fae7ecd1a5f1f4c20863eb894f998b3e30558ebf4efb2d7d503a51a226291b"
     },
     {
       "path": "tests/cadastro-rapido.test.js",
@@ -411,7 +411,17 @@
     {
       "path": "tests/package-policy.test.py",
       "source_path": "tests/package-policy.test.py",
-      "sha256": "69e167bf0abd5a38cd3de7591b4952fcf7f814278f07e5070b619cd10caf4f39"
+      "sha256": "3b572e5b46ecc5b96bec3ba64deeff4ad5459dfa8e9540ddca1aa498f2b8ed73"
+    },
+    {
+      "path": "tests/pairing-backend-api-lab.test.js",
+      "source_path": "tests/pairing-backend-api-lab.test.js",
+      "sha256": "976bde9da9e37194709384a5e442989a527dc6ad4c158df145fb784d11f2e847"
+    },
+    {
+      "path": "tests/pairing-backend-asset-rc003.test.js",
+      "source_path": "tests/pairing-backend-asset-rc003.test.js",
+      "sha256": "d65aea0d8f3fd42a8bbc19e0c5c9aabbb9f3dfe29b9a959168e63f62d9367514"
     },
     {
       "path": "tests/pong-api.test.js",
