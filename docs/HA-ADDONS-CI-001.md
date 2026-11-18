@@ -135,3 +135,9 @@ O add-on `pager-virtual` não declara `image` em `config.yaml`, declara `arch: a
 ## Atualização imediata de normas do proprietário — main documental
 
 **Regra P0:** qualquer decisão normativa expressa do proprietário sobre o Avisaqui ou a esteira deve ser consolidada **no mesmo atendimento** no documento canônico da `main`, com correção **in situ** de instruções antigas conflitantes em fontes e cópias operacionais. O bloqueio da publicação de código Avisaqui na `main` pública **não se aplica à atualização documental autorizada** de normas. Não alterar código de outros add-ons, workflows, versões de catálogo nem servidores por consequência desta regra. Releitura e SHA no registro de governança existente são obrigatórios; sem permissão de escrita, registrar impedimento real. Norma universal: https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md (§0.1).
+
+
+## Governança — branches de pacote permanentes e congelamento operacional
+
+**Decisão Avisaqui de 17/11/2026:** todo lote começa e termina na branch privada **`desenvolvimento`**, que é reutilizada permanentemente. Governança a congela por SHA somente após ordem do proprietário, promove **o conteúdo inteiro** para a RC privada permanente e exporta para a mesma branch pública RC cadastrada. A partir da conclusão da promoção, Governança libera `desenvolvimento` para o próximo pacote. **Nunca criar branches adicionais por pacote.** Verificar versão/proveniência e preservar outros add-ons e `main` pública. O congelamento é controle operacional; não afirmar que o GitHub impede pushes sem prova. Norma: https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md .
+
