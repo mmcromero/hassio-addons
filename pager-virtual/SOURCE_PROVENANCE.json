@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "8d789e98e04577f6f8b7518b5bf3b183bc31a19c",
-  "version": "0.1.20-rc.4",
+  "commit": "2480881dad3880c593f24902c92ec31d099dc91d",
+  "version": "0.1.20-rc.5",
   "files": [
     {
       "path": ".dockerignore",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "d9de7245522090f28f4e4977eda0e9e1863f352d4b57c172c950f6a51699b8b3"
+      "sha256": "937ab221171e842e1f53575d3241e20575848e935bcc3aa9808a7e3a9cce33d5"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -96,7 +96,7 @@
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "623d1a9d740bf5c9ae7fa7513ba190185fc29dda2c54156166babe0fe8153813"
+      "sha256": "799c8c39e9dd6ec3810c6317fd669ea48a041dbd9411eece539d10a65953252a"
     },
     {
       "path": "run.sh",
@@ -276,7 +276,7 @@
     {
       "path": "src/public/kds.html",
       "source_path": "src/public/kds.html",
-      "sha256": "76c0572fa1a15b0bcc78e223459db5962461067a4134588848a8d2653dcf0c83"
+      "sha256": "2f4c8089dc02ad83c8f8645a329027df93861e866b51e3e42a4e38f5f4bf3fb1"
     },
     {
       "path": "src/public/landing.html",
@@ -326,7 +326,7 @@
     {
       "path": "src/routes/pedidos.js",
       "source_path": "src/routes/pedidos.js",
-      "sha256": "957cd64e104140cd57e4911e3a14b4684edac3be8a70f41d700bcd8d4d9156fe"
+      "sha256": "6a32654d81bf85b260d88f9f26476f1139d1af539a51b50a7853b0fcf045bd5c"
     },
     {
       "path": "src/runtime-config.js",
