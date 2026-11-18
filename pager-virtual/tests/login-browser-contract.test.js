@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const html = readFileSync(new URL('../src/public/login.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 
-async function submitLogin({ role = 'gerente', returnTo = '', status = 200 } = {}) {
+async function submitLogin({ role = 'gerente', returnTo = '', status = 200, contentType = 'application/json', malformed = false } = {}) {
   assert.ok(script, 'A tela de login precisa manter seu script funcional');
   const visits = [];
   const requests = [];
@@ -41,9 +41,14 @@ async function submitLogin({ role = 'gerente', returnTo = '', status = 200 } = {
     }
     return {
       ok: status === 200,
-      json: async () => status === 200
-        ? ({ papel: role })
-        : ({ error: 'Login ou senha inválidos' })
+      status,
+      headers: { get: name => name === 'content-type' ? contentType : null },
+      json: async () => {
+        if (malformed || contentType === 'text/html') throw new SyntaxError("Unexpected token '<'");
+        return status === 200
+          ? { papel: role }
+          : { error: 'Login ou senha inválidos' };
+      }
     };
   }
   runInNewContext(script, { document, location, fetch, URLSearchParams });
@@ -94,6 +99,33 @@ test('senha incorreta mantém usuário no login com botão reabilitado', async (
   const result = await submitLogin({ status: 401 });
   assert.deepEqual(result.visits, []);
   assert.equal(result.error, 'Login ou senha inválidos');
+});
+
+test('502 com HTML não mostra Unexpected token e não confunde com senha errada', async () => {
+  const result = await submitLogin({ status: 502, contentType: 'text/html', malformed: true });
+  assert.deepEqual(result.visits, []);
+  assert.match(result.error, /Servidor temporariamente indisponível/);
+  assert.doesNotMatch(result.error, /Unexpected token|Login ou senha inválidos|<html>/);
+});
+
+test('503 e 504 usam mensagem operacional sem exibir HTML do proxy', async () => {
+  for (const status of [503, 504]) {
+    const result = await submitLogin({ status, contentType: 'text/html', malformed: true });
+    assert.deepEqual(result.visits, []);
+    assert.match(result.error, /Servidor temporariamente indisponível/);
+  }
+});
+
+test('200 com corpo HTML não autentica e preserva a tela', async () => {
+  const result = await submitLogin({ status: 200, contentType: 'text/html', malformed: true });
+  assert.deepEqual(result.visits, []);
+  assert.match(result.error, /Resposta inválida do servidor/);
+});
+
+test('429 apresenta espera em vez de credenciais inválidas', async () => {
+  const result = await submitLogin({ status: 429 });
+  assert.deepEqual(result.visits, []);
+  assert.match(result.error, /Muitas tentativas/);
 });
 
 test('limite de tentativas usa o mesmo login normalizado da consulta', () => {
