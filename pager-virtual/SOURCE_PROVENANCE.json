@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "f2faf0ff2fb4f69485f3150ed27ff0668805cb2a",
-  "version": "0.1.20-rc.5",
+  "commit": "69304922c63e6f27e124e8431a2ca3ef4ae7c5b7",
+  "version": "0.1.20-rc.6",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "c9e37f89e4ba41e43c7f304e6366296d3149b96465742762d113ad5a6eed3d6e"
+      "sha256": "12b066311307c3c70af4d122bc7c7e52426768164409ecb366731b3aa2d15c9f"
     },
     {
       "path": "AGENTS.md",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "937ab221171e842e1f53575d3241e20575848e935bcc3aa9808a7e3a9cce33d5"
+      "sha256": "542a49b5817e49a988c577d45c09019bd44259a2687e76b4d2018292b458ef5c"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "66811c17343f3dde2dff40d05b1ce47f176eae7c1bacedaba68477aa01c14778"
+      "sha256": "83030d3bfd156793bf1a2a89f94bcea150c37522d37a1d21c206eb157246403b"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "799c8c39e9dd6ec3810c6317fd669ea48a041dbd9411eece539d10a65953252a"
+      "sha256": "bd0910a503effd95a09d69f0437ec06a105c6929a7ffa407227b7a8ed9969907"
     },
     {
       "path": "run.sh",
@@ -286,7 +286,7 @@
     {
       "path": "src/public/login.html",
       "source_path": "src/public/login.html",
-      "sha256": "1807dabe10e2f350131defba3440cc0e499ed8577cde30af488bb5015889a5ff"
+      "sha256": "da819c4ce8c4141702768a3600d544162e7427dba341a387411f4adc3c6388e5"
     },
     {
       "path": "src/public/manifest.webmanifest",
