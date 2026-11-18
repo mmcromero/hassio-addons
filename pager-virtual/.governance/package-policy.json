@@ -3,27 +3,25 @@
   "product": "Avisaqui",
   "limits": {
     "active_core_packages": 1,
-    "development_remote_branches_per_package": 1,
+    "development_remote_branches_per_package": 2,
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-003",
+    "id": "AVISAQUI-PACOTE-004",
     "status": "open",
-    "phase": "published_test_release",
-    "candidate_version": "0.1.20-rc.3",
-    "published_version": "0.1.20-rc.3",
+    "phase": "preparing_private_release_candidate",
+    "candidate_version": "0.1.20-rc.6",
+    "published_version": null,
     "branches": {
-      "mmcromero/pager-virtual": "release/avisaqui-login-rc3",
-      "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-003"
+      "mmcromero/pager-virtual": "release-candidate",
+      "mmcromero/hassio-addons": "release-candidate"
     },
-    "prs": {
-      "mmcromero/pager-virtual": 33
-    },
+    "prs": {},
     "base_branch": "main",
-    "new_features": "allowed_only_within_package_scope",
-    "opened_on": "2026-11-17",
-    "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-003.md",
-    "status_notes": "RC003 0.1.20-rc.3 publicado na main pública por PR #40, merge 48b3c44b1fda193e526d25130c4db3b6576a3d26. Login POST fallback incluído; teste real de Chrome e instalação no HA ainda não comprovados; ZIP Windows obrigatório."
+    "new_features": "only_approved_development_scope",
+    "opened_on": "2026-11-18",
+    "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/39",
+    "status_notes": "Fonte para eventual exportação futura da RC6. A RC5 externa foi arquivada e não é origem. Preservar login aprovado blob 70c68fde853f623884ca0df20a9ea1279a803870; #17 excluída de novas entregas. Não há autorização para publicação, Actions, merge ou deploy."
   },
   "publication_authority": {
     "coordination": "Governança",
@@ -65,6 +63,14 @@
       "closed_on": "2026-11-17",
       "operational_installation": "not_verified",
       "closeout_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-002.md"
+    },
+    {
+      "id": "AVISAQUI-PACOTE-003",
+      "status": "closed_technical_pending_homologation",
+      "version": "0.1.20-rc.5",
+      "closed_on": "2026-11-18",
+      "closure_issue": "https://github.com/mmcromero/pager-virtual/issues/35",
+      "history_note": "RC5 publicada fora da esteira; registro histórico somente, homologação não confirmada"
     }
   ]
 }

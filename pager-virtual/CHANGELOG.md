@@ -6,6 +6,15 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 ---
 
 
+## [0.1.20-rc.6] — 18/11/2026 — fechamento pela esteira oficial
+
+- Fonte canônica: `desenvolvimento`; candidato privado preparado em `release-candidate`.
+- Layout de login aprovado preservado integralmente: `src/public/login.html`, commit `2a525edce160562c2bf3ab31932897654776345c`, blob Git `70c68fde853f623884ca0df20a9ea1279a803870`.
+- Inclusão das correções posteriores à RC5 externa em gerentes, confirmações ACK, tratamento de erros do login e histórico KDS, conforme código da branch de desenvolvimento.
+- RC5 externa mantida apenas como histórico. A candidata RC6 deve ser derivada da fonte privada com manifesto `SOURCE_PROVENANCE.json` e hashes verificados.
+- Nenhuma alteração do layout de login, nenhum trabalho novo exclusivo da Issue #17, nenhum ZIP Windows embutido no add-on WEB/HA.
+- Publicação de código na branch pública de testes não equivale a instalação ou homologação no Raspberry.
+
 ## [0.1.20-rc.3] — 17/11/2026 — segurança do formulário de login
 
 - Avisaqui: fallback nativo de formulário de login usa POST e não GET, mesmo sem JavaScript; regressão incluída.
