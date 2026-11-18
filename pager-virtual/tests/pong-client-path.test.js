@@ -16,10 +16,12 @@ test('interface contém os modos solo e dupla, com tratamento explícito de 404'
   const html = readFileSync(new URL('../src/public/cliente.html', import.meta.url), 'utf8');
   const js = readFileSync(new URL('../src/public/pong.js', import.meta.url), 'utf8');
   const biblioteca = readFileSync(new URL('../src/public/games/biblioteca.js', import.meta.url), 'utf8');
-  // O hub abre o modo solo local e o duelo online; a escolha de dois
-  // jogadores locais agora ocorre dentro do iframe isolado.
-  assert.match(biblioteca, /\['solo', 'Jogar'\]/);
-  assert.match(biblioteca, /\['dupla', 'Duelo online'\]/);
+  // O catálogo atual escolhe 1/2 jogadores antes de abrir o iframe;
+  // o duelo em aparelhos diferentes continua no controlador privilegiado.
+  assert.match(biblioteca, /const numeros = item\.playerCounts \|\| \[1,2\]/);
+  assert.match(biblioteca, /modoAtual = n === 1 \? 'solo' : 'dupla-local'/);
+  assert.match(biblioteca, /botao\('Cada um no seu celular \(online\)'/);
+  assert.match(biblioteca, /modoAtual = 'dupla';\s*confirmarPartida\(\)/);
   const frame = readFileSync(new URL('../src/public/games/jogo-da-velha-isolado.html', import.meta.url), 'utf8');
   assert.match(frame, /modo==='dupla-local'/);
   assert.match(frame, /'1 jogador'/);

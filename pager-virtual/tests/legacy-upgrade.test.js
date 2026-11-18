@@ -61,6 +61,8 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     insert.run('legado-3', 'rest_demo_01', 43, 'token-persistido-43', '[]', 'entregue', now, now + 1000, now + 2000);
     const original = database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all();
     const originalRest = database.prepare('SELECT * FROM restaurantes ORDER BY id').all();
+    // F18: migração aditiva de logo opcional, sem alterar os campos legados.
+    const migratedRest = originalRest.map(restaurante => ({ ...restaurante, logo_url: null }));
     database.close();
     database = undefined;
 
@@ -68,7 +70,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     await executeNode("import db from './src/db.js'; db.close();", env);
     database = new Database(file);
     assert.deepEqual(database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all(), original);
-    assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), originalRest);
+    assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), migratedRest);
     assert.equal(database.prepare('SELECT count(*) n FROM usuarios').get().n, 0);
     assert.equal(database.prepare('SELECT count(*) n FROM sessoes').get().n, 0);
     assert.ok(database.prepare("SELECT name FROM sqlite_master WHERE name='usuarios'").get());
@@ -80,7 +82,7 @@ test('atualizar banco 0.1.3 preserva pedidos, restaurante, tokens e status', { t
     await executeNode("import db from './src/db.js'; db.close();", env);
     database = new Database(file);
     assert.deepEqual(database.prepare('SELECT id, restaurante_id, numero, token, itens_json, status, created_at, pronto_at, entregue_at FROM pedidos ORDER BY id').all(), original);
-    assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), originalRest);
+    assert.deepEqual(database.prepare('SELECT * FROM restaurantes ORDER BY id').all(), migratedRest);
     assert.equal(database.prepare('SELECT count(*) n FROM usuarios').get().n, 0);
     database.close();
     database = undefined;

@@ -31,10 +31,15 @@ def validate(policy, repository, branch, base, paths=(), versions=None,
     if policy.get('schema_version') != 1:
         errors.append('Versão de política inválida.')
     limits = policy.get('limits', {})
-    for key in ('active_core_packages', 'development_remote_branches_per_package',
-                'distribution_remote_branches_per_package'):
-        if limits.get(key) != 1:
-            errors.append('O limite obrigatório é um: ' + key)
+    # Decisão canônica de 17/11/2026: desenvolvimento + RC privada são
+    # dois estágios de trabalho; main é estável. Não são duas features paralelas.
+    # POLITICA-DE-PACOTES-E-BRANCHES.md e DECISOES_DO_PROPRIETARIO_2026-11-17.md.
+    required_limits = {'active_core_packages': 1,
+                       'development_remote_branches_per_package': 2,
+                       'distribution_remote_branches_per_package': 1}
+    for key, wanted in required_limits.items():
+        if limits.get(key) != wanted:
+            errors.append(f'O limite obrigatório é {wanted}: ' + key)
     package = policy.get('active_package', {})
     if package.get('status') != 'open':
         errors.append('Não há pacote aberto; registrar o próximo somente após o fechamento.')

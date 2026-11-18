@@ -47,8 +47,18 @@ class PackagePolicy(unittest.TestCase):
         self.assertTrue(self.check())
 
     def test_cannot_raise_branch_limits_silently(self):
-        self.policy['limits']['development_remote_branches_per_package'] = 3
-        self.assertTrue(self.check())
+        # Dois estágios privados aprovados: desenvolvimento + RC. A main
+        # estável não conta como branch de desenvolvimento do pacote.
+        expected = {'active_core_packages': 1,
+                    'development_remote_branches_per_package': 2,
+                    'distribution_remote_branches_per_package': 1}
+        self.assertEqual(self.policy['limits'], expected)
+        for key, wanted in expected.items():
+            for invalid in (0, wanted - 1, wanted + 1, None):
+                with self.subTest(key=key, invalid=invalid):
+                    self.policy['limits'][key] = invalid
+                    self.assertTrue(self.check())
+            self.policy['limits'][key] = wanted
 
     def test_exception_requires_approval_reason_and_expiration(self):
         exception = {'repository': self.private, 'branch': 'fix/emergencia', 'status': 'open',

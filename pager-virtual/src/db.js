@@ -101,6 +101,10 @@ db.exec(`
 
 `);
 
+// Migração aditiva: identidade visual opcional, sem modificar restaurantes existentes.
+const restaurantColumns = db.prepare('PRAGMA table_info(restaurantes)').all().map(c => c.name);
+if (!restaurantColumns.includes('logo_url')) db.exec('ALTER TABLE restaurantes ADD COLUMN logo_url TEXT');
+
 // Nenhum restaurante fictício é criado automaticamente.
 // Registros antigos são preservados na migração aditiva.
 

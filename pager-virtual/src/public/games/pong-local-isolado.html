@@ -10,11 +10,21 @@ body{font:16px system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 button{font:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid #60a5fa;outline-offset:3px}
 [hidden]{display:none!important}
+/* A tela aprovada usa o palco inteiro. Estes estilos precisam estar DENTRO
+   do iframe isolado: CSS da comanda não atravessa o limite do iframe. */
+#jogo{display:flex;align-items:stretch;justify-content:center;min-height:0}
+.pong-root{display:flex;flex-direction:column;width:100%;height:100%;min-height:0;min-width:0;overflow:hidden}
+.pong-root>div:first-child:not([hidden]){width:min(420px,100%);margin:auto;padding:10px;min-height:0;overflow:auto}
+.pong-partida:not([hidden]){display:flex;flex:1 1 auto;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+.pong-arena{flex:1 1 auto;min-height:0;min-width:0;height:100%;max-width:none!important}
+.pong-arena canvas{display:block;flex:1 1 auto;min-width:0;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:fill}
+.pong-root button{touch-action:manipulation}
+@media(max-height:420px){.pong-root>div:first-child:not([hidden]){padding:4px}.pong-root h3{margin:2px 0}}
 </style></head><body><main id="jogo" aria-label="Pong"></main>
 <script>
 // Laboratório público: adaptação local do Pong experimental.
 // O Pong original depende de API/SSE do Avisaqui; esta versão não usa servidor.
-function iniciarJogo({container,modo='solo',onExit=()=>{}}) {
+function iniciarJogo({container,modo='solo',onExit=()=>{},autoStart=false}) {
   const root=document.createElement('section');
   root.className='pong-root';
   const title=document.createElement('h3');title.textContent='🏓 Pong · Escolha a partida';
@@ -57,6 +67,7 @@ function iniciarJogo({container,modo='solo',onExit=()=>{}}) {
   function selecionar(n){tipo=n===1?'solo':'dupla';for(const [botao,selecionado] of [[um,n===1],[dois,n===2]]){botao.setAttribute('aria-pressed',String(selecionado));botao.style.background=selecionado?'#1459b8':'#263a55';botao.style.borderColor=selecionado?'#67d4ff':'#64748b';botao.style.boxShadow=selecionado?'0 0 0 2px #67d4ff33':'none';botao.textContent=(selecionado?'✓ ':'')+(botao===um?'1 jogador':'2 jogadores');}detalhe.textContent=n===1?'Selecionado: contra o computador, com uma faixa de controle.':'Selecionado: dois jogadores no mesmo aparelho, cada um com sua faixa de controle.';}
   um.addEventListener('click',()=>selecionar(1));dois.addEventListener('click',()=>selecionar(2));selecionar(tipo==='solo'?1:2);
   iniciar.addEventListener('click',()=>{if(rodando||!active)return;rodando=true;menu.hidden=true;partida.hidden=false;direita.remove();if(tipo==='dupla')arena.append(direita);hint.textContent='';last=0;frame=requestAnimationFrame(tick);});
+  if(autoStart) iniciar.click();
   function reset(direction){ball.x=300;ball.y=180;ball.vx=3.2*direction;ball.vy=(Math.random()-.5)*4;}
   function draw(){ctx.fillStyle='#102b39';ctx.fillRect(0,0,600,360);ctx.strokeStyle='#4b7581';ctx.setLineDash([8,8]);ctx.beginPath();ctx.moveTo(300,0);ctx.lineTo(300,360);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle='#fff';ctx.font='24px sans-serif';ctx.fillText(String(score[0]),255,32);ctx.fillText(String(score[1]),330,32);
@@ -119,6 +130,7 @@ function iniciarJogo({container,modo='solo',onExit=()=>{}}) {
         destruir = iniciarJogo({
           container: document.getElementById('jogo'),
           modo: e.data.payload.mode === 'dupla-local' ? 'dupla' : 'solo',
+          autoStart: true,
           onExit: () => {}
         });
       }

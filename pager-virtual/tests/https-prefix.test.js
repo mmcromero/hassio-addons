@@ -25,8 +25,22 @@ test('administração e KDS não deixam a subrota nos redirecionamentos', () => 
 
 test('página de integração consulta API relativa ao prefixo, não à página HTML', () => {
   const html = source('public/impressao.html');
-  assert.match(html, /api\('api\/integracoes\/impressao\/chaves'\)/);
+  // A tela aprovada usa pareamento, sem geração manual de chaves.
+  assert.match(html, /api\('api\/integracoes\/impressao\/eventos'\)/);
+  assert.match(html, /api\('api\/agentes\/dispositivos'\)/);
   assert.doesNotMatch(html, /'\.\/api\/integracoes\/impressao\//);
+  assert.match(html, /fetch\(basePath\+'\/api\/auth\/me',\{credentials:'same-origin'/);
+  const paths = [...html.matchAll(/\bapi\('([^']+)'/g)].map(match => match[1]);
+  assert.ok(paths.length >= 3);
+  for (const prefix of ['', '/avisaqui']) {
+    const page = (prefix ? 'https://exemplo.invalid' : 'http://localhost:8090') + prefix + '/impressao.html';
+    for (const endpoint of paths) {
+      const url = new URL(endpoint, page);
+      assert.equal(url.origin, new URL(page).origin);
+      assert.equal(url.pathname, prefix + '/' + endpoint);
+      assert.ok(endpoint.startsWith('api/'));
+    }
+  }
 });
 
 test('cliente mantém base de API e Worker no mesmo escopo', () => {

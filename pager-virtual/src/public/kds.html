@@ -39,9 +39,10 @@
     /* BARRA SUPERIOR DO KDS */
     .kds-header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      flex-wrap: nowrap;
       gap: 16px;
       padding-bottom: 16px;
       border-bottom: 1px solid var(--card-border);
@@ -52,7 +53,10 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      width: 100%;
     }
+    .brand-title > div { width: 100%; min-width: 0; }
+    .kds-brand-bar { width: 100%; }
 
     .brand-title h1 {
       font-size: 1.3rem;
@@ -310,7 +314,11 @@
       width: 100%;
       text-align: center;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      max-height: calc(100dvh - 32px);
+      overflow-y: auto;
     }
+    .modal-heading { display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left }
+    .modal-x { flex:none;width:44px;height:44px;min-height:44px;border:0;border-radius:10px;background:#334155;color:#fff;font-size:1.5rem;cursor:pointer }
 
     .modal-qr {
       background: #fff;
@@ -350,7 +358,7 @@
       #qr-modal .modal-box { border: none; box-shadow: none; background: white; color: black; width: 100%; max-width: 100%; padding: 8mm; }
       #qr-modal p, #qr-modal h2 { color: black !important; }
       #qr-modal .modal-qr { border: none; width: 220px; }
-      #btn-close-modal, #btn-print-qr { display: none !important; }
+      #btn-close-modal, #btn-print-qr, #qr-x { display: none !important; }
       #modal-link-label { color: #000 !important; }
     }
   </style>
@@ -359,26 +367,26 @@
 
   <!-- CABEÇALHO DO KDS -->
   <header class="kds-header">
-    <div class="brand-title">
+    <div class="brand-title" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px">
       <div>
-        <h1>Pedidos em atendimento</h1>
-        <span>Cozinha e balcão</span><div id="restaurant-context" role="status" aria-live="polite" style="display:none;margin-top:8px;font-size:1rem;font-weight:750;color:#f8fafc;background:#1e3a5f;padding:8px 12px;border-radius:10px"></div>
+        <div class="kds-brand-bar" style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%"><img src="./avisaqui-marca-transparente.svg" alt="Avisaqui" style="display:block;max-width:170px;max-height:54px;object-fit:contain"><button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:44px;margin:0;padding:8px 16px">Sair</button></div><div id="restaurant-context" role="status" aria-live="polite" style="display:none;margin-top:8px;font-size:1rem;font-weight:750;color:#f8fafc;background:#1e3a5f;padding:8px 12px;border-radius:10px"></div>
+        <h1 style="margin-top:8px">Pedidos em atendimento</h1>
+        <span>Cozinha e balcão</span>
       </div>
     </div>
 
     <div class="kds-controls">
-      <div class="metric-tag active-orders">
+      <button id="btn-tab-active" class="metric-tag active-orders" style="cursor:pointer;border:2px solid #3b82f6;background:#1e293b;color:#f8fafc" title="Ver pedidos em preparo e prontos">
         <span id="active-count">0</span> Pedidos Ativos
-      </div>
-      <div class="metric-tag finished">
-        <span id="finished-count">0</span> Finalizados
-      </div>
+      </button>
+      <button id="btn-tab-finished" class="metric-tag finished" style="cursor:pointer;border:2px solid transparent;background:#1e293b;color:#94a3b8" title="Ver histórico de pedidos entregues hoje">
+        <span id="finished-count">0</span> Finalizados hoje
+      </button>
 
       <button id="btn-sequence-settings" class="btn-sim-order" title="Configurar numeração">⚙️ Numeração</button>
       <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
       <a id="printing-integration-link" href="./impressao.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">🖨️ Integração de impressão</a>
       <a id="admin-link" href="./admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">⚙️ Administração</a>
-      <button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:54px;margin:0;padding:12px 16px">Sair</button>
     </div>
   </header>
 
@@ -388,7 +396,7 @@
   <!-- MODAL DE CADASTRO MANUAL — TOUCH FRIENDLY -->
   <div id="manual-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="manual-title">
     <div class="modal-box">
-      <h2 id="manual-title">Inserir pedido manual</h2>
+      <div class="modal-heading"><h2 id="manual-title">Inserir pedido manual</h2><button type="button" class="modal-x" id="manual-x" aria-label="Fechar pedido manual">×</button></div>
       <p style="color:var(--text-muted); margin:10px 0 16px">Digite somente o número da senha ou do pedido.</p>
       <form id="manual-form">
         <label for="manual-number" style="display:block; text-align:left; margin-bottom:8px; font-weight:700">Número do pedido</label>
@@ -407,7 +415,7 @@
 
   <div id="sequence-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuração da numeração">
     <div class="modal-box">
-      <h2>Numeração de pedidos</h2>
+      <div class="modal-heading"><h2>Numeração de pedidos</h2><button type="button" class="modal-x" id="sequence-x" aria-label="Fechar numeração">×</button></div>
       <p style="margin:12px 0">Altere somente quando não houver pedidos ativos.</p>
       <label for="sequence-mode">Modo</label>
       <select id="sequence-mode" style="width:100%;padding:12px;margin:8px 0">
@@ -421,9 +429,9 @@
     </div>
   </div>
   <!-- MODAL DE QR CODE AMPLIADO (DISPLAY DO CAIXA) -->
-  <div id="qr-modal" class="modal-backdrop">
+  <div id="qr-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-box">
-      <h2 id="modal-title" style="font-size: 1.4rem;">Display do Caixa</h2>
+      <div class="modal-heading"><h2 id="modal-title" style="font-size: 1.4rem;">Display do Caixa</h2><button type="button" class="modal-x" id="qr-x" aria-label="Fechar QR Code">×</button></div>
       <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
         Aponte a câmera do celular para abrir o Pager do Cliente
       </p>
@@ -462,8 +470,15 @@
         const name=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
         const context=document.getElementById('restaurant-context');
         if(user.restaurante_id && name){
-          context.textContent='Restaurante: '+name;
-          context.style.display='block';
+          context.replaceChildren();
+          const logo=document.createElement('span');logo.textContent=name.slice(0,1).toUpperCase();logo.style.cssText='display:grid;place-items:center;width:44px;height:44px;background:#34587d;border-radius:8px;flex-shrink:0';
+          if(typeof user.restaurante_logo_url==='string'&&/^https:\/\//i.test(user.restaurante_logo_url)){
+            const img=document.createElement('img');img.src=user.restaurante_logo_url;img.alt='Logo de '+name;img.referrerPolicy='no-referrer';img.style.cssText='width:44px;height:44px;object-fit:contain;border-radius:8px;background:white';img.addEventListener('error',()=>img.replaceWith(logo),{once:true});context.append(img);
+          }else context.append(logo);
+          const details=document.createElement('div');const title=document.createElement('strong');title.textContent=name;
+          const meta=document.createElement('small');meta.style.cssText='display:block;color:#cbd5e1;font-weight:500';meta.textContent=(user.papel==='master'?'Master Admin':user.papel==='gerente'?'Gerente':'Operador')+(user.restaurante_slug?' · '+user.restaurante_slug:'');
+          details.append(title,meta);context.append(details);context.style.alignItems='center';context.style.gap='10px';
+          context.style.display='flex';
         }else if(user.papel==='gerente'){
           context.textContent='Restaurante não identificado. Contate a administração.';
           context.style.display='block';
@@ -539,12 +554,82 @@
             if (p.status === 'entregue') {
               activeOrders = activeOrders.filter(o => o.dbId !== p.id);
               finishedCount++;
+              carregarResumo();
             }
-            renderOrders();
+            if (currentTab === 'active') {
+              renderOrders();
+            } else {
+              renderFinishedOrders();
+            }
           }
         } catch (err) {
           console.error(err);
         }
+      });
+    }
+
+    let currentTab = 'active';
+    let finishedOrders = [];
+
+    async function carregarResumo() {
+      try {
+        const res = await fetch(apiPath('/api/pedidos/historico?periodo=hoje&limite=50'));
+        if (res.ok) {
+          const dados = await res.json();
+          finishedCount = dados.total_hoje || 0;
+          finishedOrders = dados.pedidos || [];
+          const el = document.getElementById('finished-count');
+          if (el) el.textContent = finishedCount;
+          if (currentTab === 'finished') {
+            renderFinishedOrders();
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar resumo de finalizados:', e);
+      }
+    }
+
+    function renderFinishedOrders() {
+      grid.innerHTML = '';
+      document.getElementById('active-count').textContent = activeOrders.length;
+      document.getElementById('finished-count').textContent = finishedCount;
+
+      if (finishedOrders.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div style="font-size: 2.5rem; margin-bottom: 8px;">📦</div>
+            <h3>Nenhum pedido finalizado hoje ainda.</h3>
+            <p style="font-size: 0.85rem; margin-top: 6px;">
+              Os pedidos entregues aparecerão aqui em ordem cronológica reversa.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      finishedOrders.forEach(order => {
+        const card = document.createElement('div');
+        card.id = 'finished-card-' + order.id;
+        card.className = 'order-card';
+        card.style.opacity = '0.9';
+        card.style.borderColor = '#10b981';
+
+        const entregueHora = order.entregue_at ? new Date(order.entregue_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Hoje';
+
+        card.innerHTML = `
+          <div>
+            <div class="card-top">
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Senha</div>
+                <div class="card-id">#${order.numero}</div>
+              </div>
+              <div class="card-meta">Entregue às ${entregueHora}</div>
+            </div>
+            <div class="status-badge pronto" style="background:#064e3b;color:#6ee7b7">✓ Entregue & Finalizado</div>
+            <div class="order-summary">${escapeHtml(Array.isArray(order.itens) ? order.itens.join(', ') : 'Pedido concluído')}</div>
+          </div>
+        `;
+        grid.appendChild(card);
       });
     }
 
@@ -720,11 +805,26 @@
       document.getElementById('sequence-mode').value = sequenceConfig.modo;
       document.getElementById('sequence-start').value = sequenceConfig.proximo_numero;
       document.getElementById('sequence-error').textContent = '';
+      snapshotSequence=sequenceOriginal();
       document.getElementById('sequence-modal').classList.add('open');
+      document.getElementById('sequence-mode').focus();
     });
-    document.getElementById('sequence-cancel').addEventListener('click', () => document.getElementById('sequence-modal').classList.remove('open'));
+    const sequenceModal=document.getElementById('sequence-modal');
+    const sequenceOriginal=()=>({modo:sequenceConfig.modo,numero:String(sequenceConfig.proximo_numero)});
+    let snapshotSequence=sequenceOriginal();
+    const closeSequence=()=>{
+      if(document.getElementById('sequence-save').disabled)return;
+      const changed=document.getElementById('sequence-mode').value!==snapshotSequence.modo||document.getElementById('sequence-start').value!==snapshotSequence.numero;
+      if(changed&&!confirm('Descartar alterações da numeração?'))return;
+      sequenceModal.classList.remove('open');document.getElementById('btn-sequence-settings').focus();
+    };
+    document.getElementById('sequence-cancel').addEventListener('click',closeSequence);
+    document.getElementById('sequence-x').addEventListener('click',closeSequence);
     document.getElementById('sequence-save').addEventListener('click', async () => {
       const error = document.getElementById('sequence-error');
+      const save=document.getElementById('sequence-save');
+      if(save.disabled)return;
+      save.disabled=true;save.textContent='Salvando…';error.textContent='';
       try {
         const res = await fetch(apiPath('/api/pedidos/sequencia'), {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
@@ -735,7 +835,9 @@
         if (!res.ok) throw Error(data.error || 'Falha ao salvar');
         sequenceConfig = data;
         document.getElementById('sequence-modal').classList.remove('open');
+        document.getElementById('btn-sequence-settings').focus();
       } catch (e) { error.textContent = e.message; }
+      finally {save.disabled=false;save.textContent='Salvar configuração';}
     });
     document.getElementById('btn-add-manual-order').addEventListener('click', async () => {
       await loadSequence();
@@ -746,7 +848,14 @@
       manualModal.classList.add('open');
       manualInput.focus();
     });
-    document.getElementById('manual-cancel').addEventListener('click', () => manualModal.classList.remove('open'));
+    const closeManual=()=>{
+      if(document.getElementById('manual-submit').disabled)return;
+      const changed=[manualInput,document.getElementById('manual-name'),document.getElementById('manual-phone')].some(field=>field.value.trim());
+      if(changed&&!confirm('Descartar dados do pedido manual?'))return;
+      manualModal.classList.remove('open');document.getElementById('btn-add-manual-order').focus();
+    };
+    document.getElementById('manual-cancel').addEventListener('click',closeManual);
+    document.getElementById('manual-x').addEventListener('click',closeManual);
     document.getElementById('manual-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const numero = Number(manualInput.value);
@@ -813,11 +922,25 @@
         correctLevel: QRCode.CorrectLevel.M
       });
 
+      qrFocusReturn=document.activeElement?.closest('#manual-modal')?document.getElementById('btn-add-manual-order'):document.activeElement;
       modal.classList.add('open');
+      document.getElementById('qr-x').focus();
     };
 
-    document.getElementById('btn-close-modal').addEventListener('click', () => {
-      document.getElementById('qr-modal').classList.remove('open');
+    let qrFocusReturn=null;
+    const closeQr=()=>{document.getElementById('qr-modal').classList.remove('open');qrFocusReturn?.focus();};
+    document.getElementById('btn-close-modal').addEventListener('click',closeQr);
+    document.getElementById('qr-x').addEventListener('click',closeQr);
+    document.addEventListener('keydown',event=>{
+      const active=['qr-modal','manual-modal','sequence-modal'].map(id=>document.getElementById(id)).find(el=>el.classList.contains('open'));
+      if(!active)return;
+      if(event.key==='Escape'){event.preventDefault();if(active.id==='qr-modal')closeQr();else if(active.id==='manual-modal')closeManual();else closeSequence();return;}
+      if(event.key!=='Tab')return;
+      const buttons=Array.from(active.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),a[href]'));
+      if(!buttons.length)return;
+      const first=buttons[0],last=buttons[buttons.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
     });
 
     document.getElementById('btn-print-qr').addEventListener('click', () => window.print());
@@ -851,9 +974,29 @@
       finally { window.location.replace(appBasePath + '/login.html'); }
     });
 
+    document.getElementById('btn-tab-active')?.addEventListener('click', () => {
+      currentTab = 'active';
+      document.getElementById('btn-tab-active').style.borderColor = '#3b82f6';
+      document.getElementById('btn-tab-active').style.color = '#f8fafc';
+      document.getElementById('btn-tab-finished').style.borderColor = 'transparent';
+      document.getElementById('btn-tab-finished').style.color = '#94a3b8';
+      renderOrders();
+    });
+
+    document.getElementById('btn-tab-finished')?.addEventListener('click', () => {
+      currentTab = 'finished';
+      document.getElementById('btn-tab-finished').style.borderColor = '#10b981';
+      document.getElementById('btn-tab-finished').style.color = '#f8fafc';
+      document.getElementById('btn-tab-active').style.borderColor = 'transparent';
+      document.getElementById('btn-tab-active').style.color = '#94a3b8';
+      carregarResumo();
+      renderFinishedOrders();
+    });
+
     // Carrega a URL configurada antes de permitir o primeiro QR.
     carregarConfiguracao().finally(() => {
       carregarPedidos();
+      carregarResumo();
       conectarSseKds();
     });
   </script>

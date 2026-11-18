@@ -11,7 +11,7 @@
     "status": "open",
     "phase": "published_test_release",
     "candidate_version": "0.1.20-rc.3",
-    "published_version": "0.1.20-rc.2",
+    "published_version": "0.1.20-rc.3",
     "branches": {
       "mmcromero/pager-virtual": "release/avisaqui-login-rc3",
       "mmcromero/hassio-addons": "release/avisaqui-rc-distribuicao-003"
@@ -23,7 +23,7 @@
     "new_features": "allowed_only_within_package_scope",
     "opened_on": "2026-11-17",
     "scope_reference": "mmcromero/pager-virtual:docs/governanca/AVISAQUI-PACOTE-003.md",
-    "status_notes": "RC003 0.1.20-rc.3: correção do formulário de login PR #32 integrada e versão PR #33 integrada. Distribuição autorizada para homologação; publicado anteriormente 0.1.20-rc.2. Não afirmar alerta do Chrome resolvido sem teste real; Windows por ZIP exclusivamente."
+    "status_notes": "RC003 0.1.20-rc.3 publicado na main pública por PR #40, merge 48b3c44b1fda193e526d25130c4db3b6576a3d26. Login POST fallback incluído; teste real de Chrome e instalação no HA ainda não comprovados; ZIP Windows obrigatório."
   },
   "publication_authority": {
     "coordination": "Governança",

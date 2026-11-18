@@ -16,7 +16,7 @@ function cspForHtml(html) {
     `script-src 'sha256-${digest}'`,
     "script-src-attr 'none'",
     "style-src 'unsafe-inline'", // CSS inline da pagina de laboratorio; nao autoriza scripts.
-    "img-src 'self'", // Logo oficial servido pela mesma origem; nenhum host externo.
+    "img-src 'self' https:", // Logo oficial local e imagem HTTPS do restaurante cadastrada pelo Master.
     "connect-src 'self'",
     "form-action 'self'",
     "base-uri 'none'",

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { pedidosRoutes } from './routes/pedidos.js';
 import { pongRoutes } from './pong.js';
 import { integracaoImpressaoRoutes } from './routes/integracao-impressao.js';
+import { windowsDownloadRoutes } from './windows-download.js';
 import { pushRoutes } from './push.js';
 import { authRoutes, currentUser } from './auth.js';
 import { adminRoutes } from './admin.js';
@@ -86,6 +87,7 @@ await fastify.register(interessesRoutes);
 await fastify.register(pedidosRoutes);
 await fastify.register(pongRoutes);
 await fastify.register(integracaoImpressaoRoutes);
+await fastify.register(windowsDownloadRoutes);
 await fastify.register(pushRoutes);
 
 
@@ -117,8 +119,8 @@ function publicUrlConfigurada() {
 const PUBLIC_URL = publicUrlConfigurada();
 
 // PAIR-V1 RC003: somente opt-in explícito. O modo padrão não importa o plugin,
-// não executa a migração de pareamento e preserva o fluxo manual existente.
-// NÃO habilitar em host comercial antes dos portões Segurança/Privacidade.
+// não executa migração de pareamento. O cadastro manual de chaves foi retirado.
+// A habilitação do ambiente de teste exige HTTPS e políticas temporais válidas.
 if (process.env.AVISAQUI_PAIR_V1_ENABLED === 'true') {
   const publicOrigin = process.env.AVISAQUI_PAIR_V1_PUBLIC_ORIGIN;
   const mountPrefix = process.env.AVISAQUI_PAIR_V1_MOUNT_PREFIX;
