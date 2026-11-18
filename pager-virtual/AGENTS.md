@@ -8,6 +8,14 @@
 > **Fechamento 15/11/2026:** `AVISAQUI-CONSOLIDACAO-RC-001` / 0.1.18-rc.1 está **fechado tecnicamente**, PR público #32 integrado. Versão relatada pelo proprietário como instalada e em execução no Raspberry Pi de homologação; homologação funcional permanece **em andamento**. Proibido continuar desenvolvimento em `release/avisaqui-rc-distribuicao-001` ou reabrir o PR #32; novos ajustes exigem **novo pacote** coordenado e registrado na fonte privada. Não tocar na fábrica isolada de jogos (Issue #21).
 
 
+## P0 — Separação das três áreas de publicação (decisão 18/11/2026)
+
+- **Fonte privada `mmcromero/pager-virtual:main`:** código-fonte do PG Virtual protegido. Só incorporar código homologado e autorizado. Desenvolver em `desenvolvimento` e preparar RC na `release-candidate` privada.
+- **Catálogo de add-ons `mmcromero/hassio-addons:main`:** pode receber versões RC para instalação/testes **somente dentro de `pager-virtual/`**, após congelamento, exportação, conferência de versão/hashes e autorização de publicação do lote. A publicação da RC no catálogo **não é homologação nem merge da fonte privada**. A instalação existente acompanha esta `main` pública, não as branches RC alternativas. Não modificar outros add-ons ou arquivos compartilhados.
+- **Laboratório público `mmcromero/fabrica-de-ideias-prototipos:main`:** publicação direta de protótipos navegáveis permitida para todos os projetos, limitada a `projetos/<id>/` e ao registro correspondente em `prototipos.json`. Nunca publicar segredos, dados reais ou código privado indevido. Preservar áreas dos demais projetos e conferir a URL navegável.
+
+**Precedência:** esta regra posterior substitui a antiga proibição de atualizar a `main` do repositório de add-ons. A restrição da `main` privada do PG Virtual permanece. Para esta RC6, autorização e evidências estão na Issue privada #39; commit público `0846cea5d39b844187a30690d7e536b7e55ee6b4`.
+
 **É terminantemente proibido desenvolver o Avisaqui de forma fragmentada ou independente neste diretório.** A fonte canônica é `mmcromero/pager-virtual`, privado. O responsável técnico deve resolver integração, conflitos, testes e documentação antes da entrega; não deixar a organização para o proprietário.
 
 - Toda alteração deve ter origem privada identificada e revisada. Usar exportação explícita, conferir `SOURCE_PROVENANCE.json` e comparar os arquivos. Emergência expressamente autorizada exige sincronização imediata de volta ao privado.
@@ -17,7 +25,7 @@
 - Executar testes pertinentes e conferir CI do HEAD final. Registrar o que não foi testado; não confundir código disponível, atualização oferecida, versão instalada e homologação.
 - No botão WebUI, validar o endereço efetivamente gerado pelo Supervisor com hostname/mapeamento observados. O destino deste ambiente é diretamente HTTPS :8443 `/avisaqui/landing.html`, inclusive com sessão autenticada. Não entregar um redirecionamento que dependa de porta HTTP cuja acessibilidade não foi comprovada.
 - Não alterar outros produtos deste repositório. Não versionar credenciais, bancos reais ou logs privados.
-- Main permanece estável. Merge, publicação, instalação, proxy/DNS e exclusão/reescrita de branches/tags exigem autorização específica. Nenhuma autorização é necessária para resolver escolhas técnicas rotineiras dentro da tarefa já autorizada.
+- A `main` **privada do PG Virtual** permanece estável e protegida. A `main` **pública deste catálogo** pode receber a distribuição de RC autorizada dentro de `pager-virtual/`. Instalação no HA, proxy/DNS, exclusão/reescrita de branches/tags e alterações fora do escopo exigem suas autorizações próprias. Nenhuma autorização é necessária para resolver escolhas técnicas rotineiras dentro da tarefa já autorizada.
 - A governança coordena revisão/encerramento e registra responsáveis/delegações. Exceção emergencial exige motivo, aprovação, prazo, versão e destino; uma publicação anterior não autoriza novas exceções.
 - Documentação/CI não bloqueiam fisicamente criação de branches. Não declarar proteção nativa ativa sem evidência administrativa. Não apagar branches/PRs nem alterar permissões por iniciativa própria.
 
