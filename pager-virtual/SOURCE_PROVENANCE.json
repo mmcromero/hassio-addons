@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "2480881dad3880c593f24902c92ec31d099dc91d",
+  "commit": "f2faf0ff2fb4f69485f3150ed27ff0668805cb2a",
   "version": "0.1.20-rc.5",
   "files": [
     {
@@ -271,7 +271,7 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "ae8aa2a6fa4ad5c1b278cedea72cfedc90e67ee1ea1127438812040dfd4851dc"
+      "sha256": "9fdc74d1d5ef3e10f0998ffcaad3e27980c09b62134ac7622285b141923e4e27"
     },
     {
       "path": "src/public/kds.html",
@@ -286,7 +286,7 @@
     {
       "path": "src/public/login.html",
       "source_path": "src/public/login.html",
-      "sha256": "c20963b1b3124098d24fead1ded2644fcda1c634c8e6c8cf0df9a5b48c540ac4"
+      "sha256": "1807dabe10e2f350131defba3440cc0e499ed8577cde30af488bb5015889a5ff"
     },
     {
       "path": "src/public/manifest.webmanifest",
@@ -466,7 +466,7 @@
     {
       "path": "tests/login-browser-contract.test.js",
       "source_path": "tests/login-browser-contract.test.js",
-      "sha256": "da60dc228e3c2e9a7b642d3aa529ecd749659161610cff90e149edcce6a625ca"
+      "sha256": "5d7d84541eac499101e3da0af5021c7e6c0f273850cc84f2d920bc77f55fd1eb"
     },
     {
       "path": "tests/logout-browser-history.test.js",
@@ -626,7 +626,7 @@
     {
       "path": "tests/ux-impressao-pair-rc003.test.js",
       "source_path": "tests/ux-impressao-pair-rc003.test.js",
-      "sha256": "5a7ab7081e16c7aa7258e8ab650caabb3ce9a1770bfb69755ed753e5e49af0cd"
+      "sha256": "18f915a22a6c180b3bbb8e9c6037c28ac3065dfa08e986e6efd313a4fe645784"
     },
     {
       "path": "tests/ux-paridade-prototipo-contract.test.js",

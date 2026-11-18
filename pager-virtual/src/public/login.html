@@ -56,8 +56,24 @@
             senha: document.getElementById('senha').value
           })
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Não foi possível entrar');
+        // Erros de proxy podem responder HTML (502/503/504). Nunca exibir HTML ou JSON bruto.
+        const contentType = response.headers?.get?.('content-type') || '';
+        let data = null;
+        if (!contentType || /(?:application\/json|\+json)/i.test(contentType)) {
+          try { data = await response.json(); } catch { /* Corpo inválido ou resposta do proxy. */ }
+        }
+        if (!response.ok) {
+          if ([502, 503, 504].includes(response.status))
+            throw new Error('Servidor temporariamente indisponível. Tente novamente em alguns instantes.');
+          if (response.status === 429)
+            throw new Error('Muitas tentativas de acesso. Tente novamente mais tarde.');
+          if (response.status === 401 || response.status === 403)
+            throw new Error('Login ou senha inválidos');
+          throw new Error(typeof data?.error === 'string' && data.error.length <= 180
+            ? data.error : 'Não foi possível entrar. Verifique a conexão e tente novamente.');
+        }
+        if (!data || !['master','gerente','operador'].includes(data.papel))
+          throw new Error('Resposta inválida do servidor. Tente novamente mais tarde.');
         // Retorno permitido exclusivamente à aprovação de solicitação Pair-v1.
         // Não seguir URLs externas ou caminhos arbitrários vindos da query.
         const returnTo = new URLSearchParams(location.search).get('return_to');

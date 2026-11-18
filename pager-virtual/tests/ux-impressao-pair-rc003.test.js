@@ -32,3 +32,13 @@ test('script JavaScript da página compila',()=>{
  assert.equal(scripts.length,1);
  assert.doesNotThrow(()=>new Function(scripts[0][1]));
 });
+
+test('recebimentos ficam ocultos e sem polling antes do ACK do primeiro computador',()=>{
+ assert.match(page,/<section[^>]*id="receipts" hidden>/);
+ assert.match(page,/let receiptsEnabled=false;/);
+ assert.match(page,/if\(!receiptsEnabled\)return;/);
+ assert.match(page,/setReceiptsEnabled\(linkedCount>0\)/);
+ assert.match(page,/device\.confirmado_em/);
+ assert.match(page,/setInterval\(\(\)=>\{if\(receiptsEnabled\)void load\(\);\},10000\)/);
+ assert.doesNotMatch(page,/\);load\(\);loadDevices\(\);setInterval\(load,10000\)/);
+});
