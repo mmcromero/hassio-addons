@@ -31,11 +31,11 @@ export async function pedidosRoutes(fastify, options) {
     if (!user) return;
     const { periodo = 'hoje', limite = 50 } = request.query || {};
 
-    let dataFiltro = "date(p.entregue_at, 'localtime') = date('now', 'localtime')";
+    let dataFiltro = "(p.entregue_at IS NULL OR date(p.entregue_at / 1000, 'unixepoch', 'localtime') = date('now', 'localtime'))";
     if (periodo === 'ontem') {
-      dataFiltro = "date(p.entregue_at, 'localtime') = date('now', 'localtime', '-1 day')";
+      dataFiltro = "date(p.entregue_at / 1000, 'unixepoch', 'localtime') = date('now', 'localtime', '-1 day')";
     } else if (periodo === '7dias') {
-      dataFiltro = "date(p.entregue_at, 'localtime') >= date('now', 'localtime', '-7 days')";
+      dataFiltro = "date(p.entregue_at / 1000, 'unixepoch', 'localtime') >= date('now', 'localtime', '-7 days')";
     } else if (periodo === 'todos') {
       dataFiltro = "1=1";
     }
@@ -46,7 +46,7 @@ export async function pedidosRoutes(fastify, options) {
       FROM pedidos p
       JOIN restaurantes r ON p.restaurante_id = r.id
       WHERE p.restaurante_id = ? AND p.status = 'entregue' AND ${dataFiltro}
-      ORDER BY p.entregue_at DESC
+      ORDER BY COALESCE(p.entregue_at, p.created_at) DESC
       LIMIT ?
     `).all(user.restaurante_id, Math.min(Number(limite) || 50, 100));
 
@@ -54,7 +54,7 @@ export async function pedidosRoutes(fastify, options) {
       SELECT COUNT(*) as total
       FROM pedidos
       WHERE restaurante_id = ? AND status = 'entregue'
-        AND date(entregue_at, 'localtime') = date('now', 'localtime')
+        AND (entregue_at IS NULL OR date(entregue_at / 1000, 'unixepoch', 'localtime') = date('now', 'localtime'))
     `).get(user.restaurante_id);
 
     return {
