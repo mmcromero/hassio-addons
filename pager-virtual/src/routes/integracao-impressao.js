@@ -1,6 +1,6 @@
 // Integracao opt-in de laboratorio: agente Windows -> API -> KDS existente.
 // Sem leitura de PRN no servidor; sem alteracao no caminho fisico da impressora.
-import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto';
+import { randomUUID, createHash, timingSafeEqual } from 'node:crypto';
 import { nanoid } from 'nanoid';
 import db from '../db.js';
 import { requireRestaurant } from '../auth.js';
@@ -34,53 +34,42 @@ function schema() {
     CREATE INDEX IF NOT EXISTS idx_integracao_impressao_rest
       ON integracao_impressao_eventos(restaurante_id, criado_em);
   `);
+  // Registro historico pode ter sido criado sem vinculo a dispositivo.
+  // Migracao aditiva: nao apagar dados, mas nao aceitar chaves manuais antigas.
+  const cols=db.prepare('PRAGMA table_info(integracao_impressao_chaves)').all();
+  if(!cols.some(c=>c.name==='dispositivo_id'))
+    db.exec('ALTER TABLE integracao_impressao_chaves ADD COLUMN dispositivo_id TEXT');
+
 }
 
 function chaveValida(request) {
   const raw = request.headers['x-avisaqui-agent-key'];
   if (typeof raw !== 'string' || !/^[a-f0-9]{64}$/.test(raw)) return null;
   const digest = sha(raw);
-  const row = db.prepare(`SELECT c.id,c.restaurante_id,c.hash
+  // Somente a credencial emitida no resgate de um dispositivo pair-v1
+  // CONFIRMADO por ACK pode criar pedidos. Nunca reabilitar token manual.
+  const row = db.prepare(`SELECT c.id,c.restaurante_id,c.hash,c.dispositivo_id
     FROM integracao_impressao_chaves c JOIN restaurantes r ON r.id=c.restaurante_id
-    WHERE c.hash=? AND c.revogado_em IS NULL AND r.ativo=1`).get(digest);
+    WHERE c.hash=? AND c.revogado_em IS NULL AND r.ativo=1
+      AND c.dispositivo_id IS NOT NULL`).get(digest);
   if (!row || !timingSafeEqual(Buffer.from(row.hash, 'hex'), Buffer.from(digest, 'hex'))) return null;
+  const schemaReady=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='integracao_pareamento_resgates'").get();
+  if(!schemaReady) return null;
+  const active=db.prepare(`SELECT d.id FROM integracao_impressao_dispositivos d
+    JOIN integracao_pareamento_resgates p ON p.dispositivo_id=d.id
+    WHERE d.id=? AND d.restaurante_id=? AND d.revogado_em IS NULL
+      AND p.ack_em IS NOT NULL`).get(row.dispositivo_id,row.restaurante_id);
+  if(!active) return null;
   return row;
 }
 
 export async function integracaoImpressaoRoutes(app) {
   schema();
 
-  // Token mostrado uma unica vez ao gerente. Nunca persistir token em claro.
-  app.post('/api/integracoes/impressao/chave', async (request, reply) => {
-    const user = authorized(request, reply);
-    if (!user) return;
-    const token = randomBytes(32).toString('hex');
-    const id = randomUUID();
-    db.prepare('INSERT INTO integracao_impressao_chaves(id,restaurante_id,hash,criado_em) VALUES(?,?,?,?)')
-      .run(id, user.restaurante_id, sha(token), Date.now());
-    reply.header('Cache-Control', 'no-store');
-    return reply.code(201).send({ id, token, aviso: 'Copie agora. O token nao sera exibido novamente.' });
-  });
-
-  app.get('/api/integracoes/impressao/chaves', async (request, reply) => {
-    const user = authorized(request, reply);
-    if (!user) return;
-    return db.prepare('SELECT id,criado_em,revogado_em FROM integracao_impressao_chaves WHERE restaurante_id=? ORDER BY criado_em DESC')
-      .all(user.restaurante_id);
-  });
-
-  app.delete('/api/integracoes/impressao/chaves/:id', async (request, reply) => {
-    const user = authorized(request, reply);
-    if (!user) return;
-    const result = db.prepare('UPDATE integracao_impressao_chaves SET revogado_em=? WHERE id=? AND restaurante_id=? AND revogado_em IS NULL')
-      .run(Date.now(), request.params.id, user.restaurante_id);
-    return result.changes ? { ok: true } : reply.code(404).send({ error: 'Chave nao encontrada' });
-  });
-
   app.get('/api/integracoes/impressao/eventos', async (request, reply) => {
     const user = authorized(request, reply);
     if (!user) return;
-    return db.prepare(`SELECT evento_origem,numero,pedido_id,situacao,criado_em
+    return db.prepare(`SELECT evento_origem,numero,pedido_id,situacao,criado_em,chave_id
       FROM integracao_impressao_eventos WHERE restaurante_id=? ORDER BY criado_em DESC LIMIT 50`)
       .all(user.restaurante_id);
   });

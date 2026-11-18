@@ -17,6 +17,8 @@
   .action-feedback.error { color:#fca5a5 }
   .muted { color:#b1c0d7;font-size:.9rem } .status { min-height:24px;margin-top:12px;color:#c4f2d4 } .error { color:#fca5a5 }
   .brand-logo { display:block;width:min(190px,55vw);height:auto;border:0;border-radius:0;background:transparent }
+  .admin-session-header { display:flex;flex-direction:column;align-items:stretch;gap:8px }
+  .admin-session-top { display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;min-width:0 }
   .admin-nav { display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px }
   .admin-tab { flex:1 1 190px }
   .admin-panel { min-width:0 }
@@ -53,6 +55,9 @@
   .master-stat { min-width:0;padding:14px;border:1px solid #30435f;border-radius:14px;background:#131c2e }
   .master-stat strong { display:block;font-size:1.65rem;line-height:1.2;font-variant-numeric:tabular-nums }
   .master-stat span { display:block;margin-top:4px;color:#b1c0d7;font-size:.85rem }
+  .restaurant-logo { width:48px;height:48px;object-fit:contain;border-radius:10px;background:#e9eef6;flex:0 0 48px }
+  .restaurant-logo-fallback { width:48px;height:48px;border-radius:10px;background:#23466c;color:white;display:grid;place-items:center;font-weight:750;flex:0 0 48px }
+  #restaurant-identity:not([hidden]) {display:flex!important;align-items:center;gap:10px}
   #master-area #restaurants-list .line { align-items:center;flex-wrap:nowrap;min-width:0;gap:12px }
   #master-area #restaurants-list .line > span { flex:1;min-width:0;overflow-wrap:anywhere }
   #master-area #restaurants-list button { flex:0 0 auto }
@@ -83,8 +88,8 @@
 </head>
 <body>
 <main>
-<header><div><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><span class="muted" id="identity">Carregando conta...</span><div id="restaurant-identity" class="card" hidden style="display:none;padding:10px 14px;margin:10px 0 0;font-weight:700" role="status" aria-live="polite"></div></div>
-<div class="row"><a class="action secondary" href="./kds.html" id="go-kds" hidden>Ir ao KDS</a><button class="secondary" id="logout">Sair</button></div></header>
+<header class="admin-session-header"><div class="admin-session-top"><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><button class="secondary" id="logout">Sair</button></div>
+<span class="muted" id="identity">Carregando conta...</span><div id="restaurant-identity" class="card" hidden style="display:none;padding:10px 14px;margin:5px 0 0;font-weight:700" role="status" aria-live="polite"></div></header>
 
 <section id="master-area" hidden>
   <nav class="admin-nav" aria-label="Áreas do Master Admin"><button type="button" class="admin-tab" data-admin-tab="restaurants" aria-current="page">Restaurantes</button><button type="button" class="admin-tab secondary" data-admin-tab="interests">Interessados no piloto</button><button type="button" class="admin-tab secondary" data-admin-tab="settings">Configurações</button></nav>
@@ -104,7 +109,7 @@
 </section>
 
 <section id="manager-area" hidden>
-  <nav class="admin-nav" aria-label="Áreas do gerente"><button type="button" class="admin-tab" data-manager-tab="terminals" aria-current="page">Terminais</button><button type="button" class="admin-tab secondary" data-manager-tab="settings">Configurações</button><a class="action secondary" href="./impressao.html" id="manager-print-link" style="display:inline-flex;align-items:center;justify-content:center;min-height:48px">🖨️ Integração de impressão</a></nav>
+  <nav class="admin-nav" aria-label="Áreas do gerente"><a class="action secondary" href="./kds.html" id="go-kds" hidden>Ir ao KDS</a><button type="button" class="admin-tab" data-manager-tab="terminals" aria-current="page">Terminais</button><button type="button" class="admin-tab secondary" data-manager-tab="settings">Configurações</button><a class="action secondary" href="./impressao.html" id="manager-print-link" style="display:inline-flex;align-items:center;justify-content:center;min-height:48px">🖨️ Integração de impressão</a></nav>
   <div id="manager-panels" class="admin-panels"></div>
   <div class="card"><h2>Novo terminal operacional</h2><form id="terminal-form">
   <label for="terminal-name">Nome do terminal</label><input id="terminal-name" placeholder="Ex.: Caixa 1" maxlength="120" required>
@@ -164,13 +169,16 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
       const originalHeading=card.querySelector('h2');if(originalHeading)originalHeading.remove();
       dialog.append(header,card);
       const form=card.querySelector('form'),initial=new Map();
+      const actions=document.createElement('div');actions.className='admin-dialog-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+      const submitButton=form.querySelector('button[type="submit"]');actions.append(cancel,submitButton);form.append(actions);
       const snapshot=()=>{initial.clear();for(const field of form.querySelectorAll('input,select,textarea'))initial.set(field,field.value);};
       const changed=()=>Array.from(initial).some(([field,value])=>field.value!==value);
       const dismiss=()=>{
         if(changed()&&!confirm('Descartar as alterações não salvas?'))return;
         dialog.close();
       };
-      close.addEventListener('click',dismiss);
+      close.addEventListener('click',dismiss);cancel.addEventListener('click',dismiss);
       dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
       // O navegador devolve o foco ao botão que abriu o diálogo.
       trigger.addEventListener('click',()=>{snapshot();dialog.returnValue='';dialog.showModal();});
@@ -226,13 +234,16 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     const oldTitle=card.querySelector('h2');if(oldTitle)oldTitle.remove();
     dialog.append(header,card);document.body.append(dialog);
     const form=$('terminal-form');let snapshot=[];
+    const actions=document.createElement('div');actions.className='admin-dialog-actions';
+    const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+    actions.append(cancel,form.querySelector('button[type="submit"]'));form.append(actions);
     const remember=()=>{snapshot=Array.from(form.querySelectorAll('input')).map(el=>[el,el.value]);};
     const dismiss=()=>{
       if(snapshot.some(([el,value])=>el.value!==value)&&!confirm('Descartar as alterações não salvas?'))return;
       dialog.close();
     };
     create.addEventListener('click',()=>{remember();dialog.showModal();});
-    close.addEventListener('click',dismiss);
+    close.addEventListener('click',dismiss);cancel.addEventListener('click',dismiss);
     dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
     window.terminalDialog={dialog,remember,trigger:create};
     function showManagerPanel(id){
@@ -349,9 +360,142 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
   }
   async function post(url, data) { return api(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
   const val = id => $(id).value.trim();
+  function restaurantLogo(url,name){
+    const fallback=document.createElement('span');fallback.className='restaurant-logo-fallback';fallback.textContent=(name||'R').trim().slice(0,1).toUpperCase();fallback.setAttribute('aria-label','Logo não cadastrado');
+    if(typeof url!=='string'||!/^https:\/\//i.test(url))return fallback;
+    const img=document.createElement('img');img.className='restaurant-logo';img.alt='Logo de '+name;img.src=url;img.referrerPolicy='no-referrer';img.addEventListener('error',()=>img.replaceWith(fallback),{once:true});return img;
+  }
+
+  // Gestão contextual de gerentes: exige contexto Master, reautenticação e restauração da sessão.
+  async function manageRestaurantManagers(rest, trigger) {
+    const dialog=document.createElement('dialog');dialog.className='admin-dialog';
+    dialog.setAttribute('aria-label','Gerentes de '+rest.nome);
+    const head=document.createElement('div');head.className='admin-dialog-header';
+    const title=document.createElement('h2');title.textContent='Gerentes — '+rest.nome;
+    const close=document.createElement('button');close.type='button';close.className='secondary admin-dialog-close';
+    close.textContent='×';close.setAttribute('aria-label','Fechar');
+    head.append(title,close);
+    const info=document.createElement('p');info.className='muted';
+    info.textContent='Esta área usa o contexto do restaurante selecionado. Redefinir senha encerra todas as sessões do gerente.';
+    const state=document.createElement('p');state.setAttribute('role','status');state.setAttribute('aria-live','polite');
+    state.textContent='Consultando gerentes…';
+    const list=document.createElement('div');list.className='list';
+    const refresh=document.createElement('button');refresh.type='button';refresh.className='secondary';
+    refresh.textContent='Atualizar lista';refresh.disabled=true;
+    const footer=document.createElement('div');footer.className='admin-dialog-actions';
+    const done=document.createElement('button');done.type='button';done.className='secondary';done.textContent='Voltar';
+    footer.append(refresh,done);dialog.append(head,info,state,list,footer);document.body.append(dialog);
+    let busy=true,initialContext=null,contextChanged=false,unsaved=()=>false;
+    const contextUrl=basePath+'/api/admin/contexto/';
+    const managerUrl=basePath+'/api/admin/restaurantes/'+encodeURIComponent(rest.id)+'/gerentes';
+    async function restoreContext(){
+      if(!contextChanged)return;
+      const endpoint=initialContext?contextUrl+encodeURIComponent(initialContext):basePath+'/api/admin/contexto/sair';
+      await post(endpoint,{});
+      contextChanged=false;
+    }
+    async function dismiss(){
+      if(busy)return;
+      if(unsaved()&&!confirm('Descartar as alterações não salvas?'))return;
+      busy=true;close.disabled=true;done.disabled=true;state.textContent='Restaurando o contexto anterior…';
+      try{await restoreContext();dialog.close();dialog.remove();trigger.focus();}
+      catch(error){state.textContent='Não foi possível restaurar o contexto anterior: '+error.message;
+        close.disabled=false;done.disabled=false;busy=false;}
+    }
+    close.addEventListener('click',()=>void dismiss());
+    done.addEventListener('click',()=>void dismiss());
+    dialog.addEventListener('cancel',event=>{event.preventDefault();void dismiss();});
+    refresh.addEventListener('click',async()=>{
+      if(busy)return;
+      if(unsaved()&&!confirm('Descartar alterações não salvas e atualizar a lista?'))return;
+      busy=true;refresh.disabled=true;close.disabled=true;done.disabled=true;
+      try{await refreshManagers();}
+      catch(error){state.textContent='Não foi possível atualizar gerentes: '+error.message;}
+      finally{busy=false;refresh.disabled=false;close.disabled=false;done.disabled=false;}
+    });
+    async function refreshManagers(){
+      state.textContent='Carregando gerentes…';
+      // Manter a lista e as entradas até que a nova consulta seja confirmada.
+      const managers=await api(managerUrl);
+      if(!Array.isArray(managers))throw Error('Lista de gerentes inválida');
+      list.replaceChildren();unsaved=()=>false;
+      if(!managers.length){state.textContent='Nenhum gerente cadastrado neste restaurante.';return;}
+      state.textContent=managers.length+' gerente(s) cadastrado(s).';
+      for(const item of managers){
+        const line=document.createElement('div');line.className='line';
+        const name=document.createElement('strong');
+        name.textContent=item.nome+' · '+item.login+(item.ativo?'':' · Inativo');
+        line.append(name);
+        if(item.ativo){
+          const reset=document.createElement('button');reset.type='button';reset.className='secondary';
+          reset.textContent='Redefinir senha';
+          const section=document.createElement('form');section.hidden=true;section.style.cssText='width:100%;min-width:0';
+          const labelNew=document.createElement('label');labelNew.textContent='Nova senha do gerente';
+          const password=document.createElement('input');password.type='password';password.required=true;
+          password.minLength=12;password.maxLength=256;password.autocomplete='new-password';
+          labelNew.append(password);
+          const labelMaster=document.createElement('label');labelMaster.textContent='Sua senha atual de Master Admin';
+          const masterPassword=document.createElement('input');masterPassword.type='password';masterPassword.required=true;
+          masterPassword.autocomplete='current-password';labelMaster.append(masterPassword);
+          const notice=document.createElement('p');notice.className='muted';
+          notice.textContent='Após a confirmação, todas as sessões deste gerente serão encerradas.';
+          const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+          const actions=document.createElement('div');actions.className='admin-dialog-actions';
+          const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+          const save=document.createElement('button');save.type='submit';save.textContent='Confirmar nova senha';
+          actions.append(cancel,save);section.append(labelNew,labelMaster,notice,feedback,actions);
+          reset.addEventListener('click',()=>{section.hidden=false;reset.hidden=true;password.focus();});
+          cancel.addEventListener('click',()=>{if((password.value||masterPassword.value)&&
+            !confirm('Descartar as alterações não salvas?'))return;
+            password.value='';masterPassword.value='';section.hidden=true;reset.hidden=false;reset.focus();});
+          section.addEventListener('submit',async event=>{
+            event.preventDefault();if(busy||save.disabled)return;
+            if(!section.reportValidity())return;
+            if(!confirm('Redefinir a senha de '+item.nome+' e encerrar todas as sessões desse gerente?'))return;
+            busy=true;save.disabled=true;cancel.disabled=true;close.disabled=true;done.disabled=true;
+            save.textContent='Salvando…';feedback.textContent='Confirmando a redefinição…';
+            try{
+              await api(managerUrl+'/'+encodeURIComponent(item.id)+'/senha',{
+                method:'PATCH',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({senha:password.value,senha_master_atual:masterPassword.value})
+              });
+              password.value='';masterPassword.value='';section.hidden=true;reset.hidden=false;
+              try{await refreshManagers();state.textContent='Senha redefinida. As sessões do gerente foram encerradas.';}
+              catch(error){state.textContent='Senha redefinida e sessões encerradas, mas a lista não pôde ser atualizada: '+error.message;}
+            }catch(error){
+              feedback.textContent=error instanceof TypeError?
+                'Não foi possível confirmar a operação. Consulte o resultado antes de tentar novamente.':error.message;
+            }finally{
+              masterPassword.value='';busy=false;save.disabled=false;cancel.disabled=false;
+              close.disabled=false;done.disabled=false;save.textContent='Confirmar nova senha';
+            }
+          });
+          line.append(reset,section);
+          unsaved=(()=>{const previous=unsaved;return ()=>previous()||(!section.hidden&&!!(password.value||masterPassword.value));})();
+        }
+        list.append(line);
+      }
+    }
+    dialog.showModal();
+    try{
+      const me=await api(basePath+'/api/auth/me');
+      if(me.papel!=='master')throw Error('Esta operação exige Master Admin');
+      initialContext=me.restaurante_id||null;
+      if(initialContext!==rest.id){
+        await post(contextUrl+encodeURIComponent(rest.id),{});
+        contextChanged=true;
+      }
+      await refreshManagers();
+    }catch(error){state.textContent='Não foi possível consultar gerentes: '+error.message;}
+    finally{busy=false;refresh.disabled=false;close.disabled=false;done.disabled=false;}
+  }
+
   async function loadRestaurants() {
-    const data = await api(basePath + '/api/admin/restaurantes');
     const list = $('restaurants-list'), select = $('manager-restaurant');
+    list.textContent='Carregando restaurantes…';
+    let data;
+    try{data=await api(basePath + '/api/admin/restaurantes');if(!Array.isArray(data))throw new Error('Resposta inválida');}
+    catch(error){list.textContent='Não foi possível carregar os restaurantes: '+error.message;throw error;}
     const previousSelection=select.value;
     $('master-restaurants-count').textContent=String(data.length);
     list.replaceChildren(); select.replaceChildren();
@@ -359,7 +503,41 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
       const line = document.createElement('div'); line.className = 'line';
       const span = document.createElement('span');
       span.textContent = rest.nome + ' (' + rest.slug + ')' + (rest.ativo ? '' : ' · Inativo');
+      line.appendChild(restaurantLogo(rest.logo_url,rest.nome));
       line.appendChild(span);
+      const logoButton=document.createElement('button');
+      logoButton.type='button';logoButton.className='secondary';logoButton.textContent='Editar logo';
+      logoButton.addEventListener('click',async()=>{
+        const overlay=document.createElement('div');overlay.setAttribute('role','presentation');overlay.style.cssText='position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:1000;padding:16px';
+        const dialog=document.createElement('section');dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Editar logo de '+rest.nome);dialog.style.cssText='width:min(100%,480px);max-height:90vh;overflow:auto;background:#131c2e;border:1px solid #51627d;border-radius:16px;padding:20px';
+        const heading=document.createElement('div');heading.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px';
+        const title=document.createElement('h2');title.textContent='Logo de '+rest.nome;
+        const close=document.createElement('button');close.type='button';close.className='secondary';close.textContent='×';close.setAttribute('aria-label','Fechar');
+        heading.append(title,close);
+        const form=document.createElement('form');const label=document.createElement('label');label.textContent='URL HTTPS da imagem';
+        const field=document.createElement('input');field.type='url';field.value=rest.logo_url||'';field.placeholder='https://exemplo.com/logo.png';field.autocomplete='url';field.maxLength=2048;label.append(field);
+        const hint=document.createElement('p');hint.className='muted';hint.textContent='Deixe vazio para remover o logo. Sem imagem, será mostrada a inicial do restaurante.';
+        const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+        const actions=document.createElement('div');actions.className='row';
+        const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+        const save=document.createElement('button');save.type='submit';save.textContent='Salvar logo';actions.append(cancel,save);
+        form.append(label,hint,feedback,actions);dialog.append(heading,form);overlay.append(dialog);document.body.append(overlay);field.focus();
+        let busy=false;const initial=field.value;
+        const dismiss=()=>{if(busy)return;if(field.value!==initial&&!confirm('Descartar alterações do logo?'))return;document.removeEventListener('keydown',onKey);overlay.remove();logoButton.focus();};
+        const onKey=event=>{if(event.key==='Escape'){event.preventDefault();dismiss();}else if(event.key==='Tab'){const focusables=[close,field,cancel,save];const index=focusables.indexOf(document.activeElement);if(event.shiftKey&&index===0){event.preventDefault();save.focus();}else if(!event.shiftKey&&index===focusables.length-1){event.preventDefault();close.focus();}}};
+        close.addEventListener('click',dismiss);cancel.addEventListener('click',dismiss);document.addEventListener('keydown',onKey);
+        form.addEventListener('submit',async event=>{event.preventDefault();if(busy)return;busy=true;save.disabled=true;save.textContent='Salvando…';feedback.textContent='Salvando logo…';
+          try{await api(basePath+'/api/admin/restaurantes/'+encodeURIComponent(rest.id)+'/logo',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({logo_url:field.value.trim()})});document.removeEventListener('keydown',onKey);overlay.remove();await loadRestaurants();}
+          catch(error){feedback.textContent=error.message;busy=false;save.disabled=false;save.textContent='Salvar logo';}
+        });
+      });
+      line.appendChild(logoButton);
+      if(rest.ativo){
+        const manage=document.createElement('button');manage.type='button';manage.className='secondary';
+        manage.textContent='Gerenciar gerentes';
+        manage.addEventListener('click',()=>void manageRestaurantManagers(rest,manage));
+        line.appendChild(manage);
+      }
       if (rest.ativo) {
         const enter = document.createElement('button');
         enter.textContent = 'Entrar no restaurante';
@@ -383,8 +561,11 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     if (!data.length) list.textContent='Nenhum restaurante cadastrado.';
   }
   async function loadTerminals() {
-    const data=await api(basePath + '/api/admin/terminais');
-    const list=$('terminals-list'); list.replaceChildren();
+    const list=$('terminals-list');list.textContent='Carregando terminais…';
+    let data;
+    try{data=await api(basePath + '/api/admin/terminais');if(!Array.isArray(data))throw new Error('Resposta inválida');}
+    catch(error){list.textContent='Não foi possível carregar os terminais: '+error.message;throw error;}
+    list.replaceChildren();
     for (const terminal of data) {
       const line=document.createElement('div');line.className='line';
       const name=document.createElement('span');name.textContent=terminal.nome+' · '+terminal.login+(terminal.ativo?'':' (desativado)');
@@ -523,7 +704,9 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
       const restaurantName=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
       const restaurantIdentity=$('restaurant-identity');
       if(user.restaurante_id && restaurantName){
-        restaurantIdentity.textContent='Restaurante: '+restaurantName;
+        const details=document.createElement('div');const title=document.createElement('strong');title.textContent=restaurantName;
+        const role=document.createElement('div');role.className='muted';role.style.fontSize='.85rem';role.textContent=(user.papel==='master'?'Master Admin':'Gerente')+(user.restaurante_slug?' · '+user.restaurante_slug:'');
+        details.append(title,role);restaurantIdentity.replaceChildren(restaurantLogo(user.restaurante_logo_url,restaurantName),details);
         restaurantIdentity.hidden=false;restaurantIdentity.style.display='block';
       }else if(user.papel==='gerente'){
         restaurantIdentity.textContent='Restaurante não identificado. Contate a administração.';

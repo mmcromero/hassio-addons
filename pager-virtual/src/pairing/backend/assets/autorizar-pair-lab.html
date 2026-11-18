@@ -29,7 +29,7 @@ header{background:#090e17;border-bottom:1px solid #30435f;padding:12px 16px}
 .brand-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand-top img{width:min(190px,52vw);height:auto}
 .brand-top button{background:#334155;border:0;color:#fff;min-height:44px}
-.context{background:#172438;border:1px solid #46617d;padding:12px;border-radius:14px;margin-bottom:16px}
+.context{background:#172438;border:1px solid #46617d;padding:12px;border-radius:14px;margin-bottom:16px;display:flex;gap:12px;align-items:center}.context-logo{flex:0 0 48px;width:48px;height:48px;border-radius:10px;background:#2b4b6b;display:grid;place-items:center;color:white;font-weight:800}.context-logo img{display:block;width:48px;height:48px;object-fit:contain;border-radius:10px;background:white}.context-info{min-width:0}
 .context strong{display:block;overflow-wrap:anywhere}.context span{display:block;font-size:.85rem;color:#b1c0d7}
 .card{background:#131c2e;border-color:#30435f;box-shadow:none}
 .warning{background:#222c3d;border-left-color:#d2a550;color:#e2e8f0}
@@ -48,7 +48,7 @@ a{color:#93c5fd}
 <body>
 <header><div class="brand-top"><img src="./avisaqui-marca-transparente.svg" alt="Avisaqui"><button id="logout" type="button">Sair</button></div></header>
 <main>
-<div class="context" aria-live="polite"><strong id="restaurant-name">Consultando restaurante…</strong><span id="restaurant-role"></span></div>
+<div class="context" aria-live="polite"><div id="restaurant-logo" class="context-logo" aria-hidden="true">—</div><div class="context-info"><strong id="restaurant-name">Consultando restaurante…</strong><span id="restaurant-role"></span></div></div>
 <h1>Autorizar computador</h1>
 <p class="muted">Confirme o vínculo deste caixa com o restaurante da sua sessão.</p>
 <p class="warning" role="note"><strong>Ambiente de ensaio.</strong> Esta página não está instalada no Avisaqui comercial. A autorização só terá efeito se um servidor de laboratório autorizado disponibilizar a API e a autenticação gerencial.</p>
@@ -78,7 +78,11 @@ async function identity(){
   const user=await response.json();
   const name=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
   $('restaurant-name').textContent=name||'Restaurante não identificado';
-  $('restaurant-role').textContent=user.papel==='master'?'Master Admin':user.papel==='gerente'?'Gerente':'Acesso não autorizado';
+  $('restaurant-role').textContent=(user.papel==='master'?'Master Admin':user.papel==='gerente'?'Gerente':'Acesso não autorizado')+(user.restaurante_slug?' · '+user.restaurante_slug:'');
+  const avatar=$('restaurant-logo');const fallback=name?name.slice(0,1).toUpperCase():'—';avatar.textContent=fallback;
+  if(typeof user.restaurante_logo_url==='string'&&/^https:\/\//i.test(user.restaurante_logo_url)){
+    const img=document.createElement('img');img.src=user.restaurante_logo_url;img.alt='';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{avatar.textContent=fallback},{once:true});avatar.replaceChildren(img);
+  }
  }catch{
   $('restaurant-name').textContent='Restaurante não identificado';
   $('restaurant-role').textContent='Verifique sua sessão antes de autorizar.';

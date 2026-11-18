@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import db from './db.js';
 import { passwordHash, requireUser, changeMasterContext } from './auth.js';
+import { managerAdministrationRoutes } from './admin-gerentes.js';
 
 const simpleName = value => typeof value === 'string' && value.trim().length >= 2 && value.trim().length <= 120;
 const loginValid = value => typeof value === 'string' && /^[a-z0-9._@-]{3,120}$/.test(value.trim().toLowerCase());
@@ -40,9 +41,25 @@ function conflict(reply, error) {
 }
 
 export async function adminRoutes(app) {
+  await app.register(managerAdministrationRoutes);
   app.get('/api/admin/restaurantes', async (request, reply) => {
     if (!mustBe(request, reply, ['master'])) return;
-    return db.prepare('SELECT id, nome, slug, ativo FROM restaurantes ORDER BY nome').all();
+    return db.prepare('SELECT id, nome, slug, ativo, logo_url FROM restaurantes ORDER BY nome').all();
+  });
+
+  // O Master define a imagem por URL HTTPS; nenhuma imagem de outro restaurante é reutilizada.
+  app.patch('/api/admin/restaurantes/:restauranteId/logo', async (request, reply) => {
+    if (!mustBe(request, reply, ['master'])) return;
+    const value = request.body?.logo_url;
+    if (typeof value !== 'string' || value.length > 2048) return reply.code(400).send({ error: 'URL de logo inválida' });
+    const logo = value.trim();
+    if (logo) {
+      try { const url = new URL(logo); if (url.protocol !== 'https:' || url.username || url.password) throw Error('invalid'); }
+      catch { return reply.code(400).send({ error: 'Informe uma URL HTTPS válida para o logo' }); }
+    }
+    const result = db.prepare('UPDATE restaurantes SET logo_url = ? WHERE id = ?').run(logo || null, request.params.restauranteId);
+    if (!result.changes) return reply.code(404).send({ error: 'Restaurante não encontrado' });
+    return { ok: true, logo_url: logo || null };
   });
 
   // Master seleciona restaurante na própria sessão; nunca altera a sessão do gerente.

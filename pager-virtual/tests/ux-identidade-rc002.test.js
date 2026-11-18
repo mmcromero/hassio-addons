@@ -32,28 +32,32 @@ test('primeiro acesso preserva API e marcador legado do log',()=>{
 test('KDS preserva impressão e controles da operação',()=>{
  const s=page('kds.html');
  assert.ok(s.includes('id="btn-add-manual-order"') && s.includes('id="printing-integration-link"'));
- assert.ok(s.includes('<h1>Pedidos em atendimento</h1>'));
+ assert.match(s, /<h1\b[^>]*>\s*Pedidos em atendimento\s*<\/h1>/);
 });
 test('gerência preserva permissões e navegação',()=>{
  const s=page('admin.html');
  assert.ok(s.includes('id="manager-area"') && s.includes('data-manager-tab="terminals"'));
  assert.ok(s.includes('avisaqui-marca-transparente.svg'));
 });
-test('clipboard tem fallback sem afirmar cópia quando API falha',()=>{
+test('impressão oferece QR e download sem copiar token manual',()=>{
  const s=page('impressao.html');
- assert.ok(s.includes('navigator.clipboard.writeText(token)'));
- assert.ok(s.includes('selection.addRange(range)'));
- assert.ok(s.includes('Pressione Ctrl+C'));
+ assert.ok(s.includes('id="start-pairing"') && s.includes('id="windows-download-button"'));
+ assert.ok(!s.includes('id="generate"') && !s.includes('id="token"'));
+ assert.ok(!s.includes('navigator.clipboard.writeText(token)'));
 });
 
 test('gerente tem acesso visível à impressão e identidade do estabelecimento',()=>{
  const admin=page('admin.html'), kds=page('kds.html');
  assert.match(admin,/<a[^>]*href="\.\/impressao\.html"[^>]*id="manager-print-link"/);
  assert.ok(admin.includes('id="restaurant-identity"'));
- assert.ok(admin.includes("restaurantIdentity.textContent='Restaurante: '+restaurantName"));
+ assert.ok(admin.includes("restaurantLogo(user.restaurante_logo_url,restaurantName)"));
+ assert.ok(admin.includes('user.restaurante_slug'));
+ assert.ok(admin.includes("restaurantIdentity.replaceChildren("));
  assert.ok(admin.includes("printLink.href='./impressao.html'"));
  assert.ok(kds.includes('id="restaurant-context"'));
- assert.ok(kds.includes("context.textContent='Restaurante: '+name"));
+ assert.ok(kds.includes("img.src=user.restaurante_logo_url"));
+ assert.ok(kds.includes("meta.textContent="));
+ assert.ok(kds.includes('user.restaurante_slug'));
  assert.ok(kds.includes('id="printing-integration-link"'));
 });
 

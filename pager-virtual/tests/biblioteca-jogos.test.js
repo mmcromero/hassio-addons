@@ -49,7 +49,11 @@ test('handshake só inicia uma vez e falha não mantém iframe ativo', async () 
   assert.match(biblioteca, /instanceId, lastSequence/);
   assert.match(biblioteca, /createRateLimiter\(\)/);
   assert.match(biblioteca, /iniciado = true/);
-  assert.match(biblioteca, /catch \{ if \(ativa && atual === geracao\) \{ parar\(\)/);
+  // A recuperação atual volta ao catálogo, que encerra a partida e o canal.
+  assert.match(biblioteca, /catch \{ if \(ativa && atual === geracao\) mostrarCatalogo\('Não foi possível iniciar o jogo\.'/);
+  assert.match(biblioteca, /function mostrarCatalogo\(mensagem = ''\) \{\s*if \(!ativa\) return;\s*parar\(\);/);
+  assert.match(biblioteca, /pararIsolado = limpar/);
+  assert.match(biblioteca, /frame\.remove\(\)/);
   assert.match(biblioteca, /canal\.port1\.close\(\)/);
   assert.match(biblioteca, /canal\.port2\.close\(\)/);
 });
@@ -58,7 +62,8 @@ test('saída interna do Pong retorna à biblioteca e mantém módulo original', 
   const html = await readFile(new URL('../src/public/cliente.html', import.meta.url), 'utf8');
   const biblioteca = await readFile(new URL('../src/public/games/biblioteca.js', import.meta.url), 'utf8');
   assert.match(html, /onExit: \(\) => \{/);
-  assert.match(html, /querySelector\('button\[data-games-back\]'\)/);
+  assert.match(html, /querySelector\('#game-screen button\[data-games-back\]'\)/);
+  assert.match(html, /voltar\?\.click\(\)/);
   assert.match(biblioteca, /voltar\.dataset\.gamesBack = 'true'/);
   assert.match(html, /await import\('\.\/pong\.js'\)/);
 });

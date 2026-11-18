@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import { notifyOrderReady } from '../push.js';
+import { notifyGoogleWalletReady, generateSaveUrl } from '../wallet.js';
 import { stopPongForOrder } from '../pong.js';
 import db from '../db.js';
 import { sseManager } from '../sse.js';
@@ -22,6 +23,55 @@ export async function pedidosRoutes(fastify, options) {
       ...p,
       itens: p.itens_json ? JSON.parse(p.itens_json) : []
     }));
+  });
+
+  // 1.1 Listar histórico de pedidos finalizados com filtro de período e preservação de privacidade (Issue #36)
+  fastify.get('/api/pedidos/historico', async (request, reply) => {
+    const user = requireRestaurant(request, reply);
+    if (!user) return;
+    const { periodo = 'hoje', limite = 50 } = request.query || {};
+
+    let dataFiltro = "date(p.entregue_at, 'localtime') = date('now', 'localtime')";
+    if (periodo === 'ontem') {
+      dataFiltro = "date(p.entregue_at, 'localtime') = date('now', 'localtime', '-1 day')";
+    } else if (periodo === '7dias') {
+      dataFiltro = "date(p.entregue_at, 'localtime') >= date('now', 'localtime', '-7 days')";
+    } else if (periodo === 'todos') {
+      dataFiltro = "1=1";
+    }
+
+    const pedidos = db.prepare(`
+      SELECT p.id, p.numero, p.restaurante_id, p.status, p.created_at, p.pronto_at, p.entregue_at, p.itens_json,
+             r.nome as restaurante_nome
+      FROM pedidos p
+      JOIN restaurantes r ON p.restaurante_id = r.id
+      WHERE p.restaurante_id = ? AND p.status = 'entregue' AND ${dataFiltro}
+      ORDER BY p.entregue_at DESC
+      LIMIT ?
+    `).all(user.restaurante_id, Math.min(Number(limite) || 50, 100));
+
+    const resumoHoje = db.prepare(`
+      SELECT COUNT(*) as total
+      FROM pedidos
+      WHERE restaurante_id = ? AND status = 'entregue'
+        AND date(entregue_at, 'localtime') = date('now', 'localtime')
+    `).get(user.restaurante_id);
+
+    return {
+      periodo,
+      total_hoje: resumoHoje ? resumoHoje.total : 0,
+      pedidos: pedidos.map(p => ({
+        id: p.id,
+        numero: p.numero,
+        restaurante_id: p.restaurante_id,
+        restaurante_nome: p.restaurante_nome,
+        status: p.status,
+        created_at: p.created_at,
+        pronto_at: p.pronto_at,
+        entregue_at: p.entregue_at,
+        itens: p.itens_json ? JSON.parse(p.itens_json) : []
+      }))
+    };
   });
 
   // 2. Criar novo pedido (chamado pelo Interceptador de PDV ou pelo KDS)
@@ -153,6 +203,7 @@ export async function pedidosRoutes(fastify, options) {
     sseManager.notifyClient(pedido.token, payload);
     if (status === 'pronto' && pedido.status !== 'pronto') {
       void notifyOrderReady(pedido).catch(err => fastify.log.warn({ err }, 'Falha ao enviar Web Push'));
+      void notifyGoogleWalletReady(pedido).catch(err => fastify.log.warn({ err }, 'Falha ao atualizar Google Wallet'));
     }
     // Dispara atualização para os painéis KDS
     sseManager.notifyKds(pedido.restaurante_id, 'status_alterado', payload);
@@ -160,11 +211,35 @@ export async function pedidosRoutes(fastify, options) {
     return payload;
   });
 
+  // Rota para obter URL da Carteira do Google para o pedido
+  fastify.get('/api/pedidos/:token/wallet/google', async (request, reply) => {
+    const { token } = request.params;
+    const pedido = db.prepare(`
+      SELECT p.*, r.nome as restaurante_nome
+      FROM pedidos p
+      JOIN restaurantes r ON p.restaurante_id = r.id
+      WHERE p.token = ?
+    `).get(token);
+
+    if (!pedido) {
+      return reply.code(404).send({ error: 'Pedido não encontrado ou expirado' });
+    }
+
+    try {
+      const url = generateSaveUrl(pedido);
+      return { url };
+    } catch (err) {
+      fastify.log.warn({ err }, 'Erro ao gerar URL da Carteira do Google');
+      return reply.code(500).send({ error: 'Falha ao gerar link da carteira' });
+    }
+  });
+
   // 4. Stream SSE para o Cliente (Celular do consumidor final)
   fastify.get('/api/pedidos/stream/:token', (request, reply) => {
     const { token } = request.params;
 
-    const pedido = db.prepare('SELECT * FROM pedidos WHERE token = ?').get(token);
+    const pedido = db.prepare(`SELECT p.*, r.nome AS restaurante_nome, r.logo_url AS restaurante_logo_url
+      FROM pedidos p JOIN restaurantes r ON r.id = p.restaurante_id WHERE p.token = ?`).get(token);
     if (!pedido) {
       return reply.code(404).send({ error: 'Pedido não encontrado ou expirado' });
     }
@@ -180,6 +255,8 @@ export async function pedidosRoutes(fastify, options) {
     reply.raw.write(`data: ${JSON.stringify({
       numero: pedido.numero,
       status: pedido.status,
+      restaurante_nome: pedido.restaurante_nome,
+      restaurante_logo_url: pedido.restaurante_logo_url,
       timestamp: Date.now()
     })}\n\n`);
 

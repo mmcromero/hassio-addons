@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0f172a">
   <link rel="manifest" href="./manifest.webmanifest">
-  <title>Acompanhamento do seu Pedido — Burger House</title>
+  <title>Seu pedido · Avisaqui</title>
   <style>
     :root {
       --bg: #0b1120;
@@ -70,6 +70,10 @@
     .restaurant-header { flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px; }
     .brand-logo-client { display:block;width:150px;max-width:65%;height:auto;object-fit:contain;background:transparent; }
     .restaurant-info h1 { font-size:1.05rem; }
+    .client-restaurant-context { display:flex;align-items:center;gap:12px;margin:9px 0 0;padding:9px 12px;background:#18283f;border-radius:12px;width:100%;border:1px solid #46617d }
+    .client-restaurant-symbol { width:48px;height:48px;flex:none;background:#2c4968;color:#fff;border-radius:10px;display:grid;place-items:center;font-weight:800 }
+    .client-restaurant-symbol img { width:48px;height:48px;object-fit:contain;border-radius:10px;background:#fff }
+    .client-restaurant-context strong { overflow-wrap:anywhere;min-width:0 }
     .restaurant-info p { margin:0;font-size:.85rem; }
     @media(max-width:375px) { .brand-logo-client { width:135px; } .restaurant-header { padding:11px 13px; } }
 
@@ -405,6 +409,7 @@
         <h1>Seu pedido</h1>
         <p>Acompanhamento do seu pedido</p>
       </div>
+      <div id="client-restaurant-context" class="client-restaurant-context" role="status" aria-live="polite" hidden><span id="client-restaurant-symbol" class="client-restaurant-symbol" aria-hidden="true"></span><strong id="client-restaurant-name"></strong></div>
     </header>
 
     <section class="order-status-card">
@@ -439,6 +444,18 @@
       <button id="btn-silence" class="btn-chip" style="display: none; margin: 0 auto 16px; background: #dc2626; color: white;" aria-label="Silenciar toque do pedido">
         🔇 Silenciar Alarme Agora
       </button>
+
+      <!-- Botao Google Wallet (Android) -->
+      <div id="wallet-box" hidden style="margin-top: 14px;">
+        <a id="wallet-btn-link" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:block;">
+          <button type="button" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#000000; color:#ffffff; border:1px solid #475569; border-radius:12px; padding:12px 16px; font-size:0.95rem; font-weight:700; cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;">
+              <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#3b82f6"/>
+            </svg>
+            Salvar no Google Carteira
+          </button>
+        </a>
+      </div>
     </section>
 
     <!-- Produtos opcionais: exibidos apenas quando presentes no QR. -->
@@ -471,12 +488,22 @@
     const urlParams = new URLSearchParams(window.location.search);
     const orderNumber = urlParams.get('pedido') || '—';
     const token = urlParams.get('token') || urlParams.get('sessao') || '';
-    const restName = urlParams.get('rest') || 'Pager Virtual';
-
+    // Identidade visual obtida do SSE autenticado pelo token do pedido,
+    // sem confiar em um nome arbitrário fornecido na URL.
     document.getElementById('order-num').textContent = '#' + orderNumber;
-    const restNameEl = document.querySelector('.restaurant-info h1');
-    if (restNameEl && urlParams.get('rest')) {
-      restNameEl.textContent = restName;
+    function showRestaurantIdentity(name,logoUrl) {
+      if(typeof name !== 'string' || !name.trim())return;
+      const restaurantName=name.trim();
+      const context=document.getElementById('client-restaurant-context');
+      const symbol=document.getElementById('client-restaurant-symbol');
+      document.getElementById('client-restaurant-name').textContent=restaurantName;
+      symbol.replaceChildren();symbol.textContent=restaurantName.slice(0,1).toUpperCase();
+      if(typeof logoUrl==='string' && /^https:\/\//i.test(logoUrl)) {
+        const image=document.createElement('img');image.src=logoUrl;image.alt='';image.referrerPolicy='no-referrer';
+        image.addEventListener('error',()=>{symbol.textContent=restaurantName.slice(0,1).toUpperCase()},{once:true});symbol.replaceChildren(image);
+      }
+      context.hidden=false;
+      document.title='Seu pedido · '+restaurantName+' · Avisaqui';
     }
 
     // Dados opcionais do pedido vêm da URL e não geram consultas extras.
@@ -841,7 +868,7 @@
             const sair = await iniciarPong({ token, mode, container, onExit: () => {
               // A saída pelo botão interno do Pong volta à lista, sem recriar o jogo.
               if (pongAllowed && atual === gamesGeneration) {
-                const voltar = gamesContent.querySelector('button[data-games-back]');
+                const voltar = document.querySelector('#game-screen button[data-games-back]');
                 voltar?.click();
               }
             } });
@@ -874,6 +901,7 @@
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          if(data.restaurante_nome)showRestaurantIdentity(data.restaurante_nome,data.restaurante_logo_url);
           if (data.status) {
             applyStatus(data.status);
           }
@@ -972,7 +1000,32 @@
       }
     });
 
+
     void initPush();
+
+    // Google Wallet: carregar link para aparelhos Android
+    async function initGoogleWallet() {
+      if (!token) return;
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      if (!isAndroid) return;
+      try {
+        const res = await fetch(appBasePath + '/api/pedidos/' + encodeURIComponent(token) + '/wallet/google');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.url) {
+            const walletBox = document.getElementById('wallet-box');
+            const walletLink = document.getElementById('wallet-btn-link');
+            if (walletBox && walletLink) {
+              walletLink.href = data.url;
+              walletBox.hidden = false;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Google Wallet indisponivel:', e);
+      }
+    }
+    void initGoogleWallet();
 
     connectSSE();
 

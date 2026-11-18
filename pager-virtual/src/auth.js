@@ -44,7 +44,13 @@ const getSession = token => {
       ELSE u.restaurante_id END AS restaurante_id,
       CASE WHEN u.papel = 'master' THEN
         CASE WHEN mr.ativo = 1 THEN mr.nome ELSE NULL END
-      ELSE r.nome END AS restaurante_nome
+      ELSE r.nome END AS restaurante_nome,
+      CASE WHEN u.papel = 'master' THEN
+        CASE WHEN mr.ativo = 1 THEN mr.logo_url ELSE NULL END
+      ELSE r.logo_url END AS restaurante_logo_url,
+      CASE WHEN u.papel = 'master' THEN
+        CASE WHEN mr.ativo = 1 THEN mr.slug ELSE NULL END
+      ELSE r.slug END AS restaurante_slug
     FROM sessoes s
     JOIN usuarios u ON u.id = s.usuario_id
     LEFT JOIN restaurantes r ON r.id = u.restaurante_id
@@ -79,7 +85,7 @@ function sessionCookie(token, request) {
 function clearCookie(request) {
   return `${COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0${secureRequest(request) ? '; Secure' : ''}`;
 }
-const loginKey = request => request.ip + '|' + String(request.body?.login || '').toLowerCase();
+const loginKey = request => request.ip + '|' + String(request.body?.login || '').trim().toLowerCase();
 function recordFailedAttempt(key) {
   const now = Date.now();
   const entry = attempts.get(key);

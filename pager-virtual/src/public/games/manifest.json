@@ -5,7 +5,7 @@
     {
       "id": "pong",
       "title": "Pong",
-      "description": "Contra o computador ou duas pessoas no aparelho; duelo online quando disponível.",
+      "description": "Rebata a bola e marque pontos.",
       "version": "0.2.0",
       "status": "external",
       "modes": [
@@ -16,7 +16,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": true,
-      "orientation": "paisagem"
+      "orientation": "paisagem",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "jogo-da-velha",
@@ -33,7 +37,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "jogo-da-memoria",
@@ -45,7 +53,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "cobrinha",
@@ -57,7 +69,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "quebra-cabeca",
@@ -69,7 +84,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "forca",
@@ -81,7 +99,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "campo-minado",
@@ -93,7 +115,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "ligue-os-pontos",
@@ -105,7 +130,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "batalha-naval",
@@ -117,7 +146,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "quiz-relampago",
@@ -129,7 +162,13 @@
       "minPlayers": 1,
       "maxPlayers": 4,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2,
+        3,
+        4
+      ]
     },
     {
       "id": "sudoku",
@@ -141,7 +180,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "blocos",
@@ -153,7 +195,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "corrida-de-carros",
@@ -165,7 +210,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "paisagem"
+      "orientation": "paisagem",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "air-hockey",
@@ -177,7 +226,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "paisagem"
+      "orientation": "paisagem",
+      "playerCounts": [
+        1,
+        2
+      ]
     },
     {
       "id": "labirinto",
@@ -189,7 +242,10 @@
       "minPlayers": 1,
       "maxPlayers": 1,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1
+      ]
     },
     {
       "id": "jogo-das-diferencas",
@@ -201,7 +257,11 @@
       "minPlayers": 1,
       "maxPlayers": 2,
       "requiresServer": false,
-      "orientation": "retrato"
+      "orientation": "retrato",
+      "playerCounts": [
+        1,
+        2
+      ]
     }
   ]
 }

@@ -17,6 +17,21 @@ export function configureRuntime(env = process.env) {
   env.AVISAQUI_PAIR_V1_ENABLED = String(enabled);
   if (env.PUBLIC_URL === undefined && typeof options.public_url === 'string')
     env.PUBLIC_URL = options.public_url;
+  // Caminho de administrador, lido das opções do Home Assistant ou do ambiente final.
+  // Apenas o servidor acessa este caminho; o navegador usa a rota protegida.
+  if (env.WINDOWS_ZIP_PATH === undefined && typeof options.windows_zip_path === 'string')
+    env.WINDOWS_ZIP_PATH = options.windows_zip_path;
+  if (env.WINDOWS_ZIP_PATH === undefined) env.WINDOWS_ZIP_PATH = '/share/avisaqui/windows/Avisaqui-Windows.zip';
+  if (env.WINDOWS_ZIP_VERSION === undefined && typeof options.windows_zip_version === 'string')
+    env.WINDOWS_ZIP_VERSION = options.windows_zip_version;
+  // O ZIP Windows é uma distribuição independente: nenhuma configuração
+  // inválida ou arquivo ausente pode impedir inicialização do WEB/HA.
+  // A rota /api/windows/download/status deve retornar available:false.
+  // Nunca usar o caminho inválido para acessar o sistema de arquivos.
+  if (typeof env.WINDOWS_ZIP_PATH !== 'string' || !path.isAbsolute(env.WINDOWS_ZIP_PATH) ||
+      env.WINDOWS_ZIP_PATH.includes(String.fromCharCode(0)) ||
+      !env.WINDOWS_ZIP_PATH.toLowerCase().endsWith('.zip'))
+    env.WINDOWS_ZIP_PATH = '';
   if (env.LOG_LEVEL === undefined && typeof options.log_level === 'string')
     env.LOG_LEVEL = options.log_level;
   if (env.AVISAQUI_PAIR_V1_ENABLED !== 'true') return;
