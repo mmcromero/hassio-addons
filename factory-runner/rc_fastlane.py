@@ -69,7 +69,7 @@ def load_profile(path):
                  "distribution_prefix", "exporter_path", "exporter_git_blob_sha", "allowed_shared_paths")
     if obj.get("schema_version") != 1 or any(k not in obj or obj[k] is None for k in mandatory):
         raise PreflightError("Incomplete or unsupported project profile")
-    if not re.fullmatch(r"[a-z][a-z0-9_-]{1,47}", obj["id"]):
+    if not isinstance(obj["id"], str) or not re.fullmatch(r"[a-z][a-z0-9_-]{1,47}", obj["id"]):
         raise PreflightError("Invalid project ID")
     if not isinstance(obj["allowed_shared_paths"], list) or not all(
         isinstance(x, str) for x in obj["allowed_shared_paths"]
@@ -83,9 +83,9 @@ def load_profile(path):
         ):
             raise PreflightError("Invalid project path: " + key)
     prefix = obj["distribution_prefix"]
-    if not isinstance(prefix, str) or not prefix.endswith("/") or prefix.startswith("/") or (
-        ".." in prefix.split("/")
-    ):
+    if (not isinstance(prefix, str) or not prefix.endswith("/") or prefix.startswith("/")
+            or chr(92) in prefix or any(part in ("", ".", "..")
+                for part in prefix[:-1].split("/"))):
         raise PreflightError("Invalid distribution prefix")
     if not obj["provenance_path"].startswith(prefix):
         raise PreflightError("Provenance must belong to the project prefix")
@@ -94,13 +94,14 @@ def load_profile(path):
     ):
         raise PreflightError("Invalid or missing pinned exporter Git blob SHA")
     for name in obj["allowed_shared_paths"]:
-        if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")):
+        if chr(92) in name or name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")):
             raise PreflightError("Unsafe shared path")
     for key in ("source_ref", "rc_ref", "public_ref"):
-        if not re.fullmatch(r"refs/remotes/origin/[A-Za-z0-9._/-]+", obj[key]):
+        if (not isinstance(obj[key], str) or not re.fullmatch(r"refs/remotes/origin/[A-Za-z0-9._/-]+", obj[key])
+                or any(part in ("", ".", "..") for part in obj[key].removeprefix("refs/remotes/origin/").split("/"))):
             raise PreflightError("Invalid branch reference")
     for key in ("source_repo", "distribution_repo"):
-        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", obj[key]):
+        if not isinstance(obj[key], str) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", obj[key]):
             raise PreflightError("Invalid repository")
     return obj
 
