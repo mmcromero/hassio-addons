@@ -57,7 +57,7 @@ Atualize esses documentos quando uma etapa for **confirmada por evidências** ou
 - Para pacotes autorizados da loja, publicar somente a pasta do add-on afetado na `main` após conferir integridade, versão, escopo e proveniência. Branch/PR são opcionais conforme revisão necessária. Não usar Actions sem autorização específica.
 - Versão independente por add-on, registrada em `CHANGELOG.md`.
 - Preferir tags fixas em vez de `:latest`.
-- A CI **não instala nem publica** add-ons no HA; quando a configuração usa Dockerfile sem imagem pré-compilada, o Supervisor pode compilar no dispositivo-alvo durante a instalação/atualização. O procedimento universal define os testes e exceções. Preguiça de emular ARM64 não constitui impedimento técnico.
+- A CI **não instala nem publica** add-ons no HA; quando a configuração usa Dockerfile sem imagem pré-compilada, o Supervisor pode compilar no dispositivo-alvo durante a instalação/atualização. O procedimento universal define os testes e exceções. Ausência de emulação ARM64 não constitui, por si só, impedimento técnico.
 - Segredos, bancos e sessões nunca entram no Git.
 - Não migrar os add-ons antigos para este repositório sem uma decisão específica.
 
