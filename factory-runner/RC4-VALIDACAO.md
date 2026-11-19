@@ -41,3 +41,10 @@ Estado: **RC4 VERSIONADA EM BRANCH ISOLADA / PR #45 DRAFT / NÃO PUBLICAR / NÃO
 4. Revisão de Segurança e autorização específica do proprietário antes de qualquer publicação ou instalação.
 
 Próximo responsável: desenvolvimento/infraestrutura para solução do isolamento e testes em ambiente compatível; Segurança para gate; proprietário exclusivamente para autorização final. Não foram executados deploy, instalação, merge, Actions ou testes Docker/HA nesta sessão.
+
+## Verificação complementar do lote (19/11/2026)
+- GitHub API: árvore da branch e diferença contra `main` conferidas; versões e arquivos do candidato recuperados da branch exata.
+- **10/10 verificações estáticas dirigidas PASS**: versão RC4, teste offline obrigatório no Dockerfile, presença da nova regressão, recusa de tipo inválido, de backslash e de refs ambíguas, HTTP 403 para operações privilegiadas, recusa de root, recusa de ausência de Bubblewrap e ausência de imagem pré-compilada. Verificação estática **não equivale à execução dos testes Python**.
+- Execução local tentada com `git ls-remote https://github.com/mmcromero/hassio-addons.git HEAD`: **FAIL por DNS** (`Could not resolve host: github.com`). O conector GitHub permite leitura/escrita de código, mas não fornece execução shell ou Docker, e o shell disponível não alcança o GitHub para baixar a árvore privada. A infraestrutura real não foi alterada.
+- Alternativa já existente e proporcional: o `Dockerfile` possui `python3 -m unittest discover ...` como etapa obrigatória de build. Na instalação autorizada, o Supervisor pode realizar o build e o teste na arquitetura real, sem Actions ou emulador externo. **Essa instalação NÃO está autorizada nesta tarefa; não executá-la para obter PASS.**
+- Este registro não considera a falta de ARM64 externo um NO-GO; a pendência efetiva de execução Python existe por limitação do ambiente acessível, não do projeto. O bloqueio Bubblewrap é independente e restrito a `/api/prepare`.
