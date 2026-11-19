@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from sandbox_export import SandboxUnavailable, sandbox_export
 
 SHA = re.compile(r"^[0-9a-f]{40}$")
 VERSION = re.compile(r"""(?m)^version:\s*["']?([^"'\s#]+)""")
@@ -258,13 +259,17 @@ def prepare(source, distribution, report, output, *, profile):
                  profile["exporter_path"]], env=safe_env)
             if exporter_blob != profile["exporter_git_blob_sha"]:
                 raise PreflightError("Exporter SHA differs from approved project profile")
-            # Isolated Python mode prevents a source checkout from shadowing
-            # stdlib modules through its scripts directory or PYTHONPATH.
-            args = [sys.executable, "-I", str(exporter), "--commit", report["source_sha"],
-                    "--target", str(output)]
-            run_checked(args, cwd=source_snapshot, env=safe_env, timeout=240)
-            run_checked(args + ["--verify"], cwd=source_snapshot,
-                        env=safe_env, timeout=240)
+            # A pinned SHA does not make Python safe. Execute the exporter only
+            # inside a separate, networkless filesystem namespace.
+            # These are conservative v1 guardrails, NOT validated Pi cgroup caps.
+            budget = dict(max_output_bytes=256 * 1024 * 1024,
+                          memory_bytes=512 * 1024 * 1024,
+                          cpu_seconds=120, elapsed_seconds=240)
+            for verify in (False, True):
+                sandbox_export(source=source_snapshot, target=output,
+                               script=profile["exporter_path"],
+                               sha=report["source_sha"], verify=verify,
+                               env=safe_env, **budget)
             status = run_checked(["git", "-C", str(output), "status", "--porcelain=v1",
                                   "--no-renames", "--untracked-files=all", "-z"],
                                  preserve_output=True, env=safe_env)
@@ -322,7 +327,7 @@ def main(argv=None):
         project_profile = load_profile(args.profile)
         report = evaluate(args.source, args.distribution, args.expected_source_sha,
                           profile=project_profile)
-    except (PreflightError, OSError, subprocess.TimeoutExpired) as exc:
+    except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired) as exc:
         print(json.dumps({"eligible_for_preparation": False, "errors": [str(exc)]},
                          ensure_ascii=False), file=sys.stderr)
         return 2
