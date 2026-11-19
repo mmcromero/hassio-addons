@@ -16,6 +16,7 @@ import uuid
 from pathlib import Path
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare
+from sandbox_export import SandboxUnavailable
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -198,7 +199,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         result = preflight_project(project, source_sha)
                     else:
                         result = prepare_project(project, source_sha, operation_id)
-                except (PreflightError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
                     record(action, None, "blocked_workspace_or_git", operation_id)
                     return self.respond(503, {"error": "workspace_or_export_unavailable",
                                               "operation_id": operation_id})
