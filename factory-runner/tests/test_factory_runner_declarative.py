@@ -42,7 +42,7 @@ class ExportTest(unittest.TestCase):
         self.assertEqual(m["state"], "PREPARED_NOT_PUBLISHED")
         self.assertEqual((self.out / "pager-virtual/config.yaml").read_text(),
                          "version: 0.0.1\n")
-        self.assertEqual(json.loads((self.out / "SOURCE_PROVENANCE.json").read_text())["commit"], self.sha)
+        self.assertEqual(json.loads((self.out / "DECLARATIVE_BUNDLE_MANIFEST.json").read_text())["commit"], self.sha)
 
     def test_invalid_source_path_no_output(self):
         with self.assertRaises(DeclarativeExportError):
