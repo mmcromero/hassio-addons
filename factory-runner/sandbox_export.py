@@ -37,7 +37,8 @@ def _limits(cpu_seconds, memory_bytes, max_file_bytes):
         (resource.RLIMIT_AS, memory_bytes),
         (resource.RLIMIT_FSIZE, max_file_bytes),
         (resource.RLIMIT_CORE, 0),
-        (resource.RLIMIT_NOFILE, 128)
+        (resource.RLIMIT_NOFILE, 128),
+        (resource.RLIMIT_NPROC, 32)
     ]:
         soft, hard = resource.getrlimit(key)
         actual = val if hard == resource.RLIM_INFINITY else min(val, hard)
@@ -83,6 +84,7 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
         args.append("--verify")
     # Keep a bounded tmpfs, CPU seconds, address space and individual file size.
     # Aggregate disk usage is sampled, and process group killed on threshold.
+    # A cgroup cap is still required for a hard aggregate CPU/RAM/PID budget.
     p = subprocess.Popen(args, cwd=source, env=env, stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          preexec_fn=lambda: _limits(cpu_seconds, memory_bytes, max_output_bytes))
