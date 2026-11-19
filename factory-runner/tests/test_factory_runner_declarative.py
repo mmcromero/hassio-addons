@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from declarative_export import DeclarativeExportError, prepare_declarative, safe_path
+from declarative_export import DeclarativeExportError, prepare_declarative, expand_trusted_rules, safe_path
 
 
 class ExportTest(unittest.TestCase):
@@ -111,6 +111,38 @@ class ExportTest(unittest.TestCase):
                 {"package.json": "package.json"},
                 expected_version="9.9.9", project="avisaqui")
         self.assertFalse(self.out.exists())
+
+    def test_git_tree_rule_expansion_is_deterministic(self):
+        (self.source / "src" / "sub").mkdir(parents=True)
+        (self.source / "src" / "sub" / "feature.js").write_text("fixture")
+        (self.source / "tests").mkdir()
+        (self.source / "tests" / "unit.test.js").write_text("test")
+        (self.source / "tests" / "ignored.txt").write_text("ignore")
+        self.git("add", ".")
+        self.git("commit", "-qm", "selection fixture")
+        sha = self.git("rev-parse", "HEAD")
+        m = expand_trusted_rules(
+            self.source, sha, destination_prefix="demo/",
+            required={"demo/config.yaml": "config.yaml"},
+            optional={"demo/no-file.txt": "optional-absent.txt"},
+            include_prefixes=["src/"], include_suffixes={"tests/": ".test.js"})
+        self.assertEqual(m, {
+            "demo/config.yaml": "config.yaml",
+            "demo/src/sub/feature.js": "src/sub/feature.js",
+            "demo/tests/unit.test.js": "tests/unit.test.js"
+        })
+
+    def test_git_tree_rule_rejects_matched_symlinks(self):
+        (self.source / "src").mkdir()
+        (self.source / "src" / "unsafe").symlink_to("../config.yaml")
+        self.git("add", ".")
+        self.git("commit", "-qm", "symlink fixture")
+        sha = self.git("rev-parse", "HEAD")
+        with self.assertRaisesRegex(DeclarativeExportError, "unsupported_git_object"):
+            expand_trusted_rules(
+                self.source, sha, destination_prefix="demo/",
+                required={}, optional={}, include_prefixes=["src/"],
+                include_suffixes={})
 
     def test_path_validation(self):
         for x in ("", ".", "..", "./a", "a//b", "a/../b", "a\\b", "a\x00b"):
