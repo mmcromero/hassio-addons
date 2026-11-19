@@ -1,6 +1,6 @@
 # Factory Runner — Candidato de pré-verificação multi-projeto
 
-**Estado:** desenvolvimento, ainda não homologado ou publicado. **Produto independente** dos projetos atendidos.
+**Estado:** candidata RC2 em validação, ainda não homologada no Home Assistant. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
@@ -33,7 +33,9 @@ Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docke
 - Perfil JSON versionado e validado; cliente não escolhe paths arbitrários.
 - Não encaminhar credenciais para subprocessos de testes/exportação.
 
-## Verificações pendentes
+## Verificações complementares (não são gate genérico de publicação)
+
+A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. Conferir diff, sintaxe, testes dirigidos, configuração, segurança e escopo. Como este add-on utiliza Dockerfile sem imagem pré-compilada, o Supervisor executa o build ARM64 durante a instalação/atualização no HA. Buildx/QEMU externo abaixo é diagnóstico opcional quando houver risco técnico comprovado, não requisito obrigatório de publicação da RC de teste.
 
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
@@ -44,12 +46,12 @@ python3 factory-runner/tests/smoke_container.py --image factory-runner:rc2-arm64
 
 O PR #43 registra a execução desta tarefa com SHA, contagens e imagens reais.
 Há testes HTTP e Git reais com fixtures temporárias, distintos dos mocks de
-unidade. ARM64 depende de emulação ou hardware disponível; não declarar PASS
+unidade. ARM64 pode ser compilado pelo Supervisor no Home Assistant. Não declarar PASS
 por compilação de sintaxe ou inspeção de Dockerfile.
 
 ## Critérios para uma versão instalável com publicação
 
-Antes de integrar em `hassio-addons:main`, validar sintaxe, testes, build ARM64, limites de CPU/RAM e acesso aos checkouts. A próxima versão do Factory Runner é independente da `0.1.20-rc.8` do Avisaqui. Essa fase oferece **preflight somente leitura e preparação local sem publicação**, não fecha pacotes.
+Antes de publicar apenas `factory-runner/` em `hassio-addons:main`, cumprir os testes proporcionais, validações de configuração, distribuição e autorização da norma P0. No HA, registrar o resultado real de build ARM64, isolamento e inicialização; somente liberar a execução de preparação quando os limites de CPU/RAM e acesso aos checkouts estiverem comprovados. A próxima versão do Factory Runner é independente da `0.1.20-rc.8` do Avisaqui. Essa fase oferece **preflight somente leitura e preparação local sem publicação**, não fecha pacotes.
 
 ## Ambiente de laboratório e limites de segurança
 
