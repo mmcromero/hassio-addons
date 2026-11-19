@@ -13,12 +13,14 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import time
 
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SEGMENT = re.compile(r"^[A-Za-z0-9_.@+ -]+$")
 MAX_FILES = 4096
 MAX_TOTAL_BYTES = 256 * 1024 * 1024
 MAX_FILE_BYTES = 32 * 1024 * 1024
+MAX_ELAPSED_SECONDS = 240
 
 class DeclarativeExportError(Exception):
     pass
@@ -194,8 +196,11 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
     # Read ALL objects before creating output. Reject missing, symlinked and
     # oversized content without touching the destination.
     files: list[tuple[str, str, bytes]] = []
+    started = time.monotonic()
     total = 0
     for destination, origin in sorted(checked.items()):
+        if time.monotonic() - started > MAX_ELAPSED_SECONDS:
+            raise DeclarativeExportError("elapsed_budget_exceeded")
         payload = _blob(source_repo, source_sha, origin)
         total += len(payload)
         if total > MAX_TOTAL_BYTES:
@@ -216,6 +221,8 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
     output_dir.mkdir(mode=0o700)
     records = []
     for destination, origin, payload in files:
+        if time.monotonic() - started > MAX_ELAPSED_SECONDS:
+            raise DeclarativeExportError("elapsed_budget_exceeded")
         target = output_dir / destination
         target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         with target.open("xb") as stream:
@@ -230,6 +237,8 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
         json.dump(manifest, stream, ensure_ascii=False, indent=2)
         stream.write("\n")
     for record in records:
+        if time.monotonic() - started > MAX_ELAPSED_SECONDS:
+            raise DeclarativeExportError("elapsed_budget_exceeded")
         target = output_dir / record["path"]
         if (target.is_symlink()
                 or hashlib.sha256(target.read_bytes()).hexdigest() != record["sha256"]):
