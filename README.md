@@ -1,5 +1,7 @@
 # Add-ons Home Assistant — mmcromero
 
+> **P0 — PUBLICAÇÃO UNIVERSAL (19/11/2026):** todo executor, independentemente do cargo ou produto, deve seguir o [procedimento único de publicação e testes proporcionais](CONTRIBUTING.md) antes de fechar/publicar um add-on ou declarar impedimento. **Build ARM64 externo, QEMU e Actions não são gates rotineiros.** O build e a execução reais pelo Supervisor, quando aplicáveis, são verificados na homologação no Home Assistant. Publicação no GitHub não comprova instalação ou homologação. Bloqueios reais de segurança permanecem válidos.
+
 Repositório central para add-ons do Home Assistant OS, incluindo Raspberry Pi 4 (`aarch64`).
 
 ## Instalar na loja do Home Assistant
@@ -55,7 +57,7 @@ Atualize esses documentos quando uma etapa for **confirmada por evidências** ou
 - Para pacotes autorizados da loja, publicar somente a pasta do add-on afetado na `main` após conferir integridade, versão, escopo e proveniência. Branch/PR são opcionais conforme revisão necessária. Não usar Actions sem autorização específica.
 - Versão independente por add-on, registrada em `CHANGELOG.md`.
 - Preferir tags fixas em vez de `:latest`.
-- A CI **não instala nem publica** add-ons no HA; o Supervisor compila o Dockerfile depois da inclusão do repositório.
+- A CI **não instala nem publica** add-ons no HA; quando a configuração usa Dockerfile sem imagem pré-compilada, o Supervisor pode compilar no dispositivo-alvo durante a instalação/atualização. O procedimento universal define os testes e exceções. Preguiça de emular ARM64 não constitui impedimento técnico.
 - Segredos, bancos e sessões nunca entram no Git.
 - Não migrar os add-ons antigos para este repositório sem uma decisão específica.
 
