@@ -1,4 +1,4 @@
-name: "Fábrica de Software — Factory Runner"
+name: "Fábrica de Softwares - Factory Runner"
 version: "0.1.0-rc.2"
 slug: fabrica_software
 description: "Pré-verificação multi-projeto (somente leitura; publicação bloqueada)"
