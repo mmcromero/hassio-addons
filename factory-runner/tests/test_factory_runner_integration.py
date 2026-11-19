@@ -198,7 +198,8 @@ class IntegrationTests(unittest.TestCase):
         for ref in ('source_ref', 'rc_ref'):
             self.git(self.source, 'update-ref', self.profile[ref], new_sha)
         rules = {
-            "required": {"demo/config.yaml": "config.yaml"},
+            "required": {"demo/config.yaml": "config.yaml",
+                         "demo/package.json": "package.json"},
             "optional": {},
             "include_prefixes": ["src/"],
             "include_suffixes": {}
@@ -209,7 +210,7 @@ class IntegrationTests(unittest.TestCase):
             'POST', '/api/prepare-declarative',
             payload={"project": "laboratorio", "expected_source_sha": new_sha})
         self.assertEqual(code, 200, data)
-        self.assertEqual(data['result']['files'], 2)
+        self.assertEqual(data['result']['files'], 3)
         output = next(self.preparations.iterdir())
         self.assertEqual((output / 'demo/src/nested/module.txt').read_text(),
                          'synthetic')
