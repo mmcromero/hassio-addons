@@ -34,7 +34,9 @@
       "pager-virtual/README.md": "distribution/README.md",
       "pager-virtual/CHANGELOG.md": "distribution/CHANGELOG.md",
       "pager-virtual/AGENTS.md": "distribution/AGENTS.md",
-      "pager-virtual/docs/RC-001.md": "distribution/RC-001.md"
+      "pager-virtual/docs/RC-001.md": "distribution/RC-001.md",
+      "pager-virtual/docs/WEBUI-CATALOGO-016.md": "distribution/hotfix-0.1.16/README.md",
+      "pager-virtual/docs/WEBUI-PROXY-017.md": "distribution/hotfix-0.1.17/README.md"
     },
     "optional": {
       "pager-virtual/scripts/impressao_windows/cliente_pair_v1.py": "scripts/impressao_windows/cliente_pair_v1.py",
