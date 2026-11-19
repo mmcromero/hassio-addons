@@ -11,7 +11,9 @@ from pathlib import Path
 from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 
-SOURCE = Path(__file__).resolve().parents[1] / "factory-runner-add-on" / "server.py"
+ROOT = Path(__file__).resolve().parents[1]
+ADDON = ROOT if (ROOT / "server.py").is_file() else ROOT / "factory-runner-add-on"
+SOURCE = ADDON / "server.py"
 sys.path.insert(0, str(SOURCE.parent))
 spec = importlib.util.spec_from_file_location("factory_runner_server", SOURCE)
 server = importlib.util.module_from_spec(spec)
