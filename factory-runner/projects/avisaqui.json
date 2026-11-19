@@ -17,5 +17,60 @@
     ".github/workflows/avisaqui-governance.yml",
     ".github/workflows/validate-addons.yml"
   ],
-  "exporter_git_blob_sha": "e67c816405707545b21b0e6863814ada7b26d0f1"
+  "exporter_git_blob_sha": "e67c816405707545b21b0e6863814ada7b26d0f1",
+  "declarative_rules": {
+    "required": {
+      "pager-virtual/package.json": "package.json",
+      "pager-virtual/package-lock.json": "package-lock.json",
+      "pager-virtual/Dockerfile": "Dockerfile",
+      "pager-virtual/.dockerignore": ".dockerignore",
+      "pager-virtual/config.yaml": "config.yaml",
+      "pager-virtual/run.sh": "run.sh",
+      "pager-virtual/scripts/bootstrap-admin.js": "scripts/bootstrap-admin.js",
+      "pager-virtual/docs/AVISAQUI-HTTPS-001-nginx.conf.example": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
+      "pager-virtual/docs/AVISAQUI-HTTPS-001-publicacao.md": "docs/AVISAQUI-HTTPS-001-publicacao.md",
+      "pager-virtual/docs/AVISAQUI_PRINT_HA_001.md": "docs/AVISAQUI_PRINT_HA_001.md",
+      "pager-virtual/docs/AVISAQUI-PONG-014.md": "docs/AVISAQUI-PONG-014.md",
+      "pager-virtual/README.md": "distribution/README.md",
+      "pager-virtual/CHANGELOG.md": "distribution/CHANGELOG.md",
+      "pager-virtual/AGENTS.md": "distribution/AGENTS.md",
+      "pager-virtual/docs/RC-001.md": "distribution/RC-001.md"
+    },
+    "optional": {
+      "pager-virtual/scripts/impressao_windows/cliente_pair_v1.py": "scripts/impressao_windows/cliente_pair_v1.py",
+      "pager-virtual/scripts/impressao_windows/pair_v1.py": "scripts/impressao_windows/pair_v1.py"
+    },
+    "include_prefixes": [
+      "src/",
+      "tests/fixtures/"
+    ],
+    "include_suffixes": {
+      "tests/": ".test.js"
+    },
+    "conditional_groups": [
+      {
+        "trigger": "distribution/governance/package-policy.json",
+        "required": {
+          "pager-virtual/.governance/package-policy.json": "distribution/governance/package-policy.json",
+          "pager-virtual/.governance/approved-pager-ci.patch": ".governance/approved-pager-ci.patch",
+          "pager-virtual/.gitignore": "distribution/governance/product.gitignore",
+          "pager-virtual/scripts/check-package-policy.py": "scripts/check-package-policy.py",
+          "pager-virtual/tests/package-policy.test.py": "tests/package-policy.test.py",
+          "pager-virtual/docs/GOVERNANCA-DO-PACOTE.md": "distribution/governance/GOVERNANCA-DO-PACOTE.md"
+        }
+      }
+    ],
+    "shared_optional": {
+      ".github/workflows/avisaqui-governance.yml": "distribution/governance/avisaqui-governance.yml"
+    }
+  },
+  "declarative_ci": {
+    "patch_source": "distribution/pager-node22-ci.patch",
+    "workflow_path": ".github/workflows/validate-addons.yml",
+    "compatible_markers": [
+      "  test-pager-auth:",
+      "node-version: '22'",
+      "run: npm ci --no-audit --no-fund"
+    ]
+  }
 }
