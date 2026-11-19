@@ -126,8 +126,11 @@ def load_profile(path):
             raise PreflightError("Mixed declarative mapping modes")
         from declarative_export import DeclarativeExportError, safe_path
         rules = obj["declarative_rules"]
-        if not isinstance(rules, dict) or set(rules) != {
-                "required", "optional", "include_prefixes", "include_suffixes"}:
+        if (not isinstance(rules, dict) or not {
+                "required", "optional", "include_prefixes", "include_suffixes"}.issubset(rules)
+                or not set(rules).issubset({
+                    "required", "optional", "include_prefixes", "include_suffixes",
+                    "conditional_groups", "shared_optional"})):
             raise PreflightError("Invalid declarative rules")
         for section in ("required", "optional", "include_suffixes"):
             if not isinstance(rules[section], dict):
@@ -158,6 +161,53 @@ def load_profile(path):
                 safe_path(prefix[:-1])
             except DeclarativeExportError as exc:
                 raise PreflightError("Unsafe declarative suffix") from exc
+    if "declarative_rules" in obj:
+        rules = obj["declarative_rules"]
+        shared = rules.get("shared_optional", {})
+        conditionals = rules.get("conditional_groups", [])
+        if not isinstance(shared, dict) or not isinstance(conditionals, list):
+            raise PreflightError("Invalid conditional/shared rule type")
+        from declarative_export import DeclarativeExportError, safe_path
+        for dest, origin in shared.items():
+            try:
+                safe_path(dest)
+                safe_path(origin)
+            except DeclarativeExportError as exc:
+                raise PreflightError("Unsafe shared rule") from exc
+            if dest not in obj["allowed_shared_paths"]:
+                raise PreflightError("Shared rule path not approved")
+        for group in conditionals:
+            if (not isinstance(group, dict) or set(group) != {"trigger", "required"}
+                    or not isinstance(group["required"], dict)):
+                raise PreflightError("Invalid conditional group")
+            try:
+                safe_path(group["trigger"])
+                for dest, origin in group["required"].items():
+                    safe_path(dest)
+                    safe_path(origin)
+                    if (dest == obj["provenance_path"]
+                            or not dest.startswith(obj["distribution_prefix"])):
+                        raise PreflightError("Conditional path outside project")
+            except DeclarativeExportError as exc:
+                raise PreflightError("Unsafe conditional path") from exc
+    if "declarative_ci" in obj:
+        from declarative_export import DeclarativeExportError, safe_path
+        ci = obj["declarative_ci"]
+        if (not isinstance(ci, dict)
+                or set(ci) != {"patch_source", "workflow_path", "compatible_markers"}
+                or not isinstance(ci["compatible_markers"], list)
+                or not 1 <= len(ci["compatible_markers"]) <= 16
+                or not all(isinstance(m, str) and 0 < len(m) <= 200
+                           for m in ci["compatible_markers"])
+                or ci["workflow_path"] not in obj["allowed_shared_paths"]):
+            raise PreflightError("Invalid declarative CI contract")
+        try:
+            safe_path(ci["patch_source"])
+            safe_path(ci["workflow_path"])
+        except DeclarativeExportError as exc:
+            raise PreflightError("Unsafe declarative CI path") from exc
+        if "declarative_rules" not in obj:
+            raise PreflightError("CI contract without approved rules")
     return obj
 
 def evaluate(source, distribution, expected_sha, *, profile):
