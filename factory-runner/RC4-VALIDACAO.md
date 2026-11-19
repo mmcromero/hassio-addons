@@ -1,12 +1,12 @@
 # Factory Runner RC4 — validação técnica (19/11/2026)
 
-Estado: **CANDIDATA BLOQUEADA / NÃO PUBLICAR / NÃO INSTALAR**.
+Estado: **RC4 VERSIONADA EM BRANCH ISOLADA / PR #45 DRAFT / NÃO PUBLICAR / NÃO INSTALAR**.
 
 ## Proveniência
 - Branch isolada: `release/factory-runner-rc4-validation`, criada a partir de `main` em 19/11/2026.
 - Base observada no catálogo: `factory-runner/config.yaml` com `0.1.0-rc.3`.
 - Não se identificou branch RC4 anterior no catálogo nem no Orquestrador nas buscas realizadas.
-- Este documento NÃO constitui versão RC4 executável, homologação ou aprovação.
+- Após a revisão inicial foi preparada a candidata `0.1.0-rc.4` na própria branch; PR em rascunho: https://github.com/mmcromero/hassio-addons/pull/45. **Sem build, instalação, homologação ou aprovação.**
 
 ## Evidências verificadas em leitura
 1. Código `runtime_probe.py`: o resultado de falha não inicia isolamento; a sonda retorna 0 por desenho para permitir API de diagnóstico, mantendo `/api/prepare` fail-closed.
@@ -18,7 +18,14 @@ Estado: **CANDIDATA BLOQUEADA / NÃO PUBLICAR / NÃO INSTALAR**.
 ## Problema confirmado e tratamento
 - **BLOQUEIO AMBIENTAL**: a sonda Bubblewrap retornou permission denied no HA/Raspberry (evidência operacional reportada). Não remover `--unshare-*`, não habilitar execução sem sandbox, não afrouxar AppArmor/seccomp/capacidades para obter PASS artificial.
 - **LACUNA DE EVIDÊNCIA**: testes completos, build ARM64, cgroup/quota e integração HA da candidata RC4 ainda não executados/verificados nesta validação.
-- **LACUNA DE IDENTIDADE**: a RC4 ainda não existe como código/versionamento distinto; não renomear RC3 como RC4 homologada.
+- **IDENTIDADE DA CANDIDATA**: `factory-runner/config.yaml` agora marca `0.1.0-rc.4` somente nesta branch. A `main` continua RC3; candidata não homologada.
+
+## Correções aplicadas (não qualificadas por execução)
+- `rc_fastlane.py`: validação fail-closed para tipos incorretos de campos de perfil, prefixos de distribuição ambíguos, referências Git com segmentos `.`/`..`/vazios e barras invertidas em caminhos compartilhados.
+- `tests/test_factory_runner_fastlane.py`: regressão para nove casos inválidos de perfis, ainda sem execução da suíte integrada neste ambiente.
+- `config.yaml` e `CHANGELOG.md`: versão e histórico RC4.
+- Comparação `main...release/factory-runner-rc4-validation`: cinco arquivos modificados/adicionados, todos sob `factory-runner/`; nenhuma mudança em outros add-ons.
+- Leitura da página de apps instalados no HA confirmou que o Factory Runner **atual** aparece em execução; isso não prova RC4 instalada, nem sua versão.
 
 ## Critérios de liberação da candidata
 1. Diagnóstico de política do HA com causa exata do bloqueio e solução segura comprovada, ou manutenção explícita do modo somente leitura sem promessa de preparar pacotes.
