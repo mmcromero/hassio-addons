@@ -7,7 +7,8 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from declarative_export import DeclarativeExportError, prepare_declarative, expand_trusted_rules, safe_path
+from declarative_export import (DeclarativeExportError, prepare_declarative, expand_trusted_rules,
+                                extend_approved_mapping, write_distribution_provenance, safe_path)
 
 
 class ExportTest(unittest.TestCase):
@@ -152,6 +153,57 @@ class ExportTest(unittest.TestCase):
                                         "elapsed_budget_exceeded"):
                 self.export()
         self.assertFalse(self.out.exists())
+
+    def test_conditional_and_shared_recipes(self):
+        (self.source / "governance").mkdir()
+        (self.source / "governance" / "flag.json").write_text("{}")
+        (self.source / "governance" / "required.txt").write_text("required")
+        (self.source / "workflow.yml").write_text("workflow")
+        self.git("add", ".")
+        self.git("commit", "-qm", "conditional fixture")
+        sha = self.git("rev-parse", "HEAD")
+        mapping = {"demo/config.yaml": "config.yaml",
+                   "demo/package.json": "package.json"}
+        expanded = extend_approved_mapping(
+            self.source, sha, mapping,
+            conditional_groups=[{
+                "trigger": "governance/flag.json",
+                "required": {"demo/governance/required.txt": "governance/required.txt"}
+            }],
+            shared_optional={".github/workflows/governance.yml": "workflow.yml"},
+            allowed_shared_paths=[".github/workflows/governance.yml"],
+            distribution_prefix="demo/")
+        self.assertEqual(len(expanded), 4)
+        bundle = prepare_declarative(
+            self.source, sha, self.out, expanded,
+            expected_version="0.0.1", project="synthetic")
+        provenance = write_distribution_provenance(
+            self.out, bundle, source_repository="fixture/source",
+            distribution_prefix="demo/",
+            provenance_path="demo/SOURCE_PROVENANCE.json",
+            ci_patch_source="ci/approved.patch",
+            allowed_shared_paths=[".github/workflows/governance.yml"])
+        self.assertEqual(provenance["commit"], sha)
+        self.assertEqual(provenance["repository"], "fixture/source")
+        self.assertEqual(len(provenance["files"]), 3)
+        self.assertEqual(len(provenance["repository_files"]), 1)
+        self.assertEqual(
+            json.loads((self.out / "demo/SOURCE_PROVENANCE.json").read_text()),
+            provenance)
+
+    def test_unapproved_shared_destination_refused(self):
+        (self.source / "workflow.yml").write_text("workflow")
+        self.git("add", ".")
+        self.git("commit", "-qm", "shared rule fixture")
+        sha = self.git("rev-parse", "HEAD")
+        with self.assertRaisesRegex(DeclarativeExportError,
+                                    "unapproved_shared_destination"):
+            extend_approved_mapping(
+                self.source, sha, {},
+                conditional_groups=[],
+                shared_optional={".github/workflows/not-approved.yml": "workflow.yml"},
+                allowed_shared_paths=[],
+                distribution_prefix="demo/")
 
     def test_path_validation(self):
         for x in ("", ".", "..", "./a", "a//b", "a/../b", "a\\b", "a\x00b"):
