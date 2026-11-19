@@ -20,11 +20,20 @@ VERSION = re.compile(r"""(?m)^version:\s*["']?([^"'\s#]+)""")
 class PreflightError(Exception):
     pass
 
+def local_environment(home=None):
+    """Local Git/export steps must not inherit API or cloud credentials."""
+    keep = ("PATH", "LANG", "LC_ALL", "TMPDIR", "SYSTEMROOT", "WINDIR")
+    env = {key: os.environ[key] for key in keep if key in os.environ}
+    env.update({"GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_CONFIG_GLOBAL": os.devnull, "GIT_OPTIONAL_LOCKS": "0",
+                "HOME": str(home) if home is not None else os.devnull})
+    return env
+
 def git(root, *args, check=True):
     proc = subprocess.run(
         ["git", "-C", str(root), *args],
         text=True, encoding="utf-8", errors="replace",
-        capture_output=True, shell=False, timeout=30,
+        capture_output=True, shell=False, timeout=30, env=local_environment(),
     )
     if check and proc.returncode:
         raise PreflightError("Git operation failed: " + " ".join(args))
@@ -134,18 +143,18 @@ def evaluate(source, distribution, expected_sha, *, profile):
         errors.append("VERSION_ALREADY_PUBLISHED_WITH_DIFFERENT_SOURCE")
     if not SHA.fullmatch(str(published_commit)):
         errors.append("INVALID_PUBLIC_PROVENANCE")
-    if active.get("branches", {}).get(profile["source_repo"]) != profile["rc_ref"].split("/")[-1]:
+    if active.get("branches", {}).get(profile["source_repo"]) != profile["rc_ref"].removeprefix("refs/remotes/origin/"):
         errors.append("PRIVATE_RC_BRANCH_NOT_REGISTERED")
 
     ancestor = subprocess.run(
         ["git", "-C", str(source), "merge-base", "--is-ancestor", rc_sha, source_sha],
-        capture_output=True, timeout=30, check=False
+        capture_output=True, timeout=30, check=False, env=local_environment()
     )
     frozen = False
     if ancestor.returncode != 0:
         reverse = subprocess.run(
             ["git", "-C", str(source), "merge-base", "--is-ancestor", source_sha, rc_sha],
-            capture_output=True, timeout=30, check=False)
+            capture_output=True, timeout=30, check=False, env=local_environment())
         if reverse.returncode == 0:
             source_tree = git(source, "rev-parse", source_sha + "^{tree}")
             rc_tree = git(source, "rev-parse", rc_sha + "^{tree}")
@@ -226,12 +235,10 @@ def prepare(source, distribution, report, output, *, profile):
         raise PreflightError("Output cannot be inside distribution repository")
     # Git and exporter use local checkouts only; no cloud auth is required.
     # Whitelist inherited variables, rather than guessing secret variable names.
-    keep = ("PATH", "LANG", "LC_ALL", "HOME", "TMPDIR", "SYSTEMROOT", "WINDIR")
-    safe_env = {k: os.environ[k] for k in keep if k in os.environ}
-    safe_env["GIT_TERMINAL_PROMPT"] = "0"
-    safe_env["GIT_CONFIG_NOSYSTEM"] = "1"
-    safe_env["GIT_CONFIG_GLOBAL"] = os.devnull
     with tempfile.TemporaryDirectory(prefix="factory-rc-source-") as tmp:
+        home = Path(tmp) / "home"
+        home.mkdir(mode=0o700)
+        safe_env = local_environment(home)
         source_snapshot = Path(tmp) / "source"
         run_checked(["git", "clone", "--no-hardlinks", "--", str(source),
                      str(source_snapshot)], timeout=180, env=safe_env)

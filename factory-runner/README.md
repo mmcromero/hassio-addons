@@ -16,6 +16,7 @@ O código-fonte de desenvolvimento permanece no repositório privado
 - `GET /api/status`: exige token e informa modo de pré-verificação somente leitura.
 - `GET /api/projects`: lista perfis pré-configurados, sem credenciais.
 - `POST /api/preflight`: consulta SHA, versão e política dos repositórios locais previamente provisionados; não altera Git.
+- `POST /api/prepare`: exportação verificada somente local, com exportador confiável e blob aprovado; sem commit/push/publicação.
 - Avisaqui é primeiro perfil, mas o Runner possui versão e ciclo próprios.
 - `POST /api/fechar-pacote` e `POST /api/corrigir-issue`: exigem token e retornam `403` após validação.
 - Não inclui chaves reais; sem push, merge, publicação ou execução de código gerado por IA.

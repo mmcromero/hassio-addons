@@ -27,6 +27,7 @@ PROJECT_ID = re.compile(r"^[a-z][a-z0-9_-]{1,47}$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 PROJECTS_DIR = Path(os.environ.get("RUNNER_PROJECTS_DIR", "/app/projects"))
 WORKSPACES_DIR = Path(os.environ.get("RUNNER_WORKSPACES_DIR", "/data/factory-runner/workspaces"))
+PREPARATIONS_DIR = Path(os.environ.get("RUNNER_PREPARATIONS_DIR", "/data/factory-runner/preparations"))
 AUDIT_PATH = Path(os.environ.get("RUNNER_AUDIT_PATH", "/data/factory-runner/audit.jsonl"))
 
 def authenticated(header):
@@ -122,7 +123,9 @@ def prepare_project(project_id, expected_sha, operation_id):
     if not preflight["eligible_for_preparation"]:
         return {"eligible": False, "errors": preflight["errors"]}
     # Server generates destination: client cannot select arbitrary filesystem path.
-    destination = Path("/data/factory-runner/preparations").resolve()
+    destination = PREPARATIONS_DIR.absolute()
+    if destination.resolve() != destination or destination.is_symlink():
+        raise PreflightError("Unsafe preparations directory")
     destination.mkdir(mode=0o700, parents=True, exist_ok=True)
     output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
     prepared = prepare(source, distribution, preflight, output, profile=profile)

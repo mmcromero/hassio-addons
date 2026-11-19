@@ -2,7 +2,7 @@
 
 ## Limites atuais
 
-A versão candidata 0.1.0-rc.2 adiciona **pré-verificação somente leitura**. Não tem
+A versão candidata 0.1.0-rc.2 oferece **pré-verificação somente leitura e preparação local**. Não tem
 capacidade autorizada de desenvolver ou publicar, mesmo com Bearer válido.
 
 O serviço exige `runner_auth_token` nas opções do Home Assistant com
@@ -20,7 +20,8 @@ em arquivos versionados para prover credenciais.
 
 As rotas autenticadas `GET /api/projects` e `POST /api/preflight` exigem perfis versionados em `/app/projects/` e checkouts privados previamente preparados em `/data/factory-runner/workspaces/<id>/source` e `distribution`. Não há clonagem automática nem credenciais Git no add-on. Sem workspace, retorna `503 preflight_unavailable`.
 
-Este passo não fecha RC, não grava branch e não publica na loja. Consulte [OPERACAO-ESTEIRA.md](OPERACAO-ESTEIRA.md).
+O preflight não fecha RC nem grava branch; prepare cria somente checkout/branch
+local descartável e relatório. Nenhum deles publica na loja. Consulte [OPERACAO-ESTEIRA.md](OPERACAO-ESTEIRA.md).
 
 ## Persistência e backup
 
@@ -50,8 +51,12 @@ após verificar os recursos disponíveis, sem fazer push nem instalar.
   autorizada. Apenas a `main` alimenta a loja instalada no HA.
 - A política do Orquestrador exige testes, autorização canônica de Issue,
   branch, SHA e operação e proíbe force-push.
-- Permanecem pendentes: execução real dos testes, provisionamento seguro dos checkouts, build ARM64, homologação
-  no Raspberry Pi, rotação coordenada dos segredos antigos e restauração
-  funcional em ambiente isolado.
+- Execuções de teste/build/smoke e seus SHAs ficam no PR #43, sem substituir
+  checks remotos não executados.
+- Portões operacionais: provisão segura de checkouts, limites CPU/RAM/disco,
+  isolamento do filesystem/rede do exportador, homologação no Raspberry Pi
+  e rotação coordenada dos segredos antigos. Timeout não é sandbox/quota.
 
-**Sem autorização de deploy, merge ou Actions nesta entrega.** Os arquivos de testes estão na própria pasta `factory-runner/tests/` para execução local, não incluídos na imagem do Dockerfile.
+**Sem autorização de deploy, merge ou Actions nesta entrega.** Testes em
+`factory-runner/tests/` executam no estágio Docker `validation` e não são
+copiados para a imagem de runtime.

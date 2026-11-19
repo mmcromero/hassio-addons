@@ -9,7 +9,14 @@
 - Operações de publicação, push/merge e alteração autônoma permanecem bloqueadas.
 - Porta externa 9876 continua não mapeada e bind localhost; nenhum deploy.
 
-**NÃO testado em ARM64 ou HA. Requer checkouts previamente provisionados para usar o preflight. Não realiza fechamento de pacote.**
+- Correção da fixture de árvore Git congelada e de refs RC com subdiretórios.
+- Git sem credenciais herdadas; exportador com HOME temporário e Python isolado.
+- Testes reais de HTTP/Git, preparação sem push, pin e hashes verificados.
+- CA opcional por secret de build, sem desativar TLS ou incorporar CA à imagem.
+- Smoke autenticado/reinício com emulação opcional em userspace.
+
+**Evidências de testes/build/ARM64 no PR #43; HA não homologado.** Requer checkouts
+confiáveis. Não fecha pacote e não oferece sandbox para exportador hostil.
 
 
 ## 0.1.0-rc.1 — Candidato restrito (18/11/2026)

@@ -46,7 +46,7 @@ class FastlaneTests(unittest.TestCase):
         blobs = content or data()
         def fake_git(repo, *args, **kwargs):
             if args[0] == "rev-parse":
-                if args[2].endswith("^{tree}"):
+                if args[-1].endswith("^{tree}"):
                     return "f" * 40
                 if "desenvolvimento" in args[2]:
                     return development_head or SOURCE
