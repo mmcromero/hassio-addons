@@ -51,8 +51,8 @@ O cadastro verificável dos quatro add-ons está em [`.github/addon-registry.jso
 
 ## Continuidade e arquitetura de automações
 
-- **[CONTINUIDADE.md](docs/CONTINUIDADE.md)** — estado real, evidências, roteiro de homologação e instruções para retomar em outro chat.
-- **[ARQUITETURA-AUTOMACOES.md](docs/ARQUITETURA-AUTOMACOES.md)** — decisão de manter n8n principal no Raspberry e usar processamento externo no computador apenas quando necessário.
+- **Projeto privado WhatsApp:** `mmcromero/whatsapp-automacoes` (fonte, workflows, histórico e documentação de desenvolvimento). O acesso requer permissão GitHub.
+- **Distribuição pública:** este repositório mantém apenas pacotes instaláveis necessários para o Home Assistant e a documentação genérica da loja. Não versionar aqui workflows, segredos ou regras de negócio do WhatsApp.
 
 Atualize esses documentos quando uma etapa for **confirmada por evidências** ou uma decisão mudar. Não confunda proposta, CI e homologação real.
 
