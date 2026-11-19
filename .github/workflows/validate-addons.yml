@@ -109,55 +109,8 @@ jobs:
           }
           JS
 
-  test-pager-auth:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    needs: syntax
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Detectar necessidade de testes do Pager
-        id: scope
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
-          BEFORE_SHA: ${{ github.event.before || '' }}
-        run: |
-          set -euo pipefail
-          echo "run=true" >> "$GITHUB_OUTPUT"
-          if [[ "$EVENT_NAME" == "pull_request" && "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            BASE="$BASE_SHA"
-          elif [[ "$EVENT_NAME" == "push" && "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ && ! "$BEFORE_SHA" =~ ^0{40}$ ]]; then
-            BASE="$BEFORE_SHA"
-          else
-            echo "Sem base confiavel: executar testes completos."
-            exit 0
-          fi
-          if ! git cat-file -e "$BASE^{commit}"; then
-            echo "Base indisponivel: executar testes completos."
-            exit 0
-          fi
-          if git diff --name-only "$BASE" HEAD -- pager-virtual/ .github/workflows/validate-addons.yml .github/scripts/validate-addon-registry.py .github/addon-registry.json | grep -q .; then
-            echo "Alteracao relevante: executar testes do Pager."
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Sem alteracao relevante: manter job presente e dispensar npm."
-          fi
-      - uses: actions/setup-node@v4
-        if: steps.scope.outputs.run != 'false'
-        with:
-          node-version: '22'
-      - name: Instalar dependências do Pager Virtual
-        if: steps.scope.outputs.run != 'false'
-        working-directory: pager-virtual
-        run: npm ci --no-audit --no-fund
-      - name: Testar autenticação, isolamento, SSE e inicialização
-        if: steps.scope.outputs.run != 'false'
-        working-directory: pager-virtual
-        run: npm test
-
+  # Testes Node do Avisaqui são realizados na fonte privada conforme diff/risco.
+  # Não executar npm test da distribuição pública em mudanças de outros add-ons.
   build-factory-runner-arm64:
     # Heavy ARM64 build requires explicit manual selection, never automatic on push/PR.
     if: github.event_name == 'workflow_dispatch' && inputs.addon == 'factory-runner'
