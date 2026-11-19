@@ -27,9 +27,16 @@ Estado: **RC4 VERSIONADA EM BRANCH ISOLADA / PR #45 DRAFT / NÃO PUBLICAR / NÃO
 - Comparação `main...release/factory-runner-rc4-validation`: cinco arquivos modificados/adicionados, todos sob `factory-runner/`; nenhuma mudança em outros add-ons.
 - Leitura da página de apps instalados no HA confirmou que o Factory Runner **atual** aparece em execução; isso não prova RC4 instalada, nem sua versão.
 
+## Correção de procedimento — P0 consultada em 19/11/2026
+- Fontes obrigatórias lidas: `AGENTS.md`, `CONTRIBUTING.md`, `docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md`, `factory-runner/OPERACAO-ESTEIRA.md` e GOV-STD-001 v0.9 / GOV-BLK-002 v0.3.
+- **Retirada a alegação de impedimento automático por falta de Docker ARM64/QEMU/Actions externos.** O add-on tem `Dockerfile`, sem `image` pré-compilada, e pode ser construído pelo Supervisor no Raspberry na fase de instalação autorizada. Esse teste não deve ser simulado como PASS antes da instalação.
+- A falha Bubblewrap é **bloqueio específico de `/api/prepare` no HA**, não impedimento automático da candidata de leitura/diagnóstico nem de uma futura publicação autorizada da RC restrita. A correção exige diagnóstico real da política, sem afrouxar segurança. A rota permanece fail-closed.
+- Os testes dirigidos Python para o código RC4 ainda precisam de execução real (não substituir por simples inspeção). A ausência de acesso a Docker ARM64 externo não deve bloquear os demais testes nem o encaminhamento da candidata.
+- Estado adequado: **RC4 em draft, validações proporcionais pendentes; sem autorização para publicar ou instalar**. Não declarar NO-GO da publicação exclusivamente por hardware/CI.
+
 ## Critérios de liberação da candidata
 1. Diagnóstico de política do HA com causa exata do bloqueio e solução segura comprovada, ou manutenção explícita do modo somente leitura sem promessa de preparar pacotes.
-2. Testes offline reais, integração HTTP, testes de negativa de acesso e build ARM64 com evidências anexadas.
+2. Testes offline dirigidos reais, integração HTTP e negativas de acesso com evidências; build ARM64 pelo Supervisor na instalação autorizada, exceto risco técnico específico devidamente comprovado.
 3. Conferência de SHA, manifesto, versão e alterações somente em `factory-runner/`.
 4. Revisão de Segurança e autorização específica do proprietário antes de qualquer publicação ou instalação.
 
