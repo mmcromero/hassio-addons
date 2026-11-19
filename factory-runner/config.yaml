@@ -1,7 +1,7 @@
 name: "Fábrica de Software — Factory Runner"
-version: "0.1.0-rc.1"
+version: "0.1.0-rc.2"
 slug: fabrica_software
-description: "Candidato restrito para Home Assistant; sem correção e publicação automática"
+description: "Pré-verificação multi-projeto (somente leitura; publicação bloqueada)"
 url: "https://github.com/mmcromero/hassio-addons"
 arch:
   - aarch64
