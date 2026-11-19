@@ -131,7 +131,51 @@ class SecurityTests(unittest.TestCase):
                 payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
                 token="Bearer test-secret-not-for-production-0123456789")
         self.assertEqual(code, 503)
-        self.assertEqual(data["error"], "preflight_unavailable")
+        self.assertEqual(data["error"], "workspace_or_export_unavailable")
+
+    def test_prepare_is_local_only_and_cannot_publish(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "prepare_project", return_value={
+            "eligible": True, "state": "PREPARED_NOT_PUBLISHED",
+            "published": False, "changed_files": 3, "source_sha": "a" * 40
+        }):
+            code, data = self.request("POST", "/api/prepare",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 200)
+        self.assertFalse(data["result"]["published"])
+        self.assertEqual(data["result"]["state"], "PREPARED_NOT_PUBLISHED")
+        self.assertIn("completed_preparation",
+                      server.AUDIT_PATH.read_text(encoding="utf-8"))
+
+    def test_prepare_rejects_client_selected_paths(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        code, data = self.request("POST", "/api/prepare",
+            payload={"project": "avisaqui", "expected_source_sha": "a" * 40,
+                     "output": "/etc/passwd"}, token=auth)
+        self.assertEqual(code, 400)
+        self.assertEqual(data["error"], "invalid_payload")
+
+    def test_prepare_ineligible_package_returns_conflict(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "prepare_project", return_value={
+            "eligible": False, "errors": ["NO_OPEN_PACKAGE"]
+        }):
+            code, data = self.request("POST", "/api/prepare",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 409)
+        self.assertEqual(data["details"], ["NO_OPEN_PACKAGE"])
+
+    def test_prepare_fails_closed_without_workspace(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "prepare_project",
+                          side_effect=server.PreflightError("workspace missing")):
+            code, data = self.request("POST", "/api/prepare",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 503)
+        self.assertEqual(data["error"], "workspace_or_export_unavailable")
 
     def test_bad_issue_rejected(self):
         for value in (0, -1, True, "35", 100000000):
