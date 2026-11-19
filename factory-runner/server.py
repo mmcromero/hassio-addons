@@ -19,6 +19,7 @@ from pathlib import Path
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare
 from sandbox_export import SandboxUnavailable
+from declarative_export import DeclarativeExportError, prepare_declarative
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -136,6 +137,27 @@ def prepare_project(project_id, expected_sha, operation_id):
             "changed_files": prepared["changed_files"],
             "source_sha": expected_sha, "published": False}
 
+def prepare_project_declarative(project_id, expected_sha, operation_id):
+    """Prepare a local artifact from trusted mappings. Never execute exporter code."""
+    # Use the same policy gate as /api/prepare. Do not accept mappings in HTTP.
+    report = preflight_project(project_id, expected_sha)
+    if not report["eligible_for_preparation"]:
+        return {"eligible": False, "errors": report["errors"]}
+    profile, source, _distribution = project_workspace(project_id)
+    mapping = profile.get("declarative_mapping")
+    if not isinstance(mapping, dict) or not mapping:
+        raise DeclarativeExportError("approved_declarative_mapping_unavailable")
+    destination = PREPARATIONS_DIR.absolute()
+    if destination.is_symlink() or destination.resolve() != destination:
+        raise DeclarativeExportError("unsafe_preparations_directory")
+    destination.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
+    manifest = prepare_declarative(
+        source, expected_sha, output, mapping,
+        expected_version=report["candidate_version"], project=project_id)
+    return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
+            "files": len(manifest["files"]), "source_sha": expected_sha,
+            "published": False, "method": "declarative_no_script"}
 
 
 class WorkerUnavailable(Exception):
@@ -211,7 +233,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/worker/run"):
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/worker/run"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -263,7 +285,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             finally:
                 LOCK.release()
 
-        if self.path in ("/api/preflight", "/api/prepare"):
+        if self.path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
             project = body["project"]
@@ -280,18 +302,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 try:
                     if action == "/api/preflight":
                         result = preflight_project(project, source_sha)
-                    else:
+                    elif action == "/api/prepare":
                         result = prepare_project(project, source_sha, operation_id)
-                except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                    else:
+                        result = prepare_project_declarative(project, source_sha, operation_id)
+                except (PreflightError, SandboxUnavailable, DeclarativeExportError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
                     record(action, None, "blocked_workspace_or_git", operation_id)
                     return self.respond(503, {"error": "workspace_or_export_unavailable",
                                               "operation_id": operation_id})
-                if action == "/api/prepare" and not result["eligible"]:
+                if action in ("/api/prepare", "/api/prepare-declarative") and not result["eligible"]:
                     record(action, None, "blocked_policy", operation_id)
                     return self.respond(409, {"error": "package_policy_blocked",
                                               "operation_id": operation_id,
                                               "details": result["errors"]})
-                record(action, None, "completed_preparation" if action == "/api/prepare"
+                record(action, None, "completed_preparation" if action in ("/api/prepare", "/api/prepare-declarative")
                        else "completed_read_only", operation_id)
                 return self.respond(200, {"operation_id": operation_id, "result": result})
             except RuntimeError:
