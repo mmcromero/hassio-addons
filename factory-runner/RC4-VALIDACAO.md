@@ -1,6 +1,6 @@
 # Factory Runner RC4 — validação técnica (19/11/2026)
 
-Estado: **RC4 VERSIONADA EM BRANCH ISOLADA / PR #45 DRAFT / NÃO PUBLICAR / NÃO INSTALAR**.
+Estado: **RC4 VERSIONADA / PR #45 / PUBLICAÇÃO NO CATÁLOGO AUTORIZADA PELO PROPRIETÁRIO EM 19/11/2026; INSTALAÇÃO NÃO AUTORIZADA**.
 
 ## Proveniência
 - Branch isolada: `release/factory-runner-rc4-validation`, criada a partir de `main` em 19/11/2026.
@@ -32,13 +32,13 @@ Estado: **RC4 VERSIONADA EM BRANCH ISOLADA / PR #45 DRAFT / NÃO PUBLICAR / NÃO
 - **Retirada a alegação de impedimento automático por falta de Docker ARM64/QEMU/Actions externos.** O add-on tem `Dockerfile`, sem `image` pré-compilada, e pode ser construído pelo Supervisor no Raspberry na fase de instalação autorizada. Esse teste não deve ser simulado como PASS antes da instalação.
 - A falha Bubblewrap é **bloqueio específico de `/api/prepare` no HA**, não impedimento automático da candidata de leitura/diagnóstico nem de uma futura publicação autorizada da RC restrita. A correção exige diagnóstico real da política, sem afrouxar segurança. A rota permanece fail-closed.
 - Os testes dirigidos Python para o código RC4 ainda precisam de execução real (não substituir por simples inspeção). A ausência de acesso a Docker ARM64 externo não deve bloquear os demais testes nem o encaminhamento da candidata.
-- Estado adequado: **RC4 em draft, validações proporcionais pendentes; sem autorização para publicar ou instalar**. Não declarar NO-GO da publicação exclusivamente por hardware/CI.
+- Estado adequado antes da ordem atual: RC4 em draft; após ordem do proprietário, publicação no catálogo autorizada, instalação continua não autorizada. Não declarar NO-GO da publicação exclusivamente por hardware/CI.
 
 ## Critérios de liberação da candidata
 1. Diagnóstico de política do HA com causa exata do bloqueio e solução segura comprovada, ou manutenção explícita do modo somente leitura sem promessa de preparar pacotes.
 2. Testes offline dirigidos reais, integração HTTP e negativas de acesso com evidências; build ARM64 pelo Supervisor na instalação autorizada, exceto risco técnico específico devidamente comprovado.
 3. Conferência de SHA, manifesto, versão e alterações somente em `factory-runner/`.
-4. Revisão de Segurança e autorização específica do proprietário antes de qualquer publicação ou instalação.
+4. Publicação desta RC restrita autorizada expressamente pelo proprietário; instalação e eventual liberação de funções adicionais exigem autorização e testes próprios.
 
 Próximo responsável: desenvolvimento/infraestrutura para solução do isolamento e testes em ambiente compatível; Segurança para gate; proprietário exclusivamente para autorização final. Não foram executados deploy, instalação, merge, Actions ou testes Docker/HA nesta sessão.
 
