@@ -83,6 +83,33 @@ class FastlaneTests(unittest.TestCase):
             with self.assertRaises(mod.PreflightError):
                 mod.load_profile(profile)
 
+    def test_rc4_profile_rejects_malformed_types_and_ambiguous_paths(self):
+        # Trusted profiles must fail closed on invalid JSON types or path forms.
+        changes = [
+            ("id", 42),
+            ("distribution_prefix", "pager-virtual//"),
+            ("distribution_prefix", "pager-virtual/../"),
+            ("distribution_prefix", "pager-virtual\\\\"),
+            ("source_ref", 123),
+            ("rc_ref", "refs/remotes/origin/../main"),
+            ("rc_ref", "refs/remotes/origin/release//candidate"),
+            ("source_repo", []),
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            profile = Path(folder) / "profile.json"
+            for key, value in changes:
+                with self.subTest(field=key, value=value):
+                    cfg = dict(CONFIG)
+                    cfg[key] = value
+                    profile.write_text(json.dumps(cfg), encoding="utf-8")
+                    with self.assertRaises(mod.PreflightError):
+                        mod.load_profile(profile)
+            cfg = dict(CONFIG)
+            cfg["allowed_shared_paths"] = [".github\\\\workflow.yml"]
+            profile.write_text(json.dumps(cfg), encoding="utf-8")
+            with self.assertRaises(mod.PreflightError):
+                mod.load_profile(profile)
+
     def test_git_status_preserves_leading_porcelain_column(self):
         # An unstaged modification starts with a space, which .strip() destroys.
         payload = " M pager-virtual/config.yaml\\0"
