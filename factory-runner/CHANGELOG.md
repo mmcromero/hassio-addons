@@ -23,6 +23,9 @@
   ao UID runner, preservando options.json; código/imagem legíveis pelo serviço.
 - Provas reais de isolamento/consumo separadas dos testes com mocks e da
   integração Git funcional; negativa de namespace não recebe PASS artificial.
+- Corrigida ordem de NPROC: bootstrap confiável cria o namespace antes de
+  aplicar o teto de 32 processos ao exportador. Prova positiva de isolamento
+  e controles executada no Codex, sem desativar Bubblewrap ou limites.
 
 **Evidências e impedimentos no PR #43; HA não homologado.** O sandbox só é
 considerado disponível após prova real. Cgroup agregado e quota rígida ainda

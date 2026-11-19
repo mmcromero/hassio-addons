@@ -81,6 +81,10 @@ Antes de integrar em `hassio-addons:main`, validar sintaxe, testes, build ARM64,
   CORE 0 e arquivo individual 256 MiB. Helper Python novo aplica RLIMIT antes
   de exec, sem preexec_fn no servidor multithread. Timeout 240 s e encerramento
   do grupo em violação/saída, inclusive após término do processo principal.
+  NPROC é aplicado dentro do namespace por helper confiável somente leitura,
+  antes de qualquer código do exportador. Aplicá-lo antes do Bubblewrap contava
+  processos do UID do serviço no host e podia impedir a criação do namespace
+  com EAGAIN. O teto permanece 32; os demais limites já valem no bootstrap.
 - /tmp é tmpfs de 32 MiB. Saída é monitorada a cada 150 ms e ao final (256 MiB
   agregados), rejeitando symlinks, arquivos especiais e diretórios ilegíveis.
   **Monitoramento não é quota de filesystem**: pode haver pico entre amostras.
@@ -99,5 +103,20 @@ Antes de integrar em `hassio-addons:main`, validar sintaxe, testes, build ARM64,
   Não habilitar sysctl, privilégios ou seccomp/AppArmor irrestrito para conseguir
   PASS. Infra deve fornecer execução isolada compatível e política restrita,
   ou avaliar executor externo sem Docker socket no HA. Sem isso prepare fica 503.
+
+## Prova positiva no próprio Codex — correção NPROC
+
+No atendimento posterior do proprietário, o probe foi executado também fora
+do sandbox adicional do terminal (com autorização do executor), mantendo
+Bubblewrap, todos os namespaces, capabilities zeradas e limites do exportador.
+Não houve troca de máquina nem alteração de kernel/Docker/HA.
+
+Após corrigir a ordem de NPROC, passaram de verdade: isolamento user/PID/net,
+UID não-root, credenciais/rede do host inacessíveis, origem e .git RO, consumo
+de memória/FSIZE/tmpfs/processos, CPU, timeout e monitor agregado. A preparação
+HTTP com Git temporário e sandbox real também passou, sem substituir a função
+por mock e sem escrita remota. Resultados vinculados ao SHA ficam no PR #43.
+Essa prova não afirma disponibilidade sob a política padrão do contêiner HA
+e não transforma monitor de disco em quota rígida/cgroup.
 
 Rastreabilidade: [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2), [PR #3](https://github.com/mmcromero/orquestrador-projetos-base/pull/3), `docs/governanca/FACTORY-RUNNER-ARQUITETURA-002.md`.

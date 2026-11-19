@@ -107,6 +107,8 @@ class SandboxTests(unittest.TestCase):
         self.assertNotIn('preexec_fn',launch.call_args.kwargs)
         self.assertIn('--exec-limited',launch.call_args.args[0])
         argv=launch.call_args.args[0]
+        self.assertEqual(argv[3],'--bootstrap-limited')
+        self.assertIn('/runner/sandbox_export.py',argv)
         location=argv.index(str(self.target/'.git'))
         self.assertEqual(argv[location-1],'--ro-bind')
         self.assertEqual(argv[location+1],'/target/.git')
@@ -138,6 +140,20 @@ class SandboxTests(unittest.TestCase):
         for key,value in {'RLIMIT_CPU':2,'RLIMIT_AS':128*1024*1024,
             'RLIMIT_FSIZE':1024*1024,'RLIMIT_NOFILE':128,'RLIMIT_NPROC':32,'RLIMIT_CORE':0}.items():
             self.assertLessEqual(report['limits'][key],value)
+
+    def test_only_nproc_is_deferred_during_trusted_namespace_bootstrap(self):
+        with patch.object(sandbox.resource,'getrlimit',return_value=(-1,-1)), \
+             patch.object(sandbox.resource,'setrlimit') as limit:
+            sandbox._limits(2,128*1024*1024,1024*1024,process_limit=False)
+            keys=[call.args[0] for call in limit.call_args_list]
+            self.assertNotIn(sandbox.resource.RLIMIT_NPROC,keys)
+            for key in (sandbox.resource.RLIMIT_CPU,sandbox.resource.RLIMIT_AS,
+                        sandbox.resource.RLIMIT_FSIZE,sandbox.resource.RLIMIT_NOFILE,
+                        sandbox.resource.RLIMIT_CORE):
+                self.assertIn(key,keys)
+            limit.reset_mock()
+            sandbox._limits(2,128*1024*1024,1024*1024)
+            limit.assert_any_call(sandbox.resource.RLIMIT_NPROC,(32,32))
 
 if __name__ == "__main__":
     unittest.main()

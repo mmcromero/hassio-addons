@@ -37,18 +37,20 @@ def _directory_bytes(root, max_bytes):
                 return total
     return total
 
-def _limits(cpu_seconds, memory_bytes, max_file_bytes):
+def _limits(cpu_seconds, memory_bytes, max_file_bytes, *, process_limit=True):
     # Called by a fresh single-threaded helper, never preexec_fn in the HTTP
     # server. These limits do not replace a cgroup
     # aggregate limit for an entire descendant process tree.
-    for key, val in [
+    limits = [
         (resource.RLIMIT_CPU, cpu_seconds),
         (resource.RLIMIT_AS, memory_bytes),
         (resource.RLIMIT_FSIZE, max_file_bytes),
         (resource.RLIMIT_CORE, 0),
         (resource.RLIMIT_NOFILE, 128),
-        (resource.RLIMIT_NPROC, 32)
-    ]:
+    ]
+    if process_limit:
+        limits.append((resource.RLIMIT_NPROC, 32))
+    for key, val in limits:
         soft, hard = resource.getrlimit(key)
         actual = val if hard == resource.RLIM_INFINITY else min(val, hard)
         resource.setrlimit(key, (actual, actual))
@@ -88,7 +90,8 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
             "--cap-drop", "ALL", "--clearenv",
             "--proc", "/proc", "--dev", "/dev",
             "--size", str(32 * 1024 * 1024), "--tmpfs", "/tmp",
-            "--dir", "/source", "--dir", "/target",
+            "--dir", "/source", "--dir", "/target", "--dir", "/runner",
+            "--ro-bind", str(Path(__file__).resolve()), "/runner/sandbox_export.py",
             "--ro-bind", str(source), "/source",
             "--bind", str(target), "/target"]
     # Alpine uses /usr/bin, /bin and /lib; bind only system libraries/binaries.
@@ -121,14 +124,19 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
     if probe.returncode:
         detail = probe.stderr.decode("utf-8", "replace")[:512].strip()
         raise SandboxUnavailable("Bubblewrap namespace probe failed: " + detail)
-    args.extend(["/usr/bin/python3", "-I", "/source/" + script,
+    # NPROC counts the service's real UID before unshare. Apply it only after
+    # user/PID namespace setup, in a trusted read-only helper, before any
+    # exporter code. The fixed process ceiling is unchanged.
+    args.extend(["/usr/bin/python3", "-I", "/runner/sandbox_export.py", "--exec-limited",
+                 str(cpu_seconds), str(memory_bytes), str(max_output_bytes),
+                 "/usr/bin/python3", "-I", "/source/" + script,
                  "--commit", sha, "--target", "/target"])
     if verify:
         args.append("--verify")
     # Keep a bounded tmpfs, CPU seconds, address space and individual file size.
     # Aggregate disk usage is sampled, and process group killed on threshold.
     # A cgroup cap is still required for a hard aggregate CPU/RAM/PID budget.
-    helper = [sys.executable, "-I", str(Path(__file__).resolve()), "--exec-limited",
+    helper = [sys.executable, "-I", str(Path(__file__).resolve()), "--bootstrap-limited",
               str(cpu_seconds), str(memory_bytes), str(max_output_bytes), *args]
     p = subprocess.Popen(helper, cwd=source, env=safe_env, stdin=subprocess.DEVNULL,
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -157,9 +165,9 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
             p.wait(timeout=10)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 6 or sys.argv[1] != "--exec-limited":
+    if len(sys.argv) < 6 or sys.argv[1] not in ("--exec-limited", "--bootstrap-limited"):
         raise SystemExit("Internal sandbox helper only")
     if os.geteuid() == 0:
         raise SystemExit("Refusing sandbox helper execution as root")
-    _limits(*(int(value) for value in sys.argv[2:5]))
+    _limits(*(int(value) for value in sys.argv[2:5]), process_limit=sys.argv[1]=="--exec-limited")
     os.execvpe(sys.argv[5], sys.argv[5:], os.environ)
