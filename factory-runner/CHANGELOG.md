@@ -15,8 +15,18 @@
 - CA opcional por secret de build, sem desativar TLS ou incorporar CA à imagem.
 - Smoke autenticado/reinício com emulação opcional em userspace.
 
-**Evidências de testes/build/ARM64 no PR #43; HA não homologado.** Requer checkouts
-confiáveis. Não fecha pacote e não oferece sandbox para exportador hostil.
+- Sandbox obrigatório: user/PID/network/IPC/UTS namespaces, capabilities zeradas,
+  origem e .git somente leitura, ambiente limpo, UID não-root e controles RLIMIT.
+- Helper de limites em processo novo, monitor de saída que falha fechado,
+  encerramento de grupo e tratamento explícito de indisponibilidade na CLI/API.
+- Inicialização protege contra symlinks e permite travessia mínima do volume
+  ao UID runner, preservando options.json; código/imagem legíveis pelo serviço.
+- Provas reais de isolamento/consumo separadas dos testes com mocks e da
+  integração Git funcional; negativa de namespace não recebe PASS artificial.
+
+**Evidências e impedimentos no PR #43; HA não homologado.** O sandbox só é
+considerado disponível após prova real. Cgroup agregado e quota rígida ainda
+exigem ambiente/política operacionais; não fecha pacote nem publica.
 
 
 ## 0.1.0-rc.1 — Candidato restrito (18/11/2026)

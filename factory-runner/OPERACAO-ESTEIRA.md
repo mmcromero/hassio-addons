@@ -22,7 +22,7 @@ O Runner não contém credenciais Git nem clona repositórios privados automatic
 
 Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docker socket ou diretórios de produção. Para outro projeto, cadastrar perfil separado e criar `<id>/source` e `<id>/distribution` após aprovação de escopo. Checkouts precisam conter as refs `refs/remotes/origin/*`. O preflight exige o SHA exato que foi verificado no GitHub. O Avisaqui é somente um exemplo real.
 
-**Atenção:** os caminhos acima são pré-requisitos; não são criados pela API. Sem eles, o endpoint devolve `503 preflight_unavailable`. Não comunicar que o serviço faz fechamento automático enquanto não houver integração, testes e autorização separada.
+**Atenção:** os caminhos acima são pré-requisitos; não são criados pela API. Sem eles, o endpoint devolve `503 workspace_or_export_unavailable`. Sem isolamento, prepare também falha com 503 e auditoria; nunca há fallback para Python não isolado. Não comunicar fechamento automático enquanto os portões não forem comprovados.
 
 ## Segurança
 
@@ -37,9 +37,9 @@ Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docke
 
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
-python3 -m py_compile factory-runner/server.py factory-runner/rc_fastlane.py factory-runner/autonomous_dev.py
+python3 -m py_compile factory-runner/*.py
 docker buildx build --platform linux/arm64 --load -t factory-runner:rc2-arm64 -f factory-runner/Dockerfile factory-runner/
-python3 factory-runner/tests/smoke_container.py --image factory-runner:rc2-arm64 --platform linux/arm64
+python3 factory-runner/tests/smoke_container.py --image factory-runner:rc2-arm64 --platform linux/arm64 --sandbox-probe --security-report /tmp/factory-sandbox-arm64.json
 ```
 
 O PR #43 registra a execução desta tarefa com SHA, contagens e imagens reais.
@@ -68,12 +68,36 @@ Antes de integrar em `hassio-addons:main`, validar sintaxe, testes, build ARM64,
   indisponibilidade fica explícita no resultado e não equivale a limites aprovados.
 - `RUNNER_PREPARATIONS_DIR` é configuração do operador, nunca do cliente HTTP.
   Symlinks na raiz de preparação são recusados. Git recebe ambiente mínimo;
-  o exportador recebe HOME temporário e Python isolado, sem credenciais herdadas.
-- Blob aprovado do exportador continua obrigatório. Isso **não** cria sandbox
-  de filesystem/rede: Python confiável executa com as permissões do serviço.
-  Não provisionar exportadores hostis, segredos ou checkouts reais por analogia.
-- Timeouts de Git/export e MAX_BODY não impõem quotas CPU/RAM/disco ao add-on.
-  Isolamento operacional, limites e provisão segura dos checkouts continuam
-  portões de revisão antes de publicação; este lote não os dispensa.
+  o exportador usa Python isolado e ambiente limpo, sem credenciais herdadas.
+- Blob aprovado e Bubblewrap são obrigatórios. O serviço perde root após ler
+  as opções; o volume privado dá ao grupo runner somente travessia no diretório
+  /data, preservando bytes, proprietário e modo de options.json. Inicialização
+  recusa symlinks nos caminhos que administra antes de chown/install.
+- O sandbox exige user/PID/network/IPC/UTS namespaces explícitos e remove todas
+  as capabilities. Monta /source e bibliotecas/binários somente leitura, /target
+  com escrita e /target/.git somente leitura (sem injeção de hooks/fsmonitor
+  no Git posterior). Não monta /data, home, sockets ou credenciais do serviço.
+- Limites iniciais por processo: CPU 120 s, AS 512 MiB, NPROC 32, NOFILE 128,
+  CORE 0 e arquivo individual 256 MiB. Helper Python novo aplica RLIMIT antes
+  de exec, sem preexec_fn no servidor multithread. Timeout 240 s e encerramento
+  do grupo em violação/saída, inclusive após término do processo principal.
+- /tmp é tmpfs de 32 MiB. Saída é monitorada a cada 150 ms e ao final (256 MiB
+  agregados), rejeitando symlinks, arquivos especiais e diretórios ilegíveis.
+  **Monitoramento não é quota de filesystem**: pode haver pico entre amostras.
+  RLIMIT por processo não é limite agregado de CPU/RAM/PIDs da árvore inteira.
+- O teste funcional Git/HTTP usa exportador sintético explicitamente separado
+  da prova de segurança. `probe_sandbox.py` testa o sandbox real como UID
+  não-root. Namespace indisponível retorna IMPEDIDO/exit 2, nunca PASS/skipped;
+  nenhuma falha do exportador é ignorada para aprovar a candidata.
+- Em namespace disponível, a prova mede UID/capabilities, separação user/PID/net,
+  bloqueio de credenciais/rede e escrita em /source/.git, RLIMIT, consumo de RAM,
+  CPU, processos, FSIZE, tmpfs, timeout e monitor agregado, só com dados sintéticos.
+  O smoke distingue 503 de workspace de 503 de falha da auditoria.
+- Cgroups agregados, quota rígida e compatibilidade no destino continuam gates.
+  O PR #43 registra o erro real de cada ambiente. Não inferir que o HA permite
+  userns por existir Bubblewrap, nem que a negação do Codex prova falha no HA.
+  Não habilitar sysctl, privilégios ou seccomp/AppArmor irrestrito para conseguir
+  PASS. Infra deve fornecer execução isolada compatível e política restrita,
+  ou avaliar executor externo sem Docker socket no HA. Sem isso prepare fica 503.
 
 Rastreabilidade: [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2), [PR #3](https://github.com/mmcromero/orquestrador-projetos-base/pull/3), `docs/governanca/FACTORY-RUNNER-ARQUITETURA-002.md`.

@@ -107,6 +107,11 @@ class IntegrationTests(unittest.TestCase):
             response=conn.getresponse();return response.status,json.loads(response.read())
         finally:
             conn.close()
+            # The response body may arrive before Handler's finally releases
+            # its operation lock. Serialize fixture requests, not product work.
+            if not server.LOCK.acquire(timeout=60):
+                self.fail('HTTP fixture cleanup did not release operation lock')
+            server.LOCK.release()
 
     @staticmethod
     def trusted_fixture_export(*, source, target, script, sha, verify, env, **budget):
@@ -152,6 +157,13 @@ class IntegrationTests(unittest.TestCase):
         with patch.object(server,'WORKSPACES_DIR',self.root/'missing'):
             for path in ('/api/preflight','/api/prepare'):
                 self.assertEqual(self.request('POST',path)[0],503)
+
+    def test_actual_prepare_path_audits_unavailable_sandbox_as_503(self):
+        with patch.object(lane,'sandbox_export',side_effect=server.SandboxUnavailable('user namespace unavailable')) as export:
+            code,data=self.request('POST','/api/prepare')
+        self.assertEqual(code,503,data);export.assert_called_once()
+        self.assertIn('blocked_workspace_or_git',self.audit.read_text())
+        self.assertNotIn('completed_preparation',self.audit.read_text())
 
     def test_preparations_symlink_is_rejected(self):
         self.preparations.symlink_to(self.projects,target_is_directory=True)

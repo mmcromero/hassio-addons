@@ -10,7 +10,8 @@ WORKDIR /app
 COPY server.py autonomous_dev.py rc_fastlane.py sandbox_export.py run.sh /app/
 COPY projects/ /app/projects/
 COPY tests/ /app/tests/
-RUN python3 -m py_compile /app/server.py /app/rc_fastlane.py /app/sandbox_export.py /app/autonomous_dev.py \
+RUN chmod -R a+rX /app \
+ && python3 -m py_compile /app/server.py /app/rc_fastlane.py /app/sandbox_export.py /app/autonomous_dev.py \
  && python3 -m unittest discover -s /app/tests -p 'test_factory_runner_*.py' -v
 
 # Separate runtime image. No test suite or test credentials in final image.
@@ -22,6 +23,6 @@ RUN addgroup -S runner && adduser -S -D -H -G runner -s /sbin/nologin runner
 WORKDIR /app
 COPY --from=validation /app/server.py /app/autonomous_dev.py /app/rc_fastlane.py /app/sandbox_export.py /app/run.sh /app/
 COPY --from=validation /app/projects/ /app/projects/
-RUN chmod 0755 /app/run.sh
+RUN chmod -R a+rX /app && chmod 0755 /app/run.sh
 EXPOSE 9876
 CMD ["/bin/bash", "/app/run.sh"]

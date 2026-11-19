@@ -20,6 +20,16 @@ fi
 
 # A conta do Runner não recebe privilégios de root. Apenas a subárvore
 # privada do próprio add-on é administrada; nunca alterar /data/options.json.
+for path in /data /data/factory-runner /data/factory-runner/workspaces /data/factory-runner/preparations /data/factory-runner/audit.jsonl; do
+    if [ -L "$path" ]; then
+        echo "[ERROR] Caminho privado com symlink; início recusado" >&2
+        exit 1
+    fi
+done
+# A private HA volume may start at 0700 root. Grant the service group search
+# only (no listing/write), without changing options.json ownership or mode.
+chgrp runner /data
+chmod g=x /data
 install -d -m 0700 -o runner -g runner /data/factory-runner
 for folder in workspaces preparations; do
     install -d -m 0700 -o runner -g runner "/data/factory-runner/$folder"

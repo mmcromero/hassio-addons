@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT if (ROOT / "rc_fastlane.py").is_file() else ROOT / "factory-runner-add-on"
 SCRIPT = ADDON / "rc_fastlane.py"
 PROFILE = ADDON / "projects" / "avisaqui.json"
+sys.path.insert(0, str(ADDON))
 CONFIG = json.loads(PROFILE.read_text(encoding="utf-8"))
 SPEC = importlib.util.spec_from_file_location("rc_fastlane", SCRIPT)
 mod = importlib.util.module_from_spec(SPEC)
@@ -163,6 +165,14 @@ class FastlaneTests(unittest.TestCase):
                                 "--json-file", str(report)])
             self.assertEqual(ret, 2)
             self.assertEqual(report.read_text(encoding="utf-8"), "keep")
+
+    def test_cli_reports_unavailable_sandbox_without_traceback(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with patch.object(mod,'evaluate',return_value={'eligible_for_preparation':True,'errors':[]}), \
+                 patch.object(mod,'prepare',side_effect=mod.SandboxUnavailable('namespace unavailable')):
+                ret=mod.main(['--profile',str(PROFILE),'--source',folder,
+                    '--distribution',folder,'--expected-source-sha',SOURCE,'--prepare-dir',folder+'/out'])
+        self.assertEqual(ret,4)
 
 if __name__ == "__main__":
     unittest.main()

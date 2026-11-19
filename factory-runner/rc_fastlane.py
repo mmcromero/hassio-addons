@@ -270,7 +270,8 @@ def prepare(source, distribution, report, output, *, profile):
                                script=profile["exporter_path"],
                                sha=report["source_sha"], verify=verify,
                                env=safe_env, **budget)
-            status = run_checked(["git", "-C", str(output), "status", "--porcelain=v1",
+            status = run_checked(["git", "-c", "core.fsmonitor=false", "-c", "core.hooksPath=/dev/null",
+                                  "-C", str(output), "status", "--porcelain=v1",
                                   "--no-renames", "--untracked-files=all", "-z"],
                                  preserve_output=True, env=safe_env)
             # --porcelain -z is a NUL-delimited sequence; no shell interpretation.
@@ -338,7 +339,7 @@ def main(argv=None):
             prepared = prepare(args.source, args.distribution, report, args.prepare_dir,
                                profile=project_profile)
             print(json.dumps(prepared, ensure_ascii=False, indent=2))
-        except (PreflightError, OSError, subprocess.TimeoutExpired) as exc:
+        except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired) as exc:
             print("PREPARATION FAILED: " + str(exc), file=sys.stderr)
             return 4
     if args.json_file:
