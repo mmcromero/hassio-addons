@@ -1,8 +1,8 @@
 # Factory Runner RC4 — validação técnica (19/11/2026)
 
-Estado: **RC4 VERSIONADA / PR #45 / PUBLICAÇÃO NO CATÁLOGO AUTORIZADA PELO PROPRIETÁRIO EM 19/11/2026; INSTALAÇÃO NÃO AUTORIZADA**.
+Estado ATUAL (19/11/2026): **RC4 PUBLICADA em `hassio-addons:main/factory-runner/` pelo PR #45, merge `350fa3c8a756c405b6766cca53bd25fe84aef9f1`; INSTALAÇÃO E HOMOLOGAÇÃO NÃO EXECUTADAS**. Os trechos abaixo sobre candidatura e `main` RC3 descrevem a fase anterior à publicação e não são tarefas pendentes.
 
-## Proveniência
+## Proveniência — histórico antes do merge
 - Branch isolada: `release/factory-runner-rc4-validation`, criada a partir de `main` em 19/11/2026.
 - Base observada no catálogo: `factory-runner/config.yaml` com `0.1.0-rc.3`.
 - Não se identificou branch RC4 anterior no catálogo nem no Orquestrador nas buscas realizadas.
@@ -18,7 +18,7 @@ Estado: **RC4 VERSIONADA / PR #45 / PUBLICAÇÃO NO CATÁLOGO AUTORIZADA PELO PR
 ## Problema confirmado e tratamento
 - **BLOQUEIO AMBIENTAL**: a sonda Bubblewrap retornou permission denied no HA/Raspberry (evidência operacional reportada). Não remover `--unshare-*`, não habilitar execução sem sandbox, não afrouxar AppArmor/seccomp/capacidades para obter PASS artificial.
 - **LACUNA DE EVIDÊNCIA**: testes completos, build ARM64, cgroup/quota e integração HA da candidata RC4 ainda não executados/verificados nesta validação.
-- **IDENTIDADE DA CANDIDATA**: `factory-runner/config.yaml` agora marca `0.1.0-rc.4` somente nesta branch. A `main` continua RC3; candidata não homologada.
+- **IDENTIDADE DA CANDIDATA (HISTÓRICO)**: no estágio anterior, `0.1.0-rc.4` existia somente na branch RC4 e a `main` ainda estava na RC3. **Estado posterior verificado:** `hassio-addons:main/factory-runner/config.yaml` informa `0.1.0-rc.4`; publicação não significa instalação/homologação.
 
 ## Correções aplicadas (não qualificadas por execução)
 - `rc_fastlane.py`: validação fail-closed para tipos incorretos de campos de perfil, prefixos de distribuição ambíguos, referências Git com segmentos `.`/`..`/vazios e barras invertidas em caminhos compartilhados.
