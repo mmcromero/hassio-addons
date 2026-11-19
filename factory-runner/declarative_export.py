@@ -72,6 +72,83 @@ def _blob(repo: Path, sha: str, source_path: str) -> bytes:
         raise DeclarativeExportError("file_budget_exceeded")
     return data
 
+def expand_trusted_rules(source_repo: Path, source_sha: str, *,
+                         destination_prefix: str, required: dict[str, str],
+                         optional: dict[str, str], include_prefixes: list[str],
+                         include_suffixes: dict[str, str]) -> dict[str, str]:
+    """Compile trusted declarative rules against one pinned Git tree.
+
+    This expands file names only. It never reads or executes source programs.
+    Destination prefix, fixed file maps and selection rules belong to the
+    runner-owned profile, not an API request or source repository.
+    """
+    if not isinstance(source_sha, str) or not SHA40.fullmatch(source_sha):
+        raise DeclarativeExportError("invalid_sha")
+    if (not isinstance(destination_prefix, str)
+            or not destination_prefix.endswith("/")):
+        raise DeclarativeExportError("invalid_destination_prefix")
+    safe_path(destination_prefix[:-1])
+    if (not isinstance(required, dict) or not isinstance(optional, dict)
+            or not isinstance(include_prefixes, list)
+            or not isinstance(include_suffixes, dict)
+            or not all(isinstance(v, str) and v.endswith("/")
+                       and safe_path(v[:-1]) for v in include_prefixes)):
+        raise DeclarativeExportError("invalid_trusted_rules")
+    for prefix, suffix in include_suffixes.items():
+        if (not isinstance(prefix, str) or not prefix.endswith("/")
+                or not isinstance(suffix, str) or not suffix.startswith(".")
+                or len(suffix) > 64):
+            raise DeclarativeExportError("invalid_suffix_rule")
+        safe_path(prefix[:-1])
+    entries = _git(Path(source_repo), "ls-tree", "-r", "-z", source_sha)
+    available = {}
+    for row in entries.split(b"\x00"):
+        if not row:
+            continue
+        try:
+            header, path = row.split(b"\t", 1)
+            mode, kind, _blob_sha = header.split(b" ")
+            filename = path.decode("utf-8")
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise DeclarativeExportError("invalid_git_tree") from exc
+        selected = (any(filename.startswith(p) for p in include_prefixes)
+                    or any(filename.startswith(p) and filename.endswith(s)
+                           for p, s in include_suffixes.items()))
+        if selected:
+            safe_path(filename)
+            if kind != b"blob" or mode not in (b"100644", b"100755"):
+                raise DeclarativeExportError("unsupported_git_object")
+            available[filename] = True
+            if len(available) > MAX_FILES:
+                raise DeclarativeExportError("file_count_exceeded")
+    mapping = {safe_path(destination_prefix + path): path
+               for path in sorted(available)}
+    for group, mandatory in ((required, True), (optional, False)):
+        for dest, source in group.items():
+            safe_path(dest)
+            safe_path(source)
+            if not dest.startswith(destination_prefix):
+                raise DeclarativeExportError("rule_destination_escapes_prefix")
+            if source in available or not mandatory:
+                # Check optional against the exact pinned tree below.
+                if not mandatory:
+                    exact = _git(Path(source_repo), "ls-tree", "-z", source_sha,
+                                 "--", source)
+                    if not exact:
+                        continue
+                mapping[dest] = source
+            else:
+                # Required files may be outside the selected prefixes.
+                exact = _git(Path(source_repo), "ls-tree", "-z", source_sha,
+                             "--", source)
+                if not exact:
+                    raise DeclarativeExportError("required_source_missing")
+                mapping[dest] = source
+    if len(mapping) > MAX_FILES:
+        raise DeclarativeExportError("file_count_exceeded")
+    return mapping
+
+
 def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
                         mappings: dict[str, str], *,
                         expected_version: str, project: str) -> dict:
