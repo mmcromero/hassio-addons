@@ -175,7 +175,7 @@ class IntegrationTests(unittest.TestCase):
         candidates = list(self.preparations.iterdir())
         self.assertEqual(len(candidates), 1)
         output = candidates[0]
-        provenance = json.loads((output / 'SOURCE_PROVENANCE.json').read_text())
+        provenance = json.loads((output / 'DECLARATIVE_BUNDLE_MANIFEST.json').read_text())
         self.assertEqual(provenance['commit'], self.sha)
         self.assertEqual(len(provenance['files']), 2)
         for item in provenance['files']:
