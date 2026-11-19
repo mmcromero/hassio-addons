@@ -60,3 +60,13 @@ Atualize esses documentos quando uma etapa for **confirmada por evidências** ou
 - Não migrar os add-ons antigos para este repositório sem uma decisão específica.
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md) e o guia individual da Evolution API.
+
+
+## Factory Runner (integração em desenvolvimento)
+
+O candidato `factory-runner/0.1.0-rc.1` foi preparado em branch isolada
+com registro no catálogo e build ARM64 manual, **sem publicação na main**.
+O pacote permanece em modo de contenção: autenticação obrigatória e
+operações privilegiadas bloqueadas. Consulte
+[`factory-runner/README.md`](factory-runner/README.md) e
+[`factory-runner/DOCS.md`](factory-runner/DOCS.md).
