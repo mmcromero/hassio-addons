@@ -16,5 +16,6 @@
   "allowed_shared_paths": [
     ".github/workflows/avisaqui-governance.yml",
     ".github/workflows/validate-addons.yml"
-  ]
+  ],
+  "exporter_git_blob_sha": "e67c816405707545b21b0e6863814ada7b26d0f1"
 }
