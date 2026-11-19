@@ -224,28 +224,31 @@ def prepare(source, distribution, report, output, *, profile):
         raise PreflightError("Output cannot be inside source repository")
     if distribution == parent or distribution in parent.parents:
         raise PreflightError("Output cannot be inside distribution repository")
-    # Do not let the package's npm scripts inherit publishing credentials.
-    safe_env = {k: v for k, v in os.environ.items()
-                if not any(token in k.upper() for token in
-                           ("TOKEN", "SECRET", "PASSWORD", "KEY", "AUTH"))}
+    # Git and exporter use local checkouts only; no cloud auth is required.
+    # Whitelist inherited variables, rather than guessing secret variable names.
+    keep = ("PATH", "LANG", "LC_ALL", "HOME", "TMPDIR", "SYSTEMROOT", "WINDIR")
+    safe_env = {k: os.environ[k] for k in keep if k in os.environ}
+    safe_env["GIT_TERMINAL_PROMPT"] = "0"
+    safe_env["GIT_CONFIG_NOSYSTEM"] = "1"
+    safe_env["GIT_CONFIG_GLOBAL"] = os.devnull
     with tempfile.TemporaryDirectory(prefix="factory-rc-source-") as tmp:
         source_snapshot = Path(tmp) / "source"
         run_checked(["git", "clone", "--no-hardlinks", "--", str(source),
-                     str(source_snapshot)], timeout=180)
+                     str(source_snapshot)], timeout=180, env=safe_env)
         run_checked(["git", "-C", str(source_snapshot), "checkout", "--detach",
-                     report["source_sha"]])
+                     report["source_sha"]], env=safe_env)
         run_checked(["git", "clone", "--no-hardlinks", "--", str(distribution),
-                     str(output)], timeout=180)
+                     str(output)], timeout=180, env=safe_env)
         try:
             run_checked(["git", "-C", str(output), "checkout", "-b",
                          "runner/prepared-" + report["source_sha"][:12],
-                         report["public_main_sha"]])
+                         report["public_main_sha"]], env=safe_env)
             exporter = source_snapshot / profile["exporter_path"]
             if not exporter.is_file() or exporter.is_symlink():
                 raise PreflightError("Profile exporter is unavailable or unsafe")
             exporter_blob = run_checked(
                 ["git", "-C", str(source_snapshot), "rev-parse", "HEAD:" +
-                 profile["exporter_path"]])
+                 profile["exporter_path"]], env=safe_env)
             if exporter_blob != profile["exporter_git_blob_sha"]:
                 raise PreflightError("Exporter SHA differs from approved project profile")
             # Isolated Python mode prevents a source checkout from shadowing
@@ -257,7 +260,7 @@ def prepare(source, distribution, report, output, *, profile):
                         env=safe_env, timeout=240)
             status = run_checked(["git", "-C", str(output), "status", "--porcelain=v1",
                                   "--no-renames", "--untracked-files=all", "-z"],
-                                 preserve_output=True)
+                                 preserve_output=True, env=safe_env)
             # --porcelain -z is a NUL-delimited sequence; no shell interpretation.
             paths = []
             entries = status.split("\0")
