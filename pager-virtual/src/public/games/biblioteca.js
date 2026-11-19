@@ -3,7 +3,7 @@ import { obterCatalogo } from './catalogo.js';
 import { ilustracao, etiquetas } from './catalogo-visual.js';
 import { newInstanceId, createEnvelope, validateEnvelope, createRateLimiter } from './protocolo-v1.js';
 
-export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}, etiquetaPedido = 'Pedido em preparo' } = {}) {
+export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}, etiquetaPedido = 'Pedido em preparo', jogoInicial = null } = {}) {
   if (!(container instanceof HTMLElement)) throw new TypeError('Container inválido');
   let ativa = true, geracao = 0, sairPong = null;
   const scrollAnterior = window.scrollY;
@@ -276,11 +276,40 @@ export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}
       if (ativa && atual === geracao) {
         const mensagem = erro instanceof Error && /^Pong indisponível/.test(erro.message)
           ? erro.message : 'Não foi possível abrir o jogo. Tente novamente.';
-        mostrarCatalogo(mensagem);
+        // Uma falha de ingresso no Pong online não é pedido para girar o celular.
+        // Preserve a tela da partida e mostre a causa, sem retorno automático ao
+        // catálogo (que exigiria retrato enquanto o usuário ainda está em paisagem).
+        if (jogo.id === 'pong' && modo === 'dupla') {
+          palco.replaceChildren();
+          const aviso = document.createElement('section');
+          aviso.className = 'games-online-error';
+          aviso.setAttribute('role', 'alert');
+          const texto = document.createElement('p');
+          texto.textContent = mensagem;
+          const tentar = botao('Tentar novamente', () => {
+            if (!ativa || atual !== geracao || etapa !== 'partida') return;
+            etapa = 'rotacao';
+            layout();
+          }, 'primary');
+          const voltarLista = botao('← Voltar aos jogos', () => mostrarCatalogo());
+          aviso.append(texto, tentar, voltarLista);
+          palco.append(aviso);
+          layout();
+        } else {
+          mostrarCatalogo(mensagem);
+        }
       }
     }
   }
-  const pronto = mostrarCatalogo();
+  // A vitrine pode entrar diretamente na escolha de jogadores do jogo selecionado.
+  // O catálogo continua disponível pelo botão Voltar aos jogos.
+  const pronto = (jogoInicial === 'pong' || jogoInicial === 'jogo-da-velha')
+    ? obterCatalogo().then(jogos => {
+        if (!ativa) return;
+        const jogo = jogos.find(item => item.id === jogoInicial && item.status !== 'construction');
+        return jogo ? mostrarJogadores(jogo) : mostrarCatalogo('Jogo indisponível. Escolha outro.');
+      }).catch(() => mostrarCatalogo('Não foi possível abrir o jogo. Escolha outro.'))
+    : mostrarCatalogo();
   function encerrar() {
     if (!ativa) return;
     ativa = false;

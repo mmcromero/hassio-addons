@@ -30,8 +30,32 @@ small,.muted{color:#b1c0d7}ul{list-style:none;padding:0}li{border-bottom:1px sol
 .brand-header #logout{flex-shrink:0}
 @media(max-width:600px){:root{--av-header-logo-width:170px}.brand-header{min-height:65px}}
 
+
+/* Identidade visual comum ao Master e KDS */
+:root {--av-header-logo-width:240px;--av-container:1360px;--av-gutter:clamp(16px,3vw,38px)}
+body {padding:0 0 56px;background:radial-gradient(ellipse 65% 35% at 73% -9%,#1b3159 0%,transparent 75%),#090e17}
+main {max-width:var(--av-container);width:100%;margin:0 auto;padding:0 var(--av-gutter)}
+.brand-header {width:calc(100% + 2 * var(--av-gutter));margin:0 calc(-1 * var(--av-gutter)) 22px;padding:0 var(--av-gutter);min-height:92px;border-bottom:1px solid #344964;background:linear-gradient(105deg,#0a162a,#10213b 70%,#0b1528)}
+.av-header-inner {width:100%;max-width:var(--av-container);margin:auto;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.brand-logo {width:var(--av-header-logo-width);max-width:100%;height:auto;object-fit:contain}
+.av-session-actions {display:flex;align-items:center;justify-content:flex-end;gap:18px;min-width:0}
+#print-identity {font-size:.94rem;color:#d8e3f4;text-align:right;overflow-wrap:anywhere}
+.av-session-actions #logout {flex-shrink:0;border:1px solid #425979;border-radius:10px;background:linear-gradient(140deg,#263b59,#1b2a40);min-height:42px;padding:9px 19px}
+#restaurant-context {border:1px solid #39516e;border-radius:13px;background:linear-gradient(120deg,#13243b,#101c2f);padding:12px 16px}
+.section-heading {margin:26px 0 12px}
+.section-heading h1 {font-size:clamp(1.7rem,2.6vw,2.4rem);line-height:1.2;letter-spacing:-.03em}
+.card {border:1px solid #39516e;border-radius:16px;background:linear-gradient(145deg,#111f35,#101b30)}
+@media(max-width:700px){
+:root {--av-header-logo-width:170px}
+.brand-header {min-height:76px}
+.av-header-inner {gap:10px}
+.av-session-actions {gap:8px}
+#print-identity {font-size:.78rem;max-width:120px}
+.av-session-actions #logout {min-height:40px;padding:8px 12px}
+}
+
 </style></head><body><main>
-<header class="brand-header"><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"><button id="logout" class="secondary" type="button">Sair</button></header>
+<header class="brand-header"><div class="av-header-inner"><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"><div class="av-session-actions"><span id="print-identity" aria-live="polite"></span><button id="logout" class="secondary" type="button">Sair</button></div></div></header>
 <div id="restaurant-context" class="context" aria-live="polite"><span class="context-avatar" id="restaurant-avatar" aria-hidden="true">—</span><div class="context-text"><strong id="restaurant-name">Consultando restaurante…</strong><span id="restaurant-role"></span></div></div>
 <div class="section-heading"><h1>Integração de impressão</h1><a class="link" href="./kds.html">Voltar ao KDS</a></div>
 <p class="muted">Os computadores de caixa enviam pedidos ao Avisaqui. A impressora física continua funcionando de forma independente.</p>
@@ -94,6 +118,7 @@ async function loadIdentity(){
   if(response.status===401){location.replace(basePath+'/login.html');return}
   if(!response.ok)throw new Error('Acesso indisponível');
   const user=await response.json();
+  $('print-identity').textContent=(user.nome||user.login||'Usuário')+' · '+(user.papel==='master'?'Master Admin':user.papel==='gerente'?'Gerente':'Operador');
   if(!['gerente','master'].includes(user.papel)||!user.restaurante_id){
    $('restaurant-name').textContent='Selecione um restaurante autorizado';
    $('restaurant-role').textContent='A gestão de computadores exige um restaurante ativo.';

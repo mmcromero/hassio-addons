@@ -316,6 +316,27 @@
   }
 
 
+
+  /* UX-PADRAO: identidade e navegação uniformes também para gerente */
+  #manager-area {display:block!important;width:min(calc(100% - 2 * var(--av-gutter)),var(--av-content-width));margin:0 auto;padding:0 0 70px;grid-template-columns:none!important}
+  #manager-area .admin-nav {display:flex;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 0;margin:0 0 24px;border-bottom:1px solid #344964}
+  #manager-area .admin-tab {flex:0 0 auto;min-height:44px;padding:10px 17px;border:1px solid transparent;border-radius:11px;font-size:.94rem}
+  #manager-area .admin-tab[aria-current="page"] {background:linear-gradient(180deg,#428cfb,#1265f2);border-color:#508ff5;box-shadow:0 6px 16px #075de333}
+  #manager-area .admin-tab.secondary {background:transparent;color:#d7e2f2}
+  #manager-area .admin-nav .action {min-height:44px;padding:9px 16px;border-radius:10px;font-size:.9rem}
+  #manager-area .admin-panels {min-width:0}
+  #manager-area .admin-toolbar h2 {font-size:clamp(1.65rem,2.6vw,2.4rem);line-height:1.25}
+  #manager-area .admin-panel > .card {background:linear-gradient(145deg,#111f35,#101b30);border:1px solid #39516e;border-radius:16px}
+  @media(max-width:700px) {
+    :root {--av-header-logo-width:170px}
+    #manager-area .admin-nav {gap:6px;margin-bottom:18px}
+    #manager-area .admin-tab {padding:9px 10px;font-size:.8rem;min-width:0}
+    #manager-area .admin-nav .action {padding:9px 12px;font-size:.8rem}
+  }
+  @media(min-width:701px) and (max-width:760px) {
+    :root {--av-header-logo-width:240px}
+  }
+
 </style>
 </head>
 <body>
@@ -627,10 +648,86 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     refresh.textContent='Atualizar lista';refresh.disabled=true;
     const footer=document.createElement('div');footer.className='admin-dialog-actions';
     const done=document.createElement('button');done.type='button';done.className='secondary';done.textContent='Voltar';
-    footer.append(refresh,done);dialog.append(head,info,state,list,footer);document.body.append(dialog);
+    const create=document.createElement('button');create.type='button';create.textContent='Criar gerente';
+    footer.append(create,refresh,done);dialog.append(head,info,state,list,footer);document.body.append(dialog);
     let busy=true,initialContext=null,contextChanged=false,unsaved=()=>false;
     const contextUrl=basePath+'/api/admin/contexto/';
     const managerUrl=basePath+'/api/admin/restaurantes/'+encodeURIComponent(rest.id)+'/gerentes';
+    function openManagerForm(action,item,trigger){
+      if(busy)return;
+      const form=document.createElement('form');form.className='card';form.style.cssText='width:100%;min-width:0';
+      form.setAttribute('aria-label',action+' gerente');
+      const fields={};
+      function field(label,type,value,required=true){
+        const wrapper=document.createElement('label');wrapper.textContent=label;
+        const input=document.createElement('input');input.type=type;input.required=required;
+        input.value=value||'';if(type==='password'){input.minLength=1;input.maxLength=256;input.autocomplete='off';}
+        else {input.maxLength=120;if(label==='Login')input.autocapitalize='none';}
+        wrapper.append(input);form.append(wrapper);fields[label]=input;return input;
+      }
+      if(action==='Criar'||action==='Editar'){
+        field('Nome','text',item?.nome||'');
+        field('Login','text',item?.login||'');
+      }
+      if(action==='Criar'||action==='Reativar') {
+        const p=field('Nova senha','password','');
+        p.minLength=12;p.autocomplete='new-password';
+      }
+      if(action!=='Criar')field('Sua senha atual de Master Admin','password','').autocomplete='current-password';
+      const note=document.createElement('p');note.className='muted';
+      note.textContent=action==='Desativar'?'A conta será bloqueada e todas as sessões serão encerradas.':
+        action==='Editar'?'A troca de login encerra as sessões do gerente.':
+        action==='Reativar'?'A reativação exige nova senha e não restaura sessões antigas.':'A conta terá identidade individual e histórico próprio.';
+      const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+      const actions=document.createElement('div');actions.className='admin-dialog-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+      const save=document.createElement('button');save.type='submit';save.textContent=action+' gerente';
+      actions.append(cancel,save);form.append(note,feedback,actions);
+      const parent=trigger.parentElement;parent.append(form);trigger.hidden=true;
+      const dirty=()=>Object.values(fields).some(input=>input.value!==''&&
+        (action!=='Editar'||input.value!==(item?.[input===fields.Nome?'nome':'login']||'')));
+      const previous=unsaved;unsaved=()=>previous()||form.isConnected&&dirty();
+      cancel.addEventListener('click',()=>{
+        if(dirty()&&!confirm('Descartar as alterações não salvas?'))return;
+        form.remove();trigger.hidden=false;trigger.focus();
+      });
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();if(busy||save.disabled||!form.reportValidity())return;
+        const payload={};
+        if(fields.Nome)payload.nome=fields.Nome.value.trim();
+        if(fields.Login)payload.login=fields.Login.value.trim();
+        if(fields['Nova senha'])payload.senha=fields['Nova senha'].value;
+        if(fields['Sua senha atual de Master Admin'])payload.senha_master_atual=fields['Sua senha atual de Master Admin'].value;
+        if(action==='Desativar'||action==='Reativar'){
+          if(!confirm(action+' a conta de '+item.nome+'? '+note.textContent))return;
+          payload.ativo=action==='Reativar';
+        }
+        busy=true;save.disabled=true;cancel.disabled=true;close.disabled=true;done.disabled=true;refresh.disabled=true;create.disabled=true;
+        feedback.textContent='Processando '+action.toLowerCase()+'…';save.textContent='Processando…';
+        const endpoint=action==='Criar'?managerUrl:managerUrl+'/'+encodeURIComponent(item.id);
+        const url=(action==='Desativar'||action==='Reativar')?endpoint+'/ativo':endpoint;
+        const method=action==='Criar'?'POST':'PATCH';
+        try{
+          await api(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          Object.values(fields).filter(i=>i.type==='password').forEach(i=>i.value='');
+          form.remove();trigger.hidden=false;
+          try{await refreshManagers();state.textContent=action+' gerente: operação concluída.';}
+          catch(error){state.textContent='Operação aplicada, mas a lista não atualizou: '+error.message;}
+        }catch(error){
+          feedback.textContent=error.message;
+          if(/login|cadastrado/i.test(error.message)&&fields.Login){
+            fields.Login.setCustomValidity(error.message);fields.Login.focus();
+            fields.Login.addEventListener('input',()=>fields.Login.setCustomValidity(''),{once:true});
+          }
+        }finally{
+          if(fields['Sua senha atual de Master Admin'])fields['Sua senha atual de Master Admin'].value='';
+          busy=false;save.disabled=false;cancel.disabled=false;close.disabled=false;done.disabled=false;refresh.disabled=false;create.disabled=false;
+          save.textContent=action+' gerente';
+        }
+      });
+      Object.values(fields)[0]?.focus();
+    }
+    create.addEventListener('click',()=>openManagerForm('Criar',null,create));
     async function restoreContext(){
       if(!contextChanged)return;
       const endpoint=initialContext?contextUrl+encodeURIComponent(initialContext):basePath+'/api/admin/contexto/sair';
@@ -669,6 +766,13 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
         const name=document.createElement('strong');
         name.textContent=item.nome+' · '+item.login+(item.ativo?'':' · Inativo');
         line.append(name);
+        const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Editar nome/login';
+        edit.addEventListener('click',()=>openManagerForm('Editar',item,edit));
+        if(item.ativo)line.append(edit);
+        const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary';
+        toggle.textContent=item.ativo?'Desativar':'Reativar';
+        toggle.addEventListener('click',()=>openManagerForm(item.ativo?'Desativar':'Reativar',item,toggle));
+        line.append(toggle);
         if(item.ativo){
           const reset=document.createElement('button');reset.type='button';reset.className='secondary';
           reset.textContent='Redefinir senha';
@@ -890,7 +994,18 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
   });
   submit('manager-form',async()=>{
     const restId=val('manager-restaurant');
-    await post(basePath + '/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+    const me=await api(basePath+'/api/auth/me');
+    const previous=me.restaurante_id||null;
+    const changed=previous!==restId;
+    if(changed)await post(basePath+'/api/admin/contexto/'+encodeURIComponent(restId),{});
+    try{
+      await post(basePath + '/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+    }finally{
+      if(changed){
+        const endpoint=previous?basePath+'/api/admin/contexto/'+encodeURIComponent(previous):basePath+'/api/admin/contexto/sair';
+        await post(endpoint,{});
+      }
+    }
   });
   submit('terminal-form',async()=>{
     await post(basePath + '/api/admin/terminais',{nome:val('terminal-name'),login:val('terminal-login'),senha:$('terminal-password').value});

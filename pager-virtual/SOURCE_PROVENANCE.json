@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "0775f1dfc2d363be2cfea44928b9aef497e108df",
-  "version": "0.1.20-rc.7",
+  "commit": "5e524037f8a6fd9504a23d56f466e989062c99bb",
+  "version": "0.1.20-rc.8",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "52241bb7c2de5fd2bdf94a5e7cb699cc8e510450385beaf7ce91a4949d489f8f"
+      "sha256": "de881b329d742e2dd6ff992ce9023935f8a143f48ec62695d6c8239edfc82a97"
     },
     {
       "path": "AGENTS.md",
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "50e90c63139c186fdd7af19288c7e3c2846da2e84441cba94efb8098fe7987a5"
+      "sha256": "d5b1bdb221df47bc3fe1d7f42f2c067a2b006cef5a277f502621d6efcd0173f5"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "6f146cf1b2b0ea178f28ce3f073a8954e28c709a9bbba518b87c9e8da8665bc8"
+      "sha256": "a28aa195df456c5f97c02217325cfa09b28d3ba0be425a0718bae48249ac3a99"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "eccfa74e4bff9fd9a6901a919c93c42b79742769b417c43f0bf470a7270d052d"
+      "sha256": "78db44346c68ed70d52d6bea21fdc9aa8c1f8746de8861e26c9e868fd3a4bbcb"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "7c9fc0c8ef8a9660154400841b8f5e99d15d688e5081302f2fa6062638af2e8f"
+      "sha256": "1852de3e624d5227dbb3201d9f07478ff8384a16b2852da5210f65da47848641"
     },
     {
       "path": "run.sh",
@@ -131,12 +131,12 @@
     {
       "path": "src/admin-gerentes.js",
       "source_path": "src/admin-gerentes.js",
-      "sha256": "62ad4046fee113f7b82b5c477b7049578b22f99c14c57115df48b625c3c555c4"
+      "sha256": "d7396b67d22ee0ec47eda8eff20e6faad8907788832e0940249b9d1555ac1f63"
     },
     {
       "path": "src/admin.js",
       "source_path": "src/admin.js",
-      "sha256": "2064b6d3823e7771af25220ca58dcccfef7a3423feb59da9df691b01848837cc"
+      "sha256": "d0c4193463f51aa2cab7b834acbeeff7f718b12c06da96703257666d8a16da80"
     },
     {
       "path": "src/auth.js",
@@ -206,7 +206,7 @@
     {
       "path": "src/public/admin.html",
       "source_path": "src/public/admin.html",
-      "sha256": "a6c27b7c2e3bf4aa517ccfb193eaa8452064b426f2f2b7bf48794975e10e41ea"
+      "sha256": "1db62df890f19df72b03987d2f5dc47314e93463dc88ea3ba110fadc7d0bea4c"
     },
     {
       "path": "src/public/avisaqui-marca-transparente.svg",
@@ -221,12 +221,12 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "813e77f217b55c1c6e9e956e2d625bd5c40406c2fb8e212f13f2840dc5f08e4c"
+      "sha256": "381c6d1699f725c05177e2c7670dfb57c030322a7fac5df889b147b1d6dbad17"
     },
     {
       "path": "src/public/games/biblioteca.js",
       "source_path": "src/public/games/biblioteca.js",
-      "sha256": "34cdfce7236c4e0419000161cb5cfff8526005c11ef1cc53a0227f1e6b8b7d85"
+      "sha256": "1ac4b69b7932781961a265bab533bf4b576d79ab67e725b68b0034af0cc3dbe4"
     },
     {
       "path": "src/public/games/catalogo-visual.js",
@@ -271,12 +271,12 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "37564b38a8de0e0c7e92a765f90a50dd1232588cb3a6f95768a56d392074b9a5"
+      "sha256": "b77eeb2e6f4069a55d381279c0e5405203f17154a960695a2f112db182aeb2b1"
     },
     {
       "path": "src/public/kds.html",
       "source_path": "src/public/kds.html",
-      "sha256": "95fb317dc034b7065b7822e0d514a6861371e6771a53a8d2a004a469cf635817"
+      "sha256": "dd9a46140033bc09d105a61bf6c1c125c138c8148fb9577838d183ac3f42f681"
     },
     {
       "path": "src/public/landing.html",
@@ -301,7 +301,7 @@
     {
       "path": "src/public/push-sw.js",
       "source_path": "src/public/push-sw.js",
-      "sha256": "50da1f63a6553b001b7181f1bbb053a0c033ea6012e9a5ea39f4f3431f3a7ce4"
+      "sha256": "ba4663a4c6533c8e73299ea74ef17a5c4dce9ebafbd0213072fa29658a0f980b"
     },
     {
       "path": "src/public/qrcode.min.js",
@@ -357,6 +357,11 @@
       "path": "src/windows-download.js",
       "source_path": "src/windows-download.js",
       "sha256": "4a1f7bbee767107db2ac714498acb2f7b0eb0365684dee3d3f61e08d466bd2bb"
+    },
+    {
+      "path": "tests/admin-gerentes-041.test.js",
+      "source_path": "tests/admin-gerentes-041.test.js",
+      "sha256": "a01f1cf531275dd08de369357daebeda475fdb313e6597bcbd5bc200f28b9b2c"
     },
     {
       "path": "tests/admin-gerentes-seguranca-034.test.js",
@@ -416,7 +421,7 @@
     {
       "path": "tests/games-fluxo-aprovado.test.js",
       "source_path": "tests/games-fluxo-aprovado.test.js",
-      "sha256": "6237f2558ad95f15307d8f378963b370cf4552dea5b638c4d2fa6305bcd7a1fd"
+      "sha256": "52efb20e50307c7aa2ded13779899525ad273a7d5bd2d6f4aec09478c766bd17"
     },
     {
       "path": "tests/https-prefix-auth.test.js",
@@ -596,7 +601,7 @@
     {
       "path": "tests/server-roles.test.js",
       "source_path": "tests/server-roles.test.js",
-      "sha256": "09197c3380a5cb09bb73a89b08570e4c24738a4be22c6dee66e0a61e82b4d986"
+      "sha256": "d4dfc23625c3dcbcb872e0eca4501faf6bd1b4c39cd3dd35cdcef900f28e470d"
     },
     {
       "path": "tests/server-smoke.test.js",

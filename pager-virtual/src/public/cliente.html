@@ -68,14 +68,14 @@
 
     /* UX-M017 — marca transparente, cabeçalho compacto mobile; nenhuma mudança na lógica de pedidos */
     .restaurant-header { flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px; }
-    .brand-logo-client { display:block;width:var(--av-header-logo-width,240px);max-width:100%;height:auto;object-fit:contain;background:transparent; }
+    .brand-logo-client { display:block;width:min(310px,85%);max-width:100%;height:auto;object-fit:contain;background:transparent; }
     .restaurant-info h1 { font-size:1.05rem; }
     .client-restaurant-context { display:flex;align-items:center;gap:12px;margin:9px 0 0;padding:9px 12px;background:#18283f;border-radius:12px;width:100%;border:1px solid #46617d }
     .client-restaurant-symbol { width:48px;height:48px;flex:none;background:#2c4968;color:#fff;border-radius:10px;display:grid;place-items:center;font-weight:800 }
     .client-restaurant-symbol img { width:48px;height:48px;object-fit:contain;border-radius:10px;background:#fff }
     .client-restaurant-context strong { overflow-wrap:anywhere;min-width:0 }
     .restaurant-info p { margin:0;font-size:.85rem; }
-    @media(max-width:375px) { .brand-logo-client { width:var(--av-header-logo-width,170px); } .restaurant-header { padding:11px 13px; } }
+    @media(max-width:375px) { .brand-logo-client { width:min(260px,85%); } .restaurant-header { padding:11px 13px; } }
 
     /* EFEITO VISÃO PERIFÉRICA: Iluminação nas bordas da tela em amarelo (Edge Lighting) */
     .edge-glow-overlay {
@@ -381,11 +381,217 @@
       font-family: monospace;
       font-size: 1.05rem;
     }
-  
-    /* Identidade Avisaqui — marca e respiro padronizados */
-    :root { --av-header-logo-width:240px; --av-grid-gap:16px; }
-    .restaurant-header { gap:12px; }
-    @media(max-width:600px) { :root { --av-header-logo-width:170px; } }
+      /* Identidade Avisaqui: o cliente usa o mesmo padrão de marca, sem controles administrativos */
+    :root { --av-header-logo-width:240px; --av-gutter:16px; }
+    .restaurant-header {display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px 20px;background:linear-gradient(120deg,#0b162a,#14243e);border-bottom:1px solid #39516e}
+    .restaurant-header .brand-logo-client {display:block;width:var(--av-header-logo-width);max-width:100%;height:auto;object-fit:contain;align-self:flex-start}
+    .restaurant-header .restaurant-info {width:100%;min-width:0}
+    .restaurant-header .restaurant-info h1 {font-size:1.15rem;line-height:1.3;margin:0}
+    .restaurant-header .restaurant-info p {color:#9eafc9;margin:4px 0 0}
+    .restaurant-header .client-restaurant-context {width:100%;margin:0;padding:11px 12px;background:linear-gradient(120deg,#13243b,#101c2f);border:1px solid #39516e;border-radius:12px}
+    .order-status-card {padding:24px 20px}
+    @media (max-width:600px) {
+      :root {--av-header-logo-width:170px}
+      .restaurant-header {padding:15px 16px;gap:10px}
+      .order-status-card {padding:20px 16px}
+    }
+
+
+
+    /* AVISAQUI UX — vitrine do cliente: referência visual aprovada */
+    :root { --experience-blue:#2983ff;--experience-border:#2863a4; }
+    body {background:radial-gradient(ellipse 100% 35% at 50% 0%,#10346b 0%,transparent 70%),#050e20;min-height:100dvh;padding:20px 16px 36px;display:flex;flex-direction:column;align-items:center;gap:0}
+    .client-brand-top {width:min(100%,520px);display:flex;justify-content:center;margin:0 auto 17px;padding-top:3px}
+    .client-brand-top img {display:block;width:min(240px,65vw);height:auto;object-fit:contain}
+    #app-card.app-card {width:min(100%,520px);max-width:520px;border:none;border-radius:0;background:transparent;box-shadow:none;overflow:visible;display:flex;flex-direction:column;gap:16px}
+    #app-card .restaurant-header {background:linear-gradient(120deg,#10294c,#111b39);border:1px solid #315f9a;border-radius:20px;display:flex;align-items:center;padding:13px 16px;gap:10px;box-shadow:0 8px 24px #0002}
+    #app-card .restaurant-info {min-width:0}
+    #app-card .restaurant-info .rest-label {display:block;color:#94aecd;font-size:.68rem;letter-spacing:.09em;font-weight:750;margin-bottom:4px}
+    #app-card .restaurant-info h1 {font-size:1.08rem;font-weight:800;letter-spacing:-.01em}
+    #app-card .client-restaurant-context {border:none;background:transparent;padding:0;margin:0;display:flex;gap:12px}
+    #app-card .client-restaurant-context strong {font-size:1.12rem;color:#f5f9ff}
+    #app-card .client-restaurant-symbol,#app-card .client-restaurant-symbol img {width:48px;height:48px;min-width:48px;border-radius:12px}
+    #app-card .restaurant-header:has(.client-restaurant-context:not([hidden])) .restaurant-info {display:none}
+    #app-card .order-status-card {background:radial-gradient(ellipse at 0% 0%,#123d76 0%,transparent 63%),linear-gradient(145deg,#0c2043,#0a1430);border:1px solid #277bd2;border-radius:23px;padding:25px 18px 22px;box-shadow:0 0 25px #1266d519,inset 0 0 36px #1456ad18}
+    #app-card .order-number-tag {display:block;text-align:center;text-transform:none;letter-spacing:.01em;font-size:1.14rem;color:#dae8ff;font-weight:650;margin:0 0 6px}
+    #app-card .order-number {font-size:clamp(5.1rem,21vw,8.7rem);line-height:1.06;letter-spacing:-.08em;font-weight:900;color:#fff;text-shadow:0 12px 34px #050c20bb;margin:0 0 12px;overflow-wrap:anywhere}
+    #app-card .order-number::first-letter {color:inherit}
+    #app-card .status-badge {display:inline-flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;padding:12px 27px;margin-bottom:12px;font-size:1.25rem;font-weight:800;box-shadow:0 4px 20px #f9731645}
+    #app-card .status-badge.preparo {background:linear-gradient(135deg,#fb9d20,#f26909);border:1px solid #ffb648;color:#fff}
+    #app-card .status-badge.pronto {background:linear-gradient(135deg,#10b981,#047857);border:1px solid #6ee7b7;color:#fff;box-shadow:0 4px 20px #10b98144}
+    #app-card .status-badge.entregue {background:#1e3551;color:#e2e8f0}
+    #app-card .status-message {font-size:.98rem;line-height:1.4;color:#c5d5ec;margin:0 0 16px}
+    #app-card .sub-message {display:none}
+    .client-progress {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;position:relative;margin:17px 0 3px}
+    .client-progress::before {content:"";position:absolute;height:4px;background:linear-gradient(90deg,#10b981 0%,#f59e0b 34%,#40516e 34%);left:11%;right:11%;top:22px;z-index:0}
+    .progress-step {display:flex;align-items:center;flex-direction:column;gap:7px;position:relative;z-index:1;font-size:.72rem;line-height:1.2;color:#91a8cc}
+    .progress-step .step-dot {width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#1d2d4b;border:2px solid #53698a;color:#b8cbe6;font-size:1.35rem}
+    .progress-step.received .step-dot {background:#0d9b68;border-color:#6ee7b7;color:#fff}
+    .progress-step.preparing .step-dot {background:#f48409;border-color:#ffd08a;color:#fff}
+    .progress-step.preparing {color:white;font-weight:700}
+    .client-progress[data-stage="pronto"]::before {background:linear-gradient(90deg,#10b981 0%,#10b981 68%,#40516e 68%)}
+    .client-progress[data-stage="pronto"] .ready .step-dot {background:#0d9b68;border-color:#6ee7b7;color:#fff}
+    .client-progress[data-stage="entregue"]::before {background:#10b981}
+    .client-progress[data-stage="entregue"] .ready .step-dot,.client-progress[data-stage="entregue"] .delivered .step-dot {background:#0d9b68;border-color:#6ee7b7;color:#fff}
+    #app-card .sound-toggle-btn {min-height:43px;font-size:.8rem;padding:8px 12px;margin:17px auto 0;max-width:100%;border:1px solid #3d648f;border-radius:12px;background:#152943;color:#d6e6fc;box-shadow:none}
+    #app-card #btn-silence {margin-top:12px!important}
+    #games-area.experience-games,.experience-wallet {margin:0!important;max-width:none!important;width:100%;padding:20px 17px 19px;text-align:left;background:linear-gradient(135deg,#102b50,#0a1b37);border:1px solid #2b69ac;border-radius:22px;box-shadow:0 12px 27px #0002}
+    .experience-title {display:flex;align-items:center;gap:12px;margin-bottom:15px}
+    .experience-icon {flex:0 0 44px;width:44px;height:44px;display:grid;place-items:center;font-size:1.7rem;color:#5ab5ff}
+    .experience-title h2 {font-size:1.31rem;line-height:1.25;margin:0;color:#f8fafc;font-weight:800}
+    .experience-title p {font-size:.85rem;color:#afc5e5;line-height:1.4;margin:3px 0 0}
+    .game-tile-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+    .game-tile {min-width:0;min-height:136px;border-radius:17px;padding:14px 10px 12px;border:1px solid #6756d7;background:linear-gradient(145deg,#4d2fa9,#19194e);color:#fff;display:flex;align-items:flex-start;justify-content:space-between;flex-direction:column;text-align:left;font:inherit;position:relative;transition:transform .18s,filter .18s}
+    button.game-tile {cursor:pointer}
+    button.game-tile:hover {transform:translateY(-2px);filter:brightness(1.12)}
+    .game-tile strong {font-size:.87rem;line-height:1.2;font-weight:800;max-width:100%}
+    .game-tile .game-art {font-size:1.45rem;line-height:1.3;font-weight:800;white-space:nowrap;align-self:center;margin:6px auto}
+    .game-tile .game-play {position:absolute;right:9px;bottom:10px;border-radius:50%;background:#ffffff26;width:25px;height:25px;display:grid;place-items:center;font-size:.7rem}
+    .game-tictactoe {border-color:#278df3;background:linear-gradient(145deg,#085aa3,#10295e)}
+    .game-memory {border-color:#1ca46e;background:linear-gradient(145deg,#096d59,#084c47);opacity:.8}
+    .game-soon {font-size:.67rem;color:#c4f4d8}
+    #games-open.game-library {display:none}
+    #games-content:not([hidden]) {margin:17px 0 0}
+    .experience-wallet {border-color:#2665ad}
+    .wallet-icon {font-size:1.8rem;color:#93c5fd}
+    #wallet-box {margin:0!important}
+    #wallet-box a {display:block}
+    #wallet-box a button {width:100%;min-height:49px;border-radius:12px;background:linear-gradient(135deg,#279aff,#0664ed)!important;border:1px solid #65b9ff!important;color:white!important;font:inherit;font-size:.93rem;font-weight:780}
+    #wallet-box[hidden],#wallet-unavailable[hidden] {display:none!important}
+    .wallet-preview button {width:100%;min-height:49px;border-radius:12px;background:linear-gradient(135deg,#214f8a,#173a6f);border:1px solid #3e70a7;color:#b9cee8;font:inherit;font-size:.93rem;font-weight:750;opacity:1}
+    .wallet-preview p {color:#a8bddb;text-align:center;font-size:.76rem;line-height:1.4;margin:8px 0 0}
+    .experience-foot {display:flex;align-items:center;justify-content:center;gap:10px;text-align:center;font-size:.84rem;color:#a8c6e3;padding:0 8px 12px}
+    #order-details {border-radius:16px;border:1px solid #304c6c;background:#101d34}
+    #diagnosticos {margin:0!important;border:1px solid #223b59!important;border-radius:12px;background:#0d1b2d;padding:10px 13px!important}
+    #diagnosticos summary {font-size:.8rem;color:#94a9c5}
+    @media(max-width:420px) {
+      body {padding:13px 11px 25px}
+      .client-brand-top {margin-bottom:12px}
+      .client-brand-top img {width:min(205px,60vw)}
+      #app-card.app-card {gap:12px}
+      #app-card .order-status-card {padding:19px 13px 17px}
+      #app-card .order-number {font-size:clamp(4.7rem,23vw,6.5rem)}
+      #app-card .status-badge {font-size:1.08rem;padding:10px 18px}
+      .progress-step .step-dot {width:36px;height:36px;font-size:1rem}
+      .client-progress::before {top:18px}
+      .progress-step {font-size:.66rem}
+      #games-area.experience-games,.experience-wallet {padding:16px 12px}
+      .game-tile {min-height:116px;padding:9px 7px}
+      .game-tile strong {font-size:.77rem}
+      .game-tile .game-art {font-size:1.1rem}
+    }
+
+
+    /* UX COMPACTA v2: senha primeiro, carteira contextual, games secundários */
+    body {padding:8px 12px 18px!important}
+    .a11y-bar {margin-bottom:4px}
+    .client-brand-top {margin:0 auto 7px;padding:0}
+    .client-brand-top img {width:min(178px,47vw);max-height:51px}
+    #app-card.app-card {gap:9px}
+    #app-card .restaurant-header {padding:8px 12px;min-height:53px;border-radius:13px;gap:8px}
+    #app-card .restaurant-info .rest-label {font-size:.59rem;margin-bottom:2px}
+    #app-card .restaurant-info h1,#app-card .client-restaurant-context strong {font-size:.9rem}
+    #app-card .client-restaurant-symbol,#app-card .client-restaurant-symbol img {width:36px;height:36px;min-width:36px;border-radius:9px}
+    #app-card .client-restaurant-context {gap:9px}
+    #app-card .order-status-card {padding:12px 14px 12px;border-radius:17px}
+    #app-card .order-number-tag {font-size:.82rem;margin:0}
+    #app-card .order-number {font-size:clamp(4.1rem,17vw,6.1rem);line-height:.99;letter-spacing:-.055em;margin:0 0 7px}
+    #app-card .status-badge {font-size:.93rem;line-height:1.1;padding:8px 17px;margin:0 0 8px;gap:7px;box-shadow:0 3px 10px #f9731628}
+    #app-card .status-message {font-size:.82rem;line-height:1.35;margin:0 0 9px}
+    .client-progress {margin:5px 0 4px;gap:3px}
+    .client-progress::before {top:16px;height:3px}
+    .progress-step {font-size:.61rem;gap:4px}
+    .progress-step .step-dot {width:32px;height:32px;font-size:.98rem;border-width:1px}
+    #app-card .sound-toggle-btn {display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:39px;padding:7px 10px;margin:8px auto 0;font-size:.76rem;line-height:1.25;border-radius:10px}
+    .wallet-inline {display:grid;grid-template-columns:1fr auto;align-items:center;gap:3px 8px;border-top:1px solid #31547e;margin-top:8px;padding:9px 1px 0;text-align:left}
+    .wallet-inline-label {display:flex;align-items:center;gap:8px;min-width:0}
+    .wallet-inline-label > span {display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;border-radius:8px;color:#bddafa;background:#17385e;font-size:1.2rem}
+    .wallet-inline-label h2 {margin:0;font-size:.82rem;font-weight:800;color:#eef5ff;line-height:1.25}
+    .wallet-inline-label p {margin:2px 0 0;color:#a8bddb;font-size:.7rem;line-height:1.25}
+    #wallet-box {margin:0!important;min-width:0}
+    #wallet-box a.wallet-action-link {display:block;max-width:160px;padding:8px 10px;border:1px solid #53769e;border-radius:8px;background:#112948;color:#f7fbff;font-size:.74rem;line-height:1.2;font-weight:700;text-decoration:none;text-align:center}
+    #wallet-box a.wallet-action-link:hover {background:#1e416a}
+    .wallet-pending {grid-column:2;grid-row:1;margin:0;color:#afbed4;font-size:.65rem;line-height:1.3;text-align:right;max-width:128px}
+    #wallet-unavailable[hidden],#wallet-box[hidden] {display:none!important}
+    #games-area.experience-games {padding:12px 13px;margin:0!important;border-radius:16px}
+    .experience-games .experience-title {margin:0 0 8px;gap:8px}
+    .experience-games .experience-icon {flex:0 0 30px;width:30px;height:30px;font-size:1.2rem}
+    .experience-games .experience-title h2 {font-size:1rem}
+    .experience-games .experience-title p {font-size:.72rem;margin:1px 0 0}
+    .game-tile-grid {gap:7px}
+    .game-tile {min-height:88px;padding:8px;border-radius:12px}
+    .game-tile .game-art {font-size:1.1rem;line-height:1.1;margin:4px auto}
+    .game-tile strong {font-size:.72rem}
+    .game-tile .game-play {width:19px;height:19px;right:5px;bottom:7px;font-size:.53rem}
+    .game-tile .game-soon {font-size:.57rem}
+    .experience-foot {font-size:.68rem;padding:2px 3px 0;gap:5px}
+    #diagnosticos {margin:0!important;padding:7px 10px!important}
+    #diagnosticos summary {font-size:.72rem}
+    #app-card .order-status-card:has(.status-badge.pronto) ~ #games-area .game-tile,
+    #app-card .order-status-card:has(.status-badge.entregue) ~ #games-area .game-tile {opacity:.55;pointer-events:none}
+    @media(max-height:760px) {
+      .client-brand-top img {width:min(150px,42vw);max-height:43px}
+      #app-card.app-card {gap:7px}
+      #app-card .order-status-card {padding:9px 11px}
+      #app-card .order-number {font-size:clamp(3.8rem,15vw,5.2rem)}
+      #app-card .status-badge {padding:6px 14px}
+      .game-tile {min-height:75px}
+      #games-area.experience-games {padding:9px 10px}
+      #app-card .restaurant-header {min-height:45px;padding:7px 10px}
+    }
+    @media(max-width:375px) {
+      body {padding:7px 8px 14px!important}
+      .wallet-inline {grid-template-columns:1fr}
+      .wallet-pending {grid-column:1;grid-row:auto;text-align:left;max-width:none;padding-left:37px}
+      #wallet-box {grid-column:1}
+      #wallet-box a.wallet-action-link {max-width:none}
+      .game-tile {padding:7px 5px}
+      .game-tile strong {font-size:.66rem}
+    }
+    @media(prefers-reduced-motion:reduce) {.game-tile {transition:none}}
+
+
+    /* Alinhamento aprovado: logo à esquerda, acessibilidade na mesma linha */
+    .client-topbar {
+      width:min(100%,520px);margin:0 auto 10px;display:flex;
+      align-items:center;justify-content:space-between;gap:10px;min-height:65px;
+    }
+    .client-topbar .client-brand-top {
+      display:flex;align-items:center;justify-content:flex-start;
+      width:auto;min-width:0;flex:1 1 auto;margin:0;padding:0;
+    }
+    .client-topbar .client-brand-top img {
+      display:block;width:clamp(180px,43vw,215px);height:auto;
+      max-height:none;max-width:100%;object-fit:contain;
+    }
+    .client-topbar .a11y-bar {
+      position:static!important;inset:auto!important;display:flex;
+      flex:0 0 auto;align-items:center;justify-content:flex-end;
+      flex-wrap:nowrap;gap:5px;margin:0;padding:0;
+      width:auto;background:transparent;box-shadow:none;
+    }
+    .client-topbar .a11y-bar .btn-chip {
+      width:auto;min-width:0;min-height:36px;padding:6px 8px;
+      border-radius:9px;font-size:.68rem;line-height:1.1;
+      white-space:nowrap;
+    }
+    @media(max-width:420px) {
+      .client-topbar {gap:6px;margin-bottom:7px;min-height:56px}
+      .client-topbar .client-brand-top img {width:clamp(155px,42vw,185px)}
+      .client-topbar .a11y-bar {gap:4px}
+      .client-topbar .a11y-bar .btn-chip {padding:6px 5px;font-size:.59rem;min-height:34px}
+    }
+    @media(max-width:350px) {
+      .client-topbar .client-brand-top img {width:140px}
+      .client-topbar .a11y-bar .btn-chip {font-size:.54rem;padding:5px 4px}
+    }
+
+
+    /* O cliente carrega só a vitrine; a biblioteca é importada após toque. */
+    #games-open.game-library:not([hidden]) {display:block!important;width:100%;margin:10px 0 0;border:1px solid #375d8a;border-radius:10px;background:#1b3658;color:#ecf6ff;font-size:.8rem;font-weight:750;min-height:38px;padding:8px}
+    .game-tile:disabled {opacity:.55;cursor:default;transform:none;filter:none}
+    .game-tile:disabled:hover {transform:none;filter:none}
+    #wallet-status:not([hidden]) {grid-column:1/-1;margin:4px 0 0;font-size:.72rem;color:#afc5de;text-align:left}
 
 </style>
 </head>
@@ -394,15 +600,14 @@
   <!-- Overlay para o efeito de iluminação periférica nas laterais da tela -->
   <div id="edge-glow" class="edge-glow-overlay" aria-hidden="true"></div>
 
-  <!-- Barra de acessibilidade rápida para o cliente -->
-  <aside class="a11y-bar" aria-label="Acessibilidade">
-    <button id="toggle-contrast" class="btn-chip" aria-pressed="false" title="Alternar modo de alto contraste">
-      Alto Contraste
-    </button>
-    <button id="toggle-font" class="btn-chip" aria-pressed="false" title="Aumentar tamanho do texto">
-      Texto A+
-    </button>
-  </aside>
+  <!-- Cabeçalho compacto: marca e acessibilidade na mesma linha -->
+  <div class="client-topbar">
+    <div class="client-brand-top"><img src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></div>
+    <aside class="a11y-bar" aria-label="Acessibilidade">
+      <button id="toggle-contrast" class="btn-chip" aria-pressed="false" title="Alternar modo de alto contraste">Alto Contraste</button>
+      <button id="toggle-font" class="btn-chip" aria-pressed="false" title="Aumentar tamanho do texto">Texto A+</button>
+    </aside>
+  </div>
 
   <!-- Região ARIA para anúncios dinâmicos em leitores de tela -->
   <div id="live-announcer" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
@@ -410,16 +615,15 @@
   <!-- Cartão do Pager do Cliente -->
   <main id="app-card" class="app-card">
     <header class="restaurant-header">
-      <img class="brand-logo-client" src="./avisaqui-marca-transparente.svg" alt="Avisaqui">
       <div class="restaurant-info">
-        <h1>Seu pedido</h1>
-        <p>Acompanhamento do seu pedido</p>
+        <span class="rest-label">SEU PEDIDO EM</span>
+        <h1>Seu restaurante</h1>
       </div>
       <div id="client-restaurant-context" class="client-restaurant-context" role="status" aria-live="polite" hidden><span id="client-restaurant-symbol" class="client-restaurant-symbol" aria-hidden="true"></span><strong id="client-restaurant-name"></strong></div>
     </header>
 
     <section class="order-status-card">
-      <span class="order-number-tag">Sua Senha de Retirada</span>
+      <span class="order-number-tag">Senha</span>
       <div class="order-number" id="order-num">—</div>
 
       <div id="status-badge" class="status-badge preparo">
@@ -428,18 +632,33 @@
       </div>
 
       <p id="status-message" class="status-message">
-        Sua comida está sendo preparada com todo cuidado pelo nosso chef!
+        Seu pedido está sendo preparado.
       </p>
 
       <p id="sub-message" class="sub-message">
-        Você receberá um aviso quando o pedido estiver pronto.
+        Avisaremos quando estiver pronto.
       </p>
+      <div class="client-progress" aria-label="Etapas do pedido">
+        <div class="progress-step received"><span class="step-dot">✓</span><span>Recebido</span></div>
+        <div class="progress-step preparing"><span class="step-dot">♨</span><span>Em preparo</span></div>
+        <div class="progress-step ready"><span class="step-dot">♧</span><span>Pronto</span></div>
+        <div class="progress-step delivered"><span class="step-dot">✓</span><span>Retirado</span></div>
+      </div>
 
       <!-- Botão de Toggle: Ativa e Desativa o som e vibração a qualquer momento -->
       <button id="btn-sound-test" class="sound-toggle-btn" aria-label="Ativar ou desativar alerta sonoro e vibração">
         <span id="sound-icon" aria-hidden="true">🔔</span>
         <span id="sound-label">Toque para ativar alerta sonoro e vibração</span>
       </button>
+
+      <!-- Carteira do Google: recurso contextual da senha, sem prometer alertas garantidos -->
+      <section class="wallet-inline" aria-labelledby="wallet-title">
+        <div class="wallet-inline-label"><span aria-hidden="true">▣</span><div><h2 id="wallet-title">Carteira do Google</h2><p>Guarde a senha para consultar depois.</p></div></div>
+        <div id="wallet-box" hidden>
+          <a id="wallet-btn-link" class="wallet-action-link" href="#" target="_blank" rel="noopener noreferrer">Salvar na Carteira do Google <span aria-hidden="true">↗</span></a>
+        </div>
+        <p id="wallet-unavailable" role="status" class="wallet-pending">Disponível quando a integração estiver configurada.</p><p id="wallet-status" hidden role="status" aria-live="polite" class="wallet-pending"></p>
+      </section>
 
       <section id="push-guide" hidden aria-live="polite" style="border:1px solid #64748b;border-radius:12px;padding:12px;margin-top:14px;text-align:left;background:#162238;">
         <p id="push-message" style="line-height:1.5;font-size:.9rem"></p>
@@ -451,20 +670,19 @@
         🔇 Silenciar Alarme Agora
       </button>
 
-      <!-- Botao Google Wallet (Android) -->
-      <div id="wallet-box" hidden style="margin-top: 14px;">
-        <a id="wallet-btn-link" href="#" target="_blank" rel="noopener noreferrer" style="text-decoration:none; display:block;">
-          <button type="button" style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#000000; color:#ffffff; border:1px solid #475569; border-radius:12px; padding:12px 16px; font-size:0.95rem; font-weight:700; cursor:pointer;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;">
-              <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#3b82f6"/>
-            </svg>
-            Salvar no Google Carteira
-          </button>
-        </a>
-      </div>
-      <p id="wallet-status" hidden role="status" aria-live="polite" style="margin-top:12px;font-size:.85rem;color:#cbd5e1;text-align:center;"></p>
     </section>
 
+    <section id="games-area" class="experience-games" aria-labelledby="games-title">
+      <div class="experience-title"><span class="experience-icon" aria-hidden="true">🎮</span><div><h2 id="games-title">Enquanto espera</h2><p>Jogue enquanto aguarda.</p></div></div>
+      <div class="game-tile-grid">
+        <button type="button" class="game-tile game-pong" data-open-games="pong" disabled aria-label="Abrir biblioteca de jogos: Pong"><span class="game-art" aria-hidden="true">◖ ● ◗</span><strong>Pong</strong><span class="game-play" aria-hidden="true">▶</span></button>
+        <button type="button" class="game-tile game-tictactoe" data-open-games="jogo-da-velha" disabled aria-label="Abrir biblioteca de jogos: Jogo da Velha"><span class="game-art" aria-hidden="true">✕ ◯<br>◯ ✕</span><strong>Jogo da Velha</strong><span class="game-play" aria-hidden="true">▶</span></button>
+        <div class="game-tile game-memory" aria-label="Jogo da Memória em construção"><span class="game-art" aria-hidden="true">★ ☆</span><strong>Memória</strong><span class="game-soon">Em breve</span></div>
+      </div>
+      <button id="games-open" type="button" class="btn-chip game-library" hidden>Ver todos os jogos</button>
+      <div id="games-content" hidden></div>
+    </section>
+    <footer class="experience-foot"><span aria-hidden="true">🔔</span> O aviso depende das permissões do aparelho.</footer>
     <!-- Produtos opcionais: exibidos apenas quando presentes no QR. -->
     <section class="order-details" id="order-details" aria-labelledby="order-details-title" hidden>
       <h2 id="order-details-title">Itens do pedido</h2>
@@ -484,10 +702,7 @@
         <p style="font-size:.8rem;">A vibração depende do aparelho e das configurações. Um retorno positivo da API não comprova vibração física. O teste de tela acesa não funciona com bloqueio manual.</p>
       </details>
     </footer>
-    <section id="games-area" style="margin:20px auto;max-width:620px;text-align:center">
-      <button id="games-open" type="button" class="btn-chip" hidden>🎮 Jogar enquanto aguarda</button>
-      <div id="games-content" hidden></div>
-    </section>
+
   </main>
 
   <script>
@@ -497,7 +712,7 @@
     const token = urlParams.get('token') || urlParams.get('sessao') || '';
     // Identidade visual obtida do SSE autenticado pelo token do pedido,
     // sem confiar em um nome arbitrário fornecido na URL.
-    document.getElementById('order-num').textContent = '#' + orderNumber;
+    document.getElementById('order-num').textContent = orderNumber;
     function showRestaurantIdentity(name,logoUrl) {
       if(typeof name !== 'string' || !name.trim())return;
       const restaurantName=name.trim();
@@ -776,6 +991,8 @@
 
     // --- TRANSIÇÕES DE ESTADO DO CLIENTE ---
     function applyStatus(status) {
+      document.querySelector('.client-progress')?.setAttribute('data-stage',status);
+      document.querySelectorAll('[data-open-games]').forEach(tile=>{tile.disabled = status !== 'preparo';});
       pongAllowed = status === 'preparo';
       if (!pongAllowed) fecharJogos();
       else gamesOpen.hidden = !!gamesExit || gamesOpen.disabled;
@@ -787,8 +1004,8 @@
         statusBadge.className = 'status-badge preparo';
         statusIcon.textContent = '⏳';
         statusText.textContent = 'Em Preparo';
-        statusMessage.textContent = 'Sua comida está sendo preparada com todo cuidado pelo nosso chef!';
-        subMessage.textContent = 'Você receberá um aviso quando o pedido estiver pronto.';
+        statusMessage.textContent = 'Seu pedido está sendo preparado.';
+        subMessage.textContent = 'Avisaremos quando estiver pronto.';
         liveAnnouncer.textContent = 'Pedido ' + orderNumber + ' em preparo.';
       } 
       else if (status === 'pronto') {
@@ -819,8 +1036,10 @@
     let gamesExit = null;
     let gamesGeneration = 0;
     let pongAllowed = false;
+    let gameIntent = null;
     function fecharJogos() {
       gamesGeneration++;
+      gameIntent = null;
       const sair = gamesExit;
       gamesExit = null;
       try { sair?.(); } catch (erro) { console.warn('Falha ao encerrar jogo:', erro); }
@@ -848,6 +1067,8 @@
     gamesOpen.addEventListener('click', async () => {
       if (!pongAllowed || !token || gamesExit || gamesOpen.disabled) return;
       const atual = ++gamesGeneration;
+      const requestedGame = gameIntent;
+      gameIntent = null;
       gamesOpen.disabled = true;
       gamesOpen.textContent = 'Carregando biblioteca...';
       try {
@@ -856,6 +1077,7 @@
         gamesContent.hidden = false;
         const biblioteca = criarBibliotecaJogos({
           container: gamesContent,
+          jogoInicial: requestedGame,
           etiquetaPedido: 'Pedido #' + orderNumber + ' · Em preparo',
           onExit: () => {
             // Fechar a tela cheia deve voltar à comanda e permitir abrir novamente.
@@ -893,9 +1115,18 @@
       } finally {
         if (atual === gamesGeneration) {
           gamesOpen.disabled = false;
-          gamesOpen.textContent = '🎮 Jogar enquanto aguarda';
+          gamesOpen.textContent = 'Ver todos os jogos';
         }
       }
+    });
+
+    // Entrada direta só após interação: nenhum import, catálogo ou jogo é baixado na carga do pedido.
+    document.querySelectorAll('[data-open-games]').forEach(tile => {
+      tile.addEventListener('click', () => {
+        if (!pongAllowed || !token || gamesExit || gamesOpen.disabled) return;
+        gameIntent = tile.dataset.openGames;
+        gamesOpen.click();
+      });
     });
 
     // --- RECEPTOR DE EVENTOS EM TEMPO REAL VIA SSE (NATIVO & ULTRALEVE) ---
@@ -911,6 +1142,7 @@
           if(data.restaurante_nome)showRestaurantIdentity(data.restaurante_nome,data.restaurante_logo_url);
           if (data.status) {
             applyStatus(data.status);
+            startSecondaryAfterStatus();
           }
         } catch (e) {
           console.error('Erro ao processar evento SSE:', e);
@@ -1008,7 +1240,7 @@
     });
 
 
-    void initPush();
+    // A inicialização do push é secundária, mas continua disponível após receber o estado do pedido.
 
     // Android: não esconder uma falha de configuração da Carteira do Google.
     async function initGoogleWallet() {
@@ -1030,14 +1262,21 @@
         }
         walletLink.href = data.url;
         walletBox.hidden = false;
+        document.getElementById('wallet-unavailable').hidden = true;
       } catch {
         walletStatus.textContent = 'Carteira do Google indisponível neste momento. Continue acompanhando seu pedido nesta página.';
         walletStatus.hidden = false;
       }
     }
-    void initGoogleWallet();
-
     connectSSE();
+    // Recursos secundários aguardam o primeiro estado; não disputam a conexão inicial.
+    let secondaryStarted = false;
+    function startSecondaryAfterStatus(){
+      if(secondaryStarted)return;
+      secondaryStarted=true;
+      void initGoogleWallet();
+      void initPush();
+    }
 
 
     // Acessibilidade

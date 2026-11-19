@@ -369,35 +369,70 @@
     .kds-brand-bar button { flex-shrink:0; }
     @media(max-width:600px) { :root { --av-header-logo-width:170px; } .kds-brand-bar { min-height:60px; } }
 
+
+/* Identidade visual compartilhada — áreas operacionais */
+:root {--av-header-logo-width:240px;--av-content-max:1360px;--av-gutter:clamp(16px,3vw,38px)}
+body {padding:0 0 40px;background:radial-gradient(ellipse 70% 30% at 74% -8%,#1b3159 0%,transparent 75%),#090e17}
+.kds-header {display:block;margin:0 0 24px;padding:0;border:0;background:transparent}
+.av-topbar {background:linear-gradient(105deg,#0a162a,#10213b 70%,#0b1528);border-bottom:1px solid #344964}
+.av-topbar-inner {width:min(calc(100% - 2 * var(--av-gutter)),var(--av-content-max));min-height:92px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.av-header-logo {width:var(--av-header-logo-width);max-width:100%;height:auto;object-fit:contain;flex-shrink:1}
+.av-session {display:flex;align-items:center;justify-content:flex-end;gap:18px;min-width:0}
+#kds-identity {color:#d8e3f4;font-size:.94rem;text-align:right;line-height:1.4;overflow-wrap:anywhere}
+.av-session #btn-logout {width:auto;min-width:60px;min-height:42px;margin:0;padding:9px 19px;background:linear-gradient(140deg,#263b59,#1b2a40);border:1px solid #425979;border-radius:10px;color:#fff}
+.av-content {width:min(calc(100% - 2 * var(--av-gutter)),var(--av-content-max));margin:auto;padding:24px 0 0}
+.av-restaurant-context {display:flex;align-items:center;gap:12px!important;min-height:66px;padding:11px 16px;margin:0 0 22px!important;background:linear-gradient(120deg,#13243b,#101c2f)!important;border:1px solid #39516e;border-radius:13px;color:#fff}
+.av-restaurant-context > img,.av-restaurant-context > span {width:46px!important;height:46px!important;flex:0 0 46px;object-fit:contain;border-radius:10px}
+.av-restaurant-context strong {font-size:1rem}
+.av-page-title {margin:0 0 20px}
+.av-page-title h1 {margin:0 0 5px;font-size:clamp(1.7rem,2.6vw,2.4rem);line-height:1.18;letter-spacing:-.03em;font-weight:800}
+.av-page-title p {margin:0;color:#9eafc9;font-size:.93rem}
+.kds-controls {gap:10px;padding:0 0 18px;border-bottom:1px solid #30435f}
+.kds-controls .btn-sim-order {min-height:44px;padding:10px 15px;border-radius:10px;font-size:.9rem;background:linear-gradient(180deg,#3989fb,#0965ed)}
+.kds-controls .metric-tag {min-height:40px;padding:8px 12px}
+.kds-controls a {border-radius:10px}
+.orders-grid {width:min(calc(100% - 2 * var(--av-gutter)),var(--av-content-max));margin:0 auto;grid-template-columns:repeat(auto-fill,minmax(280px,310px));gap:16px;align-items:start}
+.order-card {border-width:1px;border-color:#39516e;background:linear-gradient(145deg,#111f35,#101b30)}
+@media(max-width:700px) {
+:root {--av-header-logo-width:170px}
+.av-topbar-inner {min-height:76px;gap:12px}
+.av-session {gap:9px}
+#kds-identity {font-size:.78rem;max-width:130px}
+.av-session #btn-logout {min-height:40px;padding:8px 12px}
+.av-content {padding-top:16px}
+.kds-controls .btn-sim-order {flex:1 1 145px;justify-content:center}
+.orders-grid {grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
+}
+@media(max-width:420px) {
+#kds-identity {max-width:96px;font-size:.72rem}
+.av-page-title h1 {font-size:1.6rem}
+.orders-grid {grid-template-columns:minmax(0,1fr)}
+}
+@media print {body {background:#fff}}
+
 </style>
 </head>
 <body>
 
-  <!-- CABEÇALHO DO KDS -->
+  <!-- AVISAQUI: cabeçalho padronizado com o Master Admin -->
   <header class="kds-header">
-    <div class="brand-title" style="display:flex;flex-direction:column;align-items:flex-start;gap:8px">
-      <div>
-        <div class="kds-brand-bar" style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%"><img src="./avisaqui-marca-transparente.svg" alt="Avisaqui" style="display:block;width:var(--av-header-logo-width,240px);max-width:100%;height:auto;object-fit:contain"><button id="btn-logout" class="btn-close-modal" style="width:auto;min-height:44px;margin:0;padding:8px 16px">Sair</button></div><div id="restaurant-context" role="status" aria-live="polite" style="display:none;margin-top:8px;font-size:1rem;font-weight:750;color:#f8fafc;background:#1e3a5f;padding:8px 12px;border-radius:10px"></div>
-        <h1 style="margin-top:8px">Pedidos em atendimento</h1>
-        <span>Cozinha e balcão</span>
+    <div class="av-topbar"><div class="av-topbar-inner">
+      <img class="av-header-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui">
+      <div class="av-session"><span id="kds-identity" aria-live="polite"></span><button id="btn-logout" class="btn-close-modal" type="button">Sair</button></div>
+    </div></div>
+    <div class="av-content">
+      <div id="restaurant-context" class="av-restaurant-context" role="status" aria-live="polite" style="display:none"></div>
+      <div class="av-page-title"><h1>Pedidos em atendimento</h1><p>Cozinha e balcão</p></div>
+      <div class="kds-controls">
+        <button id="btn-tab-active" class="metric-tag active-orders" style="cursor:pointer;border:2px solid #3b82f6;background:#1e293b;color:#f8fafc" title="Ver pedidos em preparo e prontos"><span id="active-count">0</span> Pedidos Ativos</button>
+        <button id="btn-tab-finished" class="metric-tag finished" style="cursor:pointer;border:2px solid transparent;background:#1e293b;color:#94a3b8" title="Ver histórico de pedidos entregues hoje"><span id="finished-count">0</span> Finalizados hoje</button>
+        <button id="btn-sequence-settings" class="btn-sim-order" title="Configurar numeração">⚙️ Numeração</button>
+        <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
+        <a id="printing-integration-link" href="./impressao.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:44px;align-items:center;padding:10px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">🖨️ Integração de impressão</a>
+        <a id="admin-link" href="./admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:44px;align-items:center;padding:10px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">← Administração</a>
       </div>
     </div>
-
-    <div class="kds-controls">
-      <button id="btn-tab-active" class="metric-tag active-orders" style="cursor:pointer;border:2px solid #3b82f6;background:#1e293b;color:#f8fafc" title="Ver pedidos em preparo e prontos">
-        <span id="active-count">0</span> Pedidos Ativos
-      </button>
-      <button id="btn-tab-finished" class="metric-tag finished" style="cursor:pointer;border:2px solid transparent;background:#1e293b;color:#94a3b8" title="Ver histórico de pedidos entregues hoje">
-        <span id="finished-count">0</span> Finalizados hoje
-      </button>
-
-      <button id="btn-sequence-settings" class="btn-sim-order" title="Configurar numeração">⚙️ Numeração</button>
-      <button id="btn-add-manual-order" class="btn-sim-order" title="Cadastrar pedido informando a senha">➕ Inserir pedido manual</button>
-      <a id="printing-integration-link" href="./impressao.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">🖨️ Integração de impressão</a>
-      <a id="admin-link" href="./admin.html" style="display:none;color:#cbd5e1;text-decoration:none;min-height:54px;align-items:center;padding:12px 16px;border:1px solid #475569;border-radius:10px;font-weight:700">⚙️ Administração</a>
-    </div>
   </header>
-
   <!-- GRID DE CARTÕES DE PEDIDOS -->
   <main id="orders-grid" class="orders-grid"></main>
 
@@ -472,6 +507,8 @@
         const response = await fetch(apiPath('/api/auth/me'));
         if (!response.ok) return;
         const user = await response.json();
+        const idArea=document.getElementById('kds-identity');
+        if(idArea)idArea.textContent=(user.nome||user.login||'Usuário')+' · '+(user.papel==='master'?'Master Admin':user.papel==='gerente'?'Gerente':'Operador');
         if ((user.papel === 'gerente' || user.papel === 'master') && user.restaurante_id) {
           document.getElementById('printing-integration-link').style.display = 'inline-flex';
         }
