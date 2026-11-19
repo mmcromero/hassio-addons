@@ -57,14 +57,18 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
         raise SandboxUnavailable("Bubblewrap unavailable; unsafe exporter refused")
     if not isinstance(script, str) or script.startswith("/") or ".." in script.split("/"):
         raise SandboxUnavailable("Invalid script path")
-    if not (source / script).is_file():
-        raise SandboxUnavailable("Pinned exporter not present")
+    if not (source / script).is_file() or (source / script).is_symlink():
+        raise SandboxUnavailable("Pinned exporter not present or unsafe")
+    if target.is_symlink():
+        raise SandboxUnavailable("Symlink target rejected")
     if os.geteuid() == 0:
-        # The add-on should drop privileges for code execution.
+        # Never turn a failed namespace setup into host-root execution.
         raise SandboxUnavailable("Refusing exporter execution as root")
-    args = ["bwrap", "--die-with-parent", "--unshare-all",
+    args = ["bwrap", "--die-with-parent", "--unshare-user",
+            "--unshare-ipc", "--unshare-pid", "--unshare-net", "--unshare-uts",
             "--proc", "/proc", "--dev", "/dev",
-            "--tmpfs", "/tmp", "--dir", "/source", "--dir", "/target",
+            "--size", str(32 * 1024 * 1024), "--tmpfs", "/tmp",
+            "--dir", "/source", "--dir", "/target",
             "--ro-bind", str(source), "/source",
             "--bind", str(target), "/target"]
     # Alpine uses /usr/bin, /bin and /lib; bind only system libraries/binaries.
@@ -94,6 +98,9 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
             raise SandboxUnavailable("Sandboxed exporter failed, exit " + str(p.returncode))
         if _directory_bytes(target, max_output_bytes) > max_output_bytes:
             raise SandboxUnavailable("Exporter aggregate output limit exceeded")
+        for directory, subdirs, files in os.walk(target, followlinks=False):
+            if any((Path(directory) / name).is_symlink() for name in subdirs + files):
+                raise SandboxUnavailable("Exporter output contains symlinks")
     finally:
         if p.poll() is None:
             os.killpg(p.pid, signal.SIGKILL)
