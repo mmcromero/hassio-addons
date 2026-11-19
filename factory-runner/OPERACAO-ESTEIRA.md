@@ -1,6 +1,6 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
-**Estado:** candidata RC3 (`0.1.0-rc.3`) para homologação no Home Assistant; o isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. **Produto independente** dos projetos atendidos.
+**Estado:** candidata RC4 (`0.1.0-rc.4`) preparada na branch `release/factory-runner-rc4-validation`, PR #45 em rascunho; **sem publicação e sem instalação autorizadas**. O isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. A versão instalada não foi confirmada. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
@@ -38,7 +38,7 @@ Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docke
 
 ## Verificações complementares (não são gate genérico de publicação)
 
-A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. Conferir diff, sintaxe, testes dirigidos, configuração, segurança e escopo. Como este add-on utiliza Dockerfile sem imagem pré-compilada, o Supervisor executa o build ARM64 durante a instalação/atualização no HA. Buildx/QEMU externo abaixo é diagnóstico opcional quando houver risco técnico comprovado, não requisito obrigatório de publicação da RC de teste.
+A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. A ausência de Docker/QEMU/CI ARM64 externo não constitui impedimento automático: o Supervisor pode construir a imagem no Raspberry durante uma instalação autorizada. A falha do Bubblewrap bloqueia `/api/prepare`, não exige suspender diagnóstico e leitura. Conferir diff, sintaxe, testes dirigidos, configuração, segurança e escopo. Como este add-on utiliza Dockerfile sem imagem pré-compilada, o Supervisor executa o build ARM64 durante a instalação/atualização no HA. Buildx/QEMU externo abaixo é diagnóstico opcional quando houver risco técnico comprovado, não requisito obrigatório de publicação da RC de teste.
 
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
