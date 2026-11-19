@@ -1,6 +1,6 @@
 # Fábrica de Software — Factory Runner
 
-**Versão candidata:** 0.1.0-rc.2 (pré-verificação somente leitura / não publicada)
+**Estado atual (19/11/2026):** distribuição `0.1.0-rc.4` **PUBLICADA no catálogo** pelo PR #45, merge `350fa3c8a756c405b6766cca53bd25fe84aef9f1`. **Instalação e homologação da RC4 não foram realizadas nesta auditoria.** Não repetir publicação, build ARM64 externo ou testes estáticos já cobertos sem causa técnica concreta.
 
 Add-on Home Assistant para a infraestrutura da Fábrica de Software.
 Neste candidato, a API é protegida e **não executa correções automáticas nem publica pacotes**.
@@ -11,7 +11,7 @@ O código-fonte de desenvolvimento permanece no repositório privado
 > e a correção de Issues respondem `403` por projeto até homologação de autorização,
 > isolamento e recuperação funcional.
 
-## Estado da candidata rc.2
+## Funcionalidades do modo restrito (descrição funcional; histórico RC2–RC4)
 
 - `GET /api/status`: exige token e informa modo de pré-verificação somente leitura.
 - `GET /api/projects`: lista perfis pré-configurados, sem credenciais.
