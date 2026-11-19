@@ -1,6 +1,6 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
-**Estado:** candidata RC4 (`0.1.0-rc.4`) preparada na branch `release/factory-runner-rc4-validation`, PR #45 em rascunho; **sem publicação e sem instalação autorizadas**. O isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. A versão instalada não foi confirmada. **Produto independente** dos projetos atendidos.
+**Estado:** candidata RC4 (`0.1.0-rc.4`) preparada na branch `release/factory-runner-rc4-validation`, PR #45, com **publicação no catálogo autorizada pelo proprietário em 19/11/2026**; **instalação não autorizada**. O isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. A versão instalada não foi confirmada; publicação no Git não a altera. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
