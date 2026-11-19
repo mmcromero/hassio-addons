@@ -17,7 +17,7 @@ import time
 import uuid
 from pathlib import Path
 
-from rc_fastlane import PreflightError, evaluate, load_profile, prepare
+from rc_fastlane import PreflightError, evaluate, load_profile, prepare, git as trusted_git
 from sandbox_export import SandboxUnavailable
 from declarative_export import DeclarativeExportError, prepare_declarative, expand_trusted_rules
 
@@ -144,6 +144,10 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
     if not report["eligible_for_preparation"]:
         return {"eligible": False, "errors": report["errors"]}
     profile, source, _distribution = project_workspace(project_id)
+    pinned_exporter = trusted_git(
+        source, "rev-parse", expected_sha + ":" + profile["exporter_path"])
+    if pinned_exporter != profile["exporter_git_blob_sha"]:
+        raise DeclarativeExportError("declarative_rules_not_approved_for_exporter")
     mapping = profile.get("declarative_mapping")
     if "declarative_rules" in profile:
         rules = profile["declarative_rules"]
@@ -155,6 +159,10 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
             include_suffixes=rules["include_suffixes"])
     if not isinstance(mapping, dict) or not mapping:
         raise DeclarativeExportError("approved_declarative_mapping_unavailable")
+    sources = set(mapping.values())
+    if (profile["package_json_path"] not in sources
+            or profile["manifest_path"] not in sources):
+        raise DeclarativeExportError("package_version_evidence_missing")
     destination = PREPARATIONS_DIR.absolute()
     if destination.is_symlink() or destination.resolve() != destination:
         raise DeclarativeExportError("unsafe_preparations_directory")
