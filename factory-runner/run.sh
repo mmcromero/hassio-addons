@@ -43,5 +43,7 @@ fi
 export RUNNER_BIND_HOST=127.0.0.1
 # Non-mutating startup diagnostic; run under the same non-root UID as the API.
 # A BLOCKED probe does not disable API/status: /api/prepare still fails closed.
-su-exec runner python3 -I -u /app/runtime_probe.py
+env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/runtime_probe.py
+# A observacao de perfil nao modifica AppArmor nem substitui isolamento.
+env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/controlled_worker.py --task diagnose | sed 's/^/[WORKER] /' || echo "[WORKER] diagnostic blocked"
 exec su-exec runner python3 -u /app/server.py

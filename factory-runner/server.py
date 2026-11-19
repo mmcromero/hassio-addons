@@ -9,6 +9,8 @@ import http.server
 import json
 import os
 import re
+import signal
+import sys
 import subprocess
 import threading
 import time
@@ -135,6 +137,50 @@ def prepare_project(project_id, expected_sha, operation_id):
             "source_sha": expected_sha, "published": False}
 
 
+
+class WorkerUnavailable(Exception):
+    """Worker failed or returned untrusted data; no privileged fallback."""
+    pass
+
+
+def run_controlled_worker(task, project=None, expected_sha=None):
+    """Invoke one fixed read-only task with sanitized environment and deadline."""
+    script = Path(__file__).with_name("controlled_worker.py")
+    argv = [sys.executable, "-I", str(script), "--task", task]
+    if project is not None:
+        argv.extend(["--project", project])
+    if expected_sha is not None:
+        argv.extend(["--sha", expected_sha])
+    child_env = {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent", "LC_ALL": "C",
+                 "GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
+                 "GIT_CONFIG_GLOBAL": os.devnull,
+                 "RUNNER_PROJECTS_DIR": str(PROJECTS_DIR),
+                 "RUNNER_WORKSPACES_DIR": str(WORKSPACES_DIR)}
+    try:
+        p = subprocess.Popen(argv, cwd=str(script.parent), env=child_env,
+                             stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL, start_new_session=True)
+        try:
+            output, _ = p.communicate(timeout=50)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            p.communicate()
+            raise WorkerUnavailable("worker_timeout")
+        if p.returncode != 0 or len(output) > 16 * 1024:
+            raise WorkerUnavailable("worker_failed")
+        parsed = json.loads(output)
+        if (not isinstance(parsed, dict) or parsed.get("worker") != "factory-runner-controlled"
+                or parsed.get("task") != task or parsed.get("ok") is not True
+                or not isinstance(parsed.get("result"), dict)):
+            raise WorkerUnavailable("invalid_worker_response")
+        return parsed["result"]
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        raise WorkerUnavailable("worker_unavailable") from exc
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def respond(self, status, payload):
         data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -160,11 +206,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "status": "read_only_preflight",
             "preflight": "available_with_preprovisioned_workspaces",
             "publication": "disabled",
-            "autonomous_changes": "disabled"
+            "autonomous_changes": "disabled",
+            "controlled_worker": "read_only_only"
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare"):
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/worker/run"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -180,6 +227,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
+        if self.path == "/api/worker/run":
+            task = body.get("task")
+            project = body.get("project")
+            source_sha = body.get("expected_source_sha")
+            if task == "diagnose":
+                valid = set(body) == {"task"}
+            elif task == "profile":
+                valid = (set(body) == {"task", "project"}
+                         and isinstance(project, str) and bool(PROJECT_ID.fullmatch(project)))
+            elif task == "preflight":
+                valid = (set(body) == {"task", "project", "expected_source_sha"}
+                         and isinstance(project, str) and bool(PROJECT_ID.fullmatch(project))
+                         and isinstance(source_sha, str) and bool(SHA.fullmatch(source_sha)))
+            else:
+                valid = False
+            if not valid:
+                return self.respond(400, {"error": "invalid_worker_task"})
+            if not LOCK.acquire(blocking=False):
+                return self.respond(409, {"error": "busy"})
+            operation_id = str(uuid.uuid4())
+            try:
+                record("/api/worker/run:" + task, None, "requested", operation_id)
+                try:
+                    result = run_controlled_worker(task, project, source_sha)
+                except WorkerUnavailable:
+                    record("/api/worker/run:" + task, None, "blocked_worker", operation_id)
+                    return self.respond(503, {"error": "worker_unavailable",
+                                              "operation_id": operation_id})
+                record("/api/worker/run:" + task, None, "completed_read_only", operation_id)
+                return self.respond(200, {"operation_id": operation_id,
+                                          "result": result, "published": False})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
+            finally:
+                LOCK.release()
+
         if self.path in ("/api/preflight", "/api/prepare"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
@@ -245,6 +328,7 @@ if __name__ == "__main__":
         raise SystemExit("RUNNER_AUTH_TOKEN required; refusing to start")
     server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
     server.daemon_threads = True
+    print("[API] READY: loopback-only; authenticated; worker read-only; publication disabled", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

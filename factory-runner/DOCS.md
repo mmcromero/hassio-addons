@@ -2,8 +2,7 @@
 
 ## Limites atuais
 
-A versão candidata 0.1.0-rc.2 oferece **pré-verificação somente leitura e preparação local**. Não tem
-capacidade autorizada de desenvolver ou publicar, mesmo com Bearer válido.
+A candidata `0.1.0-rc.3` oferece **worker de tarefas controladas e pré-verificação somente leitura**. A preparação de exportadores permanece bloqueada no Home Assistant enquanto o Bubblewrap não puder isolar montagens. Esta candidata não desenvolve, fecha ou publica pacotes, mesmo com Bearer válido.
 
 O serviço exige `runner_auth_token` nas opções do Home Assistant com
 um segredo de alta entropia (mínimo 32 caracteres). Não usar valores de exemplo
@@ -23,6 +22,12 @@ As rotas autenticadas `GET /api/projects` e `POST /api/preflight` exigem perfis 
 O preflight não fecha RC nem grava branch; prepare cria somente checkout/branch
 local descartável e relatório. Nenhum deles publica na loja. Consulte [OPERACAO-ESTEIRA.md](OPERACAO-ESTEIRA.md).
 
+## Worker de leitura e diagnóstico de segurança
+
+A rota autenticada `POST /api/worker/run` aceita somente `diagnose`, `profile` e `preflight` com argumentos fechados; rejeita tarefas e campos extras. `controlled_worker.py` executa como `runner`, sem root, com ambiente limpo de tokens e limites de processo; **não é executor de código não confiável**. O Dockerfile valida a inclusão do worker na imagem final.
+
+O log de inicialização separa `[ISOLATION]` (Bubblewrap), `[WORKER]` (perfil AppArmor/flags do próprio processo, sem token) e `[API] READY` (API autenticada ativa apenas na interface interna). O 504 observado no navegador do HA não comprova falha da API.
+
 ## Persistência e backup
 
 O log de auditoria fica em `/data/factory-runner/audit.jsonl`.
@@ -36,7 +41,7 @@ A disponibilidade real do volume e permissões dependem da instalação física.
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
 python3 -m py_compile factory-runner/*.py
-sh -n factory-runner/run.sh
+bash -n factory-runner/run.sh
 python3 .github/scripts/validate-addon-registry.py --addon factory-runner
 ```
 
@@ -48,8 +53,7 @@ após verificar os recursos disponíveis, sem fazer push nem instalar.
 
 - O workflow já existente `.github/workflows/validate-addons.yml` foi
   estendido com opção manual `factory-runner`; builds ARM64 não rodam no PR.
-- O `main` da loja permanece inalterado até publicação especificamente
-  autorizada. Apenas a `main` alimenta a loja instalada no HA.
+- Somente a `main` do catálogo alimenta a loja instalada no Home Assistant; publicar no GitHub e atualizar no dispositivo são etapas distintas. A RC3 é uma candidata para teste, não homologação da execução isolada.
 - A política do Orquestrador exige testes, autorização canônica de Issue,
   branch, SHA e operação e proíbe force-push.
 - Execuções de teste/build/smoke e seus SHAs ficam no PR #43, sem substituir
@@ -61,6 +65,6 @@ após verificar os recursos disponíveis, sem fazer push nem instalar.
   cgroups agregados/quota rígida, provisão de checkouts, homologação no destino
   e rotação coordenada dos segredos antigos. RLIMIT não substitui cgroup/quota.
 
-**Sem autorização de deploy, merge ou Actions nesta entrega.** Testes em
+**Sem instalação automática, merge de outros projetos ou GitHub Actions nesta entrega.** Testes em
 `factory-runner/tests/` executam no estágio Docker `validation` e não são
 copiados para a imagem de runtime.

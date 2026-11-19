@@ -1,12 +1,13 @@
-# Factory Runner — Candidato de pré-verificação multi-projeto
+# Factory Runner — Worker controlado e pré-verificação multi-projeto
 
-**Estado:** candidata RC2 em validação, ainda não homologada no Home Assistant. **Produto independente** dos projetos atendidos.
+**Estado:** candidata RC3 (`0.1.0-rc.3`) para homologação no Home Assistant; o isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
 - `GET /api/status` — autenticado, informa preflight somente leitura.
 - `GET /api/projects` — autenticado, mostra apenas perfis JSON previamente configurados.
 - `POST /api/preflight` — autenticado, aceita exatamente `{"project":"avisaqui","expected_source_sha":"<SHA-40>"}`. Verifica referências e política dos checkouts locais, sem escrever.
+- `POST /api/worker/run` — autenticado, executa SOMENTE tarefas de leitura pré-definidas: `{"task":"diagnose"}`, `{"task":"profile","project":"avisaqui"}` ou `{"task":"preflight","project":"avisaqui","expected_source_sha":"<SHA-40>"}`. Rejeita campos extras e não aceita shell, exportadores, npm, scripts ou caminhos arbitrários. O processo filho recebe ambiente sem token e limites por processo; não é sandbox de código não confiável.
 - `POST /api/prepare` — autenticado, aceita a mesma estrutura. Primeiro executa o preflight; se elegível, cria um checkout isolado, usa o exportador aprovado e verifica o pacote. **Não publica, não faz push e não permite ao cliente escolher caminhos de destino.** Uma única tarefa ativa por vez.
 - `POST /api/fechar-pacote` e `POST /api/corrigir-issue` continuam bloqueados (403). Token não autoriza publicação.
 - CLI `python3 /app/rc_fastlane.py --profile /app/projects/avisaqui.json ...` permite preparar exportação em checkout isolado, somente quando a política permitir; não publica.
@@ -28,6 +29,8 @@ Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docke
 
 - API somente em `127.0.0.1` dentro do contêiner; nenhuma porta mapeada ao host.
 - Token forte de pelo menos 32 caracteres, somente em `/data/options.json`.
+- O diagnóstico de startup é executado com ambiente mínimo; não herda o token do serviço. O log expõe `[ISOLATION]` para Bubblewrap, `[WORKER]` para os atributos AppArmor/capabilities do próprio worker, e `[API] READY` após o bind local.
+- No HA real, `bwrap: Failed to make / slave: Permission denied` foi observado na RC2. O diagnóstico da RC3 NÃO libera `SYS_ADMIN`, AppArmor, Docker socket ou o isolamento para exportadores.
 - Nada de URL pública, upload de arquivo executável, rota de comandos arbitrários, GitHub Actions, `git push` ou auto-merge.
 - Logs de auditoria sanitizados e gravados sob `/data/factory-runner/audit.jsonl`.
 - Perfil JSON versionado e validado; cliente não escolhe paths arbitrários.
@@ -40,8 +43,8 @@ A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. Conferir diff, sinta
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
 python3 -m py_compile factory-runner/*.py
-docker buildx build --platform linux/arm64 --load -t factory-runner:rc2-arm64 -f factory-runner/Dockerfile factory-runner/
-python3 factory-runner/tests/smoke_container.py --image factory-runner:rc2-arm64 --platform linux/arm64 --sandbox-probe --security-report /tmp/factory-sandbox-arm64.json
+docker buildx build --platform linux/arm64 --load -t factory-runner:rc3-arm64 -f factory-runner/Dockerfile factory-runner/
+python3 factory-runner/tests/smoke_container.py --image factory-runner:rc3-arm64 --platform linux/arm64 --sandbox-probe --security-report /tmp/factory-sandbox-arm64.json
 ```
 
 O PR #43 registra a execução desta tarefa com SHA, contagens e imagens reais.
@@ -51,7 +54,7 @@ por compilação de sintaxe ou inspeção de Dockerfile.
 
 ## Critérios para uma versão instalável com publicação
 
-Antes de publicar apenas `factory-runner/` em `hassio-addons:main`, cumprir os testes proporcionais, validações de configuração, distribuição e autorização da norma P0. No HA, registrar o resultado real de build ARM64, isolamento e inicialização; somente liberar a execução de preparação quando os limites de CPU/RAM e acesso aos checkouts estiverem comprovados. A próxima versão do Factory Runner é independente da `0.1.20-rc.8` do Avisaqui. Essa fase oferece **preflight somente leitura e preparação local sem publicação**, não fecha pacotes.
+Antes de publicar apenas `factory-runner/` em `hassio-addons:main`, cumprir os testes proporcionais, validações de configuração, distribuição e autorização da norma P0. No HA, registrar o resultado real de build ARM64, isolamento e inicialização; somente liberar a execução de preparação quando os limites de CPU/RAM e acesso aos checkouts estiverem comprovados. A próxima versão do Factory Runner é independente da `0.1.20-rc.8` do Avisaqui. Essa fase oferece **worker de leitura e preflight**, com preparação local apenas quando o isolamento realmente estiver disponível; **não fecha nem publica pacotes**.
 
 ## Ambiente de laboratório e limites de segurança
 
