@@ -56,7 +56,7 @@ def load_profile(path):
     mandatory = ("id", "product", "source_repo", "distribution_repo",
                  "source_ref", "rc_ref", "public_ref", "package_policy_path",
                  "package_json_path", "manifest_path", "provenance_path",
-                 "distribution_prefix", "exporter_path", "allowed_shared_paths")
+                 "distribution_prefix", "exporter_path", "exporter_git_blob_sha", "allowed_shared_paths")
     if obj.get("schema_version") != 1 or any(k not in obj or obj[k] is None for k in mandatory):
         raise PreflightError("Incomplete or unsupported project profile")
     if not re.fullmatch(r"[a-z][a-z0-9_-]{1,47}", obj["id"]):
@@ -79,6 +79,10 @@ def load_profile(path):
         raise PreflightError("Invalid distribution prefix")
     if not obj["provenance_path"].startswith(prefix):
         raise PreflightError("Provenance must belong to the project prefix")
+    if not isinstance(obj["exporter_git_blob_sha"], str) or not SHA.fullmatch(
+        obj["exporter_git_blob_sha"]
+    ):
+        raise PreflightError("Invalid or missing pinned exporter Git blob SHA")
     for name in obj["allowed_shared_paths"]:
         if name.startswith("/") or any(p in ("", ".", "..") for p in name.split("/")):
             raise PreflightError("Unsafe shared path")
@@ -237,8 +241,13 @@ def prepare(source, distribution, report, output, *, profile):
                          "runner/prepared-" + report["source_sha"][:12],
                          report["public_main_sha"]])
             exporter = source_snapshot / profile["exporter_path"]
-            if not exporter.is_file():
-                raise PreflightError("Profile exporter is unavailable")
+            if not exporter.is_file() or exporter.is_symlink():
+                raise PreflightError("Profile exporter is unavailable or unsafe")
+            exporter_blob = run_checked(
+                ["git", "-C", str(source_snapshot), "rev-parse", "HEAD:" +
+                 profile["exporter_path"]])
+            if exporter_blob != profile["exporter_git_blob_sha"]:
+                raise PreflightError("Exporter SHA differs from approved project profile")
             args = [sys.executable, str(exporter), "--commit", report["source_sha"],
                     "--target", str(output)]
             run_checked(args, cwd=source_snapshot, env=safe_env, timeout=240)
