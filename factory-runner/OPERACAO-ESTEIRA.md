@@ -1,6 +1,6 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
-**Estado:** candidata RC4 (`0.1.0-rc.4`) preparada na branch `release/factory-runner-rc4-validation`, PR #45, com **publicação no catálogo autorizada pelo proprietário em 19/11/2026**; **instalação não autorizada**. O isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. A versão instalada não foi confirmada; publicação no Git não a altera. **Produto independente** dos projetos atendidos.
+**Estado confirmado em 19/11/2026:** RC4 `0.1.0-rc.4` **PUBLICADA** em `hassio-addons:main/factory-runner/` pelo PR #45, commit `350fa3c8a756c405b6766cca53bd25fe84aef9f1`, após autorização do proprietário. **Não instalada, não homologada.** O pacote já foi publicado; **não reabrir o fluxo de publicação nem condicionar essa entrega a Docker/QEMU/Actions externos**. O Dockerfile executa regressões Python durante o build do Supervisor; resultado ainda não coletado no Raspberry. O Bubblewrap segue falhando em `/api/prepare` conforme relato anterior, que deve permanecer fail-closed; não confundir com teste de publicação. A versão atualmente instalada no HA não foi conferida. O próximo passo é **instalação/atualização pelo operador autorizado, quando houver autorização específica**, seguida de registro de build, inicialização e testes funcionais dirigidos. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
