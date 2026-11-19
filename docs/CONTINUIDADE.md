@@ -1,4 +1,7 @@
 # CONTINUIDADE — Home Assistant, Evolution API e n8n
+
+> **AMBIENTE COMPARTILHADO — FONTE CENTRAL (19/11/2026):** antes de perguntar sobre Raspberry Pi, Home Assistant, apps instalados, repositórios da loja, ARM64 ou homologação, consulte o [inventário operacional central](https://github.com/mmcromero/hassio-addons/blob/main/docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não copie a lista de apps para outros projetos; confirme no Supervisor apenas dados voláteis ou decisões críticas. Essa referência não autoriza remover, reiniciar, atualizar ou instalar apps.
+
 > **GUIA PARA NOVAS AUTOMAÇÕES n8n (16/11/2026):** antes de usar o n8n do Home Assistant em outro projeto, leia [N8N-HOME-ASSISTANT-INVENTARIO.md](N8N-HOME-ASSISTANT-INVENTARIO.md). Esse guia separa a instalação geral do n8n dos add-ons Umdoislab e identifica dados de configuração, backup e persistência que ainda precisam ser verificados. Os exemplos históricos abaixo não são prova da versão/configuração atual.
 
 > **ATUALIZAÇÃO PRIORITÁRIA — 14/11/2026.** Comece por [ESTADO-ATUAL-UMDOISLAB.md](ESTADO-ATUAL-UMDOISLAB.md) e [PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md](PROTOCOLO-DE-CONTINUIDADE-UMDOISLAB.md). Os registros abaixo sobre workflow v1.1 são históricos. A operação observada tem **n8n v1.6 publicado**, **Central 0.3.0 instalada**, Evolution add-on **0.1.0**. O validador automático de contatos foi discutido e está **adiado**. Não retornar à v1.1, recriar fluxos antigos, alterar o HA ou reabrir decisões antigas por interpretação deste texto.
