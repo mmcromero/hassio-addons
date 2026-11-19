@@ -1,5 +1,8 @@
 # Inventário e padronização — Distribuição Home Assistant
 
+> **AMBIENTE COMPARTILHADO — FONTE CENTRAL (19/11/2026):** antes de perguntar sobre Raspberry Pi, Home Assistant, apps instalados, repositórios da loja, ARM64 ou homologação, consulte o [inventário operacional central](https://github.com/mmcromero/hassio-addons/blob/main/docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não copie a lista de apps para outros projetos; confirme no Supervisor apenas dados voláteis ou decisões críticas. Essa referência não autoriza remover, reiniciar, atualizar ou instalar apps.
+
+
 **Data:** 2026-11-19  
 **Responsável:** Governança  
 **Escopo:** repositórios GitHub acessíveis e catálogo `mmcromero/hassio-addons`. **Sem acesso à lista de lojas instaladas no Raspberry**; não declarar remoção ou migração executada.
