@@ -18,6 +18,17 @@ if [ "${#RUNNER_AUTH_TOKEN}" -lt 32 ]; then
     exit 1
 fi
 
-# O serviço permanece acessível somente por localhost do container.
+# A conta do Runner não recebe privilégios de root. Apenas a subárvore
+# privada do próprio add-on é administrada; nunca alterar /data/options.json.
+install -d -m 0700 -o runner -g runner /data/factory-runner
+for folder in workspaces preparations; do
+    install -d -m 0700 -o runner -g runner "/data/factory-runner/$folder"
+done
+if [ -e /data/factory-runner/audit.jsonl ]; then
+    chown runner:runner /data/factory-runner/audit.jsonl
+    chmod 0600 /data/factory-runner/audit.jsonl
+fi
+
+# No host TCP port; subprocesses inherit a non-root UID.
 export RUNNER_BIND_HOST=127.0.0.1
-exec python3 -u /app/server.py
+exec su-exec runner python3 -u /app/server.py
