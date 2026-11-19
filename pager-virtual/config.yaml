@@ -1,5 +1,5 @@
 name: "Pager Virtual"
-version: "0.1.20-rc.8"
+version: "0.1.20-rc.9"
 slug: pager_virtual
 description: "Sistema de Pager Virtual ultraleve e em tempo real para restaurantes"
 url: "https://github.com/mmcromero/pager-virtual"
@@ -21,6 +21,8 @@ backup: cold
 map:
   - share:rw
   - data:rw
+  - type: app_config
+    read_only: true
 options:
   log_level: info
   public_url: ""

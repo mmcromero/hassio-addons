@@ -7,10 +7,11 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-006",
+    "id": "AVISAQUI-PACOTE-007",
     "status": "open",
-    "phase": "development",
-    "candidate_version": "0.1.20-rc.8",
+    "phase": "preparing_release_candidate",
+    "candidate_version": "0.1.20-rc.9",
+    "published_version": null,
     "branches": {
       "mmcromero/pager-virtual": "release-candidate",
       "mmcromero/hassio-addons": "main"
@@ -18,9 +19,9 @@
     "prs": {},
     "base_branch": "main",
     "new_features": "full_development_snapshot",
-    "opened_on": "2026-11-18",
+    "opened_on": "2026-11-19",
     "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/42",
-    "status_notes": "Aberto por decisão do proprietário para nova RC8 via FACTORY-RUNNER-ESTEIRA-001; testes, snapshot privado, exportação e publicação ainda pendentes. NÃO equivale a release publicada."
+    "status_notes": "Novo pacote RC9 solicitado em 19/11/2026. Alteracoes pos RC8: app_config Google Wallet, fallback, testes, documentos. Manter pacote integral, main privada protegida, publicar apenas catalogo add-ons. Teste real Android e chave Google nao comprovados."
   },
   "publication_authority": {
     "coordination": "Governança",

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Credenciais privadas nunca entram na imagem ou no repositório.
-// Prioridade: variável em memória > arquivo explícito > /data persistente > legado local.
+// Prioridade: variável em memória > arquivo explícito > configuração do add-on (/config) > /data persistente > legado local.
 function loadWalletCredentials() {
   const inline = process.env.GOOGLE_WALLET_CREDENTIALS;
   const customFile = process.env.GOOGLE_WALLET_KEY_FILE;
@@ -17,6 +17,7 @@ function loadWalletCredentials() {
     : (customFile !== undefined
         ? [{ source: 'file', value: customFile }]
         : [
+            { source: 'file', value: '/config/google-wallet-key.json' },
             { source: 'file', value: path.join(dataDir, 'credentials/google-wallet-key.json') },
             { source: 'file', value: path.join(__dirname, '../credentials/google-wallet-key.json') }
           ]);

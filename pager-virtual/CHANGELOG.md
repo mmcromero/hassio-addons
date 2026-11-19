@@ -5,6 +5,13 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.9] — 19/11/2026 — Google Wallet no HA via app_config
+
+- Pacote completo do HEAD de desenvolvimento, incluindo `config.yaml` com mapeamento `app_config` somente leitura para `/config`, leitura segura de `google-wallet-key.json`, fallback controlado e testes dirigidos.
+- Sem segredos na distribuição. A configuração externa do Google Wallet e a homologação funcional no Android permanecem pendentes.
+- Publicação de teste pela `main` pública do catálogo de add-ons; `main` privada de código preservada; sem GitHub Actions.
+
+
 ## [0.1.20-rc.8] — 18/11/2026 — preparacao pelo Factory Runner (pendente de publicacao)
 
 - Pacote AVISAQUI-PACOTE-006 aberto em https://github.com/mmcromero/pager-virtual/issues/42.

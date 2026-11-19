@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "5e524037f8a6fd9504a23d56f466e989062c99bb",
-  "version": "0.1.20-rc.8",
+  "commit": "40951b2a3af7bc28b2b44f97e6c850fe4a226507",
+  "version": "0.1.20-rc.9",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "de881b329d742e2dd6ff992ce9023935f8a143f48ec62695d6c8239edfc82a97"
+      "sha256": "ea7c76ac277282647c5637651fb29094bd1ba67b40e2e961691fec23b00c7ffb"
     },
     {
       "path": "AGENTS.md",
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "d5b1bdb221df47bc3fe1d7f42f2c067a2b006cef5a277f502621d6efcd0173f5"
+      "sha256": "a54c52d3a44cd22d3687186d5748f9c89654a9d8cf77d0aadf7328ee9ed4225e"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "a28aa195df456c5f97c02217325cfa09b28d3ba0be425a0718bae48249ac3a99"
+      "sha256": "427c0c48e52f8f05aa5955cd8cea2d1608c483e0986fcc019e89a2d1a1a61829"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "78db44346c68ed70d52d6bea21fdc9aa8c1f8746de8861e26c9e868fd3a4bbcb"
+      "sha256": "d7b4e271a140854c4cbfa4d0effcccbb9f406ea448f71765cc1636e62c50940a"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "1852de3e624d5227dbb3201d9f07478ff8384a16b2852da5210f65da47848641"
+      "sha256": "0d57f70878f1eefe2b72eb0e525966bd12c3bf40d68bc18c1f8573c8bd671559"
     },
     {
       "path": "run.sh",
@@ -351,7 +351,7 @@
     {
       "path": "src/wallet.js",
       "source_path": "src/wallet.js",
-      "sha256": "c916a31e3c51ad305b59d3f3aece02f443d7edd15abe710ddacb487585efc195"
+      "sha256": "e43ed88afe46c8acf5abfe7e1a82b60e687cf512b2c6a5999d9ace3148eeb720"
     },
     {
       "path": "src/windows-download.js",
@@ -642,6 +642,11 @@
       "path": "tests/ux-paridade-prototipo-contract.test.js",
       "source_path": "tests/ux-paridade-prototipo-contract.test.js",
       "sha256": "6b885ca35284412565aca7b85e7267253007796b813f095ace37b2e4c1635cee"
+    },
+    {
+      "path": "tests/wallet-addon-config.test.js",
+      "source_path": "tests/wallet-addon-config.test.js",
+      "sha256": "f7c686fab9b1769e3fa7df8a0c8cd1f0fa2737a2411e78696d2423a69f66d941"
     },
     {
       "path": "tests/wallet.test.js",
