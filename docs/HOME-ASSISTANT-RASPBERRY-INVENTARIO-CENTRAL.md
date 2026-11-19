@@ -77,7 +77,7 @@ O catálogo central contém quatro diretórios de app: `pager-virtual/`, `evolut
 - Para publicar qualquer pacote pelo `hassio-addons`, seguir [procedimento universal P0](../CONTRIBUTING.md): fechar lote e identificar fonte/HEAD, executar testes proporcionais, verificar versão/manifesto, segredos, arquitetura e proveniência, publicar somente a pasta autorizada, confirmar commit remoto e **separar publicação de instalação e homologação**.
 - Ausência de QEMU, máquina ARM64 externa ou GitHub Actions **não é bloqueio automático**. Quando o app usa Dockerfile sem imagem pronta, o Supervisor pode construir no hardware alvo durante a instalação/atualização. O funcionamento real precisa ser verificado após instalação no HA; risco concreto pode exigir testes extras antes.
 - Home Assistant Google Drive Backup aparece **em execução**, mas a captura não verifica a rotina, destino, criptografia, restauração ou quais apps estão incluídos. Não presumir que backups cubram todos os dados.
-- n8n aparece em execução. Consultar o [inventário específico n8n](N8N-HOME-ASSISTANT-INVENTARIO.md) antes de criar workflows; sua presença na grade não valida workflows/credenciais.
+- n8n aparece em execução na captura histórica. O inventário detalhado, integrações WhatsApp e workflows pertencem ao repositório **privado** `mmcromero/whatsapp-automacoes`; sua presença na grade não valida workflows/credenciais.
 - **Tailscale, NGINX SSL proxy, Duck DNS, Samba e Terminal & SSH** aparecem em execução, mas a captura não autoriza inferir URL, credencial, conectividade externa ou permissões da equipe.
 
 ## 6. Dados ainda não comprovados
