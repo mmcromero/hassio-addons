@@ -15,7 +15,7 @@ import time
 import uuid
 from pathlib import Path
 
-from rc_fastlane import PreflightError, evaluate, load_profile
+from rc_fastlane import PreflightError, evaluate, load_profile, prepare
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -75,16 +75,16 @@ def listed_projects():
                 "id": profile["id"],
                 "product": profile["product"],
                 "preflight": "supported",
+                "preparation": "local_only_no_publish",
                 "publication": "disabled",
             }
     return result
 
 
-def preflight_project(project_id, expected_sha):
-    """Read-only Git preflight. No network, push, commit or arbitrary caller paths."""
-    if (not isinstance(project_id, str) or not PROJECT_ID.fullmatch(project_id)
-            or not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha)):
-        raise PreflightError("Invalid project or SHA")
+def project_workspace(project_id):
+    """Resolve a pre-approved project and immutable workspace paths."""
+    if not isinstance(project_id, str) or not PROJECT_ID.fullmatch(project_id):
+        raise PreflightError("Invalid project")
     path = PROJECTS_DIR / (project_id + ".json")
     if path.is_symlink() or not path.is_file():
         raise PreflightError("Project not configured")
@@ -102,7 +102,34 @@ def preflight_project(project_id, expected_sha):
             or source.resolve() != source.absolute()
             or distribution.resolve() != distribution.absolute()):
         raise PreflightError("Workspace checkouts unavailable or unsafe")
+    return profile, source, distribution
+
+
+def preflight_project(project_id, expected_sha):
+    """Read-only preflight; never mutate the workspace or remote Git."""
+    if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
+        raise PreflightError("Invalid source SHA")
+    profile, source, distribution = project_workspace(project_id)
     return evaluate(source, distribution, expected_sha, profile=profile)
+
+
+def prepare_project(project_id, expected_sha, operation_id):
+    """Export into an isolated local checkout. No Git push or release publication."""
+    if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
+        raise PreflightError("Invalid source SHA")
+    profile, source, distribution = project_workspace(project_id)
+    preflight = evaluate(source, distribution, expected_sha, profile=profile)
+    if not preflight["eligible_for_preparation"]:
+        return {"eligible": False, "errors": preflight["errors"]}
+    # Server generates destination: client cannot select arbitrary filesystem path.
+    destination = Path("/data/factory-runner/preparations").resolve()
+    destination.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
+    prepared = prepare(source, distribution, preflight, output, profile=profile)
+    return {"eligible": True, "state": prepared["state"],
+            "changed_files": prepared["changed_files"],
+            "source_sha": expected_sha, "published": False}
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def respond(self, status, payload):
@@ -133,7 +160,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path != "/api/preflight":
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -149,7 +176,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
-        if self.path == "/api/preflight":
+        if self.path in ("/api/preflight", "/api/prepare"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
             project = body["project"]
@@ -161,13 +188,24 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.respond(409, {"error": "busy"})
             operation_id = str(uuid.uuid4())
             try:
-                record("/api/preflight", None, "requested", operation_id)
+                action = self.path
+                record(action, None, "requested", operation_id)
                 try:
-                    result = preflight_project(project, source_sha)
+                    if action == "/api/preflight":
+                        result = preflight_project(project, source_sha)
+                    else:
+                        result = prepare_project(project, source_sha, operation_id)
                 except (PreflightError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
-                    record("/api/preflight", None, "blocked_workspace_or_git", operation_id)
-                    return self.respond(503, {"error": "preflight_unavailable", "operation_id": operation_id})
-                record("/api/preflight", None, "completed_read_only", operation_id)
+                    record(action, None, "blocked_workspace_or_git", operation_id)
+                    return self.respond(503, {"error": "workspace_or_export_unavailable",
+                                              "operation_id": operation_id})
+                if action == "/api/prepare" and not result["eligible"]:
+                    record(action, None, "blocked_policy", operation_id)
+                    return self.respond(409, {"error": "package_policy_blocked",
+                                              "operation_id": operation_id,
+                                              "details": result["errors"]})
+                record(action, None, "completed_preparation" if action == "/api/prepare"
+                       else "completed_read_only", operation_id)
                 return self.respond(200, {"operation_id": operation_id, "result": result})
             except RuntimeError:
                 return self.respond(503, {"error": "audit_unavailable"})
