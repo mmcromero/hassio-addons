@@ -1,5 +1,8 @@
 # HA-ADDONS-CI-001 — Contrato de build e publicação de add-ons Home Assistant
 
+> **ATENÇÃO — REGISTRO HISTÓRICO, NÃO É O PROCEDIMENTO VIGENTE (19/11/2026).** Este estudo de CI foi elaborado antes da padronização universal. Trechos abaixo que tratam build ARM64 externo, QEMU, Actions, branch ou PR como requisito genérico de publicação estão **SUBSTITUÍDOS**. A fonte operacional obrigatória é [CONTRIBUTING.md](../CONTRIBUTING.md), complementada pelo [AGENTS.md](../AGENTS.md) e manual vigente de cada add-on. Testes específicos de risco real continuam obrigatórios. A ausência de emulação não impede automaticamente uma RC autorizada para homologação no HA.
+
+
 **Estado:** proposta técnica aplicada em branch; homologação e adoção universal pendentes.
 **Responsável:** Tech Lead / Infraestrutura / Governança. **Regra:** não executar build, CI, merge, instalação ou publicação por simples edição deste documento.
 
