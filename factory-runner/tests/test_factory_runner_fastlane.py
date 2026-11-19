@@ -81,6 +81,16 @@ class FastlaneTests(unittest.TestCase):
             with self.assertRaises(mod.PreflightError):
                 mod.load_profile(profile)
 
+    def test_git_status_preserves_leading_porcelain_column(self):
+        # An unstaged modification starts with a space, which .strip() destroys.
+        payload = " M pager-virtual/config.yaml\\0"
+        with patch.object(mod.subprocess, "run",
+                          return_value=SimpleNamespace(returncode=0, stdout=payload)):
+            actual = mod.run_checked(["git", "status"], preserve_output=True)
+            self.assertEqual(actual, payload)
+            self.assertEqual(actual.split("\\0")[0][3:],
+                             "pager-virtual/config.yaml")
+
     def test_project_exporter_must_be_pinned(self):
         with tempfile.TemporaryDirectory() as folder:
             cfg = dict(CONFIG)
