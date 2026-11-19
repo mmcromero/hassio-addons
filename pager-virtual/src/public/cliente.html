@@ -68,14 +68,14 @@
 
     /* UX-M017 — marca transparente, cabeçalho compacto mobile; nenhuma mudança na lógica de pedidos */
     .restaurant-header { flex-direction:column;align-items:flex-start;gap:3px;padding:12px 16px; }
-    .brand-logo-client { display:block;width:150px;max-width:65%;height:auto;object-fit:contain;background:transparent; }
+    .brand-logo-client { display:block;width:var(--av-header-logo-width,240px);max-width:100%;height:auto;object-fit:contain;background:transparent; }
     .restaurant-info h1 { font-size:1.05rem; }
     .client-restaurant-context { display:flex;align-items:center;gap:12px;margin:9px 0 0;padding:9px 12px;background:#18283f;border-radius:12px;width:100%;border:1px solid #46617d }
     .client-restaurant-symbol { width:48px;height:48px;flex:none;background:#2c4968;color:#fff;border-radius:10px;display:grid;place-items:center;font-weight:800 }
     .client-restaurant-symbol img { width:48px;height:48px;object-fit:contain;border-radius:10px;background:#fff }
     .client-restaurant-context strong { overflow-wrap:anywhere;min-width:0 }
     .restaurant-info p { margin:0;font-size:.85rem; }
-    @media(max-width:375px) { .brand-logo-client { width:135px; } .restaurant-header { padding:11px 13px; } }
+    @media(max-width:375px) { .brand-logo-client { width:var(--av-header-logo-width,170px); } .restaurant-header { padding:11px 13px; } }
 
     /* EFEITO VISÃO PERIFÉRICA: Iluminação nas bordas da tela em amarelo (Edge Lighting) */
     .edge-glow-overlay {
@@ -381,7 +381,13 @@
       font-family: monospace;
       font-size: 1.05rem;
     }
-  </style>
+  
+    /* Identidade Avisaqui — marca e respiro padronizados */
+    :root { --av-header-logo-width:240px; --av-grid-gap:16px; }
+    .restaurant-header { gap:12px; }
+    @media(max-width:600px) { :root { --av-header-logo-width:170px; } }
+
+</style>
 </head>
 <body>
 
@@ -456,6 +462,7 @@
           </button>
         </a>
       </div>
+      <p id="wallet-status" hidden role="status" aria-live="polite" style="margin-top:12px;font-size:.85rem;color:#cbd5e1;text-align:center;"></p>
     </section>
 
     <!-- Produtos opcionais: exibidos apenas quando presentes no QR. -->
@@ -957,11 +964,11 @@
       if (!token || isCurrentlyReady) return;
       const keepOpen = 'Mantenha esta tela aberta e ativa enquanto espera seu pedido para não perder o aviso.';
       if (iosDevice && !standalone) {
-        showPushGuide('No iPhone, avisos em segundo plano exigem adicionar o Bipou à Tela de Início e permitir notificações. ' + keepOpen);
+        showPushGuide('No iPhone, avisos em segundo plano exigem adicionar o Avisaqui à Tela de Início e permitir notificações. ' + keepOpen);
         return;
       }
       if (!pushAvailable) {
-        showPushGuide('Este navegador ou esta conexão não oferece avisos em segundo plano para o Bipou. ' + keepOpen);
+        showPushGuide('Este navegador ou esta conexão não oferece avisos em segundo plano para o Avisaqui. ' + keepOpen);
         return;
       }
       if (Notification.permission === 'denied') {
@@ -976,7 +983,7 @@
         if (Notification.permission === 'granted') {
           await registerPushSubscription();
         } else {
-          showPushGuide('Quer usar outros aplicativos enquanto espera? Ative as notificações do Bipou para receber avisos em segundo plano. O som depende das configurações do aparelho.', true);
+          showPushGuide('Quer usar outros aplicativos enquanto espera? Ative as notificações do Avisaqui para receber avisos em segundo plano. O som depende das configurações do aparelho.', true);
         }
       } catch (error) {
         console.warn('[PUSH] Indisponível', error);
@@ -1003,26 +1010,29 @@
 
     void initPush();
 
-    // Google Wallet: carregar link para aparelhos Android
+    // Android: não esconder uma falha de configuração da Carteira do Google.
     async function initGoogleWallet() {
-      if (!token) return;
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      if (!isAndroid) return;
+      if (!token || !/Android/i.test(navigator.userAgent)) return;
+      const walletBox = document.getElementById('wallet-box');
+      const walletLink = document.getElementById('wallet-btn-link');
+      const walletStatus = document.getElementById('wallet-status');
+      if (!walletBox || !walletLink || !walletStatus) return;
+      walletBox.hidden = true;
+      walletLink.removeAttribute('href');
+      walletStatus.hidden = true;
       try {
         const res = await fetch(appBasePath + '/api/pedidos/' + encodeURIComponent(token) + '/wallet/google');
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.url) {
-            const walletBox = document.getElementById('wallet-box');
-            const walletLink = document.getElementById('wallet-btn-link');
-            if (walletBox && walletLink) {
-              walletLink.href = data.url;
-              walletBox.hidden = false;
-            }
-          }
+        if (!res.ok) throw new Error('wallet_api_unavailable');
+        const data = await res.json();
+        if (!data || typeof data.url !== 'string' ||
+            !data.url.startsWith('https://pay.google.com/gp/v/save/')) {
+          throw new Error('wallet_url_invalid');
         }
-      } catch (e) {
-        console.warn('Google Wallet indisponivel:', e);
+        walletLink.href = data.url;
+        walletBox.hidden = false;
+      } catch {
+        walletStatus.textContent = 'Carteira do Google indisponível neste momento. Continue acompanhando seu pedido nesta página.';
+        walletStatus.hidden = false;
       }
     }
     void initGoogleWallet();

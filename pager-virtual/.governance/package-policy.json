@@ -7,21 +7,21 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-004",
+    "id": "AVISAQUI-PACOTE-005",
     "status": "open",
-    "phase": "preparing_private_release_candidate",
-    "candidate_version": "0.1.20-rc.6",
+    "phase": "preparing_release_candidate",
+    "candidate_version": "0.1.20-rc.7",
     "published_version": null,
     "branches": {
       "mmcromero/pager-virtual": "release-candidate",
-      "mmcromero/hassio-addons": "release-candidate"
+      "mmcromero/hassio-addons": "main"
     },
     "prs": {},
     "base_branch": "main",
-    "new_features": "only_approved_development_scope",
+    "new_features": "full_development_snapshot",
     "opened_on": "2026-11-18",
-    "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/39",
-    "status_notes": "Fonte para eventual exportação futura da RC6. A RC5 externa foi arquivada e não é origem. Preservar login aprovado blob 70c68fde853f623884ca0df20a9ea1279a803870; #17 excluída de novas entregas. Não há autorização para publicação, Actions, merge ou deploy."
+    "scope_reference": "mmcromero/pager-virtual:Issue #34",
+    "status_notes": "Novo lote 005 ordenado pelo proprietario em 18/11/2026. RC7 preserva todos os arquivos do HEAD desenvolvimento, incluindo correcoes Wallet. Publicacao permitida na main PUBLICA de add-ons como distribuicao instalavel, mas main PRIVADA de fonte protegida. Sem Actions; testes Google/Android externos nao comprovados."
   },
   "publication_authority": {
     "coordination": "Governança",

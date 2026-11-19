@@ -5,6 +5,15 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.7] — 18/11/2026 — pacote completo com correção Google Wallet
+
+- Fonte privada `desenvolvimento` congelada integralmente, incluindo mudanças posteriores à RC6, sem selecionar arquivos.
+- Android: integração Google Wallet corrigida para credenciais por ambiente, caminho explícito ou volume persistente /data, resposta controlada da API e aviso visível se indisponível; testes focados adicionados.
+- Preservadas alterações de telas, PWA e demais módulos presentes no SHA congelado; versão consistente em config, pacote e lock.
+- A emissão real de passe depende de credencial externa válida, configurada de modo seguro; testes Google/Android e homologação no Raspberry não estão comprovados.
+- Nenhum código-fonte não homologado promovido à main privada; distribuição de teste na main pública de add-ons conforme política atual.
+
+
 
 ## [0.1.20-rc.6] — 18/11/2026 — fechamento pela esteira oficial
 
