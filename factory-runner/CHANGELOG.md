@@ -1,11 +1,11 @@
 # Changelog
 
-## 0.1.0-rc.4 — Candidata em validação (19/11/2026; NÃO PUBLICADA)
+## 0.1.0-rc.4 — Publicação autorizada para teste (19/11/2026; instalação independente)
 
 - Reforço fail-closed no carregamento de perfis: tipos incorretos, refs com segmentos vazios/dot segments, prefixos ambíguos e barras invertidas na allowlist são recusados.
 - Cobertura de regressão adicionada para os casos acima. Execução da suíte completa ainda **não comprovada** nesta sessão.
 - Bloqueio Bubblewrap/AppArmor no Raspberry **não resolvido**; nenhuma flexibilização de isolamento ou concessão de privilégios foi feita.
-- Antes de publicação: testes locais integrados, Docker ARM64, prova de HA, gate de Segurança e autorização expressa do proprietário. Não instalar.
+- Publicação na loja autorizada expressamente pelo proprietário em 19/11/2026. Testes Python integrados e build/ensaio no HA ainda sem PASS; a imagem executa a suíte Python obrigatoriamente no estágio de validação do Dockerfile durante o build do Supervisor. Instalação/atualização não autorizadas nesta tarefa.
 
 
 ## 0.1.0-rc.3 — Candidata de teste do worker controlado (19/11/2026; homologação HA pendente)
