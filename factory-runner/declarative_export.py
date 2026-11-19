@@ -151,6 +151,70 @@ def expand_trusted_rules(source_repo: Path, source_sha: str, *,
     return mapping
 
 
+def write_distribution_provenance(bundle_dir: Path, bundle: dict, *,
+                                  source_repository: str,
+                                  distribution_prefix: str,
+                                  provenance_path: str,
+                                  ci_patch_source: str | None,
+                                  allowed_shared_paths: list[str]) -> dict:
+    """Build canonical release provenance from already verified copied bytes.
+
+    This never commits or publishes the package. Project-specific source
+    selection and CI compatibility must be validated separately.
+    """
+    if (not isinstance(source_repository, str)
+            or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", source_repository)):
+        raise DeclarativeExportError("invalid_repository")
+    safe_path(distribution_prefix[:-1])
+    safe_path(provenance_path)
+    if not provenance_path.startswith(distribution_prefix):
+        raise DeclarativeExportError("provenance_outside_distribution")
+    if not isinstance(allowed_shared_paths, list):
+        raise DeclarativeExportError("invalid_shared_paths")
+    for name in allowed_shared_paths:
+        safe_path(name)
+    if ci_patch_source is not None:
+        safe_path(ci_patch_source)
+    bundle_dir = Path(bundle_dir)
+    if not bundle_dir.is_dir() or bundle_dir.is_symlink():
+        raise DeclarativeExportError("unsafe_bundle")
+    records = bundle.get("files")
+    if not isinstance(records, list) or not records:
+        raise DeclarativeExportError("empty_bundle")
+    package_files, repository_files = [], []
+    for item in records:
+        if not isinstance(item, dict):
+            raise DeclarativeExportError("invalid_bundle_record")
+        destination, origin = safe_path(item["path"]), safe_path(item["source_path"])
+        if destination == provenance_path:
+            raise DeclarativeExportError("provenance_collision")
+        target = bundle_dir / destination
+        if not target.is_file() or target.is_symlink():
+            raise DeclarativeExportError("missing_bundle_file")
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        if digest != item["sha256"]:
+            raise DeclarativeExportError("bundle_hash_mismatch")
+        if destination.startswith(distribution_prefix):
+            package_files.append({"path": destination[len(distribution_prefix):],
+                                  "source_path": origin, "sha256": digest})
+        elif destination in allowed_shared_paths:
+            repository_files.append({"path": destination, "source_path": origin,
+                                     "sha256": digest})
+        else:
+            raise DeclarativeExportError("unapproved_shared_file")
+    provenance = {"repository": source_repository, "commit": bundle["commit"],
+                  "version": bundle["version"], "files": package_files,
+                  "ci_patch_source": ci_patch_source}
+    if repository_files:
+        provenance["repository_files"] = repository_files
+    path = bundle_dir / provenance_path
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8") as stream:
+        json.dump(provenance, stream, ensure_ascii=False, indent=2)
+        stream.write("\n")
+    return provenance
+
+
 def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
                         mappings: dict[str, str], *,
                         expected_version: str, project: str) -> dict:
