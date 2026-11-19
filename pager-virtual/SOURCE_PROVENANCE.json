@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "6f542987d7e870751dd763bd416a64d3c3c71fdd",
-  "version": "0.1.20-rc.10",
+  "commit": "95833576601c6e2c86f0989830377061c3b8bab8",
+  "version": "0.1.20-rc.11",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "f33ca7b31288abcbc2d12a071ca17e86ec5baa1b62c6fa79c02f97b965080a6f"
+      "sha256": "abba3c77f16f1eff80d5208228bb844d4f8d5e60fb33c784ba95d11f01d71d0c"
     },
     {
       "path": "AGENTS.md",
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "4cfa6ca3af3c4fb20f1d3195e3e51e290b24cc890b27bb6d9253c7873311a9b2"
+      "sha256": "89f7c8f11c8104154adeb2485926f9903f519bce234af6a9eda47e755f5a02f2"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "21118a1eec4c73c29fa341fe9a0aedeaeb76bb5bdcab856f9e39b8b95edb44cd"
+      "sha256": "6fe2eaa84730f85ecdf4930b4335a8225c9fe89bd6feb2b22768d460cc790a3e"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "5e642ffa333bfcefe21af696fb9d3cc6730ddf2cfe8e573ad72ff40c7cf2706c"
+      "sha256": "f9c2089268217e1c4946579a01ff0b14e7aab1f5f6670a9beb68e087e4253d76"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "a83102b6bab5363dad6d6f8be6377f9ae7439b0c80fc526faeb0d7435d683400"
+      "sha256": "7cf4c736059dbc6f14d6124188064aba38bcd127f972ef4b45f2b56d7dd144b5"
     },
     {
       "path": "run.sh",
@@ -221,7 +221,7 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "c269cf2c324c9d9a8863ae6a57b3a12f52fe916e4bbe676a6987fcbb8421ab81"
+      "sha256": "099e06d16b11b3e3984a01f4b7cc54ed0476147aeebee22e88dd267867536b45"
     },
     {
       "path": "src/public/games/biblioteca.js",

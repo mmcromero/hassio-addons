@@ -5,6 +5,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.11] — 19/11/2026 — UX Wallet e alto contraste
+
+- Snapshot integral do desenvolvimento após RC10: Google Wallet em badge vetorial português (Brasil), layout aprovado centralizado e ajustes de alto contraste na vitrine do cliente.
+- Mantidas correções anteriores de som, credenciais Wallet e fluxo do pedido.
+- Publicação do pacote de teste no canal público Home Assistant; Google Wallet real e testes no Android seguem sem homologação concluída.
+- Nenhuma modificação da main privada de código, outros add-ons ou dados do Raspberry.
+
+
 ## [0.1.20-rc.10] — 19/11/2026 — alerta sonoro persistente e diagnóstico Google Wallet
 
 - Snapshot integral da branch desenvolvimento após RC9, sem seleção de arquivos.

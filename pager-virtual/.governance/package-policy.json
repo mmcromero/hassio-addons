@@ -7,10 +7,10 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-008",
+    "id": "AVISAQUI-PACOTE-009",
     "status": "open",
     "phase": "preparing_release_candidate",
-    "candidate_version": "0.1.20-rc.10",
+    "candidate_version": "0.1.20-rc.11",
     "published_version": null,
     "branches": {
       "mmcromero/pager-virtual": "release-candidate",
@@ -21,7 +21,7 @@
     "new_features": "full_development_snapshot",
     "opened_on": "2026-11-19",
     "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/42",
-    "status_notes": "Solicitado novo pacote 19/11/2026: incluir integralmente correção da persistência de alerta sonoro e do diagnóstico Wallet, regressão de interface; preservação da main privada e de outros add-ons; homologação real Android não comprovada."
+    "status_notes": "Ordem do proprietário: fechar próximo pacote completo. Escopo: alto contraste vitrine, badge Google Wallet pt-BR, layout Wallet centralizado aprovado; testes reais no Android ainda pendentes."
   },
   "publication_authority": {
     "coordination": "Governança",
