@@ -151,6 +151,45 @@ def expand_trusted_rules(source_repo: Path, source_sha: str, *,
     return mapping
 
 
+def extend_approved_mapping(source_repo: Path, source_sha: str,
+                            mapping: dict[str, str], *,
+                            conditional_groups: list[dict],
+                            shared_optional: dict[str, str],
+                            allowed_shared_paths: list[str],
+                            distribution_prefix: str) -> dict[str, str]:
+    """Apply trusted conditional groups and optional repository-level files."""
+    if (not isinstance(conditional_groups, list)
+            or not isinstance(shared_optional, dict)
+            or not isinstance(allowed_shared_paths, list)):
+        raise DeclarativeExportError("invalid_extended_rules")
+    result = dict(mapping)
+    def exists(path):
+        safe_path(path)
+        return bool(_git(Path(source_repo), "ls-tree", "-z", source_sha, "--", path))
+    for group in conditional_groups:
+        if (not isinstance(group, dict) or set(group) != {"trigger", "required"}
+                or not isinstance(group["required"], dict)):
+            raise DeclarativeExportError("invalid_conditional_group")
+        if not exists(group["trigger"]):
+            continue
+        for dest, src in group["required"].items():
+            safe_path(dest)
+            if not dest.startswith(distribution_prefix):
+                raise DeclarativeExportError("conditional_destination_outside_prefix")
+            if not exists(src):
+                raise DeclarativeExportError("required_conditional_source_missing")
+            result[dest] = src
+    for dest, src in shared_optional.items():
+        safe_path(dest)
+        if dest not in allowed_shared_paths:
+            raise DeclarativeExportError("unapproved_shared_destination")
+        if exists(src):
+            result[dest] = src
+    if len(result) > MAX_FILES:
+        raise DeclarativeExportError("file_count_exceeded")
+    return result
+
+
 def write_distribution_provenance(bundle_dir: Path, bundle: dict, *,
                                   source_repository: str,
                                   distribution_prefix: str,
