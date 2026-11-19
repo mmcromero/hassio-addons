@@ -32,12 +32,19 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo
+## Catálogo ativo na `main` (levantamento 19/11/2026)
 
-| Add-on | Versão | Arquitetura | Estado |
+| Diretório | Nome de exibição | Versão conferida | Arquitetura |
 |---|---|---|---|
-| Evolution API — WhatsApp + n8n | 0.1.0 | aarch64 | Candidato, ainda não homologado no Raspberry Pi |
-| Pager Virtual | 0.1.0 | aarch64, amd64 | Candidato a testes no Raspberry Pi 4 |
+| `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
+| `pager-virtual/` | Pager Virtual (*novo título preparado na fonte; aguarda exportação controlada*) | 0.1.20-rc.11 | aarch64, amd64 |
+| `umdoislab-central/` | Fábrica de Softwares - 12Labs Central de Atendimento | 0.4.0 | aarch64 |
+| `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.2 | aarch64, amd64 |
+
+O cadastro verificável dos quatro add-ons está em [`.github/addon-registry.json`](.github/addon-registry.json). As quatro pastas possuem os mesmos arquivos `icon.png` e `logo.png` copiados da identidade atual do Kanban, sem alteração de seus bytes. O nome do Avisaqui deve ser publicado pelo exportador oficial, para preservar `SOURCE_PROVENANCE.json` e a correspondência com a fonte privada.
+
+**Fora deste catálogo:** Artesão Digital usa `mmcromero/fabricacao-e-orcamentos-ha`; Kanban usa `mmcromero/fabrica-de-ideias-kanban`. Não remova essas lojas do Home Assistant sem verificar instalação, versões e preservação dos dados. O catálogo Git não mostra quais lojas estão cadastradas no Raspberry.
+
 
 ## Continuidade e arquitetura de automações
 
