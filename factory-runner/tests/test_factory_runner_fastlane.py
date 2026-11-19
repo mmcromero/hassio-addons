@@ -7,8 +7,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-SCRIPT = Path(__file__).resolve().parents[1] / "factory-runner-add-on" / "rc_fastlane.py"
-PROFILE = Path(__file__).resolve().parents[1] / "factory-runner-add-on" / "projects" / "avisaqui.json"
+ROOT = Path(__file__).resolve().parents[1]
+ADDON = ROOT if (ROOT / "rc_fastlane.py").is_file() else ROOT / "factory-runner-add-on"
+SCRIPT = ADDON / "rc_fastlane.py"
+PROFILE = ADDON / "projects" / "avisaqui.json"
 CONFIG = json.loads(PROFILE.read_text(encoding="utf-8"))
 SPEC = importlib.util.spec_from_file_location("rc_fastlane", SCRIPT)
 mod = importlib.util.module_from_spec(SPEC)
