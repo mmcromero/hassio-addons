@@ -1,5 +1,8 @@
 # AGENTS.md — Instruções universais do catálogo Home Assistant
 
+> **AMBIENTE COMPARTILHADO — FONTE CENTRAL (19/11/2026):** antes de perguntar sobre Raspberry Pi, Home Assistant, apps instalados, repositórios da loja, ARM64 ou homologação, consulte o [inventário operacional central](https://github.com/mmcromero/hassio-addons/blob/main/docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não copie a lista de apps para outros projetos; confirme no Supervisor apenas dados voláteis ou decisões críticas. Essa referência não autoriza remover, reiniciar, atualizar ou instalar apps.
+
+
 ## P0 — Procedimento único para qualquer publicação no Home Assistant (19/11/2026)
 
 **Aplica-se a todas as pessoas e agentes, independentemente do cargo, experiência ou projeto.** Ao receber ordem para criar, fechar, testar, empacotar ou publicar **qualquer add-on** por `mmcromero/hassio-addons`, consulte **antes de agir** a [rotina canônica do catálogo](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md) e o manual vigente do add-on. O procedimento cobre fechamento do lote, validações proporcionais, publicação isolada em `hassio-addons:main/<pasta-do-add-on>/` mediante autorização, verificação remota e homologação real no Home Assistant. O manual do produto define sua fonte, branch e exportação; **não aplicar nomes de branch exclusivos do Avisaqui aos demais add-ons**.
