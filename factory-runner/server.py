@@ -9,10 +9,14 @@ import http.server
 import json
 import os
 import re
+import subprocess
 import threading
 import time
 import uuid
 from pathlib import Path
+
+from rc_fastlane import PreflightError, evaluate, load_profile, prepare
+from sandbox_export import SandboxUnavailable
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -20,6 +24,11 @@ MAX_BODY = 4096
 LOCK = threading.Lock()
 OPERATIONS = {"/api/fechar-pacote", "/api/corrigir-issue"}
 ISSUE = re.compile(r"^[1-9][0-9]{0,7}$")
+PROJECT_ID = re.compile(r"^[a-z][a-z0-9_-]{1,47}$")
+SHA = re.compile(r"^[0-9a-f]{40}$")
+PROJECTS_DIR = Path(os.environ.get("RUNNER_PROJECTS_DIR", "/app/projects"))
+WORKSPACES_DIR = Path(os.environ.get("RUNNER_WORKSPACES_DIR", "/data/factory-runner/workspaces"))
+PREPARATIONS_DIR = Path(os.environ.get("RUNNER_PREPARATIONS_DIR", "/data/factory-runner/preparations"))
 AUDIT_PATH = Path(os.environ.get("RUNNER_AUDIT_PATH", "/data/factory-runner/audit.jsonl"))
 
 def authenticated(header):
@@ -51,6 +60,81 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
         # Do not silently accept privileged actions if audit storage is unavailable.
         raise RuntimeError("Audit storage unavailable")
 
+def listed_projects():
+    """Only configured, validated project profiles; never auto-discover scripts."""
+    result = {}
+    if not PROJECTS_DIR.is_dir():
+        return result
+    for path in sorted(PROJECTS_DIR.glob("*.json")):
+        if path.is_symlink() or not PROJECT_ID.fullmatch(path.stem):
+            continue
+        try:
+            profile = load_profile(path)
+        except (PreflightError, OSError, ValueError, TypeError):
+            continue
+        if profile["id"] == path.stem:
+            result[profile["id"]] = {
+                "id": profile["id"],
+                "product": profile["product"],
+                "preflight": "supported",
+                "preparation": "local_only_no_publish",
+                "publication": "disabled",
+            }
+    return result
+
+
+def project_workspace(project_id):
+    """Resolve a pre-approved project and immutable workspace paths."""
+    if not isinstance(project_id, str) or not PROJECT_ID.fullmatch(project_id):
+        raise PreflightError("Invalid project")
+    path = PROJECTS_DIR / (project_id + ".json")
+    if path.is_symlink() or not path.is_file():
+        raise PreflightError("Project not configured")
+    profile = load_profile(path)
+    if profile["id"] != project_id:
+        raise PreflightError("Profile identity mismatch")
+    root = WORKSPACES_DIR.resolve()
+    workspace = root / project_id
+    if workspace.is_symlink() or not workspace.is_dir():
+        raise PreflightError("Project workspace not configured")
+    source = workspace / "source"
+    distribution = workspace / "distribution"
+    if (not source.is_dir() or not distribution.is_dir()
+            or source.is_symlink() or distribution.is_symlink()
+            or source.resolve() != source.absolute()
+            or distribution.resolve() != distribution.absolute()):
+        raise PreflightError("Workspace checkouts unavailable or unsafe")
+    return profile, source, distribution
+
+
+def preflight_project(project_id, expected_sha):
+    """Read-only preflight; never mutate the workspace or remote Git."""
+    if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
+        raise PreflightError("Invalid source SHA")
+    profile, source, distribution = project_workspace(project_id)
+    return evaluate(source, distribution, expected_sha, profile=profile)
+
+
+def prepare_project(project_id, expected_sha, operation_id):
+    """Export into an isolated local checkout. No Git push or release publication."""
+    if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
+        raise PreflightError("Invalid source SHA")
+    profile, source, distribution = project_workspace(project_id)
+    preflight = evaluate(source, distribution, expected_sha, profile=profile)
+    if not preflight["eligible_for_preparation"]:
+        return {"eligible": False, "errors": preflight["errors"]}
+    # Server generates destination: client cannot select arbitrary filesystem path.
+    destination = PREPARATIONS_DIR.absolute()
+    if destination.resolve() != destination or destination.is_symlink():
+        raise PreflightError("Unsafe preparations directory")
+    destination.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
+    prepared = prepare(source, distribution, preflight, output, profile=profile)
+    return {"eligible": True, "state": prepared["state"],
+            "changed_files": prepared["changed_files"],
+            "source_sha": expected_sha, "published": False}
+
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def respond(self, status, payload):
         data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -65,19 +149,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        if self.path not in ("/", "/api/status"):
+        if self.path not in ("/", "/api/status", "/api/projects"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
+        if self.path == "/api/projects":
+            return self.respond(200, {"projects": list(listed_projects().values())})
         return self.respond(200, {
             "service": "factory-runner",
-            "status": "restricted",
+            "status": "read_only_preflight",
+            "preflight": "available_with_preprovisioned_workspaces",
             "publication": "disabled",
             "autonomous_changes": "disabled"
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS:
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -93,6 +180,42 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
+        if self.path in ("/api/preflight", "/api/prepare"):
+            if set(body) != {"project", "expected_source_sha"}:
+                return self.respond(400, {"error": "invalid_payload"})
+            project = body["project"]
+            source_sha = body["expected_source_sha"]
+            if (not isinstance(project, str) or not PROJECT_ID.fullmatch(project)
+                    or not isinstance(source_sha, str) or not SHA.fullmatch(source_sha)):
+                return self.respond(400, {"error": "invalid_project_or_sha"})
+            if not LOCK.acquire(blocking=False):
+                return self.respond(409, {"error": "busy"})
+            operation_id = str(uuid.uuid4())
+            try:
+                action = self.path
+                record(action, None, "requested", operation_id)
+                try:
+                    if action == "/api/preflight":
+                        result = preflight_project(project, source_sha)
+                    else:
+                        result = prepare_project(project, source_sha, operation_id)
+                except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                    record(action, None, "blocked_workspace_or_git", operation_id)
+                    return self.respond(503, {"error": "workspace_or_export_unavailable",
+                                              "operation_id": operation_id})
+                if action == "/api/prepare" and not result["eligible"]:
+                    record(action, None, "blocked_policy", operation_id)
+                    return self.respond(409, {"error": "package_policy_blocked",
+                                              "operation_id": operation_id,
+                                              "details": result["errors"]})
+                record(action, None, "completed_preparation" if action == "/api/prepare"
+                       else "completed_read_only", operation_id)
+                return self.respond(200, {"operation_id": operation_id, "result": result})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
+            finally:
+                LOCK.release()
+
         issue = body.get("issue")
         if type(issue) is not int or not ISSUE.fullmatch(str(issue)):
             return self.respond(400, {"error": "invalid_issue"})
