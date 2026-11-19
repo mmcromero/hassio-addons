@@ -4,6 +4,7 @@ Este diretório guarda **perfis dos projetos atendidos**, não versões nem cód
 
 - `avisaqui.json`: primeira integração com o fechamento de RC do Avisaqui, usando a política e o exportador existentes no repositório `mmcromero/pager-virtual`.
 - Cada projeto futuro terá seu próprio perfil, após levantamento da política, do fluxo de builds e de seus destinos. O Runner não deve presumir que todos usam Home Assistant.
+- O campo `exporter_git_blob_sha` é obrigatório e contém o SHA Git do blob do exportador aprovado. Antes de executar o exportador, o Runner compara `HEAD:<exporter_path>` no snapshot fixado com esse SHA; uma divergência bloqueia a operação e exige revisão do perfil.
 - Campos `source_repo` e `distribution_repo` identificam repositórios; `source_ref`, `rc_ref`, `public_ref` selecionam as referências fixadas; `package_policy_path`, `package_json_path`, `manifest_path` e `provenance_path` descrevem o contrato de versão; `distribution_prefix` restringe o escopo na loja; `exporter_path` identifica o exportador próprio.
 - `allowed_shared_paths` lista exceções permitidas para exportação fora do prefixo. Deixar vazio se não houver nenhuma.
 - **Limitação v1:** o motor atual exige política JSON com `active_package`, metadados de versão JSON em arquivo escolhido e um manifesto de versão no formato `version:`. Projetos com outro modelo exigem um adaptador explícito e seus testes. Um JSON diferente sozinho não garante suporte universal.
