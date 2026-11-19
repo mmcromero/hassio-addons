@@ -1,6 +1,6 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "f677bde6bba306abca7c26d228d7b6b467e6a1f3",
+  "commit": "5e524037f8a6fd9504a23d56f466e989062c99bb",
   "version": "0.1.20-rc.8",
   "files": [
     {
@@ -221,12 +221,12 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "a9c62572c417ded7eea8228ac9aefa299a693b5a8f82126dee011604af4dffec"
+      "sha256": "381c6d1699f725c05177e2c7670dfb57c030322a7fac5df889b147b1d6dbad17"
     },
     {
       "path": "src/public/games/biblioteca.js",
       "source_path": "src/public/games/biblioteca.js",
-      "sha256": "91f30607b11d6d9a077ac86deac4b894c168decd460f7a84229a5317187b6a5f"
+      "sha256": "1ac4b69b7932781961a265bab533bf4b576d79ab67e725b68b0034af0cc3dbe4"
     },
     {
       "path": "src/public/games/catalogo-visual.js",
@@ -301,7 +301,7 @@
     {
       "path": "src/public/push-sw.js",
       "source_path": "src/public/push-sw.js",
-      "sha256": "50da1f63a6553b001b7181f1bbb053a0c033ea6012e9a5ea39f4f3431f3a7ce4"
+      "sha256": "ba4663a4c6533c8e73299ea74ef17a5c4dce9ebafbd0213072fa29658a0f980b"
     },
     {
       "path": "src/public/qrcode.min.js",

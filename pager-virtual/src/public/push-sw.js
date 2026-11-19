@@ -3,7 +3,7 @@ self.addEventListener('push', event => {
   try { data = event.data ? event.data.json() : {}; } catch {}
   event.waitUntil(self.registration.showNotification(data.title || 'Avisaqui', {
     body: data.body || 'Seu pedido foi atualizado.',
-    tag: data.tag || 'bipou-pedido',
+    tag: data.tag || 'avisaqui-pedido',
     icon: new URL('icon.svg', self.registration.scope).pathname,
     badge: new URL('icon.svg', self.registration.scope).pathname,
     data: { url: typeof data.url === 'string' && data.url.startsWith(new URL('cliente.html', self.registration.scope).pathname + '?') ?

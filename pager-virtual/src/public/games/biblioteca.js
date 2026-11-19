@@ -3,7 +3,7 @@ import { obterCatalogo } from './catalogo.js';
 import { ilustracao, etiquetas } from './catalogo-visual.js';
 import { newInstanceId, createEnvelope, validateEnvelope, createRateLimiter } from './protocolo-v1.js';
 
-export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}, etiquetaPedido = 'Pedido em preparo' } = {}) {
+export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}, etiquetaPedido = 'Pedido em preparo', jogoInicial = null } = {}) {
   if (!(container instanceof HTMLElement)) throw new TypeError('Container inválido');
   let ativa = true, geracao = 0, sairPong = null;
   const scrollAnterior = window.scrollY;
@@ -301,7 +301,15 @@ export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}
       }
     }
   }
-  const pronto = mostrarCatalogo();
+  // A vitrine pode entrar diretamente na escolha de jogadores do jogo selecionado.
+  // O catálogo continua disponível pelo botão Voltar aos jogos.
+  const pronto = (jogoInicial === 'pong' || jogoInicial === 'jogo-da-velha')
+    ? obterCatalogo().then(jogos => {
+        if (!ativa) return;
+        const jogo = jogos.find(item => item.id === jogoInicial && item.status !== 'construction');
+        return jogo ? mostrarJogadores(jogo) : mostrarCatalogo('Jogo indisponível. Escolha outro.');
+      }).catch(() => mostrarCatalogo('Não foi possível abrir o jogo. Escolha outro.'))
+    : mostrarCatalogo();
   function encerrar() {
     if (!ativa) return;
     ativa = false;
