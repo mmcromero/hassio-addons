@@ -32,7 +32,7 @@ A disponibilidade real do volume e permissões dependem da instalação física.
 ## Testes locais (sem GitHub Actions)
 
 ```sh
-python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_security.py' -v
+python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v
 python3 -m py_compile factory-runner/server.py factory-runner/rc_fastlane.py factory-runner/autonomous_dev.py
 sh -n factory-runner/run.sh
 python3 .github/scripts/validate-addon-registry.py --addon factory-runner
@@ -54,4 +54,4 @@ após verificar os recursos disponíveis, sem fazer push nem instalar.
   no Raspberry Pi, rotação coordenada dos segredos antigos e restauração
   funcional em ambiente isolado.
 
-**Sem autorização de deploy, merge ou Actions nesta entrega.**
+**Sem autorização de deploy, merge ou Actions nesta entrega.** Os arquivos de testes estão na própria pasta `factory-runner/tests/` para execução local, não incluídos na imagem do Dockerfile.
