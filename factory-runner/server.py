@@ -19,7 +19,7 @@ from pathlib import Path
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare
 from sandbox_export import SandboxUnavailable
-from declarative_export import DeclarativeExportError, prepare_declarative
+from declarative_export import DeclarativeExportError, prepare_declarative, expand_trusted_rules
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -145,6 +145,14 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
         return {"eligible": False, "errors": report["errors"]}
     profile, source, _distribution = project_workspace(project_id)
     mapping = profile.get("declarative_mapping")
+    if "declarative_rules" in profile:
+        rules = profile["declarative_rules"]
+        mapping = expand_trusted_rules(
+            source, expected_sha,
+            destination_prefix=profile["distribution_prefix"],
+            required=rules["required"], optional=rules["optional"],
+            include_prefixes=rules["include_prefixes"],
+            include_suffixes=rules["include_suffixes"])
     if not isinstance(mapping, dict) or not mapping:
         raise DeclarativeExportError("approved_declarative_mapping_unavailable")
     destination = PREPARATIONS_DIR.absolute()
