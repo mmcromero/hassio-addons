@@ -1,29 +1,19 @@
-name: "Fábrica de Software Autônoma"
+name: "Fábrica de Software — Factory Runner"
 version: "0.1.0-rc.1"
 slug: fabrica_software
-description: "Runner de segurança em modo restrito; publicacao e correcao automatica desativadas"
+description: "Candidato restrito para Home Assistant; sem correção e publicação automática"
+url: "https://github.com/mmcromero/hassio-addons"
 arch:
   - aarch64
   - amd64
 startup: application
 boot: manual
+stage: experimental
 ports:
   9876/tcp: null
 ports_description:
-  9876/tcp: "Porta HTTP do Runner (9876)"
-map:
-  - data:rw
+  9876/tcp: "API restrita; desabilitada por padrão"
 options:
-  gemini_api_key: ""
-  github_token: ""
-  evolution_api_url: "http://homeassistant.local:8080"
-  evolution_api_key: ""
-  whatsapp_reply_to: ""
   runner_auth_token: ""
 schema:
-  gemini_api_key: "password?"
-  github_token: "password?"
-  evolution_api_url: "str?"
-  evolution_api_key: "str?"
-  whatsapp_reply_to: "str?"
-  runner_auth_token: "password"
+  runner_auth_token: password
