@@ -189,6 +189,32 @@ class IntegrationTests(unittest.TestCase):
         self.assertNotIn('synthetic-secret', self.audit.read_text())
         self.assertIn('completed_preparation', self.audit.read_text())
 
+    def test_declarative_rule_selection_via_actual_http(self):
+        (self.source / "src" / "nested").mkdir(parents=True)
+        (self.source / "src" / "nested" / "module.txt").write_text("synthetic")
+        self.git(self.source, 'add', '.')
+        self.git(self.source, 'commit', '-qm', 'new synthetic source tree')
+        new_sha = self.git(self.source, 'rev-parse', 'HEAD')
+        for ref in ('source_ref', 'rc_ref'):
+            self.git(self.source, 'update-ref', self.profile[ref], new_sha)
+        rules = {
+            "required": {"demo/config.yaml": "config.yaml"},
+            "optional": {},
+            "include_prefixes": ["src/"],
+            "include_suffixes": {}
+        }
+        profile = dict(self.profile, declarative_rules=rules)
+        (self.projects / 'laboratorio.json').write_text(json.dumps(profile))
+        code, data = self.request(
+            'POST', '/api/prepare-declarative',
+            payload={"project": "laboratorio", "expected_source_sha": new_sha})
+        self.assertEqual(code, 200, data)
+        self.assertEqual(data['result']['files'], 2)
+        output = next(self.preparations.iterdir())
+        self.assertEqual((output / 'demo/src/nested/module.txt').read_text(),
+                         'synthetic')
+        self.assertFalse(data['result']['published'])
+
     def test_missing_real_checkouts_return_503(self):
         with patch.object(server,'WORKSPACES_DIR',self.root/'missing'):
             for path in ('/api/preflight','/api/prepare'):
