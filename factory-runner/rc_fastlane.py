@@ -189,7 +189,7 @@ def evaluate(source, distribution, expected_sha, *, profile):
         "warnings": warnings,
     }
 
-def run_checked(args, *, cwd=None, timeout=240, env=None):
+def run_checked(args, *, cwd=None, timeout=240, env=None, preserve_output=False):
     """No shell, bounded execution and no output of secret-bearing command lines."""
     result = subprocess.run(
         args, cwd=cwd, env=env, capture_output=True, text=True,
@@ -200,7 +200,7 @@ def run_checked(args, *, cwd=None, timeout=240, env=None):
         # display credentials or private configuration on failure.
         raise PreflightError("Preparation step failed: " + str(args[0]) + " (exit " +
                              str(result.returncode) + ")")
-    return result.stdout.strip()
+    return result.stdout if preserve_output else result.stdout.strip()
 
 def prepare(source, distribution, report, output, *, profile):
     """Create an isolated distribution candidate; never commit or push.
@@ -255,8 +255,9 @@ def prepare(source, distribution, report, output, *, profile):
             run_checked(args, cwd=source_snapshot, env=safe_env, timeout=240)
             run_checked(args + ["--verify"], cwd=source_snapshot,
                         env=safe_env, timeout=240)
-            status = run_checked(["git", "-C", str(output), "status", "--porcelain",
-                                  "--untracked-files=all", "-z"])
+            status = run_checked(["git", "-C", str(output), "status", "--porcelain=v1",
+                                  "--no-renames", "--untracked-files=all", "-z"],
+                                 preserve_output=True)
             # --porcelain -z is a NUL-delimited sequence; no shell interpretation.
             paths = []
             entries = status.split("\0")
