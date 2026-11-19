@@ -66,6 +66,7 @@ test('servidor real isola restaurantes e perfis e revoga terminal', { timeout: 3
       const restaurant = await call('POST', '/api/admin/restaurantes', { nome: slug, slug }, master);
       assert.equal(restaurant.status, 201);
       restaurants.push(restaurant.body.id);
+      assert.equal((await call('POST','/api/admin/contexto/'+restaurant.body.id,{},master)).status,200);
       const user = await call('POST', '/api/admin/restaurantes/' + restaurant.body.id + '/gerentes', {
         nome: manager, login: manager, senha: 'senha-gerente-forte-123'
       }, master);

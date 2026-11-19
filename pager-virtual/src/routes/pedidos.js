@@ -229,8 +229,13 @@ export async function pedidosRoutes(fastify, options) {
       const url = generateSaveUrl(pedido);
       return { url };
     } catch (err) {
-      fastify.log.warn({ err }, 'Erro ao gerar URL da Carteira do Google');
-      return reply.code(500).send({ error: 'Falha ao gerar link da carteira' });
+      // Nunca serializar stack, credenciais ou dados do passe ao cliente.
+      if (err?.message === 'Chave de serviço da Carteira do Google não configurada.') {
+        fastify.log.warn('Google Wallet não configurado nesta instalação');
+        return reply.code(503).send({ error: 'Google Wallet indisponível', code: 'WALLET_NOT_CONFIGURED' });
+      }
+      fastify.log.warn('Não foi possível gerar link da Carteira do Google');
+      return reply.code(503).send({ error: 'Google Wallet temporariamente indisponível', code: 'WALLET_UNAVAILABLE' });
     }
   });
 

@@ -5,6 +5,24 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.8] — 18/11/2026 — preparacao pelo Factory Runner (pendente de publicacao)
+
+- Pacote AVISAQUI-PACOTE-006 aberto em https://github.com/mmcromero/pager-virtual/issues/42.
+- Snapshot integral de desenvolvimento incluindo atualizacoes de gerentes, telas, jogos e testes do codigo versionado.
+- Versoes de package.json, package-lock.json e config.yaml alinhadas.
+- RC privada e distribuicao exigem proveniencia por SHA, testes e verificacao de hashes.
+- **Nao comprova teste Node, build ARM64 nem homologacao no Raspberry. Publicacao RC8 ainda pendente.**
+
+
+## [0.1.20-rc.7] — 18/11/2026 — pacote completo com correção Google Wallet
+
+- Fonte privada `desenvolvimento` congelada integralmente, incluindo mudanças posteriores à RC6, sem selecionar arquivos.
+- Android: integração Google Wallet corrigida para credenciais por ambiente, caminho explícito ou volume persistente /data, resposta controlada da API e aviso visível se indisponível; testes focados adicionados.
+- Preservadas alterações de telas, PWA e demais módulos presentes no SHA congelado; versão consistente em config, pacote e lock.
+- A emissão real de passe depende de credencial externa válida, configurada de modo seguro; testes Google/Android e homologação no Raspberry não estão comprovados.
+- Nenhum código-fonte não homologado promovido à main privada; distribuição de teste na main pública de add-ons conforme política atual.
+
+
 
 ## [0.1.20-rc.6] — 18/11/2026 — fechamento pela esteira oficial
 

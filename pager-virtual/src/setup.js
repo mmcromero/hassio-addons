@@ -12,7 +12,7 @@ export function needsSetup() {
 export async function setupRoutes(app) {
   if (needsSetup()) {
     // O código só aparece no log privado do add-on e nunca na API nem no código-fonte.
-    app.log.warn('BIPOU PRIMEIRO ACESSO: código temporário para configurar Master Admin (válido por 30 min): ' + setupCode);
+    app.log.warn('AVISAQUI PRIMEIRO ACESSO: código temporário para configurar Master Admin (válido por 30 min): ' + setupCode);
   }
 
   app.get('/api/setup/status', async () => ({ needs_setup: needsSetup() }));

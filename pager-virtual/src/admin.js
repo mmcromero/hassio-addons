@@ -93,15 +93,32 @@ export async function adminRoutes(app) {
 
   // O Master cria SOMENTE o acesso inicial do gerente. A operação fica com o gerente.
   app.post('/api/admin/restaurantes/:restauranteId/gerentes', async (request, reply) => {
-    if (!mustBe(request, reply, ['master'])) return;
+    const master = mustBe(request, reply, ['master']);
+    if (!master) return;
+    if (master.restaurante_id !== request.params.restauranteId) return reply.code(403).send({ error: 'Selecione o restaurante solicitado' });
     const restaurante = db.prepare('SELECT id FROM restaurantes WHERE id = ? AND ativo = 1').get(request.params.restauranteId);
     if (!restaurante) return reply.code(404).send({ error: 'Restaurante não encontrado' });
     const body = request.body || {};
     if (invalidAccount(body)) return reply.code(400).send({ error: 'Nome, login e senha de pelo menos 12 caracteres são obrigatórios' });
+    const now=Date.now(), id=randomUUID();
+    const hash=await passwordHash(body.senha);
     try {
-      return reply.code(201).send(await createAccount({
-        restauranteId: restaurante.id, nome: body.nome, login: body.login, senha: body.senha, papel: 'gerente'
-      }));
+      const created=db.transaction(()=>{
+        // O contexto é revalidado antes de inserir conta, garantindo isolamento da sessão.
+        const actor=requireUser(request,reply);
+        if(!actor||actor.id!==master.id||actor.papel!=='master'||actor.restaurante_id!==restaurante.id)
+          return null;
+        db.prepare(`INSERT INTO usuarios
+          (id,restaurante_id,nome,login,senha_hash,papel,criado_em,atualizado_em)
+          VALUES (?,?,?,?,?,'gerente',?,?)`)
+          .run(id,restaurante.id,body.nome.trim(),body.login.trim().toLowerCase(),hash,now,now);
+        db.prepare(`INSERT INTO auditoria_reset_gerente
+          (id,ator_id,gerente_id,restaurante_id,acao,resultado,criado_em) VALUES (?,?,?,?,?,?,?)`)
+          .run(randomUUID(),master.id,id,restaurante.id,'criar_gerente','sucesso',now);
+        return {id,nome:body.nome.trim(),login:body.login.trim().toLowerCase(),papel:'gerente',restaurante_id:restaurante.id};
+      }).immediate();
+      if(!created)return reply.code(403).send({error:'Sessão ou contexto inválido'});
+      return reply.code(201).send(created);
     } catch (e) { return conflict(reply, e); }
   });
 

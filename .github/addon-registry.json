@@ -30,6 +30,17 @@
       "architectures": [
         "aarch64"
       ]
+    },
+    {
+      "id": "factory-runner",
+      "directory": "factory-runner",
+      "slug": "fabrica_software",
+      "architectures": [
+        "aarch64",
+        "amd64"
+      ],
+      "arm64_build_job": "build-factory-runner-arm64",
+      "source_repo": "https://github.com/mmcromero/orquestrador-projetos-base"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
-  "name": "Bipou — Acompanhamento de pedido",
-  "short_name": "Bipou",
+  "name": "Avisaqui — Acompanhamento de pedido",
+  "short_name": "Avisaqui",
   "id": "./cliente.html",
   "start_url": "./cliente.html",
   "scope": "./",

@@ -1,7 +1,7 @@
 {
   "repository": "mmcromero/pager-virtual",
-  "commit": "4307a3f1a16cfa41871b6b8fadcb3129259010b0",
-  "version": "0.1.20-rc.6",
+  "commit": "f677bde6bba306abca7c26d228d7b6b467e6a1f3",
+  "version": "0.1.20-rc.8",
   "files": [
     {
       "path": ".dockerignore",
@@ -21,7 +21,7 @@
     {
       "path": ".governance/package-policy.json",
       "source_path": "distribution/governance/package-policy.json",
-      "sha256": "12b066311307c3c70af4d122bc7c7e52426768164409ecb366731b3aa2d15c9f"
+      "sha256": "de881b329d742e2dd6ff992ce9023935f8a143f48ec62695d6c8239edfc82a97"
     },
     {
       "path": "AGENTS.md",
@@ -31,7 +31,7 @@
     {
       "path": "CHANGELOG.md",
       "source_path": "distribution/CHANGELOG.md",
-      "sha256": "de1a504b8b4e01754d1f81427b7ac9112c444b13d9f934c1c9a1baed501ff83b"
+      "sha256": "d5b1bdb221df47bc3fe1d7f42f2c067a2b006cef5a277f502621d6efcd0173f5"
     },
     {
       "path": "Dockerfile",
@@ -46,7 +46,7 @@
     {
       "path": "config.yaml",
       "source_path": "config.yaml",
-      "sha256": "542a49b5817e49a988c577d45c09019bd44259a2687e76b4d2018292b458ef5c"
+      "sha256": "a28aa195df456c5f97c02217325cfa09b28d3ba0be425a0718bae48249ac3a99"
     },
     {
       "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
@@ -91,12 +91,12 @@
     {
       "path": "package-lock.json",
       "source_path": "package-lock.json",
-      "sha256": "83030d3bfd156793bf1a2a89f94bcea150c37522d37a1d21c206eb157246403b"
+      "sha256": "78db44346c68ed70d52d6bea21fdc9aa8c1f8746de8861e26c9e868fd3a4bbcb"
     },
     {
       "path": "package.json",
       "source_path": "package.json",
-      "sha256": "bd0910a503effd95a09d69f0437ec06a105c6929a7ffa407227b7a8ed9969907"
+      "sha256": "1852de3e624d5227dbb3201d9f07478ff8384a16b2852da5210f65da47848641"
     },
     {
       "path": "run.sh",
@@ -131,12 +131,12 @@
     {
       "path": "src/admin-gerentes.js",
       "source_path": "src/admin-gerentes.js",
-      "sha256": "62ad4046fee113f7b82b5c477b7049578b22f99c14c57115df48b625c3c555c4"
+      "sha256": "d7396b67d22ee0ec47eda8eff20e6faad8907788832e0940249b9d1555ac1f63"
     },
     {
       "path": "src/admin.js",
       "source_path": "src/admin.js",
-      "sha256": "2064b6d3823e7771af25220ca58dcccfef7a3423feb59da9df691b01848837cc"
+      "sha256": "d0c4193463f51aa2cab7b834acbeeff7f718b12c06da96703257666d8a16da80"
     },
     {
       "path": "src/auth.js",
@@ -206,7 +206,7 @@
     {
       "path": "src/public/admin.html",
       "source_path": "src/public/admin.html",
-      "sha256": "c3a6162e09810804004ad95f70b20f88481b30621dc3370db30d7f2500443468"
+      "sha256": "1db62df890f19df72b03987d2f5dc47314e93463dc88ea3ba110fadc7d0bea4c"
     },
     {
       "path": "src/public/avisaqui-marca-transparente.svg",
@@ -221,12 +221,12 @@
     {
       "path": "src/public/cliente.html",
       "source_path": "src/public/cliente.html",
-      "sha256": "d1271362cdaebd2981ffb6be19eb9940f2ed1403ebfcbbc663032f959ff9e76a"
+      "sha256": "a9c62572c417ded7eea8228ac9aefa299a693b5a8f82126dee011604af4dffec"
     },
     {
       "path": "src/public/games/biblioteca.js",
       "source_path": "src/public/games/biblioteca.js",
-      "sha256": "34cdfce7236c4e0419000161cb5cfff8526005c11ef1cc53a0227f1e6b8b7d85"
+      "sha256": "91f30607b11d6d9a077ac86deac4b894c168decd460f7a84229a5317187b6a5f"
     },
     {
       "path": "src/public/games/catalogo-visual.js",
@@ -271,12 +271,12 @@
     {
       "path": "src/public/impressao.html",
       "source_path": "src/public/impressao.html",
-      "sha256": "9fdc74d1d5ef3e10f0998ffcaad3e27980c09b62134ac7622285b141923e4e27"
+      "sha256": "b77eeb2e6f4069a55d381279c0e5405203f17154a960695a2f112db182aeb2b1"
     },
     {
       "path": "src/public/kds.html",
       "source_path": "src/public/kds.html",
-      "sha256": "2f4c8089dc02ad83c8f8645a329027df93861e866b51e3e42a4e38f5f4bf3fb1"
+      "sha256": "dd9a46140033bc09d105a61bf6c1c125c138c8148fb9577838d183ac3f42f681"
     },
     {
       "path": "src/public/landing.html",
@@ -291,7 +291,7 @@
     {
       "path": "src/public/manifest.webmanifest",
       "source_path": "src/public/manifest.webmanifest",
-      "sha256": "87d90d39d158bab62dc804ed82b9e445133e4a3f0343efdc4b51296bdfae1574"
+      "sha256": "064bceb91b18f985b801d70781cafefdba5fb6d22c65e0ebd884ee37228120d3"
     },
     {
       "path": "src/public/pong.js",
@@ -301,7 +301,7 @@
     {
       "path": "src/public/push-sw.js",
       "source_path": "src/public/push-sw.js",
-      "sha256": "0cec848d32785324040102f2d3b45a3c31173a428288e61471a888cfa07b76be"
+      "sha256": "50da1f63a6553b001b7181f1bbb053a0c033ea6012e9a5ea39f4f3431f3a7ce4"
     },
     {
       "path": "src/public/qrcode.min.js",
@@ -311,12 +311,12 @@
     {
       "path": "src/public/setup.html",
       "source_path": "src/public/setup.html",
-      "sha256": "dc05cf63a38c8571a1513a3b01f338a2789af6a6541e87b306bfeee4e206ee03"
+      "sha256": "b02f3a9bf208f7099b6b56cec3ec5f93d68289659ed8cb737b42af6acc0a1eb6"
     },
     {
       "path": "src/push.js",
       "source_path": "src/push.js",
-      "sha256": "eaf327a1d1252f56cbb462c5d18797df6cc769cff52d7c9ef3e82d115b25f6fb"
+      "sha256": "5b807a7fe819e00e2f3b983d79d8936ee2e8945f2d093e100b97b712c1dfc85a"
     },
     {
       "path": "src/routes/integracao-impressao.js",
@@ -326,7 +326,7 @@
     {
       "path": "src/routes/pedidos.js",
       "source_path": "src/routes/pedidos.js",
-      "sha256": "6a32654d81bf85b260d88f9f26476f1139d1af539a51b50a7853b0fcf045bd5c"
+      "sha256": "d5d8c742a62c13f272e3d38786e9004c8a151f32ff14a6783a1ca006d0b892fc"
     },
     {
       "path": "src/runtime-config.js",
@@ -341,7 +341,7 @@
     {
       "path": "src/setup.js",
       "source_path": "src/setup.js",
-      "sha256": "2b455f0530e563a8bfba6886a31768373a9465879b4b45d6fb25d4e5fcc880b5"
+      "sha256": "db120ff321db9ccb797897f02fd4c56914227ad823d932362a7164ad3200fc1b"
     },
     {
       "path": "src/sse.js",
@@ -351,12 +351,17 @@
     {
       "path": "src/wallet.js",
       "source_path": "src/wallet.js",
-      "sha256": "b3c61ea330bd81eafd9357ffc496fa6b8377dfb224dc11f5fdaa11fa1c7278f5"
+      "sha256": "c916a31e3c51ad305b59d3f3aece02f443d7edd15abe710ddacb487585efc195"
     },
     {
       "path": "src/windows-download.js",
       "source_path": "src/windows-download.js",
       "sha256": "4a1f7bbee767107db2ac714498acb2f7b0eb0365684dee3d3f61e08d466bd2bb"
+    },
+    {
+      "path": "tests/admin-gerentes-041.test.js",
+      "source_path": "tests/admin-gerentes-041.test.js",
+      "sha256": "a01f1cf531275dd08de369357daebeda475fdb313e6597bcbd5bc200f28b9b2c"
     },
     {
       "path": "tests/admin-gerentes-seguranca-034.test.js",
@@ -416,7 +421,7 @@
     {
       "path": "tests/games-fluxo-aprovado.test.js",
       "source_path": "tests/games-fluxo-aprovado.test.js",
-      "sha256": "6237f2558ad95f15307d8f378963b370cf4552dea5b638c4d2fa6305bcd7a1fd"
+      "sha256": "52efb20e50307c7aa2ded13779899525ad273a7d5bd2d6f4aec09478c766bd17"
     },
     {
       "path": "tests/https-prefix-auth.test.js",
@@ -579,6 +584,11 @@
       "sha256": "45f66f5d8b865781cad9fbae8599c1977e5266d497af7ca2558413ec452bb5e9"
     },
     {
+      "path": "tests/pwa-brand-identity.test.js",
+      "source_path": "tests/pwa-brand-identity.test.js",
+      "sha256": "2fa5bddb5ee4a1c76b33e0ad73b4eae9fe17205fcceae00df48aecadf4d55dc3"
+    },
+    {
       "path": "tests/restaurante-logo-api.test.js",
       "source_path": "tests/restaurante-logo-api.test.js",
       "sha256": "cf1236ca727477878bd256be872e049d5059e23184ac9067f5b07d3943b026ad"
@@ -591,7 +601,7 @@
     {
       "path": "tests/server-roles.test.js",
       "source_path": "tests/server-roles.test.js",
-      "sha256": "09197c3380a5cb09bb73a89b08570e4c24738a4be22c6dee66e0a61e82b4d986"
+      "sha256": "d4dfc23625c3dcbcb872e0eca4501faf6bd1b4c39cd3dd35cdcef900f28e470d"
     },
     {
       "path": "tests/server-smoke.test.js",
@@ -636,7 +646,7 @@
     {
       "path": "tests/wallet.test.js",
       "source_path": "tests/wallet.test.js",
-      "sha256": "f746fe9b7d02f072ccddd5bf4c7081a0071581839b71abeab539c9b290302ff2"
+      "sha256": "5866748b6d0c0423b6259e288772b337d32937a958d7551664c51da83a690f2f"
     },
     {
       "path": "tests/webui-launcher.test.js",

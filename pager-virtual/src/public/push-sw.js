@@ -1,7 +1,7 @@
 self.addEventListener('push', event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch {}
-  event.waitUntil(self.registration.showNotification(data.title || 'Bipou', {
+  event.waitUntil(self.registration.showNotification(data.title || 'Avisaqui', {
     body: data.body || 'Seu pedido foi atualizado.',
     tag: data.tag || 'bipou-pedido',
     icon: new URL('icon.svg', self.registration.scope).pathname,

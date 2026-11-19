@@ -59,7 +59,7 @@
   .restaurant-logo-fallback { width:48px;height:48px;border-radius:10px;background:#23466c;color:white;display:grid;place-items:center;font-weight:750;flex:0 0 48px }
   #restaurant-identity:not([hidden]) {display:flex!important;align-items:center;gap:10px}
   #master-area #restaurants-list .line { align-items:center;flex-wrap:nowrap;min-width:0;gap:12px }
-  #master-area #restaurants-list .line > span { flex:1;min-width:0;overflow-wrap:anywhere }
+  #master-area #restaurants-list .line > span:not(.restaurant-logo-fallback) { flex:1;min-width:0;overflow-wrap:anywhere }
   #master-area #restaurants-list button { flex:0 0 auto }
   #master-area .admin-toolbar { gap:10px }
   #master-area .admin-toolbar h2 { flex:1 1 100%;margin:0 }
@@ -84,12 +84,275 @@
     #master-area #restaurants-list .line { flex-wrap:wrap }
     #master-area #restaurants-list button { width:100% }
   }
+
+  /* AVISAQUI — UX Master Admin: layout horizontal aprovado na referência visual */
+  :root { --ux-border:#324967; --ux-deep:#090f1d; --ux-blue:#1670f8; }
+  body { padding:0; background:radial-gradient(ellipse 64% 35% at 73% -9%,#1b3159 0%,transparent 75%),linear-gradient(160deg,#08101d,#090e19 65%,#0a1120);min-height:100dvh; }
+  main {max-width:none;margin:0 auto;width:100%}
+  .admin-session-header {margin:0;border:0;padding:19px clamp(18px,3vw,52px);border-bottom:1px solid var(--ux-border);background:linear-gradient(100deg,#0b1528,#0c1b34 72%,#0b1528);display:flex;flex-direction:row;align-items:center;min-height:118px;gap:22px;flex-wrap:wrap}
+  .admin-session-top {display:contents}
+  .admin-session-top h1 {padding:0;margin:0;line-height:0}
+  .brand-logo {width:clamp(225px,24vw,340px);max-width:100%;height:auto;object-fit:contain}
+  #identity {margin:0;padding:0 0 0 25px;border-left:1px solid #56718b;flex:1 1 260px;font-size:1rem;color:#d8e3f4;line-height:1.5;order:1}
+  #logout {background:linear-gradient(140deg,#263b59,#1b2a40);border:1px solid #425979;padding:10px 23px;box-shadow:0 5px 16px #0003;order:3}
+  #restaurant-identity:not([hidden]) {flex:1 1 100%}
+  #master-area {display:block !important}
+  #master-area[hidden] {display:none !important}
+  #master-area .admin-nav {display:flex;flex-direction:row;position:static;top:auto;margin:0;padding:10px clamp(18px,3vw,52px);gap:15px;min-height:77px;align-items:center;border-bottom:1px solid var(--ux-border);background:linear-gradient(180deg,#0d192cbb,#0a1321dd);overflow-x:auto}
+  #master-area .admin-tab {flex:0 0 auto;min-width:0;min-height:49px;font-size:1rem;font-weight:630;white-space:nowrap;border-radius:11px;background:transparent;color:#d7e2f2;border:1px solid transparent;box-shadow:none;padding:10px 19px}
+  #master-area .admin-tab:hover {background:#1a2b48;color:white}
+  #master-area .admin-tab[aria-current="page"] {background:linear-gradient(180deg,#428cfb,#1265f2);color:#fff;border-color:#508ff5;box-shadow:0 6px 16px #075de333}
+  #master-area .admin-tab[data-admin-tab="restaurants"]::before {content:"♜";font-size:1.25rem;margin-right:12px;vertical-align:-1px}
+  #master-area .admin-tab[data-admin-tab="interests"]::before {content:"♙";font-size:1.25rem;margin-right:12px;vertical-align:-1px}
+  #master-area .admin-tab[data-admin-tab="settings"]::before {content:"⚙";font-size:1.25rem;margin-right:12px;vertical-align:-1px}
+  #master-area .admin-panels {width:min(100%,1500px);margin:0 auto;padding:38px clamp(18px,3vw,52px) 80px;min-width:0}
+  #master-area .admin-toolbar {display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-rows:auto auto;align-items:center;column-gap:12px;row-gap:5px;margin-bottom:32px}
+  #master-area .admin-toolbar h2 {grid-column:1;grid-row:1;font-weight:800;font-size:clamp(1.8rem,3vw,2.6rem);letter-spacing:-.04em;line-height:1.1;margin:0 0 2px}
+  #master-area .admin-toolbar h2::before {content:"▤";font-size:.75em;margin-right:14px;color:#b9d3ff;font-weight:500}
+  #master-area .admin-toolbar .admin-description {grid-column:1;grid-row:2;margin:0;color:#9eafc9;font-size:.92rem}
+  #master-area .admin-toolbar button {grid-row:1 / 3;min-height:48px;border-radius:11px;padding:12px 19px;font-size:.96rem;font-weight:700;box-shadow:0 8px 20px #050c192f}
+  #master-area .admin-toolbar button.secondary {grid-column:3;background:linear-gradient(135deg,#30425e,#26364e);border:1px solid #50647f}
+  #master-area .admin-toolbar button:not(.secondary) {grid-column:2;background:linear-gradient(180deg,#3c8bfc,#0b63ef);border:1px solid #5f9efc}
+  #master-area .master-stats {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:0 0 36px}
+  #master-area .master-stat {display:flex;justify-content:center;flex-direction:column;min-height:135px;padding:22px 28px 22px 104px;border-radius:17px;border:1px solid #2264aa;background:radial-gradient(ellipse at 100% 110%,#194a8d 0%,transparent 56%),linear-gradient(120deg,#0d213b,#112039 70%);box-shadow:0 14px 28px #0002;position:relative}
+  #master-area .master-stat:nth-child(2) {border-color:#6954bd;background:radial-gradient(ellipse at 100% 110%,#392576 0%,transparent 58%),linear-gradient(120deg,#1b1d43,#161c39)}
+  #master-area .master-stat::before {content:"▣";position:absolute;left:24px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:62px;height:62px;border-radius:15px;background:linear-gradient(145deg,#1853a7,#16345d);border:1px solid #3972c2;color:#e0edff;font-size:2rem}
+  #master-area .master-stat:nth-child(2)::before {content:"♧";background:linear-gradient(145deg,#4f3b9e,#29244f);border-color:#6553b2}
+  #master-area .master-stat strong {font-size:2.35rem;font-weight:850;line-height:1.05;color:#fff}
+  #master-area .master-stat span {font-size:1rem;color:#c8d8ed;margin-top:4px}
+  #master-area .admin-panel > .card {padding:24px;border-radius:18px;background:linear-gradient(145deg,#111f35,#101b30);border:1px solid #3b5477;box-shadow:0 18px 36px #03070e42}
+  #master-area .admin-panel > .card h2 {font-size:1.35rem;letter-spacing:-.02em;font-weight:800;margin:3px 0 23px}
+  #master-area .admin-panel > .card h2::before {content:"▤";color:#b3d2ff;margin-right:13px}
+  #master-area #restaurants-list {gap:12px}
+  #master-area #restaurants-list .line {display:flex;align-items:center;gap:12px;padding:14px 18px;min-height:86px;flex-wrap:wrap;border:1px solid #344e70;border-radius:14px;background:linear-gradient(135deg,#0b1628,#101b2f)}
+  #master-area #restaurants-list .line > span:not(.restaurant-logo-fallback) {font-weight:700;min-width:190px;flex:1 1 240px}
+  #master-area #restaurants-list .restaurant-logo,#master-area #restaurants-list .restaurant-logo-fallback {width:58px;height:58px;flex-basis:58px;border-radius:12px}
+  #master-area #restaurants-list button {min-height:44px;padding:10px 14px;border-radius:10px;font-weight:650;font-size:.88rem;white-space:nowrap;box-shadow:0 4px 12px #0003}
+  #master-area #restaurants-list button.secondary {background:linear-gradient(180deg,#344660,#29394e);border:1px solid #4a6080}
+  #master-area #restaurants-list button:not(.secondary) {background:linear-gradient(180deg,#3989fb,#0965ed)}
+  button,a.action {transition:background .18s ease,border-color .18s ease,transform .15s ease,box-shadow .18s ease}
+  button:hover:not(:disabled),a.action:hover {filter:brightness(1.12);transform:translateY(-1px)}
+  button:active:not(:disabled) {transform:translateY(0)}
+  #manager-area,.admin-dialog {color:#f1f5f9}
+  @media (max-width:800px) {
+    .admin-session-header {min-height:100px;padding:16px 18px;gap:10px}
+    .brand-logo {width:min(280px,58vw)}
+    #identity {flex:1 1 100%;border-left:0;padding:0;font-size:.86rem;order:2}
+    #logout {order:1;padding:8px 15px}
+    #master-area .admin-nav {padding:10px 14px;gap:5px}
+    #master-area .admin-tab {font-size:.85rem;padding:9px 12px}
+    #master-area .admin-panels {padding:24px 14px 60px}
+    #master-area .master-stats {gap:10px;margin-bottom:22px}
+    #master-area .master-stat {min-height:105px;padding:16px 10px 16px 63px}
+    #master-area .master-stat::before {width:38px;height:38px;left:12px;font-size:1.3rem}
+    #master-area .master-stat strong {font-size:1.85rem}
+    #master-area .master-stat span {font-size:.75rem}
+    #master-area .admin-panel > .card {padding:15px}
+    #master-area #restaurants-list .line {gap:10px;padding:12px}
+    #master-area #restaurants-list .line > span:not(.restaurant-logo-fallback) {flex:1 1 calc(100% - 82px)}
+    #master-area #restaurants-list button {flex:1 1 auto;white-space:normal}
+  }
+  @media (max-width:430px) {
+    #master-area .admin-tab {padding:9px 10px;font-size:.76rem}
+    #master-area .admin-tab::before {display:none}
+    #master-area .master-stats {grid-template-columns:1fr}
+    #master-area .admin-toolbar {grid-template-columns:1fr 1fr}
+    #master-area .admin-toolbar h2,#master-area .admin-toolbar .admin-description {grid-column:1/-1;grid-row:auto}
+    #master-area .admin-toolbar button {grid-row:auto;grid-column:auto!important;width:100%}
+  }
+
+
+  /* UX — Correção de layout com base em capturas reais desktop/mobile. */
+  .admin-session-header {
+    display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    grid-template-rows:auto;align-items:center;column-gap:28px;row-gap:12px;
+    min-height:110px;padding:15px clamp(18px,3vw,52px);
+  }
+  .admin-session-top {display:contents}
+  .admin-session-top h1 {grid-column:1;grid-row:1;align-self:center}
+  .brand-logo {display:block;width:clamp(240px,22vw,320px);height:auto}
+  #identity {grid-column:2;grid-row:1;min-width:0;order:unset;margin:0;
+    padding:0 0 0 24px;border-left:1px solid #56718b;font-size:.97rem}
+  #logout {grid-column:3;grid-row:1;order:unset;justify-self:end}
+  #restaurant-identity:not([hidden]) {grid-column:1/-1;grid-row:2;margin:0!important;width:auto}
+  #master-area .admin-nav {min-height:68px}
+  #master-area .admin-toolbar {
+    display:grid;grid-template-columns:minmax(0,1fr) auto auto;
+    grid-template-rows:auto auto;gap:6px 12px;margin-bottom:26px;
+  }
+  #master-area .admin-toolbar h2 {grid-column:1;grid-row:1;min-width:0;
+    font-size:clamp(1.65rem,2.6vw,2.4rem);line-height:1.25;letter-spacing:-.025em;
+    white-space:normal;overflow-wrap:break-word}
+  #master-area .admin-toolbar .admin-description {
+    grid-column:1;grid-row:2;min-width:0;line-height:1.5;
+    overflow-wrap:break-word;max-width:480px;
+  }
+  #master-area .admin-toolbar button {min-width:0;grid-row:1/3}
+  #master-area #restaurants-list .restaurant-logo-fallback {
+    display:grid;place-items:center;flex:0 0 58px;min-width:58px;max-width:58px;
+    width:58px;height:58px;padding:0;font-size:1.1rem;
+  }
+  #master-area #restaurants-list .restaurant-logo {
+    display:block;flex:0 0 58px;min-width:58px;max-width:58px;
+    width:58px;height:58px;
+  }
+  #master-area #restaurants-list .line {flex-wrap:wrap}
+  #master-area #restaurants-list .line > span:not(.restaurant-logo-fallback) {
+    flex:1 1 200px;min-width:130px;
+  }
+  @media (max-width:900px) {
+    .admin-session-header {grid-template-columns:minmax(0,1fr) auto;
+      grid-template-rows:auto auto;min-height:0;padding:14px 18px;gap:8px 12px}
+    .admin-session-top h1 {grid-column:1;grid-row:1}
+    .brand-logo {width:min(280px,66vw)}
+    #logout {grid-column:2;grid-row:1;order:unset;align-self:center}
+    #identity {grid-column:1/-1;grid-row:2;padding:0;border-left:0;
+      font-size:.85rem;order:unset;margin:0}
+    #restaurant-identity:not([hidden]) {grid-column:1/-1;grid-row:3}
+    #master-area .admin-toolbar {grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}
+    #master-area .admin-toolbar h2 {grid-column:1/-1;grid-row:auto}
+    #master-area .admin-toolbar .admin-description {grid-column:1/-1;grid-row:auto;max-width:none}
+    #master-area .admin-toolbar button {grid-column:auto!important;grid-row:auto;
+      width:100%;min-height:44px;padding:10px 12px;font-size:.86rem}
+  }
+  @media (max-width:600px) {
+    #master-area .admin-nav {gap:3px;min-height:60px;padding:8px 12px}
+    #master-area .admin-tab {padding:9px 10px;font-size:.78rem;min-height:42px}
+    #master-area .admin-tab::before {display:none}
+    #master-area .admin-panels {padding:22px 14px 55px}
+    #master-area .admin-toolbar {gap:8px}
+    #master-area .admin-toolbar h2 {font-size:1.75rem}
+    #master-area .master-stats {grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    #master-area .master-stat {min-height:106px;padding:14px 8px 14px 58px}
+    #master-area .master-stat span {font-size:.72rem}
+    #master-area .master-stat::before {left:10px;width:37px;height:37px}
+    #master-area #restaurants-list .line {display:grid;grid-template-columns:58px minmax(0,1fr);
+      gap:10px;align-items:center}
+    #master-area #restaurants-list .restaurant-logo,
+    #master-area #restaurants-list .restaurant-logo-fallback {grid-column:1;grid-row:1}
+    #master-area #restaurants-list .line > span:not(.restaurant-logo-fallback) {
+      grid-column:2;grid-row:1;min-width:0;width:auto;flex:none;overflow-wrap:anywhere;
+    }
+    #master-area #restaurants-list .line > button {min-width:0;white-space:normal}
+  }
+  @media (max-width:430px) {
+    #master-area .master-stats {grid-template-columns:repeat(2,minmax(0,1fr))}
+    #master-area #restaurants-list .line > button {grid-column:1/-1;width:100%}
+  }
+
+
+  /* AVISAQUI — header e grid canônicos do protótipo, sem dados duplicados */
+  :root { --av-content-width:1360px;--av-gutter:clamp(16px,3vw,38px);--av-header-logo-width:240px; }
+  .admin-session-header {
+    display:block!important;width:100%;min-height:0;margin:0!important;
+    padding:0 var(--av-gutter)!important;border-bottom:1px solid #344964;
+    background:linear-gradient(105deg,#0a162a,#10213b 70%,#0b1528);
+  }
+  .av-global-header {
+    width:100%;max-width:var(--av-content-width);min-height:92px;margin:0 auto;
+    display:flex;justify-content:space-between;align-items:center;gap:24px;
+  }
+  .av-system-brand {margin:0!important;padding:0!important;line-height:0;flex:none}
+  .av-system-brand .brand-logo {
+    display:block;width:var(--av-header-logo-width)!important;
+    max-width:100%;height:auto;object-fit:contain;
+  }
+  .av-account-actions {display:flex;align-items:center;justify-content:flex-end;gap:18px;min-width:0}
+  .av-account-actions #identity {
+    display:block;flex:0 1 auto;order:unset!important;margin:0!important;padding:0!important;
+    border:0!important;grid-column:auto!important;grid-row:auto!important;
+    color:#d8e3f4;font-size:.94rem;text-align:right;line-height:1.4;
+    min-width:0;overflow-wrap:anywhere;
+  }
+  .av-account-actions #logout {
+    display:inline-flex;flex:none;order:unset!important;margin:0;
+    grid-column:auto!important;grid-row:auto!important;min-height:42px;
+    padding:9px 19px;border-radius:10px;
+  }
+  .av-context-wrap {width:min(100% - 2 * var(--av-gutter),var(--av-content-width));margin:0 auto}
+  .av-restaurant-context:not([hidden]) {
+    display:flex!important;align-items:center;gap:12px;max-width:100%;
+    min-height:72px;margin:18px 0 0!important;padding:12px 16px!important;
+    border-radius:13px;border:1px solid #39516e;
+    background:linear-gradient(120deg,#13243b,#101c2f);
+  }
+  .av-restaurant-context .restaurant-logo,
+  .av-restaurant-context .restaurant-logo-fallback {
+    display:grid;place-items:center;width:46px;height:46px;min-width:46px;flex:0 0 46px;
+    border-radius:10px;font-size:1.1rem;
+  }
+  .av-restaurant-context strong {display:block;font-size:1rem;line-height:1.35}
+  .av-restaurant-context .muted {margin-top:3px;font-size:.79rem;color:#a6b6ce}
+  #master-area .admin-nav {
+    width:100%;box-sizing:border-box;justify-content:flex-start;
+    padding-left:max(var(--av-gutter),calc((100% - var(--av-content-width))/2));
+    padding-right:max(var(--av-gutter),calc((100% - var(--av-content-width))/2));
+  }
+  #master-area .admin-panels {
+    width:100%;max-width:var(--av-content-width);padding:32px 0 72px!important;
+    margin:0 auto;min-width:0;
+  }
+  #master-area .admin-toolbar {margin-bottom:26px}
+  #master-area .admin-toolbar h2::before {margin-right:12px}
+  #manager-area {width:min(100% - 2 * var(--av-gutter),var(--av-content-width));margin:20px auto}
+  #password-area {max-width:var(--av-content-width);margin-left:auto;margin-right:auto}
+  @media (max-width:1450px) {
+    #master-area .admin-panels {width:calc(100% - 2 * var(--av-gutter))}
+  }
+  @media (max-width:760px) {
+    :root {--av-header-logo-width:205px}
+    .av-global-header {min-height:76px;gap:12px}
+    .av-account-actions {gap:10px}
+    .av-account-actions #identity {font-size:.8rem;max-width:148px}
+    .av-account-actions #logout {padding:8px 12px;min-height:40px}
+    #master-area .admin-panels {padding-top:24px!important}
+  }
+  @media (max-width:470px) {
+    :root {--av-header-logo-width:170px}
+    .av-global-header {min-height:72px}
+    .av-account-actions #identity {font-size:.72rem;max-width:104px}
+    .av-account-actions #logout {min-height:38px;padding:7px 10px;font-size:.8rem}
+    .av-restaurant-context:not([hidden]) {padding:11px 12px!important}
+  }
+
+
+
+  /* UX-PADRAO: identidade e navegação uniformes também para gerente */
+  #manager-area {display:block!important;width:min(calc(100% - 2 * var(--av-gutter)),var(--av-content-width));margin:0 auto;padding:0 0 70px;grid-template-columns:none!important}
+  #manager-area .admin-nav {display:flex;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 0;margin:0 0 24px;border-bottom:1px solid #344964}
+  #manager-area .admin-tab {flex:0 0 auto;min-height:44px;padding:10px 17px;border:1px solid transparent;border-radius:11px;font-size:.94rem}
+  #manager-area .admin-tab[aria-current="page"] {background:linear-gradient(180deg,#428cfb,#1265f2);border-color:#508ff5;box-shadow:0 6px 16px #075de333}
+  #manager-area .admin-tab.secondary {background:transparent;color:#d7e2f2}
+  #manager-area .admin-nav .action {min-height:44px;padding:9px 16px;border-radius:10px;font-size:.9rem}
+  #manager-area .admin-panels {min-width:0}
+  #manager-area .admin-toolbar h2 {font-size:clamp(1.65rem,2.6vw,2.4rem);line-height:1.25}
+  #manager-area .admin-panel > .card {background:linear-gradient(145deg,#111f35,#101b30);border:1px solid #39516e;border-radius:16px}
+  @media(max-width:700px) {
+    :root {--av-header-logo-width:170px}
+    #manager-area .admin-nav {gap:6px;margin-bottom:18px}
+    #manager-area .admin-tab {padding:9px 10px;font-size:.8rem;min-width:0}
+    #manager-area .admin-nav .action {padding:9px 12px;font-size:.8rem}
+  }
+  @media(min-width:701px) and (max-width:760px) {
+    :root {--av-header-logo-width:240px}
+  }
+
 </style>
 </head>
 <body>
 <main>
-<header class="admin-session-header"><div class="admin-session-top"><h1><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1><button class="secondary" id="logout">Sair</button></div>
-<span class="muted" id="identity">Carregando conta...</span><div id="restaurant-identity" class="card" hidden style="display:none;padding:10px 14px;margin:5px 0 0;font-weight:700" role="status" aria-live="polite"></div></header>
+<header class="admin-session-header">
+  <div class="av-global-header">
+    <h1 class="av-system-brand"><img class="brand-logo" src="./avisaqui-marca-transparente.svg" alt="Avisaqui"></h1>
+    <div class="av-account-actions">
+      <span class="muted" id="identity">Carregando conta...</span>
+      <button class="secondary" id="logout" type="button">Sair</button>
+    </div>
+  </div>
+</header>
+<div class="av-context-wrap">
+  <div id="restaurant-identity" class="card av-restaurant-context" hidden role="status" aria-live="polite"></div>
+</div>
 
 <section id="master-area" hidden>
   <nav class="admin-nav" aria-label="Áreas do Master Admin"><button type="button" class="admin-tab" data-admin-tab="restaurants" aria-current="page">Restaurantes</button><button type="button" class="admin-tab secondary" data-admin-tab="interests">Interessados no piloto</button><button type="button" class="admin-tab secondary" data-admin-tab="settings">Configurações</button></nav>
@@ -153,12 +416,13 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     const restaurantPanel=$('admin-panel-restaurants');
     const stats=document.createElement('div');
     stats.id='master-stats';stats.className='master-stats';stats.setAttribute('aria-label','Resumo da administração');
-    stats.innerHTML='<div class="master-stat"><strong id="master-restaurants-count" aria-live="polite">—</strong><span>Restaurantes</span></div><div class="master-stat"><strong id="master-interests-count" aria-live="polite">—</strong><span>Interessados no piloto</span></div>';
+    stats.innerHTML='<div class="master-stat"><strong id="master-restaurants-count" aria-live="polite">—</strong><span>Restaurantes</span></div><div class="master-stat"><strong id="master-interests-count" aria-live="polite">—</strong><span>Interessado no piloto</span></div>';
     restaurantPanel.prepend(stats);
     const toolbar=document.createElement('div');toolbar.className='admin-toolbar';
     const title=document.createElement('h2');title.textContent='Restaurantes';
     const newButton=document.createElement('button');newButton.type='button';newButton.textContent='+ Novo restaurante';
-    toolbar.append(title,newButton);restaurantPanel.prepend(toolbar);
+    const subtitle=document.createElement('p');subtitle.className='admin-description';subtitle.textContent='Gerencie restaurantes, logos, gerentes e acessos.';
+    toolbar.append(title,subtitle,newButton);restaurantPanel.prepend(toolbar);
     function createAdminDialog(card,trigger,label){
       const dialog=document.createElement('dialog');dialog.className='admin-dialog';
       dialog.setAttribute('aria-label',label);
@@ -384,10 +648,86 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
     refresh.textContent='Atualizar lista';refresh.disabled=true;
     const footer=document.createElement('div');footer.className='admin-dialog-actions';
     const done=document.createElement('button');done.type='button';done.className='secondary';done.textContent='Voltar';
-    footer.append(refresh,done);dialog.append(head,info,state,list,footer);document.body.append(dialog);
+    const create=document.createElement('button');create.type='button';create.textContent='Criar gerente';
+    footer.append(create,refresh,done);dialog.append(head,info,state,list,footer);document.body.append(dialog);
     let busy=true,initialContext=null,contextChanged=false,unsaved=()=>false;
     const contextUrl=basePath+'/api/admin/contexto/';
     const managerUrl=basePath+'/api/admin/restaurantes/'+encodeURIComponent(rest.id)+'/gerentes';
+    function openManagerForm(action,item,trigger){
+      if(busy)return;
+      const form=document.createElement('form');form.className='card';form.style.cssText='width:100%;min-width:0';
+      form.setAttribute('aria-label',action+' gerente');
+      const fields={};
+      function field(label,type,value,required=true){
+        const wrapper=document.createElement('label');wrapper.textContent=label;
+        const input=document.createElement('input');input.type=type;input.required=required;
+        input.value=value||'';if(type==='password'){input.minLength=1;input.maxLength=256;input.autocomplete='off';}
+        else {input.maxLength=120;if(label==='Login')input.autocapitalize='none';}
+        wrapper.append(input);form.append(wrapper);fields[label]=input;return input;
+      }
+      if(action==='Criar'||action==='Editar'){
+        field('Nome','text',item?.nome||'');
+        field('Login','text',item?.login||'');
+      }
+      if(action==='Criar'||action==='Reativar') {
+        const p=field('Nova senha','password','');
+        p.minLength=12;p.autocomplete='new-password';
+      }
+      if(action!=='Criar')field('Sua senha atual de Master Admin','password','').autocomplete='current-password';
+      const note=document.createElement('p');note.className='muted';
+      note.textContent=action==='Desativar'?'A conta será bloqueada e todas as sessões serão encerradas.':
+        action==='Editar'?'A troca de login encerra as sessões do gerente.':
+        action==='Reativar'?'A reativação exige nova senha e não restaura sessões antigas.':'A conta terá identidade individual e histórico próprio.';
+      const feedback=document.createElement('p');feedback.setAttribute('role','status');feedback.setAttribute('aria-live','polite');
+      const actions=document.createElement('div');actions.className='admin-dialog-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='secondary';cancel.textContent='Cancelar';
+      const save=document.createElement('button');save.type='submit';save.textContent=action+' gerente';
+      actions.append(cancel,save);form.append(note,feedback,actions);
+      const parent=trigger.parentElement;parent.append(form);trigger.hidden=true;
+      const dirty=()=>Object.values(fields).some(input=>input.value!==''&&
+        (action!=='Editar'||input.value!==(item?.[input===fields.Nome?'nome':'login']||'')));
+      const previous=unsaved;unsaved=()=>previous()||form.isConnected&&dirty();
+      cancel.addEventListener('click',()=>{
+        if(dirty()&&!confirm('Descartar as alterações não salvas?'))return;
+        form.remove();trigger.hidden=false;trigger.focus();
+      });
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();if(busy||save.disabled||!form.reportValidity())return;
+        const payload={};
+        if(fields.Nome)payload.nome=fields.Nome.value.trim();
+        if(fields.Login)payload.login=fields.Login.value.trim();
+        if(fields['Nova senha'])payload.senha=fields['Nova senha'].value;
+        if(fields['Sua senha atual de Master Admin'])payload.senha_master_atual=fields['Sua senha atual de Master Admin'].value;
+        if(action==='Desativar'||action==='Reativar'){
+          if(!confirm(action+' a conta de '+item.nome+'? '+note.textContent))return;
+          payload.ativo=action==='Reativar';
+        }
+        busy=true;save.disabled=true;cancel.disabled=true;close.disabled=true;done.disabled=true;refresh.disabled=true;create.disabled=true;
+        feedback.textContent='Processando '+action.toLowerCase()+'…';save.textContent='Processando…';
+        const endpoint=action==='Criar'?managerUrl:managerUrl+'/'+encodeURIComponent(item.id);
+        const url=(action==='Desativar'||action==='Reativar')?endpoint+'/ativo':endpoint;
+        const method=action==='Criar'?'POST':'PATCH';
+        try{
+          await api(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+          Object.values(fields).filter(i=>i.type==='password').forEach(i=>i.value='');
+          form.remove();trigger.hidden=false;
+          try{await refreshManagers();state.textContent=action+' gerente: operação concluída.';}
+          catch(error){state.textContent='Operação aplicada, mas a lista não atualizou: '+error.message;}
+        }catch(error){
+          feedback.textContent=error.message;
+          if(/login|cadastrado/i.test(error.message)&&fields.Login){
+            fields.Login.setCustomValidity(error.message);fields.Login.focus();
+            fields.Login.addEventListener('input',()=>fields.Login.setCustomValidity(''),{once:true});
+          }
+        }finally{
+          if(fields['Sua senha atual de Master Admin'])fields['Sua senha atual de Master Admin'].value='';
+          busy=false;save.disabled=false;cancel.disabled=false;close.disabled=false;done.disabled=false;refresh.disabled=false;create.disabled=false;
+          save.textContent=action+' gerente';
+        }
+      });
+      Object.values(fields)[0]?.focus();
+    }
+    create.addEventListener('click',()=>openManagerForm('Criar',null,create));
     async function restoreContext(){
       if(!contextChanged)return;
       const endpoint=initialContext?contextUrl+encodeURIComponent(initialContext):basePath+'/api/admin/contexto/sair';
@@ -426,6 +766,13 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
         const name=document.createElement('strong');
         name.textContent=item.nome+' · '+item.login+(item.ativo?'':' · Inativo');
         line.append(name);
+        const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Editar nome/login';
+        edit.addEventListener('click',()=>openManagerForm('Editar',item,edit));
+        if(item.ativo)line.append(edit);
+        const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary';
+        toggle.textContent=item.ativo?'Desativar':'Reativar';
+        toggle.addEventListener('click',()=>openManagerForm(item.ativo?'Desativar':'Reativar',item,toggle));
+        line.append(toggle);
         if(item.ativo){
           const reset=document.createElement('button');reset.type='button';reset.className='secondary';
           reset.textContent='Redefinir senha';
@@ -647,7 +994,18 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
   });
   submit('manager-form',async()=>{
     const restId=val('manager-restaurant');
-    await post(basePath + '/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+    const me=await api(basePath+'/api/auth/me');
+    const previous=me.restaurante_id||null;
+    const changed=previous!==restId;
+    if(changed)await post(basePath+'/api/admin/contexto/'+encodeURIComponent(restId),{});
+    try{
+      await post(basePath + '/api/admin/restaurantes/'+encodeURIComponent(restId)+'/gerentes',{nome:val('manager-name'),login:val('manager-login'),senha:$('manager-password').value});
+    }finally{
+      if(changed){
+        const endpoint=previous?basePath+'/api/admin/contexto/'+encodeURIComponent(previous):basePath+'/api/admin/contexto/sair';
+        await post(endpoint,{});
+      }
+    }
   });
   submit('terminal-form',async()=>{
     await post(basePath + '/api/admin/terminais',{nome:val('terminal-name'),login:val('terminal-login'),senha:$('terminal-password').value});
@@ -703,9 +1061,9 @@ const basePath = location.pathname.startsWith('/avisaqui/') ? '/avisaqui' : '';
       $('identity').textContent=user.nome+' · '+(user.papel==='master'?'Master Admin':'Gerente');
       const restaurantName=typeof user.restaurante_nome==='string'?user.restaurante_nome.trim():'';
       const restaurantIdentity=$('restaurant-identity');
-      if(user.restaurante_id && restaurantName){
+      if(user.papel!=='master' && user.restaurante_id && restaurantName){
         const details=document.createElement('div');const title=document.createElement('strong');title.textContent=restaurantName;
-        const role=document.createElement('div');role.className='muted';role.style.fontSize='.85rem';role.textContent=(user.papel==='master'?'Master Admin':'Gerente')+(user.restaurante_slug?' · '+user.restaurante_slug:'');
+        const role=document.createElement('div');role.className='muted';role.style.fontSize='.85rem';role.textContent=user.restaurante_slug||'Restaurante atual';
         details.append(title,role);restaurantIdentity.replaceChildren(restaurantLogo(user.restaurante_logo_url,restaurantName),details);
         restaurantIdentity.hidden=false;restaurantIdentity.style.display='block';
       }else if(user.papel==='gerente'){

@@ -205,3 +205,14 @@ test('iframes iniciam direto após modo escolhido e mantêm sandbox', () => {
   }
   assert.match(read('biblioteca.js'), /setAttribute\('sandbox', 'allow-scripts'\)/);
 });
+
+test('Pong online: falha de ingresso mantém aviso e tentativa na partida, sem retorno forçado', () => {
+  const codigo = read('biblioteca.js');
+  const bloco = codigo.slice(codigo.indexOf('} catch (erro) {', codigo.indexOf('async function jogar(')));
+  assert.match(bloco, /if \(jogo\.id === 'pong' && modo === 'dupla'\)/);
+  assert.match(bloco, /palco\.replaceChildren\(\)/);
+  assert.match(bloco, /setAttribute\('role', 'alert'\)/);
+  assert.match(bloco, /'Tentar novamente'/);
+  assert.match(bloco, /etapa = 'rotacao';\s*layout\(\)/);
+  assert.match(bloco, /'← Voltar aos jogos'/);
+});

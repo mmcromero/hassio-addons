@@ -92,3 +92,52 @@ A branch `release/avisaqui-rc-distribuicao-002` do `mmcromero/hassio-addons` con
 **Conduta futura mandatória:** aplicar GOV-STD-001 v0.9 §13, publicada no repositório canônico: medir probabilidade, impacto, reversibilidade e custo de atraso; separar hipótese de defeito confirmado; não bloquear produto A por risco hipotético em produto B. Com autorização para o ato e risco residual admissível, executar o lote completo, verificar eventos e logs pós-merge, corrigir apenas problemas concretos. Manter NO-GO para segurança crítica, perda de dados, operação sem autorização ou falta de rollback quando necessário. Não iniciar builds pesados ou cobrança para testar hipótese sem motivo.
 
 **Estados distintos:** GitHub publicado; CI da loja corrigida; runtime Evolution do Raspberry NÃO INSPECIONADO; instalação/homologação do Pager no Raspberry PENDENTE. Não reabrir PRs já integrados para simular progresso.
+
+
+## Novo fluxo de publicação Avisaqui — main preservada
+
+**Decisão expressa do proprietário em 17/11/2026; política canônica privada:** `mmcromero/pager-virtual/docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md`.
+
+- **`main` pública é catálogo ESTÁVEL**, somente versões já testadas em canal RC e homologadas no ambiente de destino, mediante autorização da promoção. Não fazer merge de versão de teste em `main` por conveniência.
+- **`release-candidate` pública é canal de testes**, derivado integralmente por `scripts/export-distribution.py` da RC privada, com inventário e hashes; candidatos são publicados para homologação nessa branch. Não alterar Evolution API ou outros add-ons ao atualizar somente Pager.
+- **Home Assistant permite `https://github.com/mmcromero/hassio-addons#release-candidate`** como URL de repositório de outra branch *quando ela realmente existir*. Isso cria **identificador de repositório e de add-on diferente** do endereço sem sufixo. A instalação existente não deve ser trocada, removida ou duplicada por esta decisão documental. Exige plano operacional com backup, coexistência/slug, validação de dados e autorização própria.
+- **Promoção:** após ensaio real e aceite da candidata, comparar SHA/versão/hashes e integrar o conteúdo aprovado em `main` com autorização. Falha volta a desenvolvimento, sem contaminar main. Os registros antigos de RC publicadas em main permanecem históricos; **não afirmar que todas as versões hoje em main foram homologadas**.
+- Esta política está **documentada, sem implantação técnica da nova topologia**. Não criar branch, disparar Actions, mudar canal da loja ou acessar Home Assistant por este adendo.
+
+**Fonte oficial da compatibilidade por branch:** https://contributors.home-assistant.io/apps/guides/repository/
+
+
+## Decisão posterior — Avisaqui exclusivamente RC no Home Assistant
+
+**Ordem do proprietário (17/11/2026):** o Avisaqui da `main` pública **não será mais instalado nem atualizado no HA até segunda ordem**; somente a branch RC fornece o **único Avisaqui para testes**. Nenhuma nova candidata Avisaqui deve entrar na `main` da loja. Após homologação, guardar o código aprovado na `main` privada, sem obrigação de publicar uma segunda instalação estável.
+
+**Branch pública existente conferida:** `release/avisaqui-rc-distribuicao-003` com `pager-virtual/config.yaml` versão `0.1.20-rc.3`, `repository.yaml` e manifesto de proveniência. Canal para cadastrar no Supervisor quando autorizado: `https://github.com/mmcromero/hassio-addons#release/avisaqui-rc-distribuicao-003`. A documentação HA confirma suporte a `#branch`, mas ID distinto e migração não automática. **Não declarar canal instalado/testado sem evidência do Raspberry.** Preservar backup dos dados antes de desinstalar versão anterior.
+
+O restante da loja pública, incluindo Evolution e outros add-ons, não é objeto de exclusão/migração. Esta alteração é **documental**, não instalação, criação de branch, merge ou disparo de Actions.
+
+
+## Referência de precedência — decisões do proprietário 17/11/2026
+
+**Decisões Avisaqui consolidadas na fonte privada:** [DECISOES_DO_PROPRIETARIO_2026-11-17.md](https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/DECISOES_DO_PROPRIETARIO_2026-11-17.md). Para Avisaqui, **apenas distribuição RC alimenta o único add-on de testes no HA**; não publicar novas candidatas na main pública da loja até nova ordem. Manter a main pública pelos demais add-ons sem confundir seu histórico com homologação. Esta atualização é documental, sem build, Actions ou instalação.
+
+
+
+## Exceção canônica de fase: Avisaqui é laboratório, não produção (17/11/2026)
+
+**HOME ASSISTANT É DESENVOLVIMENTO E TESTES PARA AVISAQUI. NÃO EXISTE AVISAQUI EM PRODUÇÃO.** Para RC de laboratório, aplicar a norma `mmcromero/pager-virtual/docs/governanca/AVISAQUI-DEV-ESTEIRA-ENXUTA-001.md`: teste dirigido do diff, verificação de credenciais/segurança/escopo, exportação/hashes **uma vez** e build da arquitetura de destino **uma vez por candidata**, sem GitHub Actions de rotina/cota incerta nem suíte completa em cada microcommit. Banco fictício do **Avisaqui** pode ser reiniciado/recriado caso incompatível, sem migração/backup de produção; escopo de operação limitado ao Avisaqui e autorização real para o reset. **Outros add-ons (Evolution etc.), Home Assistant, segredos, dados pessoais reais e infraestrutura permanecem protegidos.** `main` pública não é canal de testes Avisaqui. Publicar apenas branch RC autorizada, sem tocar nos demais apps. Meta de 15–34 min é estimativa de planejamento, não medida nem garantia; homologação vem após instalação. Normas históricas de produção incompatíveis com testes fictícios de Avisaqui não prevalecem neste escopo.
+
+
+## Regra posterior Avisaqui — Supervisor constrói ARM64 no Raspberry, não a equipe
+
+O add-on `pager-virtual` não declara `image` em `config.yaml`, declara `arch: aarch64/amd64` e inclui `Dockerfile`. Conforme documentação oficial do HA, **o Supervisor fará build local ao instalar/atualizar**. No laboratório Avisaqui, **não exigir build ARM64 remoto prévio**, nem uso de GitHub Actions, máquina virtual/QEMU/Codespaces/runner local para **entregar a branch pública RC**, salvo evidência de risco técnico específico. A equipe entrega apenas exportação integral/hashes, checagem de segurança/versão/Dockerfile, publicação da RC e confirmação de arquivos. **Não inserir a atualização/instalação/validação do Raspberry realizada pelo proprietário em sua lista nem em suas metas e métricas.** Total inicial da equipe: 10–23 min (planejamento não medido). Documento vinculante: https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/AVISAQUI-DEV-ESTEIRA-ENXUTA-001.md .
+
+
+## Atualização imediata de normas do proprietário — main documental
+
+**Regra P0:** qualquer decisão normativa expressa do proprietário sobre o Avisaqui ou a esteira deve ser consolidada **no mesmo atendimento** no documento canônico da `main`, com correção **in situ** de instruções antigas conflitantes em fontes e cópias operacionais. O bloqueio da publicação de código Avisaqui na `main` pública **não se aplica à atualização documental autorizada** de normas. Não alterar código de outros add-ons, workflows, versões de catálogo nem servidores por consequência desta regra. Releitura e SHA no registro de governança existente são obrigatórios; sem permissão de escrita, registrar impedimento real. Norma universal: https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md (§0.1).
+
+
+## Governança — branches de pacote permanentes e congelamento operacional
+
+**Decisão Avisaqui de 17/11/2026:** todo lote começa e termina na branch privada **`desenvolvimento`**, que é reutilizada permanentemente. Governança a congela por SHA somente após ordem do proprietário, promove **o conteúdo inteiro** para a RC privada permanente e exporta para a mesma branch pública RC cadastrada. A partir da conclusão da promoção, Governança libera `desenvolvimento` para o próximo pacote. **Nunca criar branches adicionais por pacote.** Verificar versão/proveniência e preservar outros add-ons e `main` pública. O congelamento é controle operacional; não afirmar que o GitHub impede pushes sem prova. Norma: https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md .
+

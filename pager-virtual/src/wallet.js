@@ -6,16 +6,46 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Carrega credenciais
-const keyPath = path.join(__dirname, '../credentials/google-wallet-key.json');
-let credentials = null;
-if (fs.existsSync(keyPath)) {
-  try {
-    credentials = JSON.parse(fs.readFileSync(keyPath, 'utf8'));
-  } catch (err) {
-    console.error('Erro ao ler chave:', err);
+// Credenciais privadas nunca entram na imagem ou no repositório.
+// Prioridade: variável em memória > arquivo explícito > /data persistente > legado local.
+function loadWalletCredentials() {
+  const inline = process.env.GOOGLE_WALLET_CREDENTIALS;
+  const customFile = process.env.GOOGLE_WALLET_KEY_FILE;
+  const dataDir = process.env.DATA_PATH || '/data';
+  const candidates = inline !== undefined
+    ? [{ source: 'environment', value: inline }]
+    : (customFile !== undefined
+        ? [{ source: 'file', value: customFile }]
+        : [
+            { source: 'file', value: path.join(dataDir, 'credentials/google-wallet-key.json') },
+            { source: 'file', value: path.join(__dirname, '../credentials/google-wallet-key.json') }
+          ]);
+  for (const candidate of candidates) {
+    try {
+      let value;
+      if (candidate.source === 'environment') {
+        value = candidate.value;
+      } else {
+        // Um caminho explícito inválido não deve fazer fallback para outra chave.
+        if (typeof candidate.value !== 'string' || !path.isAbsolute(candidate.value) ||
+            candidate.value.includes(String.fromCharCode(0))) break;
+        if (!fs.existsSync(candidate.value)) continue;
+        value = fs.readFileSync(candidate.value, 'utf8');
+      }
+      const parsed = JSON.parse(value);
+      if (typeof parsed?.private_key === 'string' &&
+          typeof parsed?.client_email === 'string' && parsed.private_key.trim() &&
+          parsed.client_email.trim()) return parsed;
+    } catch {
+      // Não registrar conteúdo, caminho ou erro bruto: podem conter segredos.
+    }
+    // Não usar outra fonte após uma fonte encontrada, porém inválida.
+    break;
   }
+  return null;
 }
+
+const credentials = loadWalletCredentials();
 
 const ISSUER_ID = process.env.GOOGLE_WALLET_ISSUER_ID || '3388000000023241721';
 

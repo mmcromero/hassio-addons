@@ -276,7 +276,28 @@ export function criarBibliotecaJogos({ container, iniciarPong, onExit = () => {}
       if (ativa && atual === geracao) {
         const mensagem = erro instanceof Error && /^Pong indisponível/.test(erro.message)
           ? erro.message : 'Não foi possível abrir o jogo. Tente novamente.';
-        mostrarCatalogo(mensagem);
+        // Uma falha de ingresso no Pong online não é pedido para girar o celular.
+        // Preserve a tela da partida e mostre a causa, sem retorno automático ao
+        // catálogo (que exigiria retrato enquanto o usuário ainda está em paisagem).
+        if (jogo.id === 'pong' && modo === 'dupla') {
+          palco.replaceChildren();
+          const aviso = document.createElement('section');
+          aviso.className = 'games-online-error';
+          aviso.setAttribute('role', 'alert');
+          const texto = document.createElement('p');
+          texto.textContent = mensagem;
+          const tentar = botao('Tentar novamente', () => {
+            if (!ativa || atual !== geracao || etapa !== 'partida') return;
+            etapa = 'rotacao';
+            layout();
+          }, 'primary');
+          const voltarLista = botao('← Voltar aos jogos', () => mostrarCatalogo());
+          aviso.append(texto, tentar, voltarLista);
+          palco.append(aviso);
+          layout();
+        } else {
+          mostrarCatalogo(mensagem);
+        }
       }
     }
   }
