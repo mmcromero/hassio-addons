@@ -764,7 +764,17 @@
     // --- SÍNTESE DE ÁUDIO & VIBRAÇÃO HÁPTICA POTENTE ---
     let audioContext = null;
     let alarmInterval = null;
-    let isSoundEnabled = false; // Controle de toggle
+    // A escolha do cliente persiste neste navegador, inclusive após atualizar a página.
+    const soundPreferenceKey = 'avisaqui:cliente:alerta-sonoro:v1';
+    function readSoundPreference() {
+      try { return window.localStorage.getItem(soundPreferenceKey) === 'on'; }
+      catch { return false; } // Armazenamento indisponível não pode impedir a comanda.
+    }
+    function saveSoundPreference(enabled) {
+      try { window.localStorage.setItem(soundPreferenceKey, enabled ? 'on' : 'off'); }
+      catch { /* Modo privado/restrições: preservar o funcionamento nesta aba. */ }
+    }
+    let isSoundEnabled = readSoundPreference();
     let isCurrentlyReady = false;
     let wakeLock = null;
 
@@ -886,22 +896,35 @@
     }
 
     // --- TOGGLE DE ATIVAÇÃO / DESATIVAÇÃO DO ALERTA ---
+    // Restaurar a escolha sem simular um toque: o Android pode exigir interação
+    // adicional para liberar a reprodução do áudio após abrir uma nova página.
+    function renderSoundPreference() {
+      btnSoundTest.className = 'sound-toggle-btn ' + (isSoundEnabled ? 'enabled' : 'muted');
+      btnSoundTest.setAttribute('aria-pressed', String(isSoundEnabled));
+      soundIcon.textContent = isSoundEnabled ? '🔊' : '🔇';
+      soundLabel.textContent = isSoundEnabled
+        ? 'Alerta sonoro ativado (com a página aberta)'
+        : 'Alerta Silenciado (Toque para Ativar)';
+    }
+    renderSoundPreference();
+
     async function toggleSound() {
       isSoundEnabled = !isSoundEnabled;
+      saveSoundPreference(isSoundEnabled);
+      renderSoundPreference();
 
       if (isSoundEnabled) {
-        getAudioContext();
-        await requestWakeLock(); // Trava a tela ligada
-        triggerVibration([200, 100, 200]); // Confirmação tátil de ativação
-        btnSoundTest.className = 'sound-toggle-btn enabled';
-        soundIcon.textContent = '🔊';
-        soundLabel.textContent = 'Alerta sonoro ativado (com a página aberta)';
+        try {
+          const ctx = getAudioContext();
+          await ctx.resume();
+        } catch {
+          // Estado preferido permanece ativo; o navegador pode bloquear áudio.
+        }
+        await requestWakeLock();
+        triggerVibration([200, 100, 200]);
         liveAnnouncer.textContent = 'Alerta sonoro e vibração ativados nesta página.';
-        playChime(false); // Bipe de confirmação
+        try { playChime(false); } catch { /* Áudio pode ser bloqueado pelo navegador. */ }
       } else {
-        btnSoundTest.className = 'sound-toggle-btn muted';
-        soundIcon.textContent = '🔇';
-        soundLabel.textContent = 'Alerta Silenciado (Toque para Ativar)';
         liveAnnouncer.textContent = 'Alerta silenciado.';
         stopAlarmLoop();
         triggerVibration(0);
@@ -1252,9 +1275,15 @@
       walletBox.hidden = true;
       walletLink.removeAttribute('href');
       walletStatus.hidden = true;
+      const unavailable = document.getElementById('wallet-unavailable');
       try {
-        const res = await fetch(appBasePath + '/api/pedidos/' + encodeURIComponent(token) + '/wallet/google');
-        if (!res.ok) throw new Error('wallet_api_unavailable');
+        const res = await fetch(appBasePath + '/api/pedidos/' + encodeURIComponent(token) + '/wallet/google', { cache: 'no-store' });
+        if (!res.ok) {
+          // A resposta identifica falha de configuração sem expor credenciais.
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.code === 'WALLET_NOT_CONFIGURED'
+            ? 'wallet_not_configured' : 'wallet_api_unavailable');
+        }
         const data = await res.json();
         if (!data || typeof data.url !== 'string' ||
             !data.url.startsWith('https://pay.google.com/gp/v/save/')) {
@@ -1262,9 +1291,12 @@
         }
         walletLink.href = data.url;
         walletBox.hidden = false;
-        document.getElementById('wallet-unavailable').hidden = true;
-      } catch {
-        walletStatus.textContent = 'Carteira do Google indisponível neste momento. Continue acompanhando seu pedido nesta página.';
+        unavailable.hidden = true;
+      } catch (error) {
+        unavailable.hidden = true; // Não apresentar duas mensagens contraditórias.
+        walletStatus.textContent = error?.message === 'wallet_not_configured'
+          ? 'Carteira do Google ainda não configurada neste Avisaqui.'
+          : 'Carteira do Google indisponível neste momento. Continue acompanhando seu pedido nesta página.';
         walletStatus.hidden = false;
       }
     }

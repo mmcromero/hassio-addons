@@ -5,6 +5,15 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.10] — 19/11/2026 — alerta sonoro persistente e diagnóstico Google Wallet
+
+- Snapshot integral da branch desenvolvimento após RC9, sem seleção de arquivos.
+- A preferência de alerta sonoro do cliente persiste entre atualizações e recargas, mantendo restrições do navegador para ativação efetiva do áudio por gesto.
+- Google Wallet apresenta estado de credencial ausente sem mensagens duplicadas e mantém a rota de acompanhamento do pedido como prioridade.
+- Teste de regressão de interface incluído. Teste no Android, integração Google Wallet real e homologação HA ainda pendentes.
+- Distribuição pública RC para testes; `main` privada da fonte não alterada.
+
+
 ## [0.1.20-rc.9] — 19/11/2026 — Google Wallet no HA via app_config
 
 - Pacote completo do HEAD de desenvolvimento, incluindo `config.yaml` com mapeamento `app_config` somente leitura para `/config`, leitura segura de `google-wallet-key.json`, fallback controlado e testes dirigidos.
