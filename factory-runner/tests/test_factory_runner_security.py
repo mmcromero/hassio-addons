@@ -179,6 +179,44 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(code, 503)
         self.assertEqual(data["error"], "workspace_or_export_unavailable")
 
+    def test_declarative_endpoint_requires_auth_and_rejects_client_mapping(self):
+        payload = {"project": "avisaqui", "expected_source_sha": "a" * 40}
+        self.assertEqual(self.request(
+            "POST", "/api/prepare-declarative", payload=payload)[0], 401)
+        code, data = self.request(
+            "POST", "/api/prepare-declarative",
+            payload=dict(payload, declarative_mapping={"private": "password"}),
+            token="Bearer test-secret-not-for-production-0123456789")
+        self.assertEqual(code, 400)
+        self.assertEqual(data["error"], "invalid_payload")
+
+    def test_declarative_endpoint_fails_closed_without_approved_mapping(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "preflight_project", return_value={
+            "eligible_for_preparation": True, "candidate_version": "0.0.1"
+        }), patch.object(server, "project_workspace", return_value=(
+            {"id": "avisaqui"}, Path(self.folder.name), Path(self.folder.name))):
+            code, data = self.request(
+                "POST", "/api/prepare-declarative",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 503)
+        self.assertEqual(data["error"], "workspace_or_export_unavailable")
+        self.assertIn("blocked_workspace_or_git", server.AUDIT_PATH.read_text())
+
+    def test_declarative_endpoint_respects_closed_package(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "preflight_project", return_value={
+            "eligible_for_preparation": False, "errors": ["NO_OPEN_PACKAGE"]
+        }), patch.object(server, "prepare_declarative") as executor:
+            code, data = self.request(
+                "POST", "/api/prepare-declarative",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 409)
+        self.assertEqual(data["details"], ["NO_OPEN_PACKAGE"])
+        executor.assert_not_called()
+
     def test_bad_issue_rejected(self):
         for value in (0, -1, True, "35", 100000000):
             self.assertEqual(self.request("POST", "/api/fechar-pacote",
