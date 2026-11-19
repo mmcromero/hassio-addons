@@ -41,4 +41,7 @@ fi
 
 # No host TCP port; subprocesses inherit a non-root UID.
 export RUNNER_BIND_HOST=127.0.0.1
+# Non-mutating startup diagnostic; run under the same non-root UID as the API.
+# A BLOCKED probe does not disable API/status: /api/prepare still fails closed.
+su-exec runner python3 -I -u /app/runtime_probe.py
 exec su-exec runner python3 -u /app/server.py
