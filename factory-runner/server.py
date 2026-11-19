@@ -19,7 +19,9 @@ from pathlib import Path
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare, git as trusted_git
 from sandbox_export import SandboxUnavailable
-from declarative_export import DeclarativeExportError, prepare_declarative, expand_trusted_rules
+from declarative_export import (DeclarativeExportError, prepare_declarative,
+                                expand_trusted_rules, extend_approved_mapping,
+                                write_distribution_provenance)
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -143,7 +145,7 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
     report = preflight_project(project_id, expected_sha)
     if not report["eligible_for_preparation"]:
         return {"eligible": False, "errors": report["errors"]}
-    profile, source, _distribution = project_workspace(project_id)
+    profile, source, distribution = project_workspace(project_id)
     mapping = profile.get("declarative_mapping")
     if "declarative_rules" in profile:
         rules = profile["declarative_rules"]
@@ -153,6 +155,12 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
             required=rules["required"], optional=rules["optional"],
             include_prefixes=rules["include_prefixes"],
             include_suffixes=rules["include_suffixes"])
+        mapping = extend_approved_mapping(
+            source, expected_sha, mapping,
+            conditional_groups=rules.get("conditional_groups", []),
+            shared_optional=rules.get("shared_optional", {}),
+            allowed_shared_paths=profile["allowed_shared_paths"],
+            distribution_prefix=profile["distribution_prefix"])
     if not isinstance(mapping, dict) or not mapping:
         raise DeclarativeExportError("approved_declarative_mapping_unavailable")
     sources = set(mapping.values())
@@ -163,6 +171,20 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
         source, "rev-parse", expected_sha + ":" + profile["exporter_path"])
     if pinned_exporter != profile["exporter_git_blob_sha"]:
         raise DeclarativeExportError("declarative_rules_not_approved_for_exporter")
+    ci_contract = profile.get("declarative_ci")
+    if ci_contract is not None:
+        # The canonical exporter requires a pinned CI patch and either an
+        # applicable patch or an already-compatible trusted workflow.
+        # We support ONLY the already-compatible case, otherwise fail closed.
+        trusted_git(source, "rev-parse",
+                    expected_sha + ":" + ci_contract["patch_source"])
+        workflow = distribution / ci_contract["workflow_path"]
+        if (not workflow.is_file() or workflow.is_symlink()
+                or workflow.resolve() != workflow.absolute()):
+            raise DeclarativeExportError("unsafe_ci_workflow")
+        content = workflow.read_text(encoding="utf-8")
+        if not all(marker in content for marker in ci_contract["compatible_markers"]):
+            raise DeclarativeExportError("ci_patch_requires_separate_review")
     destination = PREPARATIONS_DIR.absolute()
     if destination.is_symlink() or destination.resolve() != destination:
         raise DeclarativeExportError("unsafe_preparations_directory")
@@ -171,8 +193,15 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
     manifest = prepare_declarative(
         source, expected_sha, output, mapping,
         expected_version=report["candidate_version"], project=project_id)
+    release_provenance = write_distribution_provenance(
+        output, manifest, source_repository=profile["source_repo"],
+        distribution_prefix=profile["distribution_prefix"],
+        provenance_path=profile["provenance_path"],
+        ci_patch_source=(ci_contract["patch_source"] if ci_contract else None),
+        allowed_shared_paths=profile["allowed_shared_paths"])
     return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
             "files": len(manifest["files"]), "source_sha": expected_sha,
+            "provenance_files": len(release_provenance["files"]),
             "published": False, "method": "declarative_no_script"}
 
 
