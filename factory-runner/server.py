@@ -178,11 +178,11 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
         # We support ONLY the already-compatible case, otherwise fail closed.
         trusted_git(source, "rev-parse",
                     expected_sha + ":" + ci_contract["patch_source"])
-        workflow = distribution / ci_contract["workflow_path"]
-        if (not workflow.is_file() or workflow.is_symlink()
-                or workflow.resolve() != workflow.absolute()):
-            raise DeclarativeExportError("unsafe_ci_workflow")
-        content = workflow.read_text(encoding="utf-8")
+        # Inspect ONLY the pinned public commit, never a mutable/uncommitted
+        # checkout file. Otherwise the CI gate could be bypassed by a dirty tree.
+        content = trusted_git(
+            distribution, "show", report["public_main_sha"] + ":" +
+            ci_contract["workflow_path"])
         if not all(marker in content for marker in ci_contract["compatible_markers"]):
             raise DeclarativeExportError("ci_patch_requires_separate_review")
     destination = PREPARATIONS_DIR.absolute()
