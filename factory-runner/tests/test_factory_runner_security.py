@@ -217,6 +217,91 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(data["details"], ["NO_OPEN_PACKAGE"])
         executor.assert_not_called()
 
+    def test_declarative_ci_uses_pinned_public_commit(self):
+        trusted = "b" * 40
+        exporter_blob = "c" * 40
+        profile = {
+            "declarative_mapping": {
+                "demo/config.yaml": "config.yaml",
+                "demo/package.json": "package.json"},
+            "package_json_path": "package.json",
+            "manifest_path": "config.yaml",
+            "exporter_path": "scripts/export.py",
+            "exporter_git_blob_sha": exporter_blob,
+            "declarative_ci": {
+                "patch_source": "ci/approved.patch",
+                "workflow_path": ".github/workflows/validate.yml",
+                "compatible_markers": ["trusted-marker"]},
+            "distribution_prefix": "demo/",
+            "provenance_path": "demo/SOURCE_PROVENANCE.json",
+            "source_repo": "fixture/source",
+            "allowed_shared_paths": [".github/workflows/validate.yml"],
+        }
+        public_commit = trusted + ":.github/workflows/validate.yml"
+        calls = []
+        def read_pinned(repo, *args):
+            calls.append(args)
+            if args == ("show", public_commit):
+                return "trusted-marker"
+            if args == ("rev-parse", "a" * 40 + ":scripts/export.py"):
+                return exporter_blob
+            if args == ("rev-parse", "a" * 40 + ":ci/approved.patch"):
+                return "d" * 40
+            raise AssertionError("unexpected Git operation: " + repr(args))
+        with patch.object(server, "preflight_project", return_value={
+            "eligible_for_preparation": True,
+            "candidate_version": "0.0.1",
+            "public_main_sha": trusted
+        }), patch.object(server, "project_workspace", return_value=(
+            profile, Path(self.folder.name) / "source",
+            Path(self.folder.name) / "distribution"
+        )), patch.object(server, "trusted_git", side_effect=read_pinned), (
+            patch.object(server, "PREPARATIONS_DIR", Path(self.folder.name) / "preparations")
+        ), patch.object(server, "prepare_declarative", return_value={
+            "files": [{"path": "demo/config.yaml"}]
+        }) as copied, patch.object(server, "write_distribution_provenance", return_value={
+            "files": [{"path": "config.yaml"}]
+        }):
+            result = server.prepare_project_declarative("avisaqui", "a" * 40, "fixture")
+        self.assertEqual(result["state"], "PREPARED_NOT_PUBLISHED")
+        self.assertIn(("show", public_commit), calls)
+        copied.assert_called_once()
+
+    def test_declarative_ci_rejects_incompatible_pinned_commit(self):
+        from declarative_export import DeclarativeExportError
+        profile = {
+            "declarative_mapping": {
+                "demo/config.yaml": "config.yaml",
+                "demo/package.json": "package.json"},
+            "package_json_path": "package.json",
+            "manifest_path": "config.yaml",
+            "exporter_path": "scripts/export.py",
+            "exporter_git_blob_sha": "c" * 40,
+            "declarative_ci": {
+                "patch_source": "ci/approved.patch",
+                "workflow_path": ".github/workflows/validate.yml",
+                "compatible_markers": ["trusted-marker"]},
+        }
+        def fake_git(repo, *args):
+            if args[0] == "show":
+                return "incompatible"
+            if args[-1].endswith(":scripts/export.py"):
+                return "c" * 40
+            return "d" * 40
+        with patch.object(server, "preflight_project", return_value={
+            "eligible_for_preparation": True,
+            "candidate_version": "0.0.1",
+            "public_main_sha": "b" * 40
+        }), patch.object(server, "project_workspace", return_value=(
+            profile, Path(self.folder.name), Path(self.folder.name)
+        )), patch.object(server, "trusted_git", side_effect=fake_git), (
+            patch.object(server, "prepare_declarative")
+        ) as copied:
+            with self.assertRaisesRegex(
+                    DeclarativeExportError, "ci_patch_requires_separate_review"):
+                server.prepare_project_declarative("avisaqui", "a" * 40, "fixture")
+            copied.assert_not_called()
+
     def test_bad_issue_rejected(self):
         for value in (0, -1, True, "35", 100000000):
             self.assertEqual(self.request("POST", "/api/fechar-pacote",
