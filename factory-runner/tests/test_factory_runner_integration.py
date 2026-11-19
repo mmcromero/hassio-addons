@@ -108,6 +108,17 @@ class IntegrationTests(unittest.TestCase):
         finally:
             conn.close()
 
+    @staticmethod
+    def trusted_fixture_export(*, source, target, script, sha, verify, env, **budget):
+        """Test only: run a synthetic fixture; NOT a sandbox security proof."""
+        argv = [sys.executable, "-I", str(Path(source) / script),
+                "--commit", sha, "--target", str(target)]
+        if verify:
+            argv.append("--verify")
+        subprocess.run(argv, cwd=source, env=env, check=True,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=budget["elapsed_seconds"])
+
     def test_real_http_git_prepare_is_local_verified_and_does_not_push(self):
         initial={str(r):(self.git(r,'show-ref'),self.git(r,'status','--porcelain')) for r in (self.source,self.dist)}
         for method,path in [('GET','/api/status'),('GET','/api/projects'),
@@ -117,7 +128,9 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(self.request('GET','/api/projects')[1]['projects'][0]['id'],'laboratorio')
         code,data=self.request('POST','/api/preflight')
         self.assertEqual(code,200);self.assertTrue(data['result']['eligible_for_preparation'])
-        code,data=self.request('POST','/api/prepare')
+        # Functional HTTP/Git coverage. The real sandbox has separate tests.
+        with patch.object(lane, 'sandbox_export', side_effect=self.trusted_fixture_export):
+            code,data=self.request('POST','/api/prepare')
         self.assertEqual(code,200,data);self.assertFalse(data['result']['published'])
         self.assertEqual(data['result']['state'],'PREPARED_NOT_PUBLISHED')
         reports=list(self.preparations.glob('*.report.json'));self.assertEqual(len(reports),1)
