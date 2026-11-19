@@ -153,6 +153,42 @@ class IntegrationTests(unittest.TestCase):
         self.assertNotIn('synthetic-secret',audit);self.assertNotIn('t'*40,audit)
         self.assertIn('completed_preparation',audit)
 
+    def test_real_http_declarative_export_no_scripts_no_git_writes(self):
+        # This test creates a local bundle, never commits or publishes it.
+        profile = dict(self.profile)
+        profile["declarative_mapping"] = {
+            "demo/config.yaml": "config.yaml",
+            "demo/package.json": "package.json"
+        }
+        (self.projects / "laboratorio.json").write_text(json.dumps(profile))
+        before = {
+            str(repo): (self.git(repo, 'show-ref'),
+                        self.git(repo, 'status', '--porcelain'))
+            for repo in (self.source, self.dist)
+        }
+        with patch.object(lane, "sandbox_export",
+                          side_effect=AssertionError("untrusted script executed")):
+            code, data = self.request('POST', '/api/prepare-declarative')
+        self.assertEqual(code, 200, data)
+        self.assertFalse(data['result']['published'])
+        self.assertEqual(data['result']['method'], 'declarative_no_script')
+        candidates = list(self.preparations.iterdir())
+        self.assertEqual(len(candidates), 1)
+        output = candidates[0]
+        provenance = json.loads((output / 'SOURCE_PROVENANCE.json').read_text())
+        self.assertEqual(provenance['commit'], self.sha)
+        self.assertEqual(len(provenance['files']), 2)
+        for item in provenance['files']:
+            path = output / item['path']
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),
+                             item['sha256'])
+        for repo in (self.source, self.dist):
+            self.assertEqual(before[str(repo)],
+                             (self.git(repo, 'show-ref'),
+                              self.git(repo, 'status', '--porcelain')))
+        self.assertNotIn('synthetic-secret', self.audit.read_text())
+        self.assertIn('completed_preparation', self.audit.read_text())
+
     def test_missing_real_checkouts_return_503(self):
         with patch.object(server,'WORKSPACES_DIR',self.root/'missing'):
             for path in ('/api/preflight','/api/prepare'):
