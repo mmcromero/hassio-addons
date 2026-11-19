@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "avisaqui",
+  "product": "Avisaqui",
+  "source_repo": "mmcromero/pager-virtual",
+  "distribution_repo": "mmcromero/hassio-addons",
+  "source_ref": "refs/remotes/origin/desenvolvimento",
+  "rc_ref": "refs/remotes/origin/release-candidate",
+  "public_ref": "refs/remotes/origin/main",
+  "package_policy_path": ".governance/package-policy.json",
+  "package_json_path": "package.json",
+  "manifest_path": "config.yaml",
+  "provenance_path": "pager-virtual/SOURCE_PROVENANCE.json",
+  "distribution_prefix": "pager-virtual/",
+  "exporter_path": "scripts/export-distribution.py",
+  "allowed_shared_paths": [
+    ".github/workflows/avisaqui-governance.yml",
+    ".github/workflows/validate-addons.yml"
+  ],
+  "exporter_git_blob_sha": "e67c816405707545b21b0e6863814ada7b26d0f1"
+}
