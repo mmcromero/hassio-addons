@@ -121,6 +121,43 @@ def load_profile(path):
             if not (dest.startswith(obj["distribution_prefix"])
                     or dest in obj["allowed_shared_paths"]):
                 raise PreflightError("Declarative mapping escapes allowed distribution")
+    if "declarative_rules" in obj:
+        if "declarative_mapping" in obj:
+            raise PreflightError("Mixed declarative mapping modes")
+        from declarative_export import DeclarativeExportError, safe_path
+        rules = obj["declarative_rules"]
+        if not isinstance(rules, dict) or set(rules) != {
+                "required", "optional", "include_prefixes", "include_suffixes"}:
+            raise PreflightError("Invalid declarative rules")
+        for section in ("required", "optional", "include_suffixes"):
+            if not isinstance(rules[section], dict):
+                raise PreflightError("Invalid declarative rule section")
+        if not isinstance(rules["include_prefixes"], list):
+            raise PreflightError("Invalid declarative prefix list")
+        for section in ("required", "optional"):
+            for destination, origin in rules[section].items():
+                try:
+                    dest, _src = safe_path(destination), safe_path(origin)
+                except DeclarativeExportError as exc:
+                    raise PreflightError("Unsafe declarative rule path") from exc
+                if dest == obj["provenance_path"] or not dest.startswith(
+                        obj["distribution_prefix"]):
+                    raise PreflightError("Declarative rule destination not allowed")
+        for prefix in rules["include_prefixes"]:
+            try:
+                if not isinstance(prefix, str) or not prefix.endswith("/"):
+                    raise PreflightError("Invalid declarative prefix")
+                safe_path(prefix[:-1])
+            except DeclarativeExportError as exc:
+                raise PreflightError("Unsafe declarative prefix") from exc
+        for prefix, suffix in rules["include_suffixes"].items():
+            try:
+                if (not isinstance(prefix, str) or not prefix.endswith("/")
+                        or not isinstance(suffix, str) or not suffix.startswith(".")):
+                    raise PreflightError("Invalid declarative suffix")
+                safe_path(prefix[:-1])
+            except DeclarativeExportError as exc:
+                raise PreflightError("Unsafe declarative suffix") from exc
     return obj
 
 def evaluate(source, distribution, expected_sha, *, profile):
