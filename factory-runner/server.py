@@ -9,10 +9,13 @@ import http.server
 import json
 import os
 import re
+import subprocess
 import threading
 import time
 import uuid
 from pathlib import Path
+
+from rc_fastlane import PreflightError, evaluate, load_profile
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -20,6 +23,10 @@ MAX_BODY = 4096
 LOCK = threading.Lock()
 OPERATIONS = {"/api/fechar-pacote", "/api/corrigir-issue"}
 ISSUE = re.compile(r"^[1-9][0-9]{0,7}$")
+PROJECT_ID = re.compile(r"^[a-z][a-z0-9_-]{1,47}$")
+SHA = re.compile(r"^[0-9a-f]{40}$")
+PROJECTS_DIR = Path(os.environ.get("RUNNER_PROJECTS_DIR", "/app/projects"))
+WORKSPACES_DIR = Path(os.environ.get("RUNNER_WORKSPACES_DIR", "/data/factory-runner/workspaces"))
 AUDIT_PATH = Path(os.environ.get("RUNNER_AUDIT_PATH", "/data/factory-runner/audit.jsonl"))
 
 def authenticated(header):
@@ -51,6 +58,52 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
         # Do not silently accept privileged actions if audit storage is unavailable.
         raise RuntimeError("Audit storage unavailable")
 
+def listed_projects():
+    """Only configured, validated project profiles; never auto-discover scripts."""
+    result = {}
+    if not PROJECTS_DIR.is_dir():
+        return result
+    for path in sorted(PROJECTS_DIR.glob("*.json")):
+        if path.is_symlink() or not PROJECT_ID.fullmatch(path.stem):
+            continue
+        try:
+            profile = load_profile(path)
+        except (PreflightError, OSError, ValueError, TypeError):
+            continue
+        if profile["id"] == path.stem:
+            result[profile["id"]] = {
+                "id": profile["id"],
+                "product": profile["product"],
+                "preflight": "supported",
+                "publication": "disabled",
+            }
+    return result
+
+
+def preflight_project(project_id, expected_sha):
+    """Read-only Git preflight. No network, push, commit or arbitrary caller paths."""
+    if (not isinstance(project_id, str) or not PROJECT_ID.fullmatch(project_id)
+            or not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha)):
+        raise PreflightError("Invalid project or SHA")
+    path = PROJECTS_DIR / (project_id + ".json")
+    if path.is_symlink() or not path.is_file():
+        raise PreflightError("Project not configured")
+    profile = load_profile(path)
+    if profile["id"] != project_id:
+        raise PreflightError("Profile identity mismatch")
+    root = WORKSPACES_DIR.resolve()
+    workspace = root / project_id
+    if workspace.is_symlink() or not workspace.is_dir():
+        raise PreflightError("Project workspace not configured")
+    source = workspace / "source"
+    distribution = workspace / "distribution"
+    if (not source.is_dir() or not distribution.is_dir()
+            or source.is_symlink() or distribution.is_symlink()
+            or source.resolve() != source.absolute()
+            or distribution.resolve() != distribution.absolute()):
+        raise PreflightError("Workspace checkouts unavailable or unsafe")
+    return evaluate(source, distribution, expected_sha, profile=profile)
+
 class Handler(http.server.BaseHTTPRequestHandler):
     def respond(self, status, payload):
         data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
@@ -65,19 +118,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        if self.path not in ("/", "/api/status"):
+        if self.path not in ("/", "/api/status", "/api/projects"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
+        if self.path == "/api/projects":
+            return self.respond(200, {"projects": list(listed_projects().values())})
         return self.respond(200, {
             "service": "factory-runner",
-            "status": "restricted",
+            "status": "read_only_preflight",
+            "preflight": "available_with_preprovisioned_workspaces",
             "publication": "disabled",
             "autonomous_changes": "disabled"
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS:
+        if self.path not in OPERATIONS and self.path != "/api/preflight":
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -93,6 +149,31 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
+        if self.path == "/api/preflight":
+            if set(body) != {"project", "expected_source_sha"}:
+                return self.respond(400, {"error": "invalid_payload"})
+            project = body["project"]
+            source_sha = body["expected_source_sha"]
+            if (not isinstance(project, str) or not PROJECT_ID.fullmatch(project)
+                    or not isinstance(source_sha, str) or not SHA.fullmatch(source_sha)):
+                return self.respond(400, {"error": "invalid_project_or_sha"})
+            if not LOCK.acquire(blocking=False):
+                return self.respond(409, {"error": "busy"})
+            operation_id = str(uuid.uuid4())
+            try:
+                record("/api/preflight", None, "requested", operation_id)
+                try:
+                    result = preflight_project(project, source_sha)
+                except (PreflightError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                    record("/api/preflight", None, "blocked_workspace_or_git", operation_id)
+                    return self.respond(503, {"error": "preflight_unavailable", "operation_id": operation_id})
+                record("/api/preflight", None, "completed_read_only", operation_id)
+                return self.respond(200, {"operation_id": operation_id, "result": result})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
+            finally:
+                LOCK.release()
+
         issue = body.get("issue")
         if type(issue) is not int or not ISSUE.fullmatch(str(issue)):
             return self.respond(400, {"error": "invalid_issue"})
