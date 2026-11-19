@@ -144,6 +144,15 @@ class ExportTest(unittest.TestCase):
                 required={}, optional={}, include_prefixes=["src/"],
                 include_suffixes={})
 
+    def test_total_elapsed_budget_blocks_before_writing(self):
+        import declarative_export as module
+        from unittest.mock import patch
+        with patch.object(module, "MAX_ELAPSED_SECONDS", -1):
+            with self.assertRaisesRegex(DeclarativeExportError,
+                                        "elapsed_budget_exceeded"):
+                self.export()
+        self.assertFalse(self.out.exists())
+
     def test_path_validation(self):
         for x in ("", ".", "..", "./a", "a//b", "a/../b", "a\\b", "a\x00b"):
             with self.subTest(x=x), self.assertRaises(DeclarativeExportError):
