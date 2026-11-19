@@ -92,7 +92,7 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
     checked: dict[str, str] = {}
     for destination, origin in mappings.items():
         dest, src = safe_path(destination), safe_path(origin)
-        if dest == "SOURCE_PROVENANCE.json" or dest in checked:
+        if dest in ("SOURCE_PROVENANCE.json", "DECLARATIVE_BUNDLE_MANIFEST.json") or dest in checked:
             raise DeclarativeExportError("reserved_or_duplicate_destination")
         checked[dest] = src
     # No prefix collisions: one destination cannot be a parent of another.
@@ -145,11 +145,11 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
             stream.write(payload)
         records.append({"path": destination, "source_path": origin,
                         "sha256": hashlib.sha256(payload).hexdigest()})
-    manifest = {"repository": project, "commit": source_sha,
+    manifest = {"format": "factory-runner-bundle-v1", "project": project, "commit": source_sha,
                 "version": expected_version, "files": records,
                 "state": "PREPARED_NOT_PUBLISHED",
                 "export_method": "declarative_no_script"}
-    with (output_dir / "SOURCE_PROVENANCE.json").open("x", encoding="utf-8") as stream:
+    with (output_dir / "DECLARATIVE_BUNDLE_MANIFEST.json").open("x", encoding="utf-8") as stream:
         json.dump(manifest, stream, ensure_ascii=False, indent=2)
         stream.write("\n")
     for record in records:
