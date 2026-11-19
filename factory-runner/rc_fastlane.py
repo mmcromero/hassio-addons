@@ -103,6 +103,24 @@ def load_profile(path):
     for key in ("source_repo", "distribution_repo"):
         if not isinstance(obj[key], str) or not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", obj[key]):
             raise PreflightError("Invalid repository")
+    # Optional declarative export contract belongs to the trusted image profile.
+    # It is never supplied by HTTP or read from an untrusted source commit.
+    if "declarative_mapping" in obj:
+        from declarative_export import DeclarativeExportError, safe_path
+        mapping = obj["declarative_mapping"]
+        if not isinstance(mapping, dict) or not 0 < len(mapping) <= 4096:
+            raise PreflightError("Invalid declarative mapping")
+        for destination, origin in mapping.items():
+            try:
+                dest = safe_path(destination)
+                safe_path(origin)
+            except DeclarativeExportError as exc:
+                raise PreflightError("Invalid declarative mapping path") from exc
+            if dest == obj["provenance_path"]:
+                raise PreflightError("Declarative mapping cannot override provenance")
+            if not (dest.startswith(obj["distribution_prefix"])
+                    or dest in obj["allowed_shared_paths"]):
+                raise PreflightError("Declarative mapping escapes allowed distribution")
     return obj
 
 def evaluate(source, distribution, expected_sha, *, profile):
