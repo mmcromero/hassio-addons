@@ -2,7 +2,7 @@
 
 ## Limites atuais
 
-A versão 0.1.0-rc.1 é somente um candidato de **contenção**. Não tem
+A versão candidata 0.1.0-rc.2 adiciona **pré-verificação somente leitura**. Não tem
 capacidade autorizada de desenvolver ou publicar, mesmo com Bearer válido.
 
 O serviço exige `runner_auth_token` nas opções do Home Assistant com
@@ -16,6 +16,12 @@ A porta `9876/tcp` não é publicada no host por padrão e o servidor usa
 autorização e TLS/autenticação revisados. Nenhum novo valor deve ser escrito
 em arquivos versionados para prover credenciais.
 
+## Pré-verificação por projeto
+
+As rotas autenticadas `GET /api/projects` e `POST /api/preflight` exigem perfis versionados em `/app/projects/` e checkouts privados previamente preparados em `/data/factory-runner/workspaces/<id>/source` e `distribution`. Não há clonagem automática nem credenciais Git no add-on. Sem workspace, retorna `503 preflight_unavailable`.
+
+Este passo não fecha RC, não grava branch e não publica na loja. Consulte [OPERACAO-ESTEIRA.md](OPERACAO-ESTEIRA.md).
+
 ## Persistência e backup
 
 O log de auditoria fica em `/data/factory-runner/audit.jsonl`.
@@ -27,7 +33,7 @@ A disponibilidade real do volume e permissões dependem da instalação física.
 
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_security.py' -v
-python3 -m py_compile factory-runner/server.py factory-runner/autonomous_dev.py
+python3 -m py_compile factory-runner/server.py factory-runner/rc_fastlane.py factory-runner/autonomous_dev.py
 sh -n factory-runner/run.sh
 python3 .github/scripts/validate-addon-registry.py --addon factory-runner
 ```
@@ -44,7 +50,7 @@ após verificar os recursos disponíveis, sem fazer push nem instalar.
   autorizada. Apenas a `main` alimenta a loja instalada no HA.
 - A política do Orquestrador exige testes, autorização canônica de Issue,
   branch, SHA e operação e proíbe force-push.
-- Permanecem pendentes: execução real dos testes, build ARM64, homologação
+- Permanecem pendentes: execução real dos testes, provisionamento seguro dos checkouts, build ARM64, homologação
   no Raspberry Pi, rotação coordenada dos segredos antigos e restauração
   funcional em ambiente isolado.
 
