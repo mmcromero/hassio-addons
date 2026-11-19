@@ -1,0 +1,12 @@
+# Defense in depth: no local credentials or audit artifacts in build context.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+audit.log
+*.log
+__pycache__/
+*.pyc
+.git/
