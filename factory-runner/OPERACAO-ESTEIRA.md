@@ -6,7 +6,8 @@
 
 - `GET /api/status` — autenticado, informa preflight somente leitura.
 - `GET /api/projects` — autenticado, mostra apenas perfis JSON previamente configurados.
-- `POST /api/preflight` — autenticado, aceita exatamente `{"project":"avisaqui","expected_source_sha":"<SHA-40>"}`. Verifica apenas referências e política dos checkouts locais. Não executa correção, exportação nem push.
+- `POST /api/preflight` — autenticado, aceita exatamente `{"project":"avisaqui","expected_source_sha":"<SHA-40>"}`. Verifica referências e política dos checkouts locais, sem escrever.
+- `POST /api/prepare` — autenticado, aceita a mesma estrutura. Primeiro executa o preflight; se elegível, cria um checkout isolado, usa o exportador aprovado e verifica o pacote. **Não publica, não faz push e não permite ao cliente escolher caminhos de destino.** Uma única tarefa ativa por vez.
 - `POST /api/fechar-pacote` e `POST /api/corrigir-issue` continuam bloqueados (403). Token não autoriza publicação.
 - CLI `python3 /app/rc_fastlane.py --profile /app/projects/avisaqui.json ...` permite preparar exportação em checkout isolado, somente quando a política permitir; não publica.
 
