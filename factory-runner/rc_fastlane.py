@@ -248,7 +248,9 @@ def prepare(source, distribution, report, output, *, profile):
                  profile["exporter_path"]])
             if exporter_blob != profile["exporter_git_blob_sha"]:
                 raise PreflightError("Exporter SHA differs from approved project profile")
-            args = [sys.executable, str(exporter), "--commit", report["source_sha"],
+            # Isolated Python mode prevents a source checkout from shadowing
+            # stdlib modules through its scripts directory or PYTHONPATH.
+            args = [sys.executable, "-I", str(exporter), "--commit", report["source_sha"],
                     "--target", str(output)]
             run_checked(args, cwd=source_snapshot, env=safe_env, timeout=240)
             run_checked(args + ["--verify"], cwd=source_snapshot,
