@@ -1,0 +1,32 @@
+name: "Umdoislab — Central Instagram"
+version: "0.1.0"
+slug: umdoislab_instagram
+description: "Central isolada para mensagens Instagram Direct (laboratorio)"
+arch:
+  - aarch64
+startup: application
+boot: manual
+init: false
+stage: experimental
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:instagram
+panel_title: "Central Instagram"
+panel_admin: true
+backup: cold
+options:
+  meta_app_secret: ""
+  meta_verify_token: ""
+  instagram_account_id: ""
+  panel_password: ""
+  bridge_secret: ""
+  ingress_enabled: false
+  drafts_enabled: false
+schema:
+  meta_app_secret: password
+  meta_verify_token: password
+  instagram_account_id: str
+  panel_password: password
+  bridge_secret: password
+  ingress_enabled: bool
+  drafts_enabled: bool

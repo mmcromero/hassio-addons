@@ -41,6 +41,15 @@
       ],
       "arm64_build_job": "build-factory-runner-arm64",
       "source_repo": "https://github.com/mmcromero/orquestrador-projetos-base"
+    },
+    {
+      "id": "instagram-central",
+      "directory": "instagram-central",
+      "slug": "umdoislab_instagram",
+      "architectures": [
+        "aarch64"
+      ],
+      "source_repo": "https://github.com/mmcromero/instagram-automacoes"
     }
   ]
 }
