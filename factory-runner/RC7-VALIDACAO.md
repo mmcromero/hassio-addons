@@ -22,8 +22,8 @@
 
 ## Evidências de testes executados
 
-- Testes com repositórios Git locais reais e clonagem `--no-checkout` simulando apenas o transporte GitHub: **17 testes de sincronização/controller PASS**, executados com UID Linux `nobody`. Casos: SHA Git versus REST, política aberta/fechada, autenticação de chamada sem vazamento, deduplicação sem reclone, preservação de workspace anterior, rollback de rename, recusa de diretórios não gerenciados, URL/ref inválidos, bloqueio quando SHA diverge.
-- Conjunto local disponível, incluindo regressões da RC6: **44 testes PASS** como UID não-root, `bash -n run.sh` PASS, `python3 -m py_compile` PASS, `config.yaml` interpretado por PyYAML com `arch: [aarch64, amd64]` e porta host desativada.
+- **E2E adicional aprovado:** o workspace recém-sincronizado foi usado pelo caminho real `server.prepare_project` para gerar proveniência e pacote local; nenhuma publicação nem alteração dos repositórios de origem.\n- Testes com repositórios Git locais reais e clonagem `--no-checkout` simulando apenas o transporte GitHub: **18 testes de sincronização/controller PASS**, executados com UID Linux `nobody`. Casos: SHA Git versus REST, política aberta/fechada, autenticação de chamada sem vazamento, deduplicação sem reclone, preservação de workspace anterior, rollback de rename, recusa de diretórios não gerenciados, URL/ref inválidos, bloqueio quando SHA diverge.
+- Conjunto local disponível, incluindo regressões da RC6: **45 testes PASS** como UID não-root, `bash -n run.sh` PASS, `python3 -m py_compile` PASS, `config.yaml` interpretado por PyYAML com `arch: [aarch64, amd64]` e porta host desativada.
 - **Não executados:** clone GitHub real com PAT, integração privada no HA, suíte Docker completa, build ARM64 da RC7 e preparação real com um pacote novo aberto. O token da conta do proprietário **não está disponível e não deve ser enviado ao chat**.
 - **Não há autorização para publicação RC7** nesta demanda. Manter na branch para revisão e autorização específica de release quando solicitado.
 
