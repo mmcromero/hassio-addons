@@ -35,13 +35,13 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo registrado na `main` (manifests verificados em 20/11/2026)
+## Catálogo atual e mudanças preparadas em branch (20/11/2026)
 
 | Diretório | Nome de exibição | Versão conferida | Arquitetura |
 |---|---|---|---|
 | `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
 | `pager-virtual/` | Pager Virtual | 0.1.20-rc.11 | aarch64, amd64 |
-| `umdoislab-central/` | Fábrica de Softwares - 12Labs Central de Atendimento | 0.4.0 | aarch64 |
+| `umdoislab-central/` | Fábrica de Softwares - Umdoislab Central de Atendimento *(alteração preparada; ainda não publicada)* | 0.4.0 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.17 | aarch64, amd64 |
 | `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.5 | aarch64 |
 
