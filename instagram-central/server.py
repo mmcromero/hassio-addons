@@ -16,6 +16,7 @@ from pathlib import Path
 from panel_actions import parse_action, token_for
 from policy import prepare_decision
 import oauth_meta
+import instagram_connection
 import panel_login
 from urllib.parse import parse_qs, urlsplit
 
@@ -403,6 +404,104 @@ def panel_authorized(headers, cfg):
         candidate.encode("utf-8"), password.encode("utf-8"))
 
 
+
+def _meta_credential():
+    try:
+        return oauth_meta.load_token(DATA_DIR)
+    except oauth_meta.OAuthError:
+        return None
+
+
+def connection_summary(cfg, credential=None):
+    """Local evidence only. A saved token is NOT proof of webhook delivery."""
+    if credential is None:
+        credential = _meta_credential()
+    state = instagram_connection.credential_status(credential, cfg)
+    account_id = cfg.get("instagram_account_id", "")
+    with database() as conn:
+        if isinstance(account_id, str) and account_id:
+            row = conn.execute(
+                "SELECT COUNT(*), MAX(received_at) FROM inbound WHERE recipient_id=?",
+                (account_id,)).fetchone()
+        else:
+            row = (0, None)
+    return {
+        "oauthReady": oauth_meta.is_ready(cfg),
+        "tokenStored": oauth_meta.token_exists(DATA_DIR),
+        "accountVerified": state["account_verified"],
+        "subscriptionRequested": state["subscription_requested"],
+        "webhookEnabled": cfg.get("ingress_enabled") is True,
+        "webhookConfigReady": (isinstance(cfg.get("meta_verify_token"), str)
+             and len(cfg["meta_verify_token"]) >= 24
+             and isinstance(cfg.get("meta_app_secret"), str)
+             and len(cfg["meta_app_secret"]) >= 16),
+        "messagesStored": int(row[0]),
+        "lastMessageReceived": row[1],
+        "verifiedAt": credential.get("verified_at") if state["account_verified"] else None,
+    }
+
+
+def render_connection_section(cfg, summary):
+    """Show precise progress. Never print tokens, app secrets, verify tokens."""
+    name = html.escape(str(cfg.get("instagram_account_id") or "não configurada"), quote=True)
+    items = (
+        ("OAuth preparado", summary["oauthReady"]),
+        ("Conta verificada na Meta", summary["accountVerified"]),
+        ("Webhook habilitado", summary["webhookEnabled"]),
+        ("Assinatura solicitada", summary["subscriptionRequested"]),
+    )
+    flags = "".join("<li>" + html.escape(label) + ": <strong>" +
+                    ("Sim" if value else "Não") + "</strong></li>"
+                    for label, value in items)
+    last = summary["lastMessageReceived"] or "Nenhuma"
+    url = cfg.get("meta_oauth_redirect_uri", "")
+    actions = []
+    if summary["oauthReady"] and not summary["accountVerified"]:
+        # A browser session established via the same HTTPS hostname is required
+        # for the public proxy route to recognize the session cookie.
+        start_url = url[:-len("/oauth/meta/callback")] + "/oauth/meta/start"
+        actions.append('<a href="' + html.escape(start_url, quote=True)
+                       + '">Conectar Instagram pela Meta</a>')
+    setup = (
+        ("App Meta", bool(str(cfg.get("meta_app_id") or "").isdigit())),
+        ("Login unificado", bool(str(cfg.get("meta_login_config_id") or "").isdigit())),
+        ("Conta Instagram", bool(str(cfg.get("instagram_account_id") or "").isdigit())),
+        ("Retorno HTTPS", oauth_meta.is_ready(cfg)),
+        ("Segredo Meta", isinstance(cfg.get("meta_app_secret"), str)
+          and len(cfg.get("meta_app_secret", "")) >= 16),
+        ("Token de verificação", isinstance(cfg.get("meta_verify_token"), str)
+          and len(cfg.get("meta_verify_token", "")) >= 24),
+    )
+    checklist = "".join("<li>" + label + ": " + ("configurado" if ready else "pendente")
+                        + "</li>" for label, ready in setup)
+    return ("""<section aria-label="Conexão com Instagram" style="border:1px solid #ccd5e1;
+       padding:1.1rem;border-radius:12px;margin:1.2rem 0;background:#f7faff">
+       <h2>Conexão com o Instagram</h2><p>Conta: <strong>@umdoislab</strong>
+       · ID: <code>""" + name + """</code></p>
+       <ul>""" + flags + """</ul>
+       <details><summary>Configuração necessária</summary><ul>""" + checklist + """</ul>
+       <p>As credenciais são configuradas nas opções do aplicativo no Home Assistant.
+       Não compartilhe segredos por mensagem.</p></details>
+       <p><strong>Mensagens armazenadas: """ + str(summary["messagesStored"]) +
+       """</strong> · Última entrada: """ + html.escape(str(last)) + """</p>
+       <p><small>Uma assinatura aceita pela Meta não comprova que mensagens já chegam.
+       O primeiro recebimento assinado é a confirmação.</small></p>""" +
+       " ".join(actions) +
+       """<div id="meta-actions"></div></section>""")
+
+
+def _meta_action_body(raw):
+    if not isinstance(raw, bytes) or len(raw) > 512:
+        return None
+    try:
+        values = parse_qs(raw.decode("utf-8"), keep_blank_values=True, max_num_fields=1)
+    except (ValueError, UnicodeDecodeError):
+        return None
+    if set(values) != {"csrf"} or len(values["csrf"]) != 1:
+        return None
+    return values["csrf"][0]
+
+
 def render_panel(cfg=None):
     """Escaped local-only panel, with no Meta send or browser scripts."""
     with database() as conn:
@@ -433,6 +532,8 @@ def render_panel(cfg=None):
         entries.append("<tr>" + "".join("<td>" + html.escape(str(v), quote=True) +
                        "</td>" for v in cells) + "<td>" + "".join(actions) + "</td></tr>")
     body = "".join(entries) if entries else '<tr><td colspan="7">Nenhuma mensagem recebida.</td></tr>'
+    summary = connection_summary(cfg)
+    connection_section = render_connection_section(cfg, summary)
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Central Instagram — laboratório</title>
@@ -441,6 +542,7 @@ table{border-collapse:collapse;width:100%}th,td{padding:.7rem;border-bottom:1px 
 th{background:#f1f4f7}small{color:#58657a}form{display:inline-block;margin:3px}button{padding:.4rem .6rem;cursor:pointer}</style></head><body>
 <h1>Central Instagram</h1><p>Laboratório: ações alteram somente o estado local.</p>
 <form method="post" action="auth/logout"><button type="submit">Sair</button></form>
+""" + connection_section + """
 <small>Últimas 50 mensagens. Não envia respostas ao Instagram.</small>
 <table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
             + body + "</tbody></table></body></html>")
@@ -468,12 +570,13 @@ class Handler(BaseHTTPRequestHandler):
             cfg = settings()
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
-            return self.respond(200, {
-                "enabled": oauth_meta.is_ready(cfg),
-                "credentialStored": oauth_meta.token_exists(DATA_DIR),
-                "connectionVerified": False,
-                "sendingEnabled": False
-            })
+            summary = connection_summary(cfg)
+            # Keep existing status contract for older integration consumers.
+            summary["enabled"] = summary["oauthReady"]
+            summary["credentialStored"] = summary["tokenStored"]
+            summary["connectionVerified"] = summary["accountVerified"]
+            summary["sendingEnabled"] = False
+            return self.respond(200, summary)
         if route.path == "/oauth/meta/start" and not route.query:
             cfg = settings()
             if not panel_authorized(self.headers, cfg):
@@ -501,6 +604,9 @@ class Handler(BaseHTTPRequestHandler):
                 with database() as conn:
                     oauth_meta.consume_state(conn, state)
                 credential = oauth_meta.exchange_code(code, cfg)
+                identity = instagram_connection.verify_access(
+                    cfg, credential["access_token"])
+                credential.update(identity)
                 oauth_meta.store_token(DATA_DIR, credential)
             except oauth_meta.OAuthError:
                 return self.respond(400, {"error": "OAuth refused or expired"})
@@ -508,13 +614,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error": "OAuth unavailable"})
             # No token, authorization code, client ID, or secret is reflected to the client.
             return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
-                "<title>Instagram</title><body>Autorização recebida e armazenada. "
-                "Mensagens e automações continuam desativadas.</body></html>", "text/html")
+                "<title>Instagram</title><body>Conta @umdoislab verificada e autorizada. "
+                "Volte ao painel para configurar a assinatura de mensagens. "
+                "Nenhuma mensagem foi enviada.</body></html>", "text/html")
         if self.path in ("/", "/panel"):
             cfg = settings()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")
-            return self.respond(200, render_panel(cfg), "text/html")
+            page = render_panel(cfg)
+            csrf_check = panel_login.admin_csrf_token(
+                self.headers.get("Cookie", ""), cfg.get("panel_password"), "check")
+            csrf_subscribe = panel_login.admin_csrf_token(
+                self.headers.get("Cookie", ""), cfg.get("panel_password"), "subscribe")
+            if csrf_check:
+                controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button>Verificar acesso Meta</button></form>'
+                if (connection_summary(cfg)["accountVerified"] and
+                        connection_summary(cfg)["webhookEnabled"] and
+                        connection_summary(cfg)["webhookConfigReady"]):
+                    controls += '<form method="post" action="panel/meta/subscribe"><input type="hidden" name="csrf" value="' + csrf_subscribe + '"><button>Assinar mensagens na Meta</button></form>'
+                page = page.replace('<div id="meta-actions"></div>',
+                                    '<div id="meta-actions">' + controls + '</div>')
+            return self.respond(200, page, "text/html")
         if self.path == "/bridge/pending":
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
@@ -537,6 +657,47 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path in ("/panel/meta/check", "/panel/meta/subscribe"):
+            cfg = settings()
+            if not panel_session_authorized(self.headers, cfg):
+                return self.respond(403, {"error": "access denied"})
+            if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
+                return self.respond(415, {"error": "invalid content type"})
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return self.respond(400, {"error": "invalid length"})
+            if size <= 0 or size > 512:
+                return self.respond(413, {"error": "size not allowed"})
+            action = "check" if self.path.endswith("/check") else "subscribe"
+            candidate = _meta_action_body(self.rfile.read(size))
+            if not panel_login.admin_csrf_valid(
+                    self.headers.get("Cookie", ""), cfg.get("panel_password"),
+                    action, candidate):
+                return self.respond(403, {"error": "invalid CSRF"})
+            if not oauth_meta.is_ready(cfg):
+                return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            try:
+                credential = _meta_credential()
+                if credential is None:
+                    raise instagram_connection.ConnectionError("No token available")
+                if action == "check":
+                    identity = instagram_connection.verify_access(
+                        cfg, credential["access_token"])
+                    credential.update(identity)
+                else:
+                    when = instagram_connection.subscribe_messages(cfg, credential)
+                    credential["subscribed_at"] = when
+                oauth_meta.store_token(DATA_DIR, credential)
+            except (instagram_connection.ConnectionError, oauth_meta.OAuthError,
+                    OSError, ValueError):
+                return self.respond(422, {"error": "Meta access or subscription not verified"})
+            self.send_response(303)
+            self.send_header("Location", "../panel")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if self.path == "/auth/login":
             cfg = settings()
             password = cfg.get("panel_password")
