@@ -90,6 +90,13 @@ class EditorialStore:
             columns = {r[1] for r in db.execute("PRAGMA table_info(posts)")}
             if "version" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+            if "caption_mode" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN caption_mode TEXT NOT NULL DEFAULT 'general'")
+            if "pending_schedule_at" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN pending_schedule_at INTEGER")
+            attachment_columns = {r[1] for r in db.execute("PRAGMA table_info(attachments)")}
+            if "slide_caption" not in attachment_columns:
+                db.execute("ALTER TABLE attachments ADD COLUMN slide_caption TEXT NOT NULL DEFAULT ''")
             db.commit()
         os.chmod(self.db_path, 0o600)
 
@@ -166,7 +173,11 @@ class EditorialStore:
 
     @staticmethod
     def _invalidate(db, post_id, revision):
+        # Editing a scheduled publication preserves its time as a non-executable
+        # reservation. The scheduler only claims state='scheduled'.
         db.execute("""UPDATE posts SET state='draft', revision=?, approved_revision=NULL,
+                      pending_schedule_at=CASE WHEN state='scheduled'
+                          THEN scheduled_at ELSE pending_schedule_at END,
                       scheduled_at=NULL WHERE id=?""", (revision + 1, post_id))
 
     def edit_caption(self, post_id, caption):
@@ -191,10 +202,12 @@ class EditorialStore:
             self._invalidate(db, post_id, row["revision"])
             self._audit(db, post_id, "media_changed")
 
-    def approve(self, post_id, *, expected_version=None):
+    def approve(self, post_id, *, expected_version=None, now=None):
         with self._tx() as db:
             self._check_version(db, post_id, expected_version)
-            row = db.execute("SELECT format,revision,state FROM posts WHERE id=?", (post_id,)).fetchone()
+            row = db.execute(
+                "SELECT format,revision,state,pending_schedule_at FROM posts WHERE id=?",
+                (post_id,)).fetchone()
             if row is None or row["state"] not in ("draft", "approved"):
                 raise EditorialError("Só rascunhos podem ser aprovados")
             count = db.execute("SELECT COUNT(*) FROM attachments WHERE post_id=?", (post_id,)).fetchone()[0]
@@ -207,8 +220,19 @@ class EditorialStore:
                     (post_id, int(row["format"] == "reel"))).fetchone()
                 if invalid:
                     raise EditorialError("Mídia incompatível com o formato")
-            db.execute("UPDATE posts SET state='approved',approved_revision=revision WHERE id=?", (post_id,))
-            self._audit(db, post_id, "approved")
+            pending = row["pending_schedule_at"]
+            if pending is not None and pending > _timestamp(now):
+                # Only future reservations resume after the new revision is approved.
+                db.execute("""UPDATE posts SET state='scheduled',approved_revision=revision,
+                              scheduled_at=pending_schedule_at,pending_schedule_at=NULL
+                              WHERE id=?""", (post_id,))
+                self._audit(db, post_id, "approved_schedule_restored")
+            else:
+                # Past reservations remain visible for review, not runnable.
+                db.execute(
+                    "UPDATE posts SET state='approved',approved_revision=revision WHERE id=?",
+                    (post_id,))
+                self._audit(db, post_id, "approved")
 
     def schedule(self, post_id, when: datetime, *, now=None, expected_version=None):
         utc_when = _timestamp(when)
@@ -219,13 +243,15 @@ class EditorialStore:
             row = db.execute("SELECT state,revision,approved_revision FROM posts WHERE id=?", (post_id,)).fetchone()
             if row is None or row["state"] != "approved" or row["revision"] != row["approved_revision"]:
                 raise EditorialError("A versão atual precisa de aprovação")
-            db.execute("UPDATE posts SET state='scheduled', scheduled_at=? WHERE id=?", (utc_when, post_id))
+            db.execute("""UPDATE posts SET state='scheduled', scheduled_at=?,
+                          pending_schedule_at=NULL WHERE id=?""", (utc_when, post_id))
             self._audit(db, post_id, "scheduled")
 
     def cancel_schedule(self, post_id, *, expected_version=None):
         with self._tx() as db:
             self._check_version(db, post_id, expected_version)
-            cur = db.execute("""UPDATE posts SET state='approved', scheduled_at=NULL
+            cur = db.execute("""UPDATE posts SET state='approved', scheduled_at=NULL,
+                                pending_schedule_at=NULL
                                 WHERE id=? AND state='scheduled'""", (post_id,))
             if cur.rowcount != 1:
                 raise EditorialError("Agenda indisponível para cancelamento")
@@ -273,7 +299,7 @@ class EditorialStore:
     def get_post(self, post_id):
         with self._db() as db:
             row = db.execute("""SELECT id,format,caption,revision,approved_revision,state,
-                                scheduled_at,remote_id FROM posts WHERE id=?""", (post_id,)).fetchone()
+                                scheduled_at,pending_schedule_at,remote_id FROM posts WHERE id=?""", (post_id,)).fetchone()
             return dict(row) if row else None
 
 
@@ -285,7 +311,8 @@ class EditorialStore:
         if type(expected_version) is not int or row is None or row[0] != expected_version:
             raise EditorialConflict("Conteúdo mudou. Recarregue antes de tentar novamente.")
 
-    def save_draft(self, format, caption, media_ids, *, post_id=None, expected_version=None):
+    def save_draft(self, format, caption, media_ids, *, post_id=None, expected_version=None,
+                   caption_mode="general", slide_captions=None):
         """HTTP edit is one transaction: no partial attachment/caption updates."""
         if (not isinstance(format, str) or format not in _FORMATS or
                 not isinstance(caption, str) or len(caption) > 2200 or
@@ -293,6 +320,14 @@ class EditorialStore:
                 any(not isinstance(mid, str) or not re.fullmatch(r"[0-9a-f]{32}", mid)
                     for mid in media_ids) or len(set(media_ids)) != len(media_ids)):
             raise EditorialError("Rascunho inválido")
+        if slide_captions is None:
+            slide_captions = [""] * len(media_ids)
+        if (caption_mode not in ("general", "per_slide") or
+                not isinstance(slide_captions, list) or len(slide_captions) != len(media_ids) or
+                any(not isinstance(text, str) or len(text) > 2200 for text in slide_captions) or
+                (caption_mode == "per_slide" and (format != "carousel" or len(media_ids) < 2 or caption)) or
+                (caption_mode == "general" and any(slide_captions))):
+            raise EditorialError("Legendas individuais inválidas")
         with self._tx() as db:
             for mid in media_ids:
                 if not db.execute("SELECT 1 FROM media WHERE id=?", (mid,)).fetchone():
@@ -301,18 +336,20 @@ class EditorialStore:
                 if db.execute("SELECT COUNT(*) FROM posts").fetchone()[0] >= 1000:
                     raise EditorialError("Limite de 1000 publicações atingido")
                 post_id = secrets.token_hex(16)
-                db.execute("INSERT INTO posts(id,format,caption,created_at) VALUES(?,?,?,?)",
-                           (post_id, format, caption, _timestamp()))
+                db.execute("INSERT INTO posts(id,format,caption,caption_mode,created_at) VALUES(?,?,?,?,?)",
+                           (post_id, format, caption, caption_mode, _timestamp()))
                 event = "created"
             else:
                 self._check_version(db, post_id, expected_version)
                 row = self._editable(db, post_id)
                 self._invalidate(db, post_id, row["revision"])
-                db.execute("UPDATE posts SET format=?,caption=? WHERE id=?", (format, caption, post_id))
+                db.execute("UPDATE posts SET format=?,caption=?,caption_mode=? WHERE id=?",
+                           (format, caption, caption_mode, post_id))
                 db.execute("DELETE FROM attachments WHERE post_id=?", (post_id,))
                 event = "edited"
-            db.executemany("INSERT INTO attachments VALUES(?,?,?)",
-                           [(post_id, mid, i) for i, mid in enumerate(media_ids)])
+            db.executemany(
+                "INSERT INTO attachments(post_id,media_id,position,slide_caption) VALUES(?,?,?,?)",
+                [(post_id, mid, i, slide_captions[i]) for i, mid in enumerate(media_ids)])
             self._audit(db, post_id, event)
         return post_id
 
@@ -321,12 +358,18 @@ class EditorialStore:
             db.execute("BEGIN")
             posts = []
             for row in db.execute("SELECT * FROM posts ORDER BY created_at DESC,id"):
-                mids = [r[0] for r in db.execute(
-                    "SELECT media_id FROM attachments WHERE post_id=? ORDER BY position", (row["id"],))]
+                attachment_rows = db.execute(
+                    "SELECT media_id,slide_caption FROM attachments WHERE post_id=? ORDER BY position",
+                    (row["id"],)).fetchall()
+                mids = [r["media_id"] for r in attachment_rows]
                 posts.append({"id": row["id"], "format": row["format"], "caption": row["caption"],
+                              "captionMode": row["caption_mode"],
+                              "slideCaptions": [r["slide_caption"] for r in attachment_rows],
                               "revision": row["revision"], "approvedRevision": row["approved_revision"],
                               "version": row["version"], "status": row["state"], "mediaIds": mids,
                               "scheduledAt": row["scheduled_at"] * 1000 if row["scheduled_at"] else None,
+                              "pendingScheduledAt": row["pending_schedule_at"] * 1000
+                                  if row["pending_schedule_at"] else None,
                               "createdAt": row["created_at"] * 1000})
             media = [{"id": r["id"], "name": r["id"] + "." + r["extension"],
                       "size": r["size"], "type": {"png": "image/png", "jpg": "image/jpeg", "mp4": "video/mp4"}[r["extension"]],

@@ -1,9 +1,9 @@
-# Central Instagram Umdoislab — distribuição 0.1.7
+# Central Instagram Umdoislab — patch privado 0.1.8
 
-**Estado:** versão **0.1.7 publicada no catálogo GitHub**; atualização e homologação no Home Assistant **ainda não executadas**. A versão 0.1.6 é a distribuição anterior e foi informada pelo proprietário como instalada. Esta 0.1.7 reúne Mensagens + Editorial no **mesmo aplicativo, sessão, login e Ingress**, sem criar outra integração.
+**Estado:** patch **0.1.8 em desenvolvimento privado**, sem publicação ou instalação. A 0.1.7 foi publicada no catálogo, instalada no Home Assistant e teve abertura visual e rascunho H01 confirmados pelo proprietário. Mensagens + Editorial continuam no **mesmo aplicativo, sessão, login e Ingress**.
 
 - Repositório privado: `mmcromero/instagram-automacoes`.
-- Branch da candidata: `release/instagram-0.1.7-rc.1`.
+- Branch do patch: `feat/instagram-editorial-ux-patch-001` (deriva da candidata privada 0.1.7).
 - Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
 - Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
 - Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
@@ -15,6 +15,20 @@
 **Editorial:** a navegação abre `/editorial/` no mesmo servidor e sessão de Mensagens. Biblioteca de mídia, upload JPG/PNG/MP4 com validação de tipos/limites, rascunhos, edição, aprovação, agenda no fuso `America/Sao_Paulo`, cancelamento e recarga persistente via HTTP+SQLite. Edição invalida aprovação/agenda anterior; operações obsoletas recebem conflito de versão. **A agenda é local, não realiza postagem.** Não há segundo login nem serviço Editorial separado.
 
 **Estrutura multicontas:** cadastro interno de negócios, separação entre `business_id` e ID da conta oficial Meta e isolamento de tokens/mídias. Nesta candidata, **somente Umdoislab** tem rotas administrativas operacionais. Outras contas são apenas sintéticas em testes; nenhuma ativação real.
+
+## Patch 0.1.8 — interface Editorial (não publicado)
+
+- **Feed automático:** a opção Publicação no feed aceita 1–20 imagens; uma imagem mantém `feed`, várias imagens são gravadas como `carousel`. Story e Reel continuam separados. Rascunhos anteriores mantêm o tipo.
+- **Legendas locais por imagem:** quando o carrossel tem 2 ou mais imagens, escolher *Uma legenda para todas as imagens* ou *Legenda individual por imagem*. O SQLite mantém `caption_mode` na publicação e `slide_caption` em cada anexo, com migração **aditiva**. A API aceita `captionMode` e `slideCaptions` opcionais, mantendo chamadas antigas válidas. **A API Meta não está habilitada para publicar essas legendas**; não há conversão ou descarte silencioso.
+- **Prévia no Editor e em Aprovações:** setas para percorrer carrossel, contador posição/total; miniatura de capa e bloco de texto clicáveis no cartão de Aprovações. O modal grande abre **somente leitura**, sem formulário/edição/aprovação. Editar, Aprovar, Agendar e Cancelar mantêm as ações anteriores.
+- **Título do cartão:** sem novo campo obrigatório. A interface utiliza o início da legenda geral (ou primeira legenda individual) como título curto, seguido de resumo visual; depois mostra tipo e status. Preserva os rascunhos existentes.
+- **Mídia indisponível em aba antiga (H11):** se foto/vídeo apresentar erro de carregamento, Biblioteca e prévia mostram aviso junto à própria mídia orientando atualizar a página. Falhas de upload/salvar exibem alerta persistente perto do componente afetado, com tratamento de sessão inválida e resposta não JSON. O app não reinicia a sessão automaticamente, não repete gravações sem confirmação e não assume que a falha é expiração de login. A sessão do painel já existente expira em 12 horas; tokens CSRF de ação são obtidos no momento da ação. A causa do H11 ainda depende de evidência de status HTTP/log para ser identificada.
+- **Agendar com contexto (H10):** o modal mostra miniatura da primeira mídia (ou frame de vídeo), título derivado da legenda e trecho da legenda para confirmar a publicação correta. Erros de data passada são mostrados dentro da janela, junto ao botão **Confirmar agenda**, sem fechar o modal nem apagar a entrada. Horário civil é comparado em `America/Sao_Paulo`, **além** da validação obrigatória no servidor. Respostas inesperadas do servidor deixam de expor mensagens técnicas `JSON.parse` ao operador; um retorno não JSON não será tratado como gravação confirmada. Nenhuma mudança no backend de publicação Meta.
+- **Edições simultâneas (H09):** o backend mantém bloqueio por versão (HTTP 409). Em caso de conflito, o formulário mostra alerta de erro persistente **“Não foi salvo”**, preserva a digitação local e não trata a ação como sucesso. A mensagem explica que outra aba alterou a publicação e orienta recuperar a versão atual. Não é feito merge automático das duas edições nem sobrescrita da versão mais recente.
+- **Padrão visual e logout único:** painel Mensagens passa a usar o mesmo tema escuro, hierarquia, menu lateral e cabeçalho do Editorial; os formulários `Assumir`, `Aguardar`, `Concluir`, `Voltar ao bot` e os controles Meta são preservados. O cabeçalho de ambos mostra conta e botão **Sair**. No Editorial, usa `action="../auth/logout"`, no painel Mensagens `action="auth/logout"`; ambas resolvem para **a rota administrativa existente** `POST /auth/logout`. Não há nova senha, cookie, rota de logout ou envio externo.
+- **Calendário com reserva e revisão:** ao editar uma publicação já agendada, a data e a hora continuam registradas em `pending_schedule_at` e a execução fica bloqueada até nova aprovação. A publicação aparece no calendário com destaque visual e botão **Aprovar** diretamente na lista. Ao aprovar, o horário original volta se futuro; se vencido, permanece visível como expirado e solicita reagendamento. O botão **Cancelar agenda** segue limpando a reserva ativa.
+- **Teste de F5 do Ingress:** retorno ocasional à página Mensagens relatado; sem causa confirmada, o patch não altera o roteamento do Home Assistant.
+- **Evidência:** novos testes Python de migração, validação e persistência e roteiro de Chromium incorporados aos testes de desenvolvimento. **Não estão executados nesta conversa**; não confundir revisão de fonte com PASS de homologação.
 
 ## Dados e compatibilidade
 
@@ -40,12 +54,8 @@ No código base do PR #7, sem alterações de lógica nesta candidata:
 
 Essas evidências **não comprovam** build `aarch64` ou execução no Home Assistant, e não devem ser repetidas por rotina quando só versão/documentação mudou. O Supervisor poderá construir no hardware alvo **apenas durante uma instalação autorizada**. Norma: [P0 do catálogo Home Assistant](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md).
 
-## Distribuição Home Assistant — catálogo publicado, instalação pendente
+## Distribuição Home Assistant — patch 0.1.8 privado
 
-A fonte privada 0.1.7 permanece em `release/instagram-0.1.7-rc.1`. A distribuição correspondente está em `mmcromero/hassio-addons:main/instagram-central/`, preservando os dois arquivos de marca oficiais, `icon.png` e `logo.png`.
-
-**Próximo passo, mediante autorização específica:** atualizar apenas o add-on Central Instagram no Home Assistant, preservando opções e dados. Após a instalação, conferir o build do Supervisor, login, Mensagens e Editorial. Registrar a evidência na Issue #1.
-
-O método oficial é publicar **os arquivos da pasta no GitHub**, não gerar TAR, ZIP ou imagem Docker separada. Na atualização autorizada do Home Assistant, o Supervisor poderá construir o add-on pelo Dockerfile na arquitetura alvo. **Publicação no catálogo não equivale a instalação ou homologação**. Não iniciar Actions, fazer merge automático do PR #7 nem ativar Meta.
+O catálogo público `mmcromero/hassio-addons:main/instagram-central/` permanece com a **0.1.7** (commit `b39f9edf2772f295d13180b456ff040271071329`). Esta **0.1.8 não foi publicada nem instalada**. Não criar TAR/ZIP nem usar GitHub Actions. Quando desenvolvimento e testes dirigidos estiverem verificados e houver autorização separada de publicação, seguir o procedimento P0, copiando **somente `instagram-central/`** para a loja. Manter os arquivos `icon.png` e `logo.png` já presentes, o slug, os dados `/data`, as opções e a identidade. Instalação e homologação no Home Assistant são etapas posteriores, também autorizadas separadamente.
 
 Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.

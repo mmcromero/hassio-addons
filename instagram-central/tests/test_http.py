@@ -218,6 +218,14 @@ class HTTPContractTests(unittest.TestCase):
         status, _, body = self.request("/panel", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
         self.assertIn(b"Assumir", body)
+        # Same approved visual language as Editorial; H07 login/logout contract unchanged.
+        self.assertIn(b'class="topbar"', body)
+        self.assertIn(b'class="sidebar"', body)
+        self.assertIn(b'aria-label="Módulos"', body)
+        self.assertIn(b'--bg:#0c1520', body)
+        self.assertIn(b'action="auth/logout"', body)
+        self.assertEqual(body.count(b'>Sair</button>'), 1)
+        self.assertIn(b'action="panel/handoff"', body)
         self.assertNotIn(self.config["panel_password"].encode(), body)
         status, logout_headers, _ = self.request("/auth/logout", "POST",
                                                headers={"Cookie": cookie})

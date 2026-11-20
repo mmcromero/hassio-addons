@@ -125,6 +125,10 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
         self.assertNotIn("unsafe-inline", headers["Content-Security-Policy"])
         self.assertIn(b'href="../"', body)
+        self.assertIn(b'class="topbar"', body)
+        self.assertIn(b'class="account">@umdoislab', body)
+        self.assertIn(b'action="../auth/logout"', body)
+        self.assertEqual(body.count(b'>Sair</button>'), 1)
         for asset in ("editorial.css", "editorial.js"):
             self.assertEqual(self.request("/editorial/" + asset)[0], 200)
         status, headers, body = self.request("/")
@@ -132,6 +136,18 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertIn(b'href="editorial/"', body)
         self.assertNotIn("script-src", headers["Content-Security-Policy"])
         self.assertTrue(json.loads(self.request("/panel/account-context")[2])["editorialUIIntegrated"])
+
+    def test_editorial_logout_revokes_shared_session_without_changing_content(self):
+        post_id, _ = self.draft()
+        self.assertIn(b'action="../auth/logout"', self.request("/editorial/")[2])
+        status, headers, _ = self.request("/auth/logout", "POST", headers={"Cookie": self.cookie})
+        self.assertEqual(status, 303)
+        self.assertIn("Max-Age=0", headers["Set-Cookie"])
+        self.assertEqual(self.request("/editorial/api/state")[0], 403)
+        self.assertEqual(self.request("/editorial/")[0], 403)
+        # Session revocation never deletes local editorial data.
+        stored = server.editorial_store_for_business()
+        self.assertTrue(any(p["id"] == post_id for p in stored.snapshot()["posts"]))
 
     def test_tenant_query_body_path_and_ids_cannot_select_other_business(self):
         other = server.editorial_store_for_business("synthetic")
@@ -194,8 +210,37 @@ class EditorialHTTPTests(unittest.TestCase):
         edited = self.state()["posts"][0]
         self.assertEqual(edited["status"], "draft")
         self.assertIsNone(edited["approvedRevision"]); self.assertIsNone(edited["scheduledAt"])
+        self.assertEqual(edited["pendingScheduledAt"], scheduled["scheduledAt"])
         self.assertEqual(self.post("posts/" + post_id + "/schedule", {"version": edited["version"], "localTime": local}, "schedule")[0], 422)
         self.assertEqual(self.post("drafts", {"id": post_id, "version": scheduled["version"], "format": "feed", "caption": "stale", "mediaIds": [mid]}, "draft")[0], 409)
+        self.assertEqual(self.post("posts/" + post_id + "/approve", {"version": edited["version"]}, "approve")[0], 200)
+        restored = self.state()["posts"][0]
+        self.assertEqual(restored["status"], "scheduled")
+        self.assertEqual(restored["scheduledAt"], scheduled["scheduledAt"])
+        self.assertIsNone(restored["pendingScheduledAt"])
+        self.assertEqual(self.post("posts/" + post_id + "/cancel", {"version": restored["version"]}, "cancel")[0], 200)
+        cancelled = self.state()["posts"][0]
+        self.assertEqual(cancelled["status"], "approved")
+        self.assertIsNone(cancelled["scheduledAt"])
+        self.assertIsNone(cancelled["pendingScheduledAt"])
+
+    def test_h10_past_schedule_is_rejected_in_json_without_mutating_post(self):
+        post_id, _ = self.draft()
+        initial = self.state()["posts"][0]
+        self.assertEqual(self.post("posts/" + post_id + "/approve",
+                                  {"version": initial["version"]}, "approve")[0], 200)
+        approved = self.state()["posts"][0]
+        old_time = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT15:11")
+        status, headers, raw = self.post("posts/" + post_id + "/schedule",
+                                         {"version": approved["version"],
+                                          "localTime": old_time}, "schedule")
+        self.assertEqual(status, 422)
+        self.assertIn("application/json", headers["Content-Type"])
+        self.assertEqual(json.loads(raw)["error"], "Data deve ser futura")
+        unchanged = self.state()["posts"][0]
+        self.assertEqual(unchanged["status"], "approved")
+        self.assertIsNone(unchanged["scheduledAt"])
+        self.assertEqual(unchanged["version"], approved["version"])
 
     def test_two_concurrent_edits_only_one_succeeds(self):
         post_id, mid = self.draft()
@@ -300,6 +345,50 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertEqual(self.request("/editorial/media/" + mid)[0], 403)
         self.cfg["panel_password"] += "changed"
         self.assertEqual(self.request("/editorial/api/state")[0], 403)
+
+
+    def test_per_slide_api_persists_and_rejects_unsafe_payloads(self):
+        media = []
+        for _ in range(2):
+            status, _, body = self.upload()
+            self.assertEqual(status, 201)
+            media.append(json.loads(body)["id"])
+        payload = {"format": "carousel", "caption": "", "mediaIds": media,
+                   "captionMode": "per_slide",
+                   "slideCaptions": ["Imagem um", "Imagem dois"]}
+        status, _, body = self.post("drafts", payload, "draft")
+        self.assertEqual(status, 200)
+        post_id = json.loads(body)["id"]
+        entry = self.state()["posts"][0]
+        self.assertEqual(entry["id"], post_id)
+        self.assertEqual(entry["captionMode"], "per_slide")
+        self.assertEqual(entry["slideCaptions"], ["Imagem um", "Imagem dois"])
+        self.assertEqual(self.post("drafts", {**payload, "business_id": "other"}, "draft")[0], 422)
+        self.assertEqual(self.post("drafts", {**payload, "slideCaptions": ["x"]}, "draft")[0], 422)
+        self.assertEqual(self.post("drafts", {**payload, "slideCaptions": ["x" * 2201, "y"]}, "draft")[0], 422)
+        self.assertEqual(self.post("drafts", {**payload, "captionMode": "bad"}, "draft")[0], 422)
+        self.assertEqual(self.state()["posts"][0]["captionMode"], "per_slide")
+
+    def test_large_bounded_carousel_caption_json_and_legacy_contract(self):
+        media = []
+        for _ in range(8):
+            status, _, body = self.upload()
+            self.assertEqual(status, 201)
+            media.append(json.loads(body)["id"])
+        captions = ["Descrição sintética "+str(i)+" "+("X" * 2100) for i in range(8)]
+        payload = {"format": "carousel", "caption": "", "mediaIds": media,
+                   "captionMode": "per_slide", "slideCaptions": captions}
+        self.assertGreater(len(json.dumps(payload)), 16 * 1024)
+        self.assertLess(len(json.dumps(payload)), 64 * 1024)
+        self.assertEqual(self.post("drafts", payload, "draft")[0], 200)
+        self.assertEqual(self.state()["posts"][0]["slideCaptions"], captions)
+        # Previous API payloads remain valid, with implicit general caption.
+        status, _, body = self.post("drafts", {"format": "feed", "caption": "Legado", "mediaIds": [media[0]]}, "draft")
+        self.assertEqual(status, 200)
+        post_id = json.loads(body)["id"]
+        legacy = next(p for p in self.state()["posts"] if p["id"] == post_id)
+        self.assertEqual(legacy["captionMode"], "general")
+        self.assertEqual(legacy["slideCaptions"], [""])
 
 
 class MigrationAndContextTests(unittest.TestCase):

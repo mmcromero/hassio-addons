@@ -185,16 +185,23 @@ def handle(handler, method, route, cfg, authorized, store_factory):
             return reply(201, {"id": media_id})
         if handler.headers.get("Content-Type") != "application/json":
             return reply(415, {"error": "JSON obrigatório"})
-        data = json.loads(_read(handler, 16 * 1024))
+        data = json.loads(_read(handler, 256 * 1024 if action == "draft" else 16 * 1024))
         if not isinstance(data, dict):
             raise editorial_core.EditorialError("Objeto JSON obrigatório")
         if action == "draft":
-            if set(data) not in ({"format", "caption", "mediaIds"}, {"id", "version", "format", "caption", "mediaIds"}):
+            required = {"format", "caption", "mediaIds"}
+            if "id" in data:
+                required |= {"id", "version"}
+            allowed = required | {"captionMode", "slideCaptions"}
+            if not required.issubset(data) or not set(data).issubset(allowed):
                 raise editorial_core.EditorialError("Campos inválidos")
             if "id" in data and (not isinstance(data["id"], str) or not re.fullmatch(_ID, data["id"]) or type(data["version"]) is not int):
                 raise editorial_core.EditorialError("Identificador ou versão inválidos")
-            post_id = store.save_draft(data["format"], data["caption"], data["mediaIds"],
-                                      post_id=data.get("id"), expected_version=data.get("version"))
+            post_id = store.save_draft(
+                data["format"], data["caption"], data["mediaIds"],
+                post_id=data.get("id"), expected_version=data.get("version"),
+                caption_mode=data.get("captionMode", "general"),
+                slide_captions=data.get("slideCaptions"))
         else:
             required = {"version", "localTime"} if action == "schedule" else {"version"}
             if set(data) != required or type(data.get("version")) is not int:

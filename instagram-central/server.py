@@ -553,8 +553,7 @@ def render_connection_section(cfg, summary):
     )
     checklist = "".join("<li>" + label + ": " + ("configurado" if ready else "pendente")
                         + "</li>" for label, ready in setup)
-    return ("""<section aria-label="Conexão com Instagram" style="border:1px solid #ccd5e1;
-       padding:1.1rem;border-radius:12px;margin:1.2rem 0;background:#f7faff">
+    return ("""<section class="panel connection-panel" aria-label="Conexão com Instagram">
        <h2>Conexão com o Instagram</h2><p>Conta: <strong>@umdoislab</strong>
        · ID: <code>""" + name + """</code></p>
        <ul>""" + flags + """</ul>
@@ -612,22 +611,128 @@ def render_panel(cfg=None):
                 actions.append('<form method="post" action="panel/handoff">' + inputs +
                                '<button type="submit">' + label + '</button></form>')
         entries.append("<tr>" + "".join("<td>" + html.escape(str(v), quote=True) +
-                       "</td>" for v in cells) + "<td>" + "".join(actions) + "</td></tr>")
+                       "</td>" for v in cells) + '<td><div class="item-actions">' + "".join(actions) + "</div></td></tr>")
     body = "".join(entries) if entries else '<tr><td colspan="7">Nenhuma mensagem recebida.</td></tr>'
     summary = connection_summary(cfg)
     connection_section = render_connection_section(cfg, summary)
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Central Instagram — laboratório</title>
-<style>body{font:16px system-ui;margin:2rem;max-width:1100px;color:#182334}
-table{border-collapse:collapse;width:100%}th,td{padding:.7rem;border-bottom:1px solid #ddd;text-align:left;overflow-wrap:anywhere}
-th{background:#f1f4f7}small{color:#58657a}form{display:inline-block;margin:3px}button{padding:.4rem .6rem;cursor:pointer}</style></head><body>
-<h1>Central Instagram</h1><nav aria-label="Módulos"><a href="./">Mensagens</a> · <a href="editorial/">Editorial</a></nav><p>Laboratório: ações alteram somente o estado local.</p>
-<form method="post" action="auth/logout"><button type="submit">Sair</button></form>
-""" + connection_section + """
-<small>Últimas 50 mensagens. Não envia respostas ao Instagram.</small>
-<table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
-            + body + "</tbody></table></body></html>")
+<meta name="theme-color" content="#111c29">
+<meta name="robots" content="noindex,nofollow">
+<title>Mensagens · Central Instagram Umdoislab</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1520;--sidebar:#0e1722;--surface:#152231;--surface2:#1b2b3a;--edge:#2b4051;--text:#f3f5f7;--muted:#a3b5c5;--orange:#ff8e40;--green:#57cba2;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-size:14px}
+button,a,input,summary{font:inherit}
+button,a{cursor:pointer}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--orange);outline-offset:3px}
+.skip{position:absolute;top:-100px;background:#fff;color:#111;padding:12px;z-index:10}.skip:focus{top:0}
+.shell{min-height:100vh;display:grid;grid-template-columns:244px minmax(0,1fr)}
+.sidebar{background:var(--sidebar);border-right:1px solid var(--edge);display:flex;flex-direction:column;padding:30px 16px 18px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:0 10px 34px}
+.brand-icon{font-size:26px;font-weight:900;letter-spacing:-3px;color:#fff}
+.dot{color:var(--orange)}
+.brand strong{display:block;font-weight:800;letter-spacing:2px;font-size:12px}
+.brand small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.section-label{font-size:10px;font-weight:700;letter-spacing:2px;color:#7b94a8;padding:5px 14px 13px}
+.nav{display:grid;gap:6px}
+.nav-link{width:100%;display:flex;align-items:center;gap:13px;text-decoration:none;background:transparent;color:#becbd7;border:1px solid transparent;border-radius:10px;padding:14px 15px;font-weight:650}
+.nav-link span{display:inline-grid;place-items:center;width:18px;font-size:19px}
+.nav-link.active{background:#263546;color:#fff;border-color:#354b60;box-shadow:inset 3px 0 var(--orange)}
+.sidebar-foot{margin-top:auto;background:#192a38;border:1px solid var(--edge);border-radius:11px;padding:15px 12px;display:flex;align-items:center;gap:11px}
+.sidebar-foot strong,.sidebar-foot small{display:block}
+.sidebar-foot small{font-size:11px;color:var(--muted);margin-top:4px}
+.status-led{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px #57cba219}
+.main{min-width:0}
+.topbar{min-height:82px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between;align-items:center;padding:16px 40px;gap:16px}
+.crumb{color:var(--muted)}
+.crumb span{color:#647d90;padding:0 10px}
+.crumb strong{color:#fff}
+.top-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.account{color:#d5e0ec;font-weight:650}
+.logout-form{display:inline-flex;margin:0}
+.btn,.item-actions button{border:1px solid var(--edge);color:var(--text);background:var(--surface2);border-radius:10px;padding:11px 17px;font-weight:700}
+.btn.quiet{background:transparent}
+.item-actions button{padding:8px 11px;font-size:12px}
+.btn:hover,.item-actions button:hover{filter:brightness(1.1)}
+.content{padding:38px 40px 60px;max-width:1450px;margin:auto}
+.heading{margin-bottom:26px}
+.eyebrow{display:block;color:var(--orange);font-weight:800;font-size:11px;letter-spacing:2px;margin-bottom:12px}
+.heading h1{font-size:clamp(25px,3vw,36px);margin:0 0 10px;letter-spacing:-1.2px}
+.heading p,.panel p{color:var(--muted);line-height:1.5}
+.panel{background:var(--surface);border:1px solid var(--edge);border-radius:14px;padding:25px;margin-bottom:22px;min-width:0}
+.panel h2{font-size:18px;margin:0 0 13px}
+.connection-panel ul{line-height:1.9;display:grid;gap:3px;padding-left:22px}
+.connection-panel li{overflow-wrap:anywhere}
+.connection-panel strong{color:#eaf1f8}
+.connection-panel details{background:var(--surface2);border:1px solid var(--edge);border-radius:10px;padding:12px 15px;margin:15px 0}
+.connection-panel summary{cursor:pointer;font-weight:700}
+.connection-panel a{color:var(--orange)}
+.connection-panel code{color:#d0e4ff;overflow-wrap:anywhere}
+.connection-panel small{color:var(--muted)}
+#meta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+#meta-actions form{margin:0}
+#meta-actions button{border:1px solid var(--orange);background:var(--orange);color:#161b23;border-radius:10px;padding:10px 15px;font-weight:700}
+#meta-actions button:hover{filter:brightness(1.09)}
+.panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.table-wrap{width:100%;overflow-x:auto;border:1px solid var(--edge);border-radius:11px}
+table{border-collapse:collapse;min-width:870px;width:100%;table-layout:fixed}
+th,td{padding:14px 12px;border-bottom:1px solid var(--edge);text-align:left;overflow-wrap:anywhere;vertical-align:top;line-height:1.45}
+th{background:var(--surface2);color:#c7d8e6;font-size:12px;letter-spacing:.1px}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#1a2c3b}
+.item-actions{display:flex;flex-wrap:wrap;gap:7px}
+.item-actions form{margin:0;display:inline-flex}
+th:nth-child(1){width:12%}th:nth-child(2){width:20%}th:nth-child(3){width:9%}th:nth-child(4){width:13%}
+th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
+.note{border:1px solid #465538;background:#222c23;border-radius:12px;padding:15px 18px;color:#c5d5bf;line-height:1.6}
+@media(max-width:760px){
+.shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--edge);padding:13px}
+.brand{padding-bottom:12px}.section-label,.sidebar-foot{display:none}
+.nav{display:flex;overflow-x:auto;gap:5px;padding-bottom:4px}
+.nav-link{white-space:nowrap;width:auto;padding:10px 12px;flex-shrink:0}
+.nav-link span{display:none}
+.topbar{padding:12px 17px;flex-wrap:wrap;min-height:70px}
+.top-actions{width:100%}
+.content{padding:27px 16px}
+.panel{padding:17px}
+}
+</style></head><body>
+<a class="skip" href="#principal">Pular para conteúdo</a>
+<div class="shell">
+<aside class="sidebar">
+ <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
+ <div class="section-label">CENTRAL INSTAGRAM</div>
+ <nav class="nav" aria-label="Módulos">
+  <a class="nav-link active" aria-current="page" href="./"><span>◉</span> Mensagens</a>
+  <a class="nav-link" href="editorial/"><span>✎</span> Editorial</a>
+ </nav>
+ <div class="sidebar-foot"><span class="status-led"></span><div><strong>Atendimento local</strong><small>Sem envio automático</small></div></div>
+</aside>
+<main id="principal" class="main">
+ <header class="topbar">
+  <div class="crumb">Umdoislab <span>/</span> <strong>Mensagens</strong></div>
+  <div class="top-actions"><span class="account">@umdoislab</span>
+  <form class="logout-form" method="post" action="auth/logout"><button type="submit" class="btn quiet">Sair</button></form>
+  </div>
+ </header>
+ <div class="content">
+  <div class="heading"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
+   <h1>Mensagens e conexão</h1><p>Acompanhe o estado da conexão e as mensagens recebidas.</p>
+  </div>
+  """ + connection_section + """
+  <section class="panel" aria-label="Últimas mensagens">
+   <div class="panel-title"><h2>Mensagens recebidas</h2></div>
+   <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
+   <div class="table-wrap">
+    <table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
+            + body + """</tbody></table></div></section>
+   <div class="note">ⓘ Todo conteúdo permanece sob controle do administrador. Nenhum envio automático está ativado.</div>
+  </div>
+ </main>
+</div></body></html>""")
 
 
 class Handler(BaseHTTPRequestHandler):
