@@ -216,6 +216,20 @@ location ^~ /avisaqui/ {
 
 **Resultado conhecido:** a arquitetura e o padrão de proxy para os três projetos estão documentados. A sintaxe e o carregamento do fragmento Instagram continuam pendentes de validação operacional.
 
+### 7.5.2 Validação estática do fragmento Instagram — 20/11/2026
+
+Foi feita conferência direta da fonte privada `mmcromero/instagram-automacoes`, branch `feat/instagram-lote1-conexao-real`:
+
+- `deploy/nginx_proxy_default_instagram_oauth.conf` define exatamente as três rotas preparadas para o Raspberry.
+- `instagram-central/server.py` confirma `GET /oauth/meta/start`, `GET /oauth/meta/callback`, `GET /webhook/instagram` para desafio Meta e `POST /webhook/instagram` para eventos.
+- A rota `/oauth/meta/status` exige autenticação e não foi exposta no fragmento. Painel, bridge e health também não foram expostos.
+- O callback usa query string; NGINX `location = /webhook/instagram` continua correspondendo ao caminho mesmo quando a URL contém query string, pois a seleção de location não considera os argumentos.
+- O código mantém `meta_oauth_enabled` e `ingress_enabled` desativados por padrão; a publicação da rota não ativa OAuth nem webhook no aplicativo.
+
+**Teste de sintaxe isolado:** NGINX 1.26.3 local executou `nginx -t` com sucesso para os três blocos e diretivas. Para isolar a gramática, o upstream foi substituído por `127.0.0.1:8099` e os blocos foram inseridos em um `server{}` de teste. Isso valida a sintaxe das diretivas, mas **não** valida o arquivo exato no add-on 4.5.1, a resolução DNS interna do container, o conjunto completo de includes do HA ou o carregamento real.
+
+**Resultado:** rotas e métodos conferem com o código da aplicação; sintaxe dos blocos aprovada em ambiente isolado. Falta validar a configuração real no add-on e o HTTPS público.
+
 ### 7.5 Limites de evidência
 
 - A captura da configuração e os comandos foram fornecidos pelo proprietário; não foram executados diretamente por um agente remoto.
