@@ -152,6 +152,36 @@ O proprietário criou:
 
 **Próxima etapa documentada:** identificar o mecanismo suportado para executar validação de sintaxe dentro do ambiente do add-on `core_nginx_proxy`, sem alterar/reiniciar serviços. O Terminal & SSH não possui o comando `docker` (`docker: command not found`). A CLI informou que `ha addons` está depreciado e recomenda `ha apps`. Não contornar essa limitação com comandos presumidos; consultar `ha apps --help` ou documentação específica do add-on e usar somente método confirmado.
 
+### 7.5 Padrão reutilizável — comparação entre os três projetos
+
+**Decisão operacional:** para adicionar um serviço ao proxy compartilhado, usar como modelo os fragmentos que já funcionam no mesmo Raspberry. Não iniciar uma investigação genérica de NGINX quando os arquivos locais existentes já mostram o padrão adotado.
+
+Padrões observados nos arquivos lidos pelo proprietário:
+
+| Projeto | Arquivo | Padrão de encaminhamento |
+|---|---|---|
+| Artesão Digital | `nginx_proxy_default_artesaos.conf` | `location =` para normalizar a URL e `location ^~` para encaminhar o prefixo; upstream `f6379561-artesaos-piloto:8099`; `proxy_pass` sem barra final |
+| Avisaqui | `nginx_proxy_default_avisaqui.conf` | `location =` para normalizar a URL e `location ^~` para encaminhar `/avisaqui/`; upstream `45c28620-pager-virtual:8095/`; barra final no `proxy_pass` para retirar o prefixo público; timeout 3600s e buffering desativado para streams |
+| Instagram | `nginx_proxy_default_instagram.conf` | três `location =` exatas; upstream `45c28620-umdoislab-instagram:8099`; sem barra final no `proxy_pass`, pois os caminhos OAuth/webhook devem chegar ao backend sem reescrita de prefixo |
+
+**Cabeçalhos usados como padrão local:** `Host $http_host`, `X-Forwarded-Proto`, `X-Forwarded-For $remote_addr`, `X-Real-IP $remote_addr` e `proxy_redirect off`. O fragmento Instagram fixa `X-Forwarded-Proto https`, pois o TLS termina no NGINX e o backend recebe HTTP sem TLS (`use_ssl_backend: false`). Essa escolha deve ser mantida coerente com a URL pública HTTPS e validada no teste externo.
+
+**Por que o Instagram usa locations exatas:** OAuth start, callback e webhook são endpoints específicos. Não é necessário criar um prefixo amplo para o painel. O fragmento limita métodos: GET nos endpoints OAuth; GET/POST no webhook, compatível com verificação e entrega de eventos da Meta. O painel administrativo não recebe uma location pública neste arquivo.
+
+**Regra para novos serviços:** copiar o padrão do fragmento mais próximo do tipo de rota, alterando somente caminho público, upstream, porta, métodos e requisitos reais do serviço. Não copiar a barra final de `proxy_pass` sem avaliar se o prefixo deve ser removido. Não editar fragmentos de outros projetos.
+
+### 7.6 Procedimento objetivo para concluir a Central Instagram
+
+1. Confirmar o arquivo em `/share/nginx_proxy_default_instagram.conf`, seu nome compatível com `customize.default` e o hash registrado em 7.4.
+2. Não pedir novamente capturas de `customize.active/default`, nem o conteúdo dos fragmentos Artesão/Avisaqui: esses dados já estão registrados nesta seção.
+3. A CLI `ha apps` permite consultar informações, logs e controlar apps, mas não expõe execução de shell no container. `docker` não está disponível no Terminal & SSH; o app NGINX declara `docker_api: false` e `host_network: false`.
+4. Os logs enviados pelo proprietário terminam em 20/11/2026 18:52 e mostram timeouts do Supervisor/HA e recusas de conexão históricas do Avisaqui. Não mostram erro de sintaxe nem confirmam o carregamento do fragmento Instagram. Não usar esses logs para inferir falha ou sucesso do novo arquivo.
+5. O arquivo Instagram foi criado às 18:45 em 20/11/2026. O trecho de logs enviado depois contém eventos até 18:52, mas não há mensagem de reload/inicialização que identifique os arquivos personalizados. Portanto, o estado continua **criado, não validado/carregado**.
+6. Próxima ação proporcional: usar o padrão já estabelecido e realizar uma única validação controlada do NGINX. Antes de reiniciar, guardar cópia do fragmento e preparar rollback simples removendo apenas `/share/nginx_proxy_default_instagram.conf`; nunca tocar nos arquivos dos outros projetos. Reiniciar o add-on provoca interrupção temporária do proxy e só deve ocorrer em janela autorizada. Após reinício, verificar logs recentes e testar HTTPS nas três rotas; não confundir resposta HTTP do backend (já 200 internamente) com teste público.
+7. Se o add-on não iniciar, remover/renomear apenas o fragmento Instagram para fora do padrão de carregamento e reiniciar o proxy para restaurar o conjunto anterior; confirmar Artesão e Avisaqui depois. Não atualizar o add-on de 4.5.1 para 4.5.3 como parte desta tarefa.
+
+**Resultado conhecido:** a arquitetura e o padrão de proxy para os três projetos estão documentados. A sintaxe e o carregamento do fragmento Instagram continuam pendentes de validação operacional.
+
 ### 7.5 Limites de evidência
 
 - A captura da configuração e os comandos foram fornecidos pelo proprietário; não foram executados diretamente por um agente remoto.
