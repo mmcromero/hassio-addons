@@ -87,6 +87,9 @@ class HTTPContractTests(unittest.TestCase):
         status, _, body = self.request("/panel", headers=self.admin_header())
         self.assertEqual(status, 200)
         self.assertIn(b"Central", body)
+        # The disabled path returns 503 only when the webhook feature is off.
+        # The generic setUp enables it to exercise signed-webhook tests.
+        self.config["ingress_enabled"] = False
         self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 503)
 
     def test_oauth_off_by_default_and_admin_only(self):
