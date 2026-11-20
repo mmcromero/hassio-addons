@@ -1,3 +1,9 @@
+## 0.1.4 — candidata corretiva para falha no build de 0.1.3 (NÃO PUBLICADA) — 20/11/2026
+- Corrige o teste HTTP `test_get_routes_do_not_shadow_urlsplit`: ele esperava 503 de um webhook com `ingress_enabled=true`; nesse estado o servidor rejeita a requisição incompleta com 403. O teste agora desativa o webhook antes de verificar 503.
+- Nenhuma modificação nas rotas, no banco de dados, na integração OAuth ou em serviços externos.
+- A atualização 0.1.3 do Home Assistant falhou com `unknown error while trying to build the image`; o log enviado contém exceções do processo anterior 0.1.2, não o log de build do Supervisor. Portanto, o teste inconsistente é uma **causa provável**, ainda não comprovada como causa única.
+- **Candidata não publicada, não instalada e sem homologação real.** Manter OAuth, webhooks e automações desativados.
+
 ## 0.1.3 — correção 502 da interface Ingress — 20/11/2026
 - Corrige `UnboundLocalError` em todas as rotas GET: `urlsplit` deixou de ser uma variável local sombreada no `Handler.do_GET`.
 - Acrescenta teste HTTP de regressão para `/health`, `/panel` e webhook desativado, executado no build local do Supervisor.
