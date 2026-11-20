@@ -94,8 +94,10 @@ class WorkspaceSyncTests(unittest.TestCase):
 
     def test_repeat_same_sha_is_idempotent_no_reclone(self):
         self.run_sync()
-        with patch.object(sync, "_clone", side_effect=AssertionError("unexpected clone")):
-            r=self.run_sync()
+        def fail_clone(*args):
+            raise AssertionError("unexpected clone on identical pinned SHAs")
+        r = sync.synchronize("fixture", token="notlogged", projects_dir=self.projects,
+            workspaces_dir=self.workspaces, remote_head=self.fake_remote, clone=fail_clone)
         self.assertEqual(r["state"],"UNCHANGED")
         self.assertFalse(list(self.workspaces.glob(".archive-*")))
 
