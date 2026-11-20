@@ -27,6 +27,7 @@ def local_environment(home=None):
     env = {key: os.environ[key] for key in keep if key in os.environ}
     env.update({"GIT_TERMINAL_PROMPT": "0", "GIT_CONFIG_NOSYSTEM": "1",
                 "GIT_CONFIG_GLOBAL": os.devnull, "GIT_OPTIONAL_LOCKS": "0",
+                "GIT_NO_REPLACE_OBJECTS": "1",
                 "HOME": str(home) if home is not None else os.devnull})
     return env
 
@@ -289,6 +290,22 @@ def evaluate(source, distribution, expected_sha, *, profile):
     published_version = provenance.get("version")
     errors = []
     warnings = []
+
+    # A frozen source tree preserves bytes, not an authorization that was later
+    # closed or replaced on the development branch. Apply to preparation too.
+    if development_head != source_sha:
+        current_policy = read_json(git_blob(source, development_head,
+                                            profile["package_policy_path"]),
+                                   "current package policy")
+        current_active = current_policy.get("active_package", {})
+        if (current_policy.get("schema_version") != 1
+                or current_policy.get("product") != profile["product"]
+                or current_active.get("status") != "open"
+                or current_active.get("id") != active.get("id")
+                or current_active.get("candidate_version") != candidate
+                or current_active.get("branches", {}).get(profile["source_repo"])
+                   != profile["rc_ref"].removeprefix("refs/remotes/origin/")):
+            errors.append("CURRENT_PACKAGE_POLICY_CHANGED")
 
     if policy.get("schema_version") != 1 or policy.get("product") != profile["product"]:
         errors.append("INVALID_POLICY")

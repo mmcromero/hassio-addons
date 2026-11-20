@@ -16,6 +16,7 @@ import threading
 import time
 import uuid
 import fcntl
+from publication_workflow import capabilities as publication_capabilities
 import stat
 from contextlib import contextmanager
 from pathlib import Path
@@ -610,10 +611,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        if self.path not in ("/", "/api/status", "/api/projects", "/api/operations"):
+        if self.path not in ("/", "/api/status", "/api/projects", "/api/operations", "/api/publication-status"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
+        if self.path == "/api/publication-status":
+            return self.respond(200, publication_capabilities())
         if self.path == "/api/projects":
             return self.respond(200, {"projects": list(listed_projects().values())})
         if self.path == "/api/operations":

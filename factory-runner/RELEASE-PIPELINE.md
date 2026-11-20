@@ -1,5 +1,12 @@
 # Esteira consolidada — Factory Runner RC18
 
+> Diretriz vigente M006/P0 (20/11/2026): operação exclusivamente no Raspberry
+> Pi 4/add-on HA existente, sem host externo como dependência. Componentes de
+> publicação dormentes e publish=disabled; nenhuma ativação/RC autorizada neste
+> lote. Desenho e limites atuais: [M006-RPI-PIPELINE.md](M006-RPI-PIPELINE.md).
+> Referências históricas a executor externo não definem a arquitetura vigente.
+
+
 Controle: Issue #2 do Orquestrador; fonte privada na branch filha do PR #4.
 Avisaqui e Artesão mantêm políticas, versões e receitas independentes.
 

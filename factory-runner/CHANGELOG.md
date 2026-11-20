@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.0-rc.19 — Candidata privada M008 (não publicada)
+
+M006 consolidado para homologação dirigida no RPi4; consentimento, transporte e contas permanecem dormentes. Publicação, instalação e ativação dependem de autorização posterior.
+
+
+## Em desenvolvimento — M006 Raspberry exclusivo (sem nova RC)
+
+- Contrato de publicação reproduz receita declarativa desde blobs pinados, confere política vigente e revalida arquivos/modos/hashes; não executa scripts de produto.
+- Consentimento Ed25519 por ato com reautenticação independente, scrypt/throttle, preview e receipt persistidos, TTL/revogação/nonce e IPC por identidade do kernel; emissor, publisher, UI e preparador com contas distintas.
+- Transporte GitHub somente bytes: prévia, árvore canônica, blobs SHA-256/OID, commit determinístico, CAS GraphQL beforeOid/force:false e ledger/reconciliação somente leitura após interrupção.
+- Componentes dormentes na imagem e status autenticado somente leitura; run.sh e versão RC18 intactos. Sem listeners de aprovação, rota publish, enrollment, segredos reais ou ativação.
+- Lote offline com API GitHub simulada/Git descartável, provas de quatro UIDs e revisão técnica; detalhes em M006-RPI-PIPELINE.md e relatório M006 da Issue #2. Nenhuma RC ou pacote de produto publicado.
+
 ## 0.1.0-rc.18 — Lote consolidado de integridade e autorização
 
 - Preparação declarativa com recibo SHA-256, escopo exato e preservação de executáveis; repetição idempotente, trava entre processos e diretório final atômico.
