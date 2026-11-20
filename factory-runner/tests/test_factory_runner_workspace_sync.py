@@ -125,6 +125,10 @@ class WorkspaceSyncTests(unittest.TestCase):
     def test_unrelated_public_catalog_update_reuses_verified_snapshot(self):
         original = self.run_sync()
         self.assertEqual(original["state"], "SYNCED")
+        # Already at the maximum retention cap. Unrelated catalog updates
+        # must not require deleting a snapshot or adding a fifth archive.
+        for i in range(sync.MAX_ARCHIVES):
+            (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
         # Public head advances outside the approved project's distribution
         # scope. A closed package must not create another large snapshot.
         with (patch.object(sync, "_public_scope_unchanged", return_value=True),
@@ -142,7 +146,8 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertEqual(result["remote_public_sha"], "b" * 40)
         self.assertFalse(result["eligible"])
         self.assertIn("PUBLIC_HEAD_OUTSIDE_APPROVED_SCOPE", result["errors"])
-        self.assertFalse(list(self.workspaces.glob(".archive-*")))
+        self.assertEqual(len(list(self.workspaces.glob(".archive-*"))),
+                         sync.MAX_ARCHIVES)
 
     def test_updated_public_scope_must_archive_or_block_not_skip(self):
         self.run_sync()

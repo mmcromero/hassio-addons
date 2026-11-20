@@ -108,7 +108,7 @@ def _public_scope_unchanged(profile: dict, old_sha: str, new_sha: str) -> bool:
         if len(payload) > 2 * 1024 * 1024:
             return False
         data = json.loads(payload)
-    except (OSError, ValueError, TypeError):
+    except (OSError, ValueError, TypeError, SyncError):
         return False
     if not isinstance(data, dict):
         return False
