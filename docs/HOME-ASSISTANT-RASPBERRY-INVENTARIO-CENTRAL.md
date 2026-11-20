@@ -1,6 +1,6 @@
 # HOME ASSISTANT / RASPBERRY PI — INVENTÁRIO OPERACIONAL CENTRAL
 
-**Revisão:** 19/11/2026 (capturas fornecidas pelo proprietário nesta data)  
+**Revisão:** 20/11/2026 (capturas e verificações operacionais fornecidas pelo proprietário nesta data)  
 **Responsável editorial:** Governança  
 **Natureza:** referência compartilhada entre todos os projetos que usam o mesmo Home Assistant. Fonte de código, configurações e credenciais continuam isoladas em seus projetos e no dispositivo. **Não é um backup nem acesso remoto ao Supervisor.**
 
@@ -89,6 +89,76 @@ O catálogo central contém quatro diretórios de app: `pager-virtual/`, `evolut
 
 **A próxima verificação deve ser orientada por necessidade real de uma tarefa, sem pedir novamente os dados já registrados.** Para remoção de repositório ou migração, confirmar origem e identidade dos apps afetados e preservar dados; não executar remoção por inferência.
 
-## 7. Controle de mudanças
+## 7. NGINX Home Assistant SSL proxy — verificação operacional em 20/11/2026
+
+**Origem:** configuração e saídas de comandos fornecidas pelo proprietário no Terminal & SSH do Home Assistant em 20/11/2026. Os dados abaixo comprovam o estado observado naquele momento; não substituem nova leitura do Supervisor quando a tarefa depender de estado atual.
+
+### 7.1 Add-on e opções
+
+| Campo | Valor observado |
+|---|---|
+| Nome | NGINX Home Assistant SSL proxy |
+| Repositório | core |
+| Slug | `core_nginx_proxy` |
+| Estado | `started` |
+| Versão instalada | `4.5.1` |
+| Versão mais recente indicada | `4.5.3` |
+| Atualização disponível | Sim |
+| Domínio | `romeropi.duckdns.org` |
+| HSTS | `max-age=31536000; includeSubDomains` |
+| Certificado | `fullchain.pem` |
+| Chave | `privkey.pem` |
+| Cloudflare | `false` |
+| SSL no backend | `false` |
+| `customize.active` | `true` |
+| `customize.default` | `nginx_proxy_default*.conf` |
+| `customize.servers` | `nginx_proxy/*.conf` |
+| `real_ip_from` | lista vazia |
+
+**Conduta registrada:** não atualizar o add-on como parte de uma tarefa de integração sem necessidade técnica e autorização específicas. A disponibilidade de 4.5.3 não comprova que a atualização foi instalada.
+
+### 7.2 Fragmentos personalizados existentes
+
+O proprietário leu os seguintes arquivos em `/share`:
+
+- `/share/nginx_proxy_default_artesaos.conf`: define redirecionamento e proxy para `/artesaos-piloto/`, upstream `f6379561-artesaos-piloto:8099`.
+- `/share/nginx_proxy_default_avisaqui.conf`: define redirecionamento e proxy para `/avisaqui/`, upstream `45c28620-pager-virtual:8095`, com prefixo encaminhado.
+
+A listagem de `/share/nginx_proxy/` retornou **“No such file or directory”**. Portanto, o diretório configurado em `customize.servers` não existia no momento da verificação. Não criar esse diretório nem mover arquivos sem necessidade; os dois fragmentos acima são carregados pelo padrão `customize.default`.
+
+**Preservação obrigatória:** não sobrescrever, renomear ou editar os fragmentos do Artesão Digital e do Avisaqui ao trabalhar na Central Instagram.
+
+### 7.3 Central Instagram — conectividade interna
+
+No Terminal & SSH, em 20/11/2026:
+
+- `getent hosts 45c28620-umdoislab-instagram` resolveu o nome para `fd0c:ac1e:2100::1d`.
+- `curl --connect-timeout 5 ... http://45c28620-umdoislab-instagram:8099/` retornou **HTTP 200**.
+
+Isso confirma resolução DNS interna e resposta HTTP do upstream a partir do Terminal & SSH naquele instante. Não comprova acesso externo HTTPS, funcionamento das rotas OAuth/webhook ou comunicação da Meta.
+
+### 7.4 Fragmento Instagram preparado — ainda não carregado/homologado
+
+O proprietário criou:
+
+`/share/nginx_proxy_default_instagram.conf`
+
+- Tamanho observado: 1.575 bytes.
+- SHA-256 observado: `cc32ffc8d76292781cf7cc3f4bebe4f64e947438624dbc933968a9e40ae3ae8c`.
+- Contém três locations exatas: `/oauth/meta/start` (GET), `/oauth/meta/callback` (GET) e `/webhook/instagram` (GET/POST), todas encaminhadas para `45c28620-umdoislab-instagram:8099`.
+- O nome corresponde ao padrão `nginx_proxy_default*.conf` configurado em `customize.default`.
+
+**Estado rigoroso:** arquivo criado no diretório compartilhado; não há evidência de que o NGINX já o carregou, de que a sintaxe completa passou em `nginx -t`, de que o proxy foi recarregado ou de que as rotas públicas respondem. Não declarar OAuth ou webhook ativos.
+
+**Próxima etapa documentada:** identificar o mecanismo suportado para executar validação de sintaxe dentro do ambiente do add-on `core_nginx_proxy`, sem alterar/reiniciar serviços. O Terminal & SSH não possui o comando `docker` (`docker: command not found`). A CLI informou que `ha addons` está depreciado e recomenda `ha apps`. Não contornar essa limitação com comandos presumidos; consultar `ha apps --help` ou documentação específica do add-on e usar somente método confirmado.
+
+### 7.5 Limites de evidência
+
+- A captura da configuração e os comandos foram fornecidos pelo proprietário; não foram executados diretamente por um agente remoto.
+- DNS/HTTP interno aprovado não equivale a teste TLS público.
+- Arquivo criado não equivale a configuração validada/carregada.
+- Não foi feita atualização do add-on, reload, restart, alteração dos arquivos do Artesão/Avisaqui ou ativação da Meta nesta verificação.
+
+## 8. Controle de mudanças
 
 A captura é evidência do estado de 19/11/2026, não estado vivo. Mudanças confirmadas devem atualizar **este documento central** na `main`, com data, origem, commit e referência à Issue existente. Os demais projetos devem **apontar para este arquivo**, não copiar inventários independentes que fiquem obsoletos. Nenhum documento autoriza ação destrutiva ou modifica automaticamente instruções em chats já abertos.
