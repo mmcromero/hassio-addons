@@ -170,6 +170,40 @@ Padrões observados nos arquivos lidos pelo proprietário:
 
 **Regra para novos serviços:** copiar o padrão do fragmento mais próximo do tipo de rota, alterando somente caminho público, upstream, porta, métodos e requisitos reais do serviço. Não copiar a barra final de `proxy_pass` sem avaliar se o prefixo deve ser removido. Não editar fragmentos de outros projetos.
 
+### 7.5.1 Configuração de referência Avisaqui — conteúdo integral observado
+
+Arquivo: `/share/nginx_proxy_default_avisaqui.conf`.
+
+```nginx
+location = /avisaqui {
+    absolute_redirect off;
+    return 308 /avisaqui/;
+}
+
+location ^~ /avisaqui/ {
+    proxy_pass http://45c28620-pager-virtual:8095/;
+    proxy_http_version 1.1;
+
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /avisaqui;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Real-IP $remote_addr;
+
+    proxy_redirect off;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 3600s;
+
+    proxy_buffering off;
+    proxy_cache off;
+    client_max_body_size 3m;
+}
+```
+
+**Detalhe funcional importante:** neste bloco, `proxy_pass` termina com barra (`/`). Como a diretiva está dentro de `location ^~ /avisaqui/`, o NGINX substitui o prefixo correspondente por `/` ao encaminhar. O cabeçalho `X-Forwarded-Prefix: /avisaqui` informa ao backend o prefixo público. O timeout de leitura de 3600 segundos e `proxy_buffering off` atendem às conexões longas/streams do Avisaqui.
+
+**Comparação com o Artesão Digital:** o fragmento do Artesão usa `location ^~ /artesaos-piloto/` com `proxy_pass` sem URI final (sem barra depois da porta), preservando o caminho completo encaminhado ao upstream. Não copiar a barra final de um projeto para outro sem considerar a rota que o backend espera.
+
 ### 7.6 Procedimento objetivo para concluir a Central Instagram
 
 1. Confirmar o arquivo em `/share/nginx_proxy_default_instagram.conf`, seu nome compatível com `customize.default` e o hash registrado em 7.4.
