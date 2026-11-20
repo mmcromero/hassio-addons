@@ -1,23 +1,20 @@
-## 0.1.5 — login HTML no Chrome (experimental) — 20/11/2026
-- Substitui o desafio HTTP Basic do painel Ingress por tela HTML com usuário `admin` e senha `panel_password` existente.
-- O formulário inclui `autocomplete=username` e `autocomplete=current-password`, permitindo ao Chrome oferecer salvamento/preenchimento; mantém autenticação Basic legada somente nas rotas administrativas.
-- Sessões aleatórias de 12 horas, digest HMAC no SQLite, cookies HttpOnly/SameSite=Strict, Secure quando o acesso externo é HTTPS, logout e limite de tentativas.
-- Mantém os formulários administrativos protegidos por CSRF, não altera credenciais, banco existente, slug, marca ou ícones.
-- Acrescenta testes de login/sessão e contratos HTTP no Dockerfile para validação durante futuro build no Supervisor.
-- OAuth Meta, webhook e rascunhos continuam **desativados por padrão**. Não há mensagens automáticas nem alteração de WhatsApp/n8n/NGINX.
-- Publicação no catálogo **não instala** o aplicativo; a atualização no Raspberry e a homologação exigem etapa própria. Para salvar senhas no Chrome, preferir a URL HTTPS existente do Home Assistant.
+## 0.1.6 — Lote 1: conexão oficial Meta e primeira DM (candidata experimental; NÃO ATIVADA) — 20/11/2026
+- Corrige troca de código do Login Unificado para o contrato GET da Meta. Valida identidade da conta `@umdoislab` (ID exato) e portfólio antes de armazenar token.
+- Adiciona diagnóstico visual de conexão no painel autenticado: configurações faltantes, conta verificada, webhook habilitado, assinatura solicitada, mensagens armazenadas e última entrada.
+- Ações administrativas reais `Verificar acesso Meta` e `Assinar mensagens na Meta`; assinatura opt-in só do campo `messages`, nunca envia Direct. Protegidas por sessão e CSRF.
+- Integra os testes de contrato Graph, OAuth e HTTP ao Dockerfile. Não altera o esquema existente nem apaga histórico do SQLite.
+- Prepara fragmento HTTPS de três rotas exatas no NGINX existente, arquivado somente no repositório privado; **nenhuma alteração aplicada no Raspberry nesta branch**.
+- Graph API padrão documentado `v27.0`; entradas OAuth e webhook continuam **false** por padrão. Mantém HTML login, Chrome, senha, marca e slug da 0.1.5.
+- Testes locais comprovados: 9/9 Graph, 12/12 OAuth, 9/9 sessão-CSRF; hashes dos arquivos exatos conferidos. Sintaxe NGINX equivalente aprovada isoladamente. Suíte HTTP inteira e execução no Supervisor **pendentes**, sem alegar primeira DM real.
+- Requer HTTPS público validado, autorização Meta, assinatura do campo messages e teste com outra conta, com segurança e revogação documentadas em `docs/IG-LOT1-REAL-001.md`.
 
-## 0.1.4 — correção do teste de build da 0.1.3 — 20/11/2026
-- Corrige o teste HTTP `test_get_routes_do_not_shadow_urlsplit`: ele esperava 503 de um webhook com `ingress_enabled=true`; nesse estado o servidor rejeita a requisição incompleta com 403. O teste agora desativa o webhook antes de verificar 503.
-- Nenhuma modificação nas rotas, no banco de dados, na integração OAuth ou em serviços externos.
-- A atualização 0.1.3 do Home Assistant falhou com `unknown error while trying to build the image`; o log inicial continha exceções do processo anterior 0.1.2. **O log completo do Supervisor recebido depois confirmou a causa do build**: 28 testes executados, 27 aprovados e 1 falhou no `test_get_routes_do_not_shadow_urlsplit` (linha 90: `AssertionError: 403 != 503`), levando o Dockerfile a terminar com exit code 1.
-- **Publicação no catálogo não é instalação nem homologação real no Home Assistant.** Manter OAuth, webhooks e automações desativados.
-
-## 0.1.3 — correção 502 da interface Ingress — 20/11/2026
-- Corrige `UnboundLocalError` em todas as rotas GET: `urlsplit` deixou de ser uma variável local sombreada no `Handler.do_GET`.
-- Acrescenta teste HTTP de regressão para `/health`, `/panel` e webhook desativado, executado no build local do Supervisor.
-- Mantém `meta_oauth_enabled: false`, `ingress_enabled: false`, `drafts_enabled: false` como padrões; preserva o mesmo slug, o volume SQLite e a identidade do add-on.
-- **A publicação do hotfix não instala a versão no Raspberry e não autoriza alterar NGINX nem habilitar integrações.**
+## Em desenvolvimento — login HTML para Chrome (NÃO PUBLICADO) — 20/11/2026
+- Troca a janela HTTP Basic do painel por um formulário HTML com campos `autocomplete=username` e `autocomplete=current-password`.
+- Reutiliza `admin` e `panel_password` existentes; não grava nem expõe senha no código.
+- Armazena apenas digest HMAC do token aleatório da sessão em SQLite; sessão expira em 12 horas e pode ser encerrada por **Sair**. Alterar senha invalida sessões antigas.
+- Limite de tentativas incorretas e testes de login/logout, cookies, segurança e fluxo HTTP adicionados ao build do Supervisor.
+- Mantém OAuth Meta, webhook, rascunhos e mensagens automáticas desativados; sem alteração no WhatsApp ou n8n.
+- **Ainda não é uma versão de catálogo nem está instalada no Home Assistant**. Depende de revisão e autorização específica antes de publicar ou atualizar o Raspberry.
 
 ## 0.1.2 — OAuth Meta unificado (experimental, desativado por padrão) — 20/11/2026
 - Adiciona login unificado Meta com `config_id`, `state` descartável, callback HTTPS e troca de código no servidor.
