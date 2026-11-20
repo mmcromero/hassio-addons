@@ -70,6 +70,70 @@ def _remote_head(repo: str, ref: str, token: str) -> str:
     return sha
 
 
+def _public_scope_unchanged(profile: dict, old_sha: str, new_sha: str) -> bool:
+    """Safely skip full clones for unrelated commits in a shared public catalog.
+
+    Fail closed on API error, pagination ambiguity, non-ancestry or a change to
+    any path that belongs to the approved distribution or shared CI rules.
+    Never use this fast path for profiles without a reviewed distribution prefix.
+    """
+    prefix = profile.get("distribution_prefix")
+    if (not isinstance(prefix, str) or not prefix.endswith("/")
+            or not SHA.fullmatch(old_sha) or not SHA.fullmatch(new_sha)
+            or old_sha == new_sha):
+        return False
+    shared = profile.get("allowed_shared_paths")
+    if not isinstance(shared, list) or any(not isinstance(p, str) for p in shared):
+        return False
+    ci = profile.get("declarative_ci")
+    if ci is not None:
+        if not isinstance(ci, dict) or not isinstance(ci.get("workflow_path"), str):
+            return False
+        shared = [*shared, ci["workflow_path"]]
+    repo = profile.get("distribution_repo")
+    if not isinstance(repo, str) or not REPO.fullmatch(repo):
+        return False
+    url = ("https://api.github.com/repos/" + repo + "/compare/"
+           + old_sha + "..." + new_sha + "?per_page=100")
+    req = request.Request(url, headers={
+        "User-Agent": "Factory-Runner-Read-Only",
+        "Accept": "application/vnd.github+json",
+    })
+    try:
+        opener = request.build_opener(NoRedirect)
+        with opener.open(req, timeout=18) as resp:
+            if resp.status != 200:
+                return False
+            payload = resp.read(2 * 1024 * 1024 + 1)
+        if len(payload) > 2 * 1024 * 1024:
+            return False
+        data = json.loads(payload)
+    except (OSError, ValueError, TypeError, SyncError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    files = data.get("files")
+    merge_base = data.get("merge_base_commit")
+    if (data.get("status") != "ahead"
+            or data.get("behind_by") != 0
+            or not isinstance(merge_base, dict)
+            or merge_base.get("sha") != old_sha
+            or not isinstance(files, list) or len(files) >= 300):
+        return False
+    for file in files:
+        if not isinstance(file, dict):
+            return False
+        name = file.get("filename")
+        previous = file.get("previous_filename")
+        if not isinstance(name, str) or (previous is not None
+                and not isinstance(previous, str)):
+            return False
+        for path in (name, previous):
+            if path and (path.startswith(prefix) or path in shared):
+                return False
+    return True
+
+
 def _git(repo: Path, *args: str) -> str:
     env = {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent", "GIT_CONFIG_NOSYSTEM": "1",
            "GIT_CONFIG_GLOBAL": os.devnull, "GIT_TERMINAL_PROMPT": "0",
@@ -215,17 +279,27 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
     previous = _existing(workspace, profile)
     source_sha = remote_head(profile["source_repo"], profile["source_ref"], token)
     public_sha = remote_head(profile["distribution_repo"], profile["public_ref"], "")
-    if (previous is not None and previous.get("source_sha") == source_sha
-            and previous.get("public_sha") == public_sha):
-        try:
-            report = _verified_profile_report(
-                profile, workspace / "source", workspace / "distribution", source_sha)
-        except (PreflightError, OSError, ValueError, subprocess.SubprocessError) as exc:
-            raise SyncError("preflight_failed") from exc
-        return {"state": "UNCHANGED", "project": project,
-                "source_sha": source_sha, "public_sha": public_sha,
-                "eligible": bool(report["eligible_for_preparation"]),
-                "errors": list(report["errors"])}
+    if previous is not None and previous.get("source_sha") == source_sha:
+        existing_public_sha = previous.get("public_sha")
+        if existing_public_sha == public_sha or _public_scope_unchanged(
+                profile, existing_public_sha, public_sha):
+            try:
+                report = _verified_profile_report(
+                    profile, workspace / "source", workspace / "distribution", source_sha)
+            except (PreflightError, OSError, ValueError, subprocess.SubprocessError) as exc:
+                raise SyncError("preflight_failed") from exc
+            if existing_public_sha == public_sha:
+                return {"state": "UNCHANGED", "project": project,
+                        "source_sha": source_sha, "public_sha": public_sha,
+                        "eligible": bool(report["eligible_for_preparation"]),
+                        "errors": list(report["errors"])}
+            # Only skip an unrelated catalog update when the old snapshot is
+            # already policy-blocked. Never prepare from a stale public base.
+            if not report["eligible_for_preparation"]:
+                return {"state": "UNCHANGED_SCOPE", "project": project,
+                        "source_sha": source_sha, "public_sha": existing_public_sha,
+                        "remote_public_sha": public_sha, "eligible": False,
+                        "errors": list(report["errors"]) + ["PUBLIC_HEAD_OUTSIDE_APPROVED_SCOPE"]}
     archive_candidates = list(root.glob(".archive-" + project + "-*"))
     if len(archive_candidates) >= MAX_ARCHIVES:
         raise SyncError("workspace_archive_limit")

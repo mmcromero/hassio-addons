@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.15 — Sincronização por escopo sem arquivamento desnecessário
+
+- Corrigido `workspace_archive_limit` causado por commits em outros add-ons no catálogo público.
+- Se a origem do projeto não mudou e o pacote já está bloqueado por sua própria política, o Runner verifica no GitHub se o novo commit do catálogo alterou somente caminhos fora da pasta e dos arquivos compartilhados autorizados do projeto.
+- Quando o comparativo é confiável e não há alterações relevantes, mantém o snapshot validado e registra `UNCHANGED_SCOPE` com `remote_public=<SHA>`, sem clonar, arquivar nem apagar arquivos.
+- Falha de API, histórico não ancestral, comparação truncada, alteração na pasta/CI autorizada ou pacote elegível: **não** usa esse atalho; mantém os bloqueios originais e exige snapshot atual antes de preparar.
+- Quatro testes de regressão adicionais, sem liberar publicação automática ou alterar dados de outros projetos.
+- Não apaga as quatro cópias existentes; limpeza de arquivos permanece fora do escopo e depende de autorização própria. A suíte completa permanece obrigatória no build do Home Assistant.
+
+
 ## 0.1.0-rc.14 — Diagnóstico do histórico de sincronização
 
 - Após o lote de sincronização, o Factory Runner verifica a leitura sanitizada do próprio histórico; registra `[OPERATIONS] PASS: sanitized_workspace_audit projects=N` quando encontra evidência dos projetos configurados.
