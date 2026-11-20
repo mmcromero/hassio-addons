@@ -361,6 +361,30 @@ def run_workspace_sync(project, token, auto_prepare=False):
 MAX_SYNC_PROJECTS = 32
 
 
+def workspace_audit_health(projects):
+    """Verify only the sanitized audit listing after the sync batch.
+
+    This is an internal diagnostic, not proof of the HTTP authentication gate.
+    Never log operation identifiers, paths, source SHAs or credential values.
+    """
+    try:
+        recent = recent_operations()
+        observed = {event["action"].split(":", 1)[1]
+                    for event in recent
+                    if event["action"].startswith("workspace_sync:")}
+        missing = sum(1 for project in projects if project not in observed)
+        if missing:
+            print("[OPERATIONS] BLOCKED: workspace_audit_entries_missing count="
+                  + str(missing), flush=True)
+            return False
+        print("[OPERATIONS] PASS: sanitized_workspace_audit projects="
+              + str(len(projects)), flush=True)
+        return True
+    except RuntimeError:
+        print("[OPERATIONS] BLOCKED: audit_unavailable", flush=True)
+        return False
+
+
 def launch_workspace_sync():
     """Opt-in multi-project sync of every *approved* on-image project profile.
 
@@ -398,6 +422,7 @@ def launch_workspace_sync():
                     # Unexpected errors are sanitized; never show token/data.
                     print("[WORKSPACE] BLOCKED: unexpected_sync_error", flush=True)
         print("[WORKSPACE] FINISHED: approved_projects=" + str(len(projects)), flush=True)
+        workspace_audit_health(projects)
 
     thread = threading.Thread(target=work, name="workspace-sync-all", daemon=True)
     thread.start()

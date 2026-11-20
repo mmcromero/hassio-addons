@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-rc.14 — Diagnóstico do histórico de sincronização
+
+- Após o lote de sincronização, o Factory Runner verifica a leitura sanitizada do próprio histórico; registra `[OPERATIONS] PASS: sanitized_workspace_audit projects=N` quando encontra evidência dos projetos configurados.
+- Falha de leitura ou ausência de evidência gera `[OPERATIONS] BLOCKED`, sem expor IDs de operação, caminhos, SHA ou tokens; o diagnóstico não libera publicações.
+- Três testes de regressão incluídos: histórico válido, ausência de um projeto e log inseguro. A função de auditoria segue autenticada na API.
+- O resultado do build e da suíte completa será verificado na instalação autorizada no HA. Nenhuma execução de Actions, compilação externa obrigatória nem mudança em outros add-ons.
+
+
 ## 0.1.0-rc.13 — Histórico de sincronização multiprojeto
 
 - Corrigido o filtro autenticado de `GET /api/operations` para reconhecer as ações reais `workspace_sync:<projeto>`.
