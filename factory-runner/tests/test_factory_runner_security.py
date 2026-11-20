@@ -196,6 +196,40 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(result["operations"], [])
 
+    def test_workspace_audit_health_reports_real_sanitized_events(self):
+        # This checks the actual startup audit reader, not a synthetic
+        # publication or a request that would need production credentials.
+        for project, operation_id in (
+                ("artesao_digital", "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"),
+                ("avisaqui", "dddddddd-dddd-dddd-dddd-dddddddddddd")):
+            server.record("workspace_sync:" + project, None,
+                          "completed_workspace_sync", operation_id)
+        with patch("builtins.print") as output:
+            self.assertTrue(server.workspace_audit_health(
+                ("artesao_digital", "avisaqui")))
+        self.assertIn("sanitized_workspace_audit",
+                      str(output.call_args_list))
+        self.assertNotIn("eeeeeeee-eeee", str(output.call_args_list))
+
+    def test_workspace_audit_health_fails_without_project_evidence(self):
+        server.record("workspace_sync:avisaqui", None,
+                      "completed_workspace_sync",
+                      "ffffffff-ffff-ffff-ffff-ffffffffffff")
+        with patch("builtins.print") as output:
+            self.assertFalse(server.workspace_audit_health(
+                ("artesao_digital", "avisaqui")))
+        self.assertIn("workspace_audit_entries_missing",
+                      str(output.call_args_list))
+
+    def test_workspace_audit_health_fails_closed_on_unreadable_audit(self):
+        private = Path(self.folder.name) / "private.txt"
+        private.write_text("sensitive-data", encoding="utf-8")
+        server.AUDIT_PATH.symlink_to(private)
+        with patch("builtins.print") as output:
+            self.assertFalse(server.workspace_audit_health(("avisaqui",)))
+        self.assertIn("audit_unavailable", str(output.call_args_list))
+        self.assertNotIn("sensitive-data", str(output.call_args_list))
+
     def test_preflight_requires_auth_and_rejects_unknown_project(self):
         self.assertEqual(self.request("POST", "/api/preflight",
             payload={"project": "avisaqui", "expected_source_sha": "a" * 40})[0], 401)
