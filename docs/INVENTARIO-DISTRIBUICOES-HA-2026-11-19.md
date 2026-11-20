@@ -7,6 +7,10 @@
 **Responsável:** Governança  
 **Escopo:** repositórios GitHub acessíveis e catálogo `mmcromero/hassio-addons`. **Sem acesso à lista de lojas instaladas no Raspberry**; não declarar remoção ou migração executada.
 
+## Preparação WA-MULTI-001 — 20/11/2026
+
+Nesta branch, a pasta LAB e sua entrada no registro foram retiradas; há cinco aplicativos. **Não aplicado à main, não publicado e não instalado.** A tabela abaixo é o inventário histórico da main auditada em `a8b5947`. A instalação LAB permanece não verificada e seus dados não foram tocados. Destino único da atualização WhatsApp: `umdoislab-central/`, slug `umdoislab_central`. Nomenclatura/Instagram continuam no trabalho concorrente, sem alterações nesta branch.
+
 ## Arquitetura obrigatória
 
 Cada produto preserva seu código-fonte, dados e documentação sensível no repositório apropriado. O `hassio-addons` é o catálogo público de pacotes HA, não substituto da fonte privada. As seis pastas de add-on publicadas em 20/11/2026 usam identidades e versões próprias. A publicação de distribuição não autoriza instalação, remoção de repositórios, atualização do HA nem promoção de código-fonte.

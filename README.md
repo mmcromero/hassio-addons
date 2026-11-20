@@ -35,20 +35,19 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo publicado na `main` — conferência de manifests em 20/11/2026
+## Catálogo preparado nesta branch — WA-MULTI-001, 20/11/2026
 
 | Diretório | Nome de exibição registrado | Versão | Arquitetura |
 |---|---|---|---|
 | `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
 | `pager-virtual/` | Pager Virtual | 0.1.20-rc.11 | aarch64, amd64 |
 | `umdoislab-central/` | Fábrica de Softwares - 12Labs Central de Atendimento *(nome anterior na main; correção para Umdoislab preparada em branch)* | 0.4.0 | aarch64 |
-| `umdoislab-central-lab/` | Fábrica de Softwares - Umdoislab Central de Atendimento (LAB) | 0.4.1-rc.1 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.18 | aarch64, amd64 |
 | `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.5 | aarch64 |
 
-O registro atualizado dos **seis** add-ons está em [`.github/addon-registry.json`](.github/addon-registry.json). Os arquivos `icon.png` e `logo.png` das seis pastas compartilham, respectivamente, os mesmos blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, conforme árvore do GitHub. Isso não substitui o `panel_icon` do manifesto.
+O registro atualizado dos **cinco** add-ons está em [`.github/addon-registry.json`](.github/addon-registry.json). Os arquivos `icon.png` e `logo.png` das cinco pastas compartilham, respectivamente, os mesmos blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, conforme árvore do GitHub. Isso não substitui o `panel_icon` do manifesto.
 
-**Central Umdoislab LAB:** nova pasta e slug `umdoislab_central_lab` publicados em [`d73cebc`](https://github.com/mmcromero/hassio-addons/commit/d73cebc3504d0f800501bcb6a30e92db7d98dd9e), sem trocar nem atualizar `umdoislab_central`. `ENV CENTRAL_LAB_NO_WHATSAPP=1` bloqueia os dois métodos de envio no código do LAB. **Publicado não significa instalado ou homologado.** O novo add-on está disponível no catálogo após atualização da loja, mas sua instalação no Raspberry ainda precisa de evidência do Supervisor.
+**Central WhatsApp única — PREPARADO EM BRANCH:** a retirada da candidata LAB do catálogo foi preparada para manter o destino definitivo `umdoislab-central/`, slug `umdoislab_central`. A `main` ainda contém o LAB publicado anteriormente. Esta branch não remove instalações nem dados do Home Assistant e não publica nova versão da Central. Antes de integrar/publicar esta correção, revisar o estado do Supervisor e a branch concorrente de nomenclatura; nenhuma instalação deve ser removida automaticamente.
 
 **Fora deste catálogo:** Artesão Digital usa `mmcromero/fabricacao-e-orcamentos-ha`; Kanban usa `mmcromero/fabrica-de-ideias-kanban`. Não remova essas lojas do Home Assistant sem verificar instalação, versões e preservação dos dados. O catálogo Git não mostra quais lojas estão cadastradas no Raspberry.
 
