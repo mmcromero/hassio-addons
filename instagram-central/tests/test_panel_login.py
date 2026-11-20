@@ -68,6 +68,25 @@ class BrowserSessionTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             panel_login.create_session(self.db, "")
 
+    def test_meta_action_csrf_is_bound_to_session_action_and_time(self):
+        from unittest.mock import patch
+        token = panel_login.create_session(self.db, PASSWORD, now=10000)
+        cookie = "ig_panel_session=" + token
+        with patch.object(panel_login.time, "time", return_value=15000):
+            csrf = panel_login.admin_csrf_token(cookie, PASSWORD, "subscribe")
+            self.assertEqual(len(csrf), 64)
+            self.assertTrue(panel_login.admin_csrf_valid(
+                cookie, PASSWORD, "subscribe", csrf))
+            self.assertFalse(panel_login.admin_csrf_valid(
+                cookie, PASSWORD, "check", csrf))
+            self.assertFalse(panel_login.admin_csrf_valid(
+                cookie, PASSWORD, "subscribe", "invalid"))
+        with patch.object(panel_login.time, "time", return_value=16000):
+            self.assertFalse(panel_login.admin_csrf_valid(
+                cookie, PASSWORD, "subscribe", csrf))
+        self.assertEqual(panel_login.admin_csrf_token(
+            "ig_panel_session=invalid", PASSWORD, "subscribe"), "")
+
     def test_rate_limiter_blocks_and_expires(self):
         client = "test-" + uuid.uuid4().hex
         try:
