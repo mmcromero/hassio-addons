@@ -1,4 +1,4 @@
-name: "Fábrica de Softwares - Central Instagram"
+name: "Fábrica de Softwares - Instagram Umdoislab"
 version: "0.1.5"
 slug: umdoislab_instagram
 description: "Central isolada para mensagens Instagram Direct (laboratorio)"
@@ -11,7 +11,7 @@ stage: experimental
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:instagram
-panel_title: "Central Instagram"
+panel_title: "Instagram Umdoislab"
 panel_admin: true
 backup: cold
 options:
