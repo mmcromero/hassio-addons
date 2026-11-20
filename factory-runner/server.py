@@ -78,11 +78,12 @@ def listed_projects():
         except (PreflightError, OSError, ValueError, TypeError):
             continue
         if profile["id"] == path.stem:
+            readonly = profile.get("mode") == "sync_only"
             result[profile["id"]] = {
                 "id": profile["id"],
                 "product": profile["product"],
-                "preflight": "supported",
-                "preparation": "local_only_no_publish",
+                "preflight": "sync_only_no_release_gate" if readonly else "supported",
+                "preparation": "disabled_sync_only" if readonly else "local_only_no_publish",
                 "publication": "disabled",
             }
     return result
@@ -117,6 +118,8 @@ def preflight_project(project_id, expected_sha):
     if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
         raise PreflightError("Invalid source SHA")
     profile, source, distribution = project_workspace(project_id)
+    if profile.get("mode") == "sync_only":
+        raise PreflightError("Sync-only project has no approved release adapter")
     return evaluate(source, distribution, expected_sha, profile=profile)
 
 
@@ -125,6 +128,8 @@ def prepare_project(project_id, expected_sha, operation_id):
     if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
         raise PreflightError("Invalid source SHA")
     profile, source, distribution = project_workspace(project_id)
+    if profile.get("mode") == "sync_only":
+        raise PreflightError("Sync-only project has no approved release adapter")
     # An approved deterministic recipe requires no source-script execution.
     # Keep the original Bubblewrap path strictly fail-closed for other profiles.
     if "declarative_rules" in profile or "declarative_mapping" in profile:
@@ -228,23 +233,32 @@ def run_workspace_sync(project, token, auto_prepare=False):
               + " public=" + result["public_sha"][:12], flush=True)
         record("workspace_sync:" + project, None, "completed_workspace_sync",
                operation_id, actor="trusted_startup")
-        if result["eligible"] is False:
+        readonly = "SYNC_ONLY_NO_PREPARATION" in result["errors"]
+        if readonly:
+            print("[WORKSPACE] SYNC_ONLY: project=" + project
+                  + " package_preparation_disabled", flush=True)
+            record("workspace_sync:" + project, None, "completed_read_only",
+                   operation_id, actor="trusted_startup")
+        elif result["eligible"] is False:
             print("[WORKSPACE] POLICY_BLOCKED: " + ",".join(result["errors"]), flush=True)
             record("workspace_sync:" + project, None, "blocked_policy",
                    operation_id, actor="trusted_startup")
         if auto_prepare:
-            report = preflight_project(project, result["source_sha"])
-            if not report["eligible_for_preparation"]:
-                print("[WORKSPACE] PREPARE_BLOCKED_BY_POLICY: " +
-                      ",".join(report["errors"]), flush=True)
+            if readonly:
+                print("[WORKSPACE] PREPARE_BLOCKED_BY_PROFILE: project=" + project, flush=True)
             else:
-                prepared = prepare_project(project, result["source_sha"], operation_id)
-                if not prepared["eligible"] or prepared["published"]:
-                    raise RuntimeError("unexpected_prepare_result")
-                record("workspace_sync:" + project, None, "completed_preparation",
-                       operation_id, actor="trusted_startup")
-                print("[WORKSPACE] PREPARED_NOT_PUBLISHED: project=" + project
-                      + " source=" + result["source_sha"][:12], flush=True)
+                report = preflight_project(project, result["source_sha"])
+                if not report["eligible_for_preparation"]:
+                    print("[WORKSPACE] PREPARE_BLOCKED_BY_POLICY: " +
+                          ",".join(report["errors"]), flush=True)
+                else:
+                    prepared = prepare_project(project, result["source_sha"], operation_id)
+                    if not prepared["eligible"] or prepared["published"]:
+                        raise RuntimeError("unexpected_prepare_result")
+                    record("workspace_sync:" + project, None, "completed_preparation",
+                           operation_id, actor="trusted_startup")
+                    print("[WORKSPACE] PREPARED_NOT_PUBLISHED: project=" + project
+                          + " source=" + result["source_sha"][:12], flush=True)
         return result
     except (SyncError, PreflightError, DeclarativeExportError, SandboxUnavailable,
             OSError, ValueError, TypeError, subprocess.TimeoutExpired, RuntimeError) as exc:
