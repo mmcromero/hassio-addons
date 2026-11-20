@@ -1,8 +1,8 @@
-## 0.1.3 — correção 502 da interface Ingress (candidata não publicada) — 20/11/2026
+## 0.1.3 — correção 502 da interface Ingress — 20/11/2026
 - Corrige `UnboundLocalError` em todas as rotas GET: `urlsplit` deixou de ser uma variável local sombreada no `Handler.do_GET`.
 - Acrescenta teste HTTP de regressão para `/health`, `/panel` e webhook desativado, executado no build local do Supervisor.
 - Mantém `meta_oauth_enabled: false`, `ingress_enabled: false`, `drafts_enabled: false` como padrões; preserva o mesmo slug, o volume SQLite e a identidade do add-on.
-- **Preparação de hotfix; não publicar, instalar, alterar NGINX ou habilitar integrações sem autorização.**
+- **A publicação do hotfix não instala a versão no Raspberry e não autoriza alterar NGINX nem habilitar integrações.**
 
 ## 0.1.2 — OAuth Meta unificado (experimental, desativado por padrão) — 20/11/2026
 - Adiciona login unificado Meta com `config_id`, `state` descartável, callback HTTPS e troca de código no servidor.
