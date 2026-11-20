@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Factory Runner"
-version: "0.1.0-rc.7"
+version: "0.1.0-rc.8"
 slug: fabrica_software
 description: "Preparação declarativa e worker controlado; publicação bloqueada"
 url: "https://github.com/mmcromero/hassio-addons"
@@ -16,8 +16,9 @@ ports_description:
 options:
   runner_auth_token: ""
   workspace_auto_prepare: false
+  workspace_sync_enabled: false
 schema:
   runner_auth_token: password
-  workspace_sync_project: "str?"
+  workspace_sync_enabled: bool
   github_read_token: "password?"
   workspace_auto_prepare: bool
