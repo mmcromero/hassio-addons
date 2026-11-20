@@ -43,7 +43,7 @@ Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` 
 | `pager-virtual/` | Pager Virtual | 0.1.20-rc.11 | aarch64, amd64 |
 | `umdoislab-central/` | Fábrica de Softwares - 12Labs Central de Atendimento | 0.4.0 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.17 | aarch64, amd64 |
-| `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.4 | aarch64 |
+| `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.5 | aarch64 |
 
 O cadastro verificável dos **cinco add-ons** está em [`.github/addon-registry.json`](.github/addon-registry.json). As cinco pastas possuem `icon.png` e `logo.png` com os mesmos blobs SHA padronizados no inventário de distribuição; o ícone do painel (`panel_icon`) é uma propriedade separada. O nome do Avisaqui deve ser publicado pelo exportador oficial, para preservar `SOURCE_PROVENANCE.json` e a correspondência com a fonte privada.
 
