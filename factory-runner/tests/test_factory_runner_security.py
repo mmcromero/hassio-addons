@@ -302,6 +302,43 @@ class SecurityTests(unittest.TestCase):
                 server.prepare_project_declarative("avisaqui", "a" * 40, "fixture")
             copied.assert_not_called()
 
+    def test_standard_prepare_dispatches_approved_declarative_recipe(self):
+        # Standard endpoint must not invoke a source script or Bubblewrap when
+        # the installed profile has an approved deterministic export recipe.
+        project = {"declarative_mapping": {"demo/config.yaml": "config.yaml"}}
+        ready = {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
+                 "published": False, "method": "declarative_no_script"}
+        with patch.object(server, "project_workspace", return_value=(
+                project, Path(self.folder.name), Path(self.folder.name))), (
+                patch.object(server, "prepare_project_declarative",
+                             return_value=ready)) as declarative, (
+                patch.object(server, "prepare",
+                             side_effect=AssertionError("legacy exporter called"))):
+            code, response = self.request(
+                "POST", "/api/prepare",
+                payload={"project": "avisaqui",
+                         "expected_source_sha": "a" * 40},
+                token="Bearer test-secret-not-for-production-0123456789")
+        self.assertEqual(code, 200, response)
+        self.assertEqual(response["result"]["method"], "declarative_no_script")
+        self.assertFalse(response["result"]["published"])
+        declarative.assert_called_once()
+
+    def test_standard_prepare_without_recipe_remains_fail_closed(self):
+        with patch.object(server, "project_workspace", return_value=(
+                {}, Path(self.folder.name), Path(self.folder.name))), (
+                patch.object(server, "evaluate",
+                             side_effect=server.PreflightError("blocked"))), (
+                patch.object(server, "prepare",
+                             side_effect=AssertionError("untrusted exporter called"))):
+            code, response = self.request(
+                "POST", "/api/prepare",
+                payload={"project": "avisaqui",
+                         "expected_source_sha": "a" * 40},
+                token="Bearer test-secret-not-for-production-0123456789")
+        self.assertEqual(code, 503, response)
+        self.assertEqual(response["error"], "workspace_or_export_unavailable")
+
     def test_bad_issue_rejected(self):
         for value in (0, -1, True, "35", 100000000):
             self.assertEqual(self.request("POST", "/api/fechar-pacote",
