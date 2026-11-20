@@ -4,6 +4,11 @@ Este arquivo registra **somente o pacote de distribuição** em `mmcromero/hassi
 O desenvolvimento, os testes funcionais e o PR #10 pertencem à fonte privada `mmcromero/whatsapp-automacoes`.
 Consulte o procedimento P0 do catálogo em [`../CONTRIBUTING.md`](../CONTRIBUTING.md).
 
+## Em preparação na branch (sem publicação)
+
+- Corrigido nome exibido para **Fábrica de Softwares - Umdoislab Central de Atendimento**, por orientação expressa do proprietário. O slug `umdoislab_central` foi preservado; versão e ícones não foram alterados.
+- Na `main`, permanece o manifesto anterior até publicação autorizada.
+
 ## 0.4.0 — manifesto atualmente na loja
 
 - Identificação publicada: `Fábrica de Softwares - 12Labs Central de Atendimento`.
