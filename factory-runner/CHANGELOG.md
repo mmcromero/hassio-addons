@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.0-rc.10 — Adaptador Artesão Digital (RC experimental)
+
+- Pré-verificação para HA ARM64 e Debian AMD64 sem gerar pacotes ou publicar automaticamente.
+- 24 casos de testes novos no estágio de validação Docker; execução no build do HA, sem declarar PASS antes dos logs.
+- Executor externo permanece fora da imagem final; RC para homologação separada da execução Docker isolada.
+- Fonte privada mantida em branch, GitHub Actions não executado, Raspberry não instalado. Issue #2.
+
+## Histórico de desenvolvimento — executor isolado HA + Debian
+
+- Adicionado `artesao_isolated_executor.py`, executável **exclusivamente fora do Home Assistant**, com pipeline oficial `release-evidence.py` → `prepare-distributions.py` → HA ARM64 e Debian AMD64 → verificação de `SHA256SUMS`/metadados → recibo local.
+- Pré-requisitos de execução: VM descartável independente, prova externa de isolamento de rede, política local vinculada a SHA/versão, cache npm e imagens Docker já disponíveis offline; nenhuma credencial de servidores. O código recusa ambiente de HA, Docker remoto, root, checkout sujo ou HEAD diferente.
+- Interface `--execute` é *opt-in* somente na VM aprovada; sem flag, apenas planeja. Falha não gera recibo de sucesso; saída marcada `INCOMPLETE-NOT-FOR-PUBLICATION`. ZIP da Forja Windows exige descriptor oficial existente, nunca sintetizado.
+- 15 testes adicionais de executor/recibo/hash/política criados; **execução ainda pendente**. Script incluído somente no estágio de validação Docker, excluído da imagem final do add-on. `ARTESAO-BUILDER-002.md` descreve contrato.
+- **Sem nova versão do Factory Runner no catálogo, sem merge, Actions, publicação, instalação ou alteração de servidores.**
+
+
+## Histórico de desenvolvimento — adaptador de pacotes Artesão Digital
+
+- `artesao_adapter.py` analisa a mesma origem Git fixada para dois destinos independentes: HA ARM64 (contingência) e Debian AMD64 (Forja 01 principal).
+- Perfil `artesao_digital.json` usa `mode: artesao_package`, com caminhos e cinco receitas oficiais fixadas por SHA Git; Avisaqui mantém seu perfil e suas regras.
+- Versão e schema são verificados na origem e no catálogo, com gate para reuso de versão, ancestralidade da base, proveniência e migração.
+- **Somente plano/pré-verificação**: não executa scripts, não gera pacote, não compila imagem, não publica. `/api/prepare` continua bloqueado até recibo de validação e builds reais; `/api/prepare-declarative` não reaproveita as regras do Avisaqui.
+- Nove testes de regressão criados com repositórios Git sintéticos; **execução não comprovada** neste lote. Consultar `ARTESAO-ADAPTER-001.md`. Sem alteração de versão de add-on, Actions, merge, catálogo ou servidor.
+
+
 ## 0.1.0-rc.9 — Cadastro seguro do Artesão Digital
 
 - Novo perfil `projects/artesao_digital.json` como segundo projeto, em **modo exclusivo de sincronização**, com origem `fabricacao_e_orcamentos:main` e distribuição `fabricacao-e-orcamentos-ha:main`.
@@ -52,13 +77,15 @@
 - **Status:** CANDIDATA DE DESENVOLVIMENTO, não instalada nem homologada; publicar somente após revisão do diff, gates da norma de catálogo e autorização aplicável.
 
 
-## 0.1.0-rc.4 — Publicação autorizada para teste (19/11/2026; instalação independente)
+## 0.1.0-rc.4 — Candidata privada de diagnóstico Landlock (NÃO PUBLICADA)
 
-- Reforço fail-closed no carregamento de perfis: tipos incorretos, refs com segmentos vazios/dot segments, prefixos ambíguos e barras invertidas na allowlist são recusados.
-- Cobertura de regressão adicionada para os casos acima. Execução da suíte completa ainda **não comprovada** nesta sessão.
-- Bloqueio Bubblewrap/AppArmor no Raspberry **não resolvido**; nenhuma flexibilização de isolamento ou concessão de privilégios foi feita.
-- Publicação na loja autorizada expressamente pelo proprietário em 19/11/2026. Testes Python integrados e build/ensaio no HA ainda sem PASS; a imagem executa a suíte Python obrigatoriamente no estágio de validação do Dockerfile durante o build do Supervisor. Instalação/atualização não autorizadas nesta tarefa.
-
+- `landlock_probe.py`: consulta somente a versão ABI da interface Linux, syscall 444, sem aplicar regras de segurança nem alterar o host.
+- O diagnóstico `controlled_worker --task diagnose` inclui `landlock.status`, `abi`, capacidade filesystem/TCP/UDP/IPC e campos fixos `enforcement_verified=false` e `safe_for_untrusted_code=false`.
+- Tratamento explícito de interface inexistente/bloqueada/indisponível; retorno `ENOSYS` é `syscall_unavailable`, não prova ausência no kernel do Raspberry.
+- Dockerfile preparado para instalar `landlock_probe.py` nos estágios de validação e execução, compilá-lo e incluir 11 testes novos.
+- Laboratório local: 11/11 cenários PASS, módulo `landlock_probe.py` testado com SHA de blob Git conferido. Consulta não-root no laboratório retornou `syscall_unavailable` — **não** representa o Home Assistant.
+- **Planejador declarativo experimental:** `trusted_export_plan.py` gera apenas mapa em memória, sem executar script/ler Git/copiar/publicar; 13 testes locais PASS. Incluído só no estágio de validação do Dockerfile, **não no runtime**. Mapeamento comum de 135 arquivos comparado com o exportador oficial no snapshot Git `a4b97c1...` (995.337 bytes de metadados de tamanho); workflow compartilhado permanece com autorização própria. Sete regressões adicionais PASS no laboratório com metadados reais selecionados. **Equivalência integral de bytes/proveniência e patch de CI ainda não validada**.
+- **NÃO PUBLICADO/INSTALADO:** `hassio-addons:main` continua na RC3. A RC4 não substitui o Bubblewrap, não libera `/api/prepare`, não altera a política AppArmor e não executa código não confiável.
 
 ## 0.1.0-rc.3 — Candidata de teste do worker controlado (19/11/2026; homologação HA pendente)
 

@@ -78,12 +78,18 @@ def listed_projects():
         except (PreflightError, OSError, ValueError, TypeError):
             continue
         if profile["id"] == path.stem:
-            readonly = profile.get("mode") == "sync_only"
+            mode = profile.get("mode")
+            readonly = mode == "sync_only"
+            artesao = mode == "artesao_package"
             result[profile["id"]] = {
                 "id": profile["id"],
                 "product": profile["product"],
-                "preflight": "sync_only_no_release_gate" if readonly else "supported",
-                "preparation": "disabled_sync_only" if readonly else "local_only_no_publish",
+                "preflight": ("verified_dual_distribution_plan" if artesao
+                              else "sync_only_no_release_gate" if readonly
+                              else "supported"),
+                "preparation": ("blocked_pending_external_validation" if artesao
+                                else "disabled_sync_only" if readonly
+                                else "local_only_no_publish"),
                 "publication": "disabled",
             }
     return result
@@ -120,6 +126,9 @@ def preflight_project(project_id, expected_sha):
     profile, source, distribution = project_workspace(project_id)
     if profile.get("mode") == "sync_only":
         raise PreflightError("Sync-only project has no approved release adapter")
+    if profile.get("mode") == "artesao_package":
+        from artesao_adapter import evaluate_artesao
+        return evaluate_artesao(source, distribution, expected_sha, profile=profile)
     return evaluate(source, distribution, expected_sha, profile=profile)
 
 
@@ -130,6 +139,14 @@ def prepare_project(project_id, expected_sha, operation_id):
     profile, source, distribution = project_workspace(project_id)
     if profile.get("mode") == "sync_only":
         raise PreflightError("Sync-only project has no approved release adapter")
+    if profile.get("mode") == "artesao_package":
+        from artesao_adapter import evaluate_artesao
+        report = evaluate_artesao(source, distribution, expected_sha, profile=profile)
+        # This runner does not possess the validated release receipt or the
+        # architecture-specific build outputs. Do not fake package production.
+        return {"eligible": False, "state": "BLOCKED_PENDING_EXTERNAL_VALIDATION",
+                "project": project_id, "source_sha": expected_sha,
+                "errors": report["errors"], "published": False}
     # An approved deterministic recipe requires no source-script execution.
     # Keep the original Bubblewrap path strictly fail-closed for other profiles.
     if "declarative_rules" in profile or "declarative_mapping" in profile:
@@ -151,10 +168,12 @@ def prepare_project(project_id, expected_sha, operation_id):
 def prepare_project_declarative(project_id, expected_sha, operation_id):
     """Prepare a local artifact from trusted mappings. Never execute exporter code."""
     # Use the same policy gate as /api/prepare. Do not accept mappings in HTTP.
+    profile, source, distribution = project_workspace(project_id)
+    if profile.get("mode") == "artesao_package":
+        raise PreflightError("Artesao adapter cannot use Avisaqui declarative exporter")
     report = preflight_project(project_id, expected_sha)
     if not report["eligible_for_preparation"]:
         return {"eligible": False, "errors": report["errors"]}
-    profile, source, distribution = project_workspace(project_id)
     mapping = profile.get("declarative_mapping")
     if "declarative_rules" in profile:
         rules = profile["declarative_rules"]

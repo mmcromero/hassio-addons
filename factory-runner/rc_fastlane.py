@@ -63,6 +63,20 @@ def fullsha(repo, ref):
 def load_profile(path):
     """Read a configured project; never accept commands or arbitrary Git paths."""
     obj = read_json(Path(path).read_text(encoding="utf-8"), "project profile")
+    # Separately reviewed Artesao adapter: exact profile, pinned build recipes.
+    # Read-only Git metadata analysis; NEVER infer authority to run its scripts.
+    if obj.get("mode") == "artesao_package":
+        from artesao_adapter import _require_profile
+        allowed = {"schema_version", "mode", "id", "product", "source_repo",
+                   "distribution_repo", "source_ref", "public_ref",
+                   "source_version_file", "pilot_manifest_path",
+                   "pilot_base_path", "base_package_path",
+                   "public_release_path", "public_manifest_path",
+                   "public_debian_path", "trusted_script_blobs"}
+        if obj.get("schema_version") != 1 or set(obj) != allowed:
+            raise PreflightError("Invalid Artesao adapter profile schema")
+        _require_profile(obj)
+        return obj
     # Explicit read-only adapter for products with independent release rules.
     # A sync-only profile MUST NEVER inherit the Avisaqui packaging contract.
     if obj.get("mode") == "sync_only":
@@ -248,8 +262,8 @@ def load_profile(path):
 
 def evaluate(source, distribution, expected_sha, *, profile):
     """Read-only inspection, including history divergence and release gates."""
-    if profile.get("mode") == "sync_only":
-        raise PreflightError("Sync-only project has no approved release adapter")
+    if profile.get("mode") in ("sync_only", "artesao_package"):
+        raise PreflightError("Generic release evaluator unsupported for this profile")
     source, distribution = Path(source), Path(distribution)
     if not SHA.fullmatch(expected_sha):
         raise PreflightError("--expected-source-sha must contain 40 hex characters")

@@ -1,5 +1,19 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
+### Executor externo de builds — situação de desenvolvimento
+
+O novo `artesao_isolated_executor.py` é destinado a VM descartável, **não ao Raspberry nem à Forja 01**. Usa `npm ci --offline`, `release-evidence.py`, exportadores oficiais, builds `linux/arm64` (HA) e `linux/amd64` (Debian), `sha256sum` verificado via Python e relatório local `published:false`. Requer uma política de job com SHA+versão e cache offline preprovisionado; **não há verificação física da VM nesta entrega**. O add-on permanece com Docker socket inacessível, sem endpoints de execução externa e com publicação bloqueada. Leia `ARTESAO-BUILDER-002.md`. Sem Actions, merge, pacotes publicados ou atualização de servidores.
+
+
+## Adaptador Artesão Digital — branch de desenvolvimento (sem publicação)
+
+O perfil `artesao_digital` recebe um **pré-verificador real para pacotes HA e Debian**, em branch isolada `feat/factory-runner-artesao-package-adapter`. O código verifica branches/SHA, base do piloto, versão do núcleo, versão do HA, ponteiro Debian, schemas e cinco scripts oficiais fixados pelo Git blob. Avisaqui mantém o processo próprio e não foi modificado.
+
+Este **não é o executor de build**. Os scripts de `release-evidence.py` + `prepare-distributions.py` exigem Node/testes, recibo válido e artefatos de arquitetura; `prepare-ha-aarch64.py` requer imagem ARM64 com labels; Debian/Forja exige artefato AMD64, hashes e autorização independente. Nem o Bearer do Runner nem um perfil homologado autorizam criar/push de pacotes. A API retorna somente um plano e continua recusando `/api/prepare`, `/api/prepare-declarative` e rotas de publicação. Nenhum acesso Docker/host será acrescentado ao add-on.
+
+A consulta inicial ao catálogo HA mostrou `0.2.0-dev.28` de origem `e6b48ed...` enquanto a fonte `main` em `673cc37...` também declara dev.28; a candidata não pode reutilizar essa versão. Debian público apontava dev.26. Consulte `ARTESAO-ADAPTER-001.md` para evidências, testes adicionados e pendências de execução.
+
+
 ## RC9 — segundo projeto cadastrado em modo somente leitura
 
 Novo perfil `projects/artesao_digital.json`: origem `mmcromero/fabricacao_e_orcamentos:main`, distribuição `mmcromero/fabricacao-e-orcamentos-ha:main`, versão lida de blob Git `apps/umdoislab/artesao-release.json`. O perfil é `mode: sync_only`, pois o produto usa processo próprio de evidências, schemas e distribuição HA/Debian, diferente da política `active_package` do Avisaqui.
@@ -28,7 +42,7 @@ Na configuração do add-on, definir `workspace_sync_project` para o ID aprovado
 
 
 ## Atualização RC5 — preparação determinística em desenvolvimento (NÃO PUBLICADA)\n\nA nova rota declarativa e a rota padrão `POST /api/prepare` executam somente o código confiável do Runner quando o perfil versionado contém uma receita aprovada, SHA fixado e política de pacote aberto. O método usa Git blobs, valida versão, hashes e proveniência e nunca executa scripts do projeto. O Bubblewrap permanece no caminho legado para demais perfis; execução de IA/usuário continua bloqueada.\n\nLaboratório: 18/18 testes do núcleo, 19/19 do preflight, 8/8 de HTTP dirigido, 3/3 HTTP com preflight real e 4/4 do probe; equivalência sintética do exportador oficial (29 arquivos + 1 workflow, bytes e manifesto iguais). Execução real não-root do probe com UID 65534 PASS no laboratório. Não equiparar isso a Docker build, ARM64, homologação no HA ou workspaces provisionados. `run.sh` invoca o probe sintético antes da API, sem o token. Sem Actions/merge/publicação/instalação.\n\n
-**Estado confirmado em 19/11/2026:** RC4 `0.1.0-rc.4` **PUBLICADA** em `hassio-addons:main/factory-runner/` pelo PR #45, commit `350fa3c8a756c405b6766cca53bd25fe84aef9f1`, após autorização do proprietário. **Não instalada, não homologada.** O pacote já foi publicado; **não reabrir o fluxo de publicação nem condicionar essa entrega a Docker/QEMU/Actions externos**. O Dockerfile executa regressões Python durante o build do Supervisor; resultado ainda não coletado no Raspberry. O Bubblewrap segue falhando em `/api/prepare` conforme relato anterior, que deve permanecer fail-closed; não confundir com teste de publicação. A versão atualmente instalada no HA não foi conferida. O próximo passo é **instalação/atualização pelo operador autorizado, quando houver autorização específica**, seguida de registro de build, inicialização e testes funcionais dirigidos. **Produto independente** dos projetos atendidos.
+**HISTÓRICO RC3 — NÃO VIGENTE:** candidata RC3 (`0.1.0-rc.3`) para homologação no Home Assistant; o isolamento do Bubblewrap segue bloqueado no HA até evidência em contrário. **Produto independente** dos projetos atendidos.
 
 ## O que já existe
 
@@ -66,7 +80,7 @@ Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docke
 
 ## Verificações complementares (não são gate genérico de publicação)
 
-A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. A ausência de Docker/QEMU/CI ARM64 externo não constitui impedimento automático: o Supervisor pode construir a imagem no Raspberry durante uma instalação autorizada. A falha do Bubblewrap bloqueia `/api/prepare`, não exige suspender diagnóstico e leitura. Conferir diff, sintaxe, testes dirigidos, configuração, segurança e escopo. Como este add-on utiliza Dockerfile sem imagem pré-compilada, o Supervisor executa o build ARM64 durante a instalação/atualização no HA. Buildx/QEMU externo abaixo é diagnóstico opcional quando houver risco técnico comprovado, não requisito obrigatório de publicação da RC de teste.
+A norma P0 vigente é `hassio-addons:main/CONTRIBUTING.md`. Conferir diff, sintaxe, testes dirigidos, configuração, segurança e escopo. Como este add-on utiliza Dockerfile sem imagem pré-compilada, o Supervisor executa o build ARM64 durante a instalação/atualização no HA. Buildx/QEMU externo abaixo é diagnóstico opcional quando houver risco técnico comprovado, não requisito obrigatório de publicação da RC de teste.
 
 ```sh
 python3 -m unittest discover -s factory-runner/tests -p 'test_factory_runner_*.py' -v

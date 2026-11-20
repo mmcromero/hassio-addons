@@ -174,6 +174,9 @@ def _existing(workspace: Path, profile: dict) -> dict | None:
 def _verified_profile_report(profile: dict, source: Path,
                              distribution: Path, source_sha: str) -> dict:
     """Use approved release gates, or strictly read-only source metadata."""
+    if profile.get("mode") == "artesao_package":
+        from artesao_adapter import evaluate_artesao
+        return evaluate_artesao(source, distribution, source_sha, profile=profile)
     if profile.get("mode") == "sync_only":
         try:
             metadata = read_json(
