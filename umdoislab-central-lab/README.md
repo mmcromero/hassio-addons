@@ -1,6 +1,6 @@
 # Umdoislab Central de Atendimento — LAB Home Assistant
 
-**Situação:** candidata experimental na branch `chore/central-publicacao-p0-20261120` do catálogo. **Não publicada na `main`, não instalada e não homologada.**
+**Situação:** versão 0.4.1-rc.1 publicada na `main` do catálogo no commit [`d73cebc`](https://github.com/mmcromero/hassio-addons/commit/d73cebc3504d0f800501bcb6a30e92db7d98dd9e). **Não há comprovação de instalação nem de homologação no Raspberry.** A fonte privada continua no PR #10, sem merge.
 
 **Objetivo:** validar o código do PR privado [#10](https://github.com/mmcromero/whatsapp-automacoes/pull/10) em uma segunda instância de HA, sem modificar a Central existente.
 
@@ -20,7 +20,7 @@
 - A instância não configura credenciais por padrão, não tem porta de host exposta e não recebe webhook de cliente. `boot: manual`.
 - **Não** substituir ou atualizar `umdoislab-central/`. Cada add-on terá `/data` isolado pelo próprio Supervisor; comprovar essa separação na instalação antes de qualquer teste.
 - Não reutilizar token/credencial da Central antiga, não apontar Evolution ou n8n ativos ao LAB e não ativar o worker de recuperação por padrão.
-- Para rodar os testes, instalar somente esta instância pelo Supervisor **após publicação autorizada na `main`**; capturar resultado de build, boot, Ingress, logs e teste de bloqueio de envio.
+- Para rodar os testes, instalar somente esta instância pelo Supervisor **após atualizar a loja no Home Assistant**; capturar resultado de build, boot, Ingress, logs e teste de bloqueio de envio.
 - Um build ARM64 em Actions/QEMU não é portão automático; o Supervisor pode compilar Dockerfile diretamente no Raspberry.
 
 **Publicação:** cumprir [CONTRIBUTING.md](../CONTRIBUTING.md) e [AGENTS.md](../AGENTS.md). A nova pasta exige sua própria entrada em `.github/addon-registry.json`, que será preparada na mesma branch. Não abrir PR/rodar Actions/merge/publicar automaticamente.

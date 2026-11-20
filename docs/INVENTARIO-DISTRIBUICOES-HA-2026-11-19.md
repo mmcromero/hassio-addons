@@ -9,18 +9,22 @@
 
 ## Arquitetura obrigatória
 
-Cada produto preserva seu código-fonte, dados e documentação sensível no repositório apropriado. O `hassio-addons` é o catálogo público de pacotes HA, não substituto da fonte privada. As quatro pastas de add-on usam identidades e versões próprias. A publicação de distribuição não autoriza instalação, remoção de repositórios, atualização do HA nem promoção de código-fonte.
+Cada produto preserva seu código-fonte, dados e documentação sensível no repositório apropriado. O `hassio-addons` é o catálogo público de pacotes HA, não substituto da fonte privada. As seis pastas de add-on publicadas em 20/11/2026 usam identidades e versões próprias. A publicação de distribuição não autoriza instalação, remoção de repositórios, atualização do HA nem promoção de código-fonte.
 
-## Catálogo compartilhado — conteúdo confirmado na main
+## Catálogo compartilhado — revisão dos manifests na main em 20/11/2026
 
-| Diretório | Slug | Versão | Arquitetura | Título no catálogo (19/11/2026) |
+| Diretório | Slug | Versão | Arquitetura | Nome no manifesto publicado |
 |---|---|---|---|---|
 | evolution-api | evolution_api | 0.1.0 | aarch64 | Fábrica de Softwares - Evolution API WhatsApp |
-| pager-virtual | pager_virtual | 0.1.20-rc.11 | aarch64, amd64 | Pager Virtual — **padronização preparada na fonte; publicação pendente** |
-| umdoislab-central | umdoislab_central | 0.4.0 | aarch64 | Fábrica de Softwares - 12Labs Central de Atendimento |
-| factory-runner | fabrica_software | 0.1.0-rc.2 | aarch64, amd64 | Fábrica de Softwares - Factory Runner |
+| pager-virtual | pager_virtual | 0.1.20-rc.11 | aarch64, amd64 | Pager Virtual |
+| umdoislab-central | umdoislab_central | 0.4.0 | aarch64 | Fábrica de Softwares - 12Labs Central de Atendimento *(nome legado; correção em branch)* |
+| umdoislab-central-lab | umdoislab_central_lab | 0.4.1-rc.1 | aarch64 | Fábrica de Softwares - Umdoislab Central de Atendimento (LAB) |
+| factory-runner | fabrica_software | 0.1.0-rc.18 | aarch64, amd64 | Fábrica de Softwares - Factory Runner |
+| instagram-central | umdoislab_instagram | 0.1.5 | aarch64 | Fábrica de Softwares - Central Instagram |
 
-**Identidade visual:** `icon.png` e `logo.png` idênticos aos arquivos oficiais atuais de `mmcromero/fabrica-de-ideias-kanban/kanban/`. SHA Git do ícone: `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo: `7e500016222b0a5bf395be8ed17447edeb3e2af9`. Os oito arquivos foram conferidos na `main`. Não altera `panel_icon` ou a identidade interna das aplicações.
+**Identidade visual:** `icon.png` e `logo.png` são iguais, em SHA Git, nas seis pastas. Ícone: `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo: `7e500016222b0a5bf395be8ed17447edeb3e2af9`. São os arquivos do catálogo documentados na identidade atual do Kanban. `panel_icon` é configuração independente.
+
+**Situação LAB:** o pacote Umdoislab foi publicado na [`main`](https://github.com/mmcromero/hassio-addons/commit/d73cebc3504d0f800501bcb6a30e92db7d98dd9e) como instalação separada, sem instalar no dispositivo nem modificar `umdoislab_central`. O nome legado da Central anterior continua publicado na main até atualização específica, preparada em branch. Não confundir publicação, instalação e homologação.
 
 ## Distribuições HA em repositórios separados
 
@@ -35,11 +39,11 @@ Cada produto preserva seu código-fonte, dados e documentação sensível no rep
 ## Padronização aplicada e limites
 
 - Título comum: **Fábrica de Softwares - Nome do aplicativo** no campo `name` do manifest do add-on. Não modificar `slug`, versão ou ID só para agrupar títulos.
-- Logos: duas imagens padronizadas em todos os quatro diretórios do catálogo.
+- Logos: dois arquivos padronizados em cada um dos seis diretórios do catálogo (12 arquivos com os mesmos dois hashes).
 - Avisaqui: título novo e imagens já colocados na fonte privada `desenvolvimento` para próximo corte; **não alterar isoladamente o `pager-virtual/config.yaml` distribuído**, pois o pacote RC11 possui `SOURCE_PROVENANCE.json` e verificação por hash/arquivos. Próximo fechamento autorizado deve gerar distribuição auditável e atualizar os campos necessários com novos SHA e versão conforme a rotina específica.
-- Outros três títulos foram publicados na `main` do catálogo, sem modificar versões, slugs nem rotinas internas.
+- O LAB Umdoislab tem identidade e slug próprios. A correção de nome da Central anterior ainda está preparada em branch, sem atualizar a instalação.
 - O uso do mesmo título no catálogo pode facilitar agrupamento visual, mas a posição exata na interface do HA depende da UI/ordenação e não foi homologada no Raspberry.
-- Sem acesso de leitura ao Supervisor desta instalação: **não afirmar** quais lojas estão configuradas, quais apps estão instalados ou quando serão removidos.
+- O inventário de instalações de 19/11/2026 deriva de captura do proprietário; os manifests do GitHub não demonstram estado atual do Supervisor. O acesso do conector n8n à API de add-ons retornou 401; não afirmar instalação do LAB sem confirmação.
 
 ## Etapas antes de limpar a loja do HA
 
