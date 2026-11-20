@@ -21,7 +21,7 @@ import time
 from urllib import parse, request
 import uuid
 
-from rc_fastlane import PreflightError, evaluate, fullsha, load_profile
+from rc_fastlane import PreflightError, evaluate, fullsha, git_blob, load_profile, read_json
 
 IDENT = re.compile(r"^[a-z][a-z0-9_-]{1,47}$")
 REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
@@ -171,6 +171,25 @@ def _existing(workspace: Path, profile: dict) -> dict | None:
     return data
 
 
+def _verified_profile_report(profile: dict, source: Path,
+                             distribution: Path, source_sha: str) -> dict:
+    """Use approved release gates, or strictly read-only source metadata."""
+    if profile.get("mode") == "sync_only":
+        try:
+            metadata = read_json(
+                git_blob(source, source_sha, profile["source_version_file"]),
+                "read-only source version")
+        except (PreflightError, OSError, ValueError) as exc:
+            raise SyncError("source_version_unavailable") from exc
+        version = metadata.get("version")
+        if (not isinstance(version, str) or not 1 <= len(version) <= 80
+                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]*", version)):
+            raise SyncError("source_version_invalid")
+        return {"eligible_for_preparation": False,
+                "errors": ["SYNC_ONLY_NO_PREPARATION"]}
+    return evaluate(source, distribution, source_sha, profile=profile)
+
+
 def synchronize(project: str, *, token: str, projects_dir: Path,
                 workspaces_dir: Path, remote_head=_remote_head,
                 clone=_clone) -> dict:
@@ -196,8 +215,8 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
     if (previous is not None and previous.get("source_sha") == source_sha
             and previous.get("public_sha") == public_sha):
         try:
-            report = evaluate(workspace / "source", workspace / "distribution",
-                              source_sha, profile=profile)
+            report = _verified_profile_report(
+                profile, workspace / "source", workspace / "distribution", source_sha)
         except (PreflightError, OSError, ValueError, subprocess.SubprocessError) as exc:
             raise SyncError("preflight_failed") from exc
         return {"state": "UNCHANGED", "project": project,
@@ -227,7 +246,8 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
             if any(p.name != ".git" for p in path.iterdir()):
                 raise SyncError("checked_out_untrusted_files")
         try:
-            report = evaluate(source, distribution, source_sha, profile=profile)
+            report = _verified_profile_report(
+                profile, source, distribution, source_sha)
         except (PreflightError, OSError, ValueError, subprocess.SubprocessError) as exc:
             raise SyncError("preflight_failed") from exc
         status = {"managed_by": "factory-runner-workspace-v1",
