@@ -1,5 +1,14 @@
 # Configurações de projetos do Factory Runner
 
+## Seleção de projetos na RC8
+
+`workspace_sync_enabled` é uma chave **global**, desligada por padrão. Ao ativá-la, o Factory Runner tenta sincronizar em sequência **todos os perfis aprovados e versionados** deste diretório (máximo 32), não só o Avisaqui. A falha de um projeto não impede o processamento dos demais. O campo `workspace_sync_project` da RC7 foi removido e não deve mais ser usado.
+
+**Cadastro:** para adicionar Artesão Digital ou outro projeto, aprovar seu perfil JSON com repositórios, branches, contrato de política, versão e receita declarativa, registrar testes e distribuí-lo em `projects/<id>.json`. O Runner não supõe compatibilidade entre projetos ou cria perfis automaticamente. Cada perfil só pode acessar os repositórios que declarar. O `github_read_token` deve ser restrito aos repositórios privados necessários.
+
+A sincronização não equivale à preparação (`workspace_auto_prepare=false` por padrão), muito menos à publicação. Consulte `../RC8-VALIDACAO.md`.
+
+
 Este diretório guarda **perfis dos projetos atendidos**, não versões nem código desses projetos. O Factory Runner permanece um produto independente.
 
 - `avisaqui.json`: primeira integração com o fechamento de RC do Avisaqui, usando a política e o exportador existentes no repositório `mmcromero/pager-virtual`.
@@ -20,6 +29,6 @@ python3 factory-runner-add-on/rc_fastlane.py \
   --expected-source-sha <SHA_COMPLETO_FIXADO_NO_GITHUB>
 ```
 
-É necessário executar esse comando a partir da raiz do repositório de desenvolvimento do Runner, com Git/Python e checkouts locais devidamente atualizados. O add-on `0.1.0-rc.1` já instalado **não possui ainda esse CLI integrado à sua API**.
+É necessário executar esse comando a partir da raiz do repositório de desenvolvimento do Runner, com Git/Python e checkouts locais devidamente atualizados. **Nota histórica:** a RC1 não tinha esse CLI; versões posteriores possuem preflight/preparação local sob as políticas vigentes. O estado instalado deve ser conferido no Supervisor.
 
 Documentação canônica: `docs/governanca/FACTORY-RUNNER-ARQUITETURA-002.md`. Rastreamento: Issue #2 e PR #3.
