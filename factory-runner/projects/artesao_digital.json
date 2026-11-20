@@ -1,11 +1,24 @@
 {
   "schema_version": 1,
-  "mode": "sync_only",
+  "mode": "artesao_package",
   "id": "artesao_digital",
   "product": "Artesão Digital",
   "source_repo": "mmcromero/fabricacao_e_orcamentos",
   "distribution_repo": "mmcromero/fabricacao-e-orcamentos-ha",
   "source_ref": "refs/remotes/origin/main",
   "public_ref": "refs/remotes/origin/main",
-  "source_version_file": "apps/umdoislab/artesao-release.json"
+  "source_version_file": "apps/umdoislab/artesao-release.json",
+  "pilot_manifest_path": "apps/umdoislab/pilot/config.yaml",
+  "pilot_base_path": "apps/umdoislab/pilot/core-base.json",
+  "base_package_path": "apps/umdoislab/package.json",
+  "public_release_path": "apps/artesaos-piloto/release.json",
+  "public_manifest_path": "apps/artesaos-piloto/config.yaml",
+  "public_debian_path": "forja-01/publicacao-atual.json",
+  "trusted_script_blobs": {
+    "scripts/release-evidence.py": "f741d307657026f39bdf4fd5d979002b983684b2",
+    "scripts/prepare-pilot-release.py": "7acb17a293c7e5f922b2d004974dc9bfb6dd2997",
+    "scripts/prepare-distributions.py": "a7feb125c6abdea8ed8e7013b37ca3d125743738",
+    "scripts/prepare-ha-aarch64.py": "dd4b05d7ddbbb84f8b1192cc72aa595b9ae411be",
+    "scripts/prepare-forja-windows.py": "2a7637e476ecd221489fd4cc38a1a354954a8c81"
+  }
 }

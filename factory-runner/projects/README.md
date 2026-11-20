@@ -1,5 +1,17 @@
 # Configurações de projetos do Factory Runner
 
+### Pacotes do Artesão Digital: executor externo isolado (ainda não ativo)
+
+A receita `artesao_package` somente gera planos/preflight dentro do Factory Runner. A etapa de compilação/empacotamento foi preparada em `artesao_isolated_executor.py`, **fora do add-on HA**, em VM descartável de build com política própria de SHA/versão e isolamento validado. Não existe permissão para o Runner iniciar Docker no Raspberry. `projects/artesao_digital.json` contém SHAs de scripts auditados, não senhas. Ver `ARTESAO-BUILDER-002.md`. Na branch pública da RC9, o perfil ainda é `sync_only`.
+
+
+## Candidata de adaptador Artesão Digital — não publicada
+
+O perfil `artesao_digital.json` da **branch isolada** muda de `mode: sync_only` para `mode: artesao_package` com os caminhos e SHAs Git dos scripts oficiais de evidência e exportação dos dois destinos. O modo novo **só** habilita `/api/preflight` e análise do pacote, não executa os exportadores nem prepara artefatos sem recibo real. `/api/prepare` e `/api/prepare-declarative` permanecem bloqueados. `main` instalada continua com o perfil sync-only da RC9 até autorização específica de integração.
+
+Nota: no Git consultado, a origem dev.28 do HEAD era diferente do SHA do pacote HA dev.28 publicado; um novo pacote com esse mesmo número é bloqueado. Consultar `../ARTESAO-ADAPTER-001.md`. Esse adaptador não modifica o mecanismo de outros projetos.
+
+
 ## Artesão Digital — segundo perfil na candidata RC9
 
 `artesao_digital.json` aponta somente para `mmcromero/fabricacao_e_orcamentos:main` (fonte) e `mmcromero/fabricacao-e-orcamentos-ha:main` (distribuição HA). O perfil `mode: sync_only` **permite sincronizar e verificar a versão no commit**, mas **não autoriza preparar, compilar ou publicar**. O produto possui política própria: distribuição Debian e HA, recibo de validação e compatibilidade de schemas. Não copiar a política `active_package` do Avisaqui.
