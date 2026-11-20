@@ -36,7 +36,7 @@ Cada produto preserva seu código-fonte, dados e documentação sensível no rep
 ## Nota de revisão — 20/11/2026
 
 - O cadastro [`.github/addon-registry.json`](../.github/addon-registry.json) contém cinco entradas: a Central Instagram já integra o catálogo e não constava neste inventário datado de 19/11.
-- A Central Umdoislab continua com `name: "Fábrica de Softwares - 12Labs Central de Atendimento"` e `slug: umdoislab_central`. Esse slug identifica a instalação atual: **não renomeá-lo** para criar laboratório.
+- Na `main` o nome ainda consta como **"Fábrica de Softwares - 12Labs Central de Atendimento"** (registro histórico verificado). O proprietário corrigiu a marca para **Umdoislab**. Nesta branch, a candidata altera somente o título para **"Fábrica de Softwares - Umdoislab Central de Atendimento"**, com `slug: umdoislab_central` preservado. **Não declarar que a mudança está publicada antes da integração à `main`.** A candidata LAB usa slug distinto `umdoislab_central_lab`.
 - Uma futura instância de laboratório exige registro de outra pasta/ID/slug, com identidade e versão explícitas, e validação do catálogo. O catálogo ainda **não registra** uma segunda Central; não declarar instalação ou escolher slug como fato documentado.
 - O `panel_icon: mdi:message-processing-outline` da Central é independente de `icon.png` e `logo.png`. Não substituir nenhuma dessas imagens com arte genérica.
 
