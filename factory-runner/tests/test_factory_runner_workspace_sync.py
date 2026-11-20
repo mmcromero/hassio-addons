@@ -92,6 +92,27 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertEqual([x.name for x in (self.workspaces/"fixture"/"source").iterdir()], [".git"])
         self.assertEqual(len(list(self.workspaces.glob(".stage-*"))),0)
 
+    def test_synchronized_git_checkout_prepares_local_bundle(self):
+        import server
+        result = self.run_sync()
+        self.assertTrue(result["eligible"])
+        before = {"source": self.git(self.source,"rev-parse","HEAD"),
+                  "dist": self.git(self.dist,"rev-parse","HEAD")}
+        with (patch.object(server,"PROJECTS_DIR",self.projects),
+              patch.object(server,"WORKSPACES_DIR",self.workspaces),
+              patch.object(server,"PREPARATIONS_DIR",self.root/"preparations")):
+            prepared = server.prepare_project("fixture", result["source_sha"], "fixture-op")
+        self.assertTrue(prepared["eligible"])
+        self.assertFalse(prepared["published"])
+        self.assertEqual(prepared["state"],"PREPARED_NOT_PUBLISHED")
+        self.assertEqual(prepared["method"],"declarative_no_script")
+        output=next((self.root/"preparations").iterdir())
+        provenance=json.loads((output/"demo/SOURCE_PROVENANCE.json").read_text())
+        self.assertEqual(len(provenance["files"]),2)
+        self.assertEqual(provenance["commit"],result["source_sha"])
+        self.assertEqual(self.git(self.source,"rev-parse","HEAD"),before["source"])
+        self.assertEqual(self.git(self.dist,"rev-parse","HEAD"),before["dist"])
+
     def test_repeat_same_sha_is_idempotent_no_reclone(self):
         self.run_sync()
         def fail_clone(*args):
