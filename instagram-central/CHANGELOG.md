@@ -1,3 +1,10 @@
+## 0.1.9 — correção do erro de build Python no Home Assistant (PUBLICADO; RETESTE PENDENTE) — 20/11/2026
+
+- **Falha reproduzida no Supervisor, versão 0.1.8:** o Dockerfile parou em `python3 -m py_compile` com `SyntaxError: bytes can only contain ASCII literal characters` em `tests/test_http.py:224`. A instalação da 0.1.8 não foi concluída.
+- **Hotfix exato:** `self.assertIn(b'aria-label="Módulos"', body)` → `self.assertIn('aria-label="Módulos"'.encode("utf-8"), body)`. Mantém a mesma asserção no teste H07, sem modificar a aplicação.
+- **Compatibilidade:** somente `tests/test_http.py`, versão `config.yaml` de 0.1.8 para 0.1.9 e documentos. Os 22 módulos/arquivos de testes Python foram inspecionados por busca textual de literais bytes não ASCII; nenhum outro caso foi encontrado. Isso não substitui a compilação completa nem os testes do HA.
+- **Situação:** pacote 0.1.9 publicado para nova atualização no HA. Sem GitHub Actions, mudança de Dockerfile, outros add-ons, autenticação, banco, mídia, slug, ícones ou integração Meta. Testes completos e inicialização ainda aguardam execução pelo Supervisor.
+
 ## 0.1.8 — patch de UX e legendas locais (PUBLICADO NO GITHUB; INSTALAÇÃO PENDENTE) — 20/11/2026
 
 - **Publicação no feed:** uma única opção visível; 1 foto gera `feed`, 2 a 20 fotos geram `carousel` automaticamente. O formato interno e rascunhos anteriores continuam compatíveis.

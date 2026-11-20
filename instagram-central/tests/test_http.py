@@ -221,7 +221,7 @@ class HTTPContractTests(unittest.TestCase):
         # Same approved visual language as Editorial; H07 login/logout contract unchanged.
         self.assertIn(b'class="topbar"', body)
         self.assertIn(b'class="sidebar"', body)
-        self.assertIn(b'aria-label="Módulos"', body)
+        self.assertIn('aria-label="Módulos"'.encode("utf-8"), body)
         self.assertIn(b'--bg:#0c1520', body)
         self.assertIn(b'action="auth/logout"', body)
         self.assertEqual(body.count(b'>Sair</button>'), 1)

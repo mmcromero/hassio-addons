@@ -1,6 +1,6 @@
-# Central Instagram Umdoislab — distribuição 0.1.8
+# Central Instagram Umdoislab — distribuição 0.1.9
 
-**Estado:** **0.1.8 publicada no catálogo GitHub** para atualização e homologação no Home Assistant, **ainda não instalada nem homologada** nesta revisão. A 0.1.7 foi instalada e teve os testes manuais H01–H11 executados pelo proprietário, com ressalvas registradas na Issue #1. Mensagens + Editorial continuam no **mesmo aplicativo, sessão, login e Ingress**.
+**Estado:** **0.1.9 publicada no catálogo GitHub** para nova tentativa de atualização/homologação no Home Assistant. A 0.1.8 foi publicada mas o build no Supervisor falhou em `tests/test_http.py:224` por literal bytes não ASCII; a versão instalada exibida no momento da falha era a **0.1.7**. A 0.1.9 corrige esse erro de sintaxe. A instalação e homologação da 0.1.9 **ainda não foram confirmadas**. Mensagens + Editorial seguem no mesmo aplicativo, sessão, login e Ingress.
 
 - Repositório privado: `mmcromero/instagram-automacoes`.
 - Branch do patch: `feat/instagram-editorial-ux-patch-001` (deriva da candidata privada 0.1.7).
@@ -54,10 +54,10 @@ No código base do PR #7, sem alterações de lógica nesta candidata:
 
 Essas evidências **não comprovam** build `aarch64` ou execução no Home Assistant, e não devem ser repetidas por rotina quando só versão/documentação mudou. O Supervisor poderá construir no hardware alvo **apenas durante uma instalação autorizada**. Norma: [P0 do catálogo Home Assistant](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md).
 
-## Distribuição Home Assistant — 0.1.8 publicada no GitHub, instalação pendente
+## Distribuição Home Assistant — 0.1.9 publicada no GitHub, build do Supervisor pendente
 
-A 0.1.8 foi publicada no catálogo `mmcromero/hassio-addons:main/instagram-central/` no [commit `a666f3e7`](https://github.com/mmcromero/hassio-addons/commit/a666f3e7dc837d68a2a80392fb8d9c2e8fb0e928), a partir da fonte privada `feat/instagram-editorial-ux-patch-001` em `92428bf48a4ad92d7fc0716edb0de0c608b0609d`. A publicação alterou apenas 13 arquivos `instagram-central/`, preservando `icon.png`, `logo.png`, slug, arquitetura, rotas, opções e demais add-ons. GitHub Actions não foi usado (commit com `[skip ci]`).
+A 0.1.9 foi publicada em `mmcromero/hassio-addons:main/instagram-central/` a partir de `mmcromero/instagram-automacoes:feat/instagram-editorial-ux-patch-001` commit `12735c3c7351793c45a572cc200bab50db82d784`. O patch altera somente `config.yaml` (versão), `tests/test_http.py` (conversão UTF-8 correta na asserção) e documentação. A atualização anterior para 0.1.8 falhou durante `python3 -m py_compile`, antes da suíte. O Dockerfile e o código da aplicação não foram alterados. Slug, logos, dados `/data`, opções e demais add-ons são preservados.
 
-**A 0.1.8 ainda não está instalada nem homologada no HA.** O operador autorizado poderá atualizar o add-on existente pela loja, preservando `/data` e as opções; o Supervisor poderá construir a imagem no hardware `aarch64`. Verificar inicialização, logs e fluxos alterados; reportar os resultados na Issue #1. Publicação de conteúdo Instagram/Meta continua desativada. Não criar TAR/ZIP, outra instalação ou novo login.
+**A 0.1.9 ainda não está instalada nem homologada no HA.** O operador autorizado poderá atualizar o add-on existente pela loja, preservando `/data` e as opções; o Supervisor poderá construir a imagem no hardware `aarch64`. Verificar inicialização, logs e fluxos alterados; reportar os resultados na Issue #1. Publicação de conteúdo Instagram/Meta continua desativada. Não criar TAR/ZIP, outra instalação ou novo login.
 
 Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.
