@@ -8,13 +8,15 @@
 
 | Campo | Valor do `config.yaml` |
 | --- | --- |
-| Nome | Fábrica de Softwares - 12Labs Central de Atendimento |
+| Nome proposto (branch) | Fábrica de Softwares - WhatsApp Umdoislab |
 | Versão | 0.4.0 |
 | Slug | `umdoislab_central` |
 | Arquitetura | `aarch64` |
 | Ingress | Ativado, porta interna `8099` |
 | Inicialização | Manual |
 | Backup declarado | `cold` |
+
+**Padronização do título preparada em branch (ainda não publicada):** o aplicativo mantém o slug `umdoislab_central`, sem criar nova instalação; somente `name` e `panel_title` mudam. No catálogo `main`, o nome histórico permanece até publicação aprovada. A versão não foi alterada nesta preparação.
 
 **Importante:** a versão do manifesto é a versão do **pacote versionado**, não confirmação da versão instalada no Raspberry. O código de distribuição é validado, publicado e homologado separadamente conforme `CONTRIBUTING.md` da loja.
 
