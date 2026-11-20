@@ -19,7 +19,7 @@ Cada produto preserva seu código-fonte, dados e documentação sensível no rep
 | pager-virtual | pager_virtual | 0.1.20-rc.11 | aarch64, amd64 | Pager Virtual |
 | umdoislab-central | umdoislab_central | 0.4.0 | aarch64 | Fábrica de Softwares - 12Labs Central de Atendimento |
 | factory-runner | fabrica_software | 0.1.0-rc.17 | aarch64, amd64 | Fábrica de Softwares - Factory Runner |
-| instagram-central | umdoislab_instagram | 0.1.4 | aarch64 | Fábrica de Softwares - Central Instagram |
+| instagram-central | umdoislab_instagram | 0.1.5 | aarch64 | Fábrica de Softwares - Central Instagram |
 
 **Identidade visual:** `icon.png` e `logo.png` idênticos aos arquivos oficiais atuais de `mmcromero/fabrica-de-ideias-kanban/kanban/`. SHA Git do ícone: `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo: `7e500016222b0a5bf395be8ed17447edeb3e2af9`. Os **dez arquivos** (`icon.png` e `logo.png` em cada uma das cinco pastas) têm o mesmo SHA Git na `main`; verificação do SHA em 20/11/2026. Isso confirma identidade binária entre as cópias, mas não é uma revisão visual nem informa dimensões dos PNGs. Não altera `panel_icon` ou a identidade interna das aplicações.
 
