@@ -1,5 +1,12 @@
 # Configurações de projetos do Factory Runner
 
+## Artesão Digital — segundo perfil na candidata RC9
+
+`artesao_digital.json` aponta somente para `mmcromero/fabricacao_e_orcamentos:main` (fonte) e `mmcromero/fabricacao-e-orcamentos-ha:main` (distribuição HA). O perfil `mode: sync_only` **permite sincronizar e verificar a versão no commit**, mas **não autoriza preparar, compilar ou publicar**. O produto possui política própria: distribuição Debian e HA, recibo de validação e compatibilidade de schemas. Não copiar a política `active_package` do Avisaqui.
+
+O campo `workspace_sync_enabled` na configuração do Factory Runner continua geral para todos os projetos cadastrados. `workspace_auto_prepare` deve permanecer desligado. O token GitHub de leitura, salvo no HA, precisa conseguir acessar a fonte privada. A versão atual verificada em ambos os manifestos de origem/distribuição era `0.2.0-dev.28`.
+
+
 ## Seleção de projetos na RC8
 
 `workspace_sync_enabled` é uma chave **global**, desligada por padrão. Ao ativá-la, o Factory Runner tenta sincronizar em sequência **todos os perfis aprovados e versionados** deste diretório (máximo 32), não só o Avisaqui. A falha de um projeto não impede o processamento dos demais. O campo `workspace_sync_project` da RC7 foi removido e não deve mais ser usado.
