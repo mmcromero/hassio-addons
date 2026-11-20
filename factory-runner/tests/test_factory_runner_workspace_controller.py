@@ -13,11 +13,85 @@ import server
 import workspace_sync
 
 class ControllerTests(unittest.TestCase):
-    def test_opt_in_default_does_nothing(self):
-        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_PROJECT": ""}),
-             patch.object(server, "run_workspace_sync") as worker):
+    def test_opt_in_default_does_nothing_and_drops_old_selector(self):
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "false",
+                                   "RUNNER_WORKSPACE_SYNC_PROJECT": "avisaqui",
+                                   "RUNNER_GITHUB_READ_TOKEN": "test-secret"}),
+              patch.object(server, "listed_projects") as list_profiles,
+              patch.object(server, "run_workspace_sync") as worker):
+            self.assertIsNone(server.launch_workspace_sync())
+            list_profiles.assert_not_called()
+            worker.assert_not_called()
+            self.assertNotIn("RUNNER_GITHUB_READ_TOKEN", os.environ)
+            self.assertNotIn("RUNNER_WORKSPACE_SYNC_PROJECT", os.environ)
+
+    def test_all_approved_profiles_run_without_single_project_selector(self):
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "true",
+                                   "RUNNER_GITHUB_READ_TOKEN": "test-secret",
+                                   "RUNNER_WORKSPACE_AUTO_PREPARE": "false"}),
+              patch.object(server, "listed_projects", return_value={
+                  "avisaqui": {}, "artesao-digital": {}, "projeto-futuro": {}}),
+              patch.object(server, "run_workspace_sync") as worker,
+              contextlib.redirect_stdout(io.StringIO()) as output):
+            thread = server.launch_workspace_sync()
+            self.assertIsNotNone(thread)
+            thread.join(timeout=5)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual([x.args[0] for x in worker.call_args_list], [
+            "artesao-digital", "avisaqui", "projeto-futuro"])
+        for call in worker.call_args_list:
+            self.assertEqual(call.args[1], "test-secret")
+            self.assertFalse(call.kwargs["auto_prepare"])
+        self.assertNotIn("test-secret", output.getvalue())
+        self.assertIn("[WORKSPACE] FINISHED: approved_projects=3", output.getvalue())
+
+    def test_one_sync_failure_does_not_block_other_projects(self):
+        seen = []
+        def fail_first(project, token, auto_prepare=False):
+            seen.append(project)
+            if project == "alpha":
+                raise RuntimeError("secret must not be shown")
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "true",
+                                   "RUNNER_GITHUB_READ_TOKEN": "test-secret"}),
+              patch.object(server, "listed_projects", return_value={
+                  "alpha": {}, "beta": {}}),
+              patch.object(server, "run_workspace_sync", side_effect=fail_first),
+              contextlib.redirect_stdout(io.StringIO()) as output):
+            thread = server.launch_workspace_sync()
+            thread.join(timeout=5)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual(seen, ["alpha", "beta"])
+        self.assertNotIn("secret", output.getvalue())
+        self.assertIn("BLOCKED: unexpected_sync_error", output.getvalue())
+
+    def test_no_profiles_is_blocked_without_network_calls(self):
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "true"}),
+              patch.object(server, "listed_projects", return_value={}),
+              patch.object(server, "run_workspace_sync") as worker,
+              contextlib.redirect_stdout(io.StringIO()) as output):
             self.assertIsNone(server.launch_workspace_sync())
             worker.assert_not_called()
+        self.assertIn("no_approved_projects", output.getvalue())
+
+    def test_excessive_profiles_do_not_start_network_sync(self):
+        projects={f"profile{i:03}":{} for i in range(server.MAX_SYNC_PROJECTS+1)}
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "true"}),
+              patch.object(server, "listed_projects", return_value=projects),
+              patch.object(server, "run_workspace_sync") as worker,
+              contextlib.redirect_stdout(io.StringIO()) as output):
+            self.assertIsNone(server.launch_workspace_sync())
+            worker.assert_not_called()
+        self.assertIn("approved_project_limit",output.getvalue())
+
+    def test_automatic_prepare_requires_explicit_switch(self):
+        with (patch.dict(os.environ, {"RUNNER_WORKSPACE_SYNC_ENABLED": "true",
+                                   "RUNNER_WORKSPACE_AUTO_PREPARE": "true"}),
+              patch.object(server, "listed_projects", return_value={"avisaqui": {}}),
+              patch.object(server, "run_workspace_sync") as worker,
+              contextlib.redirect_stdout(io.StringIO())):
+            thread=server.launch_workspace_sync()
+            thread.join(timeout=5)
+        worker.assert_called_once_with("avisaqui", "", auto_prepare=True)
 
     def test_sync_success_uses_only_configured_profile(self):
         output=io.StringIO()
@@ -61,15 +135,19 @@ class ControllerTests(unittest.TestCase):
             server.run_workspace_sync("avisaqui","token",True)
         prep.assert_not_called()
 
-    def test_invalid_project_fails_before_thread(self):
-        with (patch.dict(os.environ,{"RUNNER_WORKSPACE_SYNC_PROJECT":"../evil",
-                                 "RUNNER_GITHUB_READ_TOKEN":"fixture-secret",
-                                 "RUNNER_WORKSPACE_AUTO_PREPARE":"true"}),
-             patch.object(server,"run_workspace_sync") as worker,
+    def test_legacy_project_never_overrides_approved_profiles(self):
+        with (patch.dict(os.environ, {
+                "RUNNER_WORKSPACE_SYNC_ENABLED": "true",
+                "RUNNER_WORKSPACE_SYNC_PROJECT": "../evil",
+                "RUNNER_GITHUB_READ_TOKEN": "fixture-secret"}),
+             patch.object(server, "listed_projects", return_value={"avisaqui":{}}),
+             patch.object(server, "run_workspace_sync") as worker,
              contextlib.redirect_stdout(io.StringIO())):
-            self.assertIsNone(server.launch_workspace_sync())
-            self.assertNotIn("RUNNER_GITHUB_READ_TOKEN",os.environ)
-            worker.assert_not_called()
+            thread = server.launch_workspace_sync()
+            thread.join(timeout=5)
+            self.assertNotIn("RUNNER_WORKSPACE_SYNC_PROJECT", os.environ)
+            self.assertNotIn("RUNNER_GITHUB_READ_TOKEN", os.environ)
+        worker.assert_called_once_with("avisaqui", "fixture-secret", auto_prepare=False)
 
     def test_sync_failure_cannot_expose_token(self):
         output=io.StringIO()
