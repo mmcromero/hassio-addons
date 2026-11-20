@@ -2,7 +2,7 @@
 
 > **CONFERÊNCIA DE PUBLICAÇÃO — 20/11/2026:** a regra obrigatória é [`../CONTRIBUTING.md`](../CONTRIBUTING.md). Este diretório permanece com `slug: umdoislab_central` e versão `0.4.0` na `main`. A nova fila do PR privado #10 ainda **não foi exportada**. Esta documentação está preparada em branch de conformidade; não representa nova publicação, instalação ou homologação.
 >
-> **Nomenclatura e imagem:** conservar `name: Fábrica de Softwares - 12Labs Central de Atendimento`, `panel_title: Umdoislab Atendimento` e `panel_icon: mdi:message-processing-outline`. `icon.png` SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `logo.png` SHA `7e500016222b0a5bf395be8ed17447edeb3e2af9` são os assets padronizados do catálogo. `panel_icon` não é o PNG.
+> **Nomenclatura e imagem:** a candidata corrige `name` para `Fábrica de Softwares - Umdoislab Central de Atendimento` (alteração somente nesta branch, ainda não publicada). Manter `slug: umdoislab_central`, `panel_title: Umdoislab Atendimento` e `panel_icon: mdi:message-processing-outline`. `icon.png` SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `logo.png` SHA `7e500016222b0a5bf395be8ed17447edeb3e2af9` são os assets padronizados do catálogo. `panel_icon` não é o PNG.
 >
 > **LAB paralelo:** não criar uma segunda instalação com o mesmo slug. O catálogo ainda não registra uma instância de Central de laboratório. Antes de exportar um pacote paralelo, registrar nova pasta, ID e slug únicos, versão e manifesto próprios; verificar isolamento de dados no Supervisor. Não reutilizar automaticamente a URL ou os segredos da Central publicada. Versões com Dockerfile sem campo `image` podem ser compiladas pelo Supervisor no ARM64; QEMU/Actions não são requisitos automáticos.
 
@@ -15,7 +15,7 @@
 
 | Campo | Valor do `config.yaml` |
 | --- | --- |
-| Nome | Fábrica de Softwares - 12Labs Central de Atendimento |
+| Nome na candidata | Fábrica de Softwares - Umdoislab Central de Atendimento |
 | Versão | 0.4.0 |
 | Slug | `umdoislab_central` |
 | Arquitetura | `aarch64` |
