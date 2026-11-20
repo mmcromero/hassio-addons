@@ -9,18 +9,19 @@
 
 ## Arquitetura obrigatória
 
-Cada produto preserva seu código-fonte, dados e documentação sensível no repositório apropriado. O `hassio-addons` é o catálogo público de pacotes HA, não substituto da fonte privada. As quatro pastas de add-on usam identidades e versões próprias. A publicação de distribuição não autoriza instalação, remoção de repositórios, atualização do HA nem promoção de código-fonte.
+Cada produto preserva seu código-fonte, dados e documentação sensível no repositório apropriado. O `hassio-addons` é o catálogo público de pacotes HA, não substituto da fonte privada. As **cinco pastas** de add-on registradas na `main` usam identidades e versões próprias (verificação dos manifests em 20/11/2026). A publicação de distribuição não autoriza instalação, remoção de repositórios, atualização do HA nem promoção de código-fonte.
 
 ## Catálogo compartilhado — conteúdo confirmado na main
 
 | Diretório | Slug | Versão | Arquitetura | Título no catálogo (19/11/2026) |
 |---|---|---|---|---|
 | evolution-api | evolution_api | 0.1.0 | aarch64 | Fábrica de Softwares - Evolution API WhatsApp |
-| pager-virtual | pager_virtual | 0.1.20-rc.11 | aarch64, amd64 | Pager Virtual — **padronização preparada na fonte; publicação pendente** |
+| pager-virtual | pager_virtual | 0.1.20-rc.11 | aarch64, amd64 | Pager Virtual |
 | umdoislab-central | umdoislab_central | 0.4.0 | aarch64 | Fábrica de Softwares - 12Labs Central de Atendimento |
-| factory-runner | fabrica_software | 0.1.0-rc.2 | aarch64, amd64 | Fábrica de Softwares - Factory Runner |
+| factory-runner | fabrica_software | 0.1.0-rc.17 | aarch64, amd64 | Fábrica de Softwares - Factory Runner |
+| instagram-central | umdoislab_instagram | 0.1.4 | aarch64 | Fábrica de Softwares - Central Instagram |
 
-**Identidade visual:** `icon.png` e `logo.png` idênticos aos arquivos oficiais atuais de `mmcromero/fabrica-de-ideias-kanban/kanban/`. SHA Git do ícone: `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo: `7e500016222b0a5bf395be8ed17447edeb3e2af9`. Os oito arquivos foram conferidos na `main`. Não altera `panel_icon` ou a identidade interna das aplicações.
+**Identidade visual:** `icon.png` e `logo.png` idênticos aos arquivos oficiais atuais de `mmcromero/fabrica-de-ideias-kanban/kanban/`. SHA Git do ícone: `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo: `7e500016222b0a5bf395be8ed17447edeb3e2af9`. Os **dez arquivos** (`icon.png` e `logo.png` em cada uma das cinco pastas) têm o mesmo SHA Git na `main`; verificação do SHA em 20/11/2026. Isso confirma identidade binária entre as cópias, mas não é uma revisão visual nem informa dimensões dos PNGs. Não altera `panel_icon` ou a identidade interna das aplicações.
 
 ## Distribuições HA em repositórios separados
 
@@ -31,6 +32,13 @@ Cada produto preserva seu código-fonte, dados e documentação sensível no rep
 | Código de fabricação/orçamentos | `mmcromero/fabricacao_e_orcamentos` | materiais de build/distribuição `aarch64` e manifests internos; fonte própria | Não tratar código-fonte como loja extra sem verificar distribuição ativa |
 
 **Local Apps:** é uma entrada da instalação HA, não um repositório Git identificado neste levantamento. Não foi possível verificar dependências e instalações ativas; não apagar nem desinstalar a entrada por inferência.
+
+## Nota de revisão — 20/11/2026
+
+- O cadastro [`.github/addon-registry.json`](../.github/addon-registry.json) contém cinco entradas: a Central Instagram já integra o catálogo e não constava neste inventário datado de 19/11.
+- A Central Umdoislab continua com `name: "Fábrica de Softwares - 12Labs Central de Atendimento"` e `slug: umdoislab_central`. Esse slug identifica a instalação atual: **não renomeá-lo** para criar laboratório.
+- Uma futura instância de laboratório exige registro de outra pasta/ID/slug, com identidade e versão explícitas, e validação do catálogo. O catálogo ainda **não registra** uma segunda Central; não declarar instalação ou escolher slug como fato documentado.
+- O `panel_icon: mdi:message-processing-outline` da Central é independente de `icon.png` e `logo.png`. Não substituir nenhuma dessas imagens com arte genérica.
 
 ## Padronização aplicada e limites
 
