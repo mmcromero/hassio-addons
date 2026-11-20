@@ -1,5 +1,8 @@
 # Fábrica de Software — Factory Runner
 
+**ESTADO ATUAL — Factory Runner RC7 (somente branch; NÃO PUBLICADA/NÃO INSTALADA):** sincronização segura de checkouts GitHub aprovados, com token opcional apenas nas opções protegidas do HA, leitura por SHA e bloqueio por política. A RC6 já foi publicada no catálogo e o log enviado pelo operador confirmou `[E2E] PASS` no HA com dados sintéticos. A versão física da RC7 não foi instalada nem testada. Nunca executar scripts privados sem sandbox; Bubblewrap permanece fail-closed fora da cópia declarativa. Consulte `RC7-VALIDACAO.md` e a Issue #2.
+
+
 **Candidata 0.1.0-rc.5 em desenvolvimento (NÃO PUBLICADA/NÃO HOMOLOGADA).** A preparação mecânica de pacotes por receita confiável agora usa Git blobs fixados, sem executar código da origem; o endpoint padrão `POST /api/prepare` seleciona o caminho declarativo quando há perfil aprovado. Sem receita, Bubblewrap continua obrigatório e fail-closed. Execução autônoma de código, Git push, merge e publicação permanecem bloqueados. O teste sintético de inicialização é registrado como `[DECLARATIVE] PASS/BLOCKED`; PASS não comprova acesso aos workspaces privados. A RC4 segue publicada na main do catálogo; a versão instalada no HA não foi conferida. Consulte a Issue #2.\n\n
 **Estado atual (19/11/2026):** distribuição `0.1.0-rc.4` **PUBLICADA no catálogo** pelo PR #45, merge `350fa3c8a756c405b6766cca53bd25fe84aef9f1`. **Instalação e homologação da RC4 não foram realizadas nesta auditoria.** Não repetir publicação, build ARM64 externo ou testes estáticos já cobertos sem causa técnica concreta.
 
