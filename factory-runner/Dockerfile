@@ -21,7 +21,7 @@ RUN --mount=type=secret,id=build_ca \
     apk add --no-cache python3 bash jq git bubblewrap su-exec
 RUN addgroup -S runner && adduser -S -D -H -G runner -s /sbin/nologin runner
 WORKDIR /app
-COPY --from=validation /app/server.py /app/autonomous_dev.py /app/rc_fastlane.py /app/sandbox_export.py /app/declarative_export.py /app/runtime_probe.py /app/controlled_worker.py /app/landlock_probe.py /app/run.sh /app/
+COPY --from=validation /app/server.py /app/autonomous_dev.py /app/rc_fastlane.py /app/sandbox_export.py /app/declarative_export.py /app/declarative_runtime_probe.py /app/runtime_probe.py /app/controlled_worker.py /app/landlock_probe.py /app/run.sh /app/
 COPY --from=validation /app/projects/ /app/projects/
 RUN test -r /app/declarative_runtime_probe.py && test -r /app/controlled_worker.py && test -r /app/landlock_probe.py && test -r /app/runtime_probe.py \
  && chmod -R a+rX /app && chmod 0755 /app/run.sh
