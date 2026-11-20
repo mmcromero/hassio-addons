@@ -1,5 +1,14 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
+## RC9 — segundo projeto cadastrado em modo somente leitura
+
+Novo perfil `projects/artesao_digital.json`: origem `mmcromero/fabricacao_e_orcamentos:main`, distribuição `mmcromero/fabricacao-e-orcamentos-ha:main`, versão lida de blob Git `apps/umdoislab/artesao-release.json`. O perfil é `mode: sync_only`, pois o produto usa processo próprio de evidências, schemas e distribuição HA/Debian, diferente da política `active_package` do Avisaqui.
+
+Com `workspace_sync_enabled=true`, o Factory Runner **tentará** sincronizar os dois perfis aprovados. Para o Artesão Digital, a cópia por SHA é permitida, mas `preflight`, `prepare` e publicação estão proibidos até aprovação de adaptador específico. A API deve indicar `disabled_sync_only` e registrar `[WORKSPACE] SYNC_ONLY`. Mesmo com `workspace_auto_prepare=true`, a recusa permanece. Não alterar servidor Forja 01, instalação contingencial HA, dados, políticas de pacote ou credenciais existentes.
+
+Estado: **RC9 em branch de desenvolvimento, sem publicação ou homologação física**. Cinco testes de regressão adicionados, não executados nesta revisão (sem GitHub Actions, Docker nem build ARM64). Ver `RC9-VALIDACAO.md`. Notas RC7/RC8 abaixo são históricas, exceto princípios genéricos ainda vigentes.
+
+
 ## RC8 — seleção multiprojeto (vigente na candidata)
 
 O campo de projeto único `workspace_sync_project` da RC7 não existe mais no formulário. Em vez dele, `workspace_sync_enabled` é uma chave global **desligada por padrão**. Quando ativada, sincroniza todos os perfis aprovados de `/app/projects/` (até 32), um por vez, com isolamento de falha. A rotina respeita as credenciais de leitura, a política de pacote e a trava da API. `workspace_auto_prepare` permanece desligado por padrão; publicação continua desativada.

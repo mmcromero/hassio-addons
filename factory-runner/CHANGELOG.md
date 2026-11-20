@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-rc.9 — Cadastro seguro do Artesão Digital
+
+- Novo perfil `projects/artesao_digital.json` como segundo projeto, em **modo exclusivo de sincronização**, com origem `fabricacao_e_orcamentos:main` e distribuição `fabricacao-e-orcamentos-ha:main`.
+- `rc_fastlane.py` e `workspace_sync.py` recebem validação explícita de perfil sem fluxo de RC e leitura do blob de versão Git fixado. O Avisaqui permanece com política de pacote própria e inalterada.
+- API expõe o perfil, porém **nega qualquer preflight/prepare** do Artesão Digital até existir adaptador de pacotes seguro. Mesmo se a auto-preparação estiver ligada, `PREPARE_BLOCKED_BY_PROFILE`.
+- Cinco testes novos **adicionados, ainda sem execução comprovada** neste lote. GitHub Actions, publicação, build ARM64 e instalações não executados. Consultar `RC9-VALIDACAO.md`.
+- Com `workspace_sync_enabled=true`, a RC9 deverá sincronizar dois projetos aprovados; novos projetos continuam exigindo cadastro próprio.
+
+
 ## 0.1.0-rc.8 — Sincronização multiprojeto por perfis aprovados (candidata)
 
 - **Corrige seleção fixa:** remove `workspace_sync_project` do schema e aceita `workspace_sync_enabled` como chave geral (padrão desligada). Sem habilitação, não há busca GitHub.

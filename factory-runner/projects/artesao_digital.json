@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "mode": "sync_only",
+  "id": "artesao_digital",
+  "product": "Artesão Digital",
+  "source_repo": "mmcromero/fabricacao_e_orcamentos",
+  "distribution_repo": "mmcromero/fabricacao-e-orcamentos-ha",
+  "source_ref": "refs/remotes/origin/main",
+  "public_ref": "refs/remotes/origin/main",
+  "source_version_file": "apps/umdoislab/artesao-release.json"
+}
