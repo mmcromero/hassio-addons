@@ -17,8 +17,11 @@ import time
 import uuid
 from pathlib import Path
 
-from rc_fastlane import PreflightError, evaluate, load_profile, prepare
+from rc_fastlane import PreflightError, evaluate, load_profile, prepare, git as trusted_git
 from sandbox_export import SandboxUnavailable
+from declarative_export import (DeclarativeExportError, prepare_declarative,
+                                expand_trusted_rules, extend_approved_mapping,
+                                write_distribution_provenance)
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -122,6 +125,10 @@ def prepare_project(project_id, expected_sha, operation_id):
     if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
         raise PreflightError("Invalid source SHA")
     profile, source, distribution = project_workspace(project_id)
+    # An approved deterministic recipe requires no source-script execution.
+    # Keep the original Bubblewrap path strictly fail-closed for other profiles.
+    if "declarative_rules" in profile or "declarative_mapping" in profile:
+        return prepare_project_declarative(project_id, expected_sha, operation_id)
     preflight = evaluate(source, distribution, expected_sha, profile=profile)
     if not preflight["eligible_for_preparation"]:
         return {"eligible": False, "errors": preflight["errors"]}
@@ -136,6 +143,70 @@ def prepare_project(project_id, expected_sha, operation_id):
             "changed_files": prepared["changed_files"],
             "source_sha": expected_sha, "published": False}
 
+def prepare_project_declarative(project_id, expected_sha, operation_id):
+    """Prepare a local artifact from trusted mappings. Never execute exporter code."""
+    # Use the same policy gate as /api/prepare. Do not accept mappings in HTTP.
+    report = preflight_project(project_id, expected_sha)
+    if not report["eligible_for_preparation"]:
+        return {"eligible": False, "errors": report["errors"]}
+    profile, source, distribution = project_workspace(project_id)
+    mapping = profile.get("declarative_mapping")
+    if "declarative_rules" in profile:
+        rules = profile["declarative_rules"]
+        mapping = expand_trusted_rules(
+            source, expected_sha,
+            destination_prefix=profile["distribution_prefix"],
+            required=rules["required"], optional=rules["optional"],
+            include_prefixes=rules["include_prefixes"],
+            include_suffixes=rules["include_suffixes"])
+        mapping = extend_approved_mapping(
+            source, expected_sha, mapping,
+            conditional_groups=rules.get("conditional_groups", []),
+            shared_optional=rules.get("shared_optional", {}),
+            allowed_shared_paths=profile["allowed_shared_paths"],
+            distribution_prefix=profile["distribution_prefix"])
+    if not isinstance(mapping, dict) or not mapping:
+        raise DeclarativeExportError("approved_declarative_mapping_unavailable")
+    sources = set(mapping.values())
+    if (profile["package_json_path"] not in sources
+            or profile["manifest_path"] not in sources):
+        raise DeclarativeExportError("package_version_evidence_missing")
+    pinned_exporter = trusted_git(
+        source, "rev-parse", expected_sha + ":" + profile["exporter_path"])
+    if pinned_exporter != profile["exporter_git_blob_sha"]:
+        raise DeclarativeExportError("declarative_rules_not_approved_for_exporter")
+    ci_contract = profile.get("declarative_ci")
+    if ci_contract is not None:
+        # The canonical exporter requires a pinned CI patch and either an
+        # applicable patch or an already-compatible trusted workflow.
+        # We support ONLY the already-compatible case, otherwise fail closed.
+        trusted_git(source, "rev-parse",
+                    expected_sha + ":" + ci_contract["patch_source"])
+        # Inspect ONLY the pinned public commit, never a mutable/uncommitted
+        # checkout file. Otherwise the CI gate could be bypassed by a dirty tree.
+        content = trusted_git(
+            distribution, "show", report["public_main_sha"] + ":" +
+            ci_contract["workflow_path"])
+        if not all(marker in content for marker in ci_contract["compatible_markers"]):
+            raise DeclarativeExportError("ci_patch_requires_separate_review")
+    destination = PREPARATIONS_DIR.absolute()
+    if destination.is_symlink() or destination.resolve() != destination:
+        raise DeclarativeExportError("unsafe_preparations_directory")
+    destination.mkdir(mode=0o700, parents=True, exist_ok=True)
+    output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
+    manifest = prepare_declarative(
+        source, expected_sha, output, mapping,
+        expected_version=report["candidate_version"], project=project_id)
+    release_provenance = write_distribution_provenance(
+        output, manifest, source_repository=profile["source_repo"],
+        distribution_prefix=profile["distribution_prefix"],
+        provenance_path=profile["provenance_path"],
+        ci_patch_source=(ci_contract["patch_source"] if ci_contract else None),
+        allowed_shared_paths=profile["allowed_shared_paths"])
+    return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
+            "files": len(manifest["files"]), "source_sha": expected_sha,
+            "provenance_files": len(release_provenance["files"]),
+            "published": False, "method": "declarative_no_script"}
 
 
 class WorkerUnavailable(Exception):
@@ -211,7 +282,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/worker/run"):
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/worker/run"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -263,7 +334,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             finally:
                 LOCK.release()
 
-        if self.path in ("/api/preflight", "/api/prepare"):
+        if self.path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
             project = body["project"]
@@ -280,18 +351,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 try:
                     if action == "/api/preflight":
                         result = preflight_project(project, source_sha)
-                    else:
+                    elif action == "/api/prepare":
                         result = prepare_project(project, source_sha, operation_id)
-                except (PreflightError, SandboxUnavailable, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                    else:
+                        result = prepare_project_declarative(project, source_sha, operation_id)
+                except (PreflightError, SandboxUnavailable, DeclarativeExportError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
                     record(action, None, "blocked_workspace_or_git", operation_id)
                     return self.respond(503, {"error": "workspace_or_export_unavailable",
                                               "operation_id": operation_id})
-                if action == "/api/prepare" and not result["eligible"]:
+                if action in ("/api/prepare", "/api/prepare-declarative") and not result["eligible"]:
                     record(action, None, "blocked_policy", operation_id)
                     return self.respond(409, {"error": "package_policy_blocked",
                                               "operation_id": operation_id,
                                               "details": result["errors"]})
-                record(action, None, "completed_preparation" if action == "/api/prepare"
+                record(action, None, "completed_preparation" if action in ("/api/prepare", "/api/prepare-declarative")
                        else "completed_read_only", operation_id)
                 return self.respond(200, {"operation_id": operation_id, "result": result})
             except RuntimeError:

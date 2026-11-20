@@ -57,8 +57,10 @@ def security_diagnostic():
                     fields[key] = value
     except OSError:
         pass
+    from landlock_probe import landlock_status
     return {'mode': 'diagnostic_only', 'uid': os.geteuid(),
             'apparmor': profile, 'security_flags': fields,
+            'landlock': landlock_status(),
             'bubblewrap_available': 'not_tested', 'sandbox_ready': False}
 
 

@@ -1,0 +1,2328 @@
+{
+  "schema_version": 1,
+  "source_repository": "mmcromero/pager-virtual",
+  "source_commit": "a4b97c1d353e6111dc48933806f13c77d0dec6f9",
+  "exporter_blob_sha": "e67c816405707545b21b0e6863814ada7b26d0f1",
+  "kind": "git-tree-metadata-only",
+  "notes": "No contents or secrets; commit pinned. Standard non-hotfix export mapping. Shared workflow separately gated. CI patch is NOT executed.",
+  "entries": [
+    {
+      "path": ".dockerignore",
+      "type": "blob",
+      "mode": "100644",
+      "size": 69
+    },
+    {
+      "path": ".github/workflows/avisaqui-governance.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 942
+    },
+    {
+      "path": ".github/workflows/integracao-impressao-lab.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2325
+    },
+    {
+      "path": ".github/workflows/kds-regression.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 753
+    },
+    {
+      "path": ".github/workflows/rc-addon.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 685
+    },
+    {
+      "path": ".github/workflows/test-auth-foundation.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 783
+    },
+    {
+      "path": ".gitignore",
+      "type": "blob",
+      "mode": "100644",
+      "size": 338
+    },
+    {
+      "path": ".governance/approved-pager-ci.patch",
+      "type": "blob",
+      "mode": "100644",
+      "size": 397
+    },
+    {
+      "path": ".governance/package-policy.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11469
+    },
+    {
+      "path": "AGENTS.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 24222
+    },
+    {
+      "path": "CHANGELOG.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 17363
+    },
+    {
+      "path": "config.yaml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1179
+    },
+    {
+      "path": "distribution/AGENTS.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6095
+    },
+    {
+      "path": "distribution/CHANGELOG.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 26782
+    },
+    {
+      "path": "distribution/governance/avisaqui-governance.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1114
+    },
+    {
+      "path": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4311
+    },
+    {
+      "path": "distribution/governance/package-policy.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3284
+    },
+    {
+      "path": "distribution/governance/product.gitignore",
+      "type": "blob",
+      "mode": "100644",
+      "size": 103
+    },
+    {
+      "path": "distribution/hotfix-0.1.16/CHANGELOG.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 15196
+    },
+    {
+      "path": "distribution/hotfix-0.1.16/config.yaml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 654
+    },
+    {
+      "path": "distribution/hotfix-0.1.16/README.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3270
+    },
+    {
+      "path": "distribution/hotfix-0.1.17/CHANGELOG.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 16002
+    },
+    {
+      "path": "distribution/hotfix-0.1.17/config.yaml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 671
+    },
+    {
+      "path": "distribution/hotfix-0.1.17/package.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 671
+    },
+    {
+      "path": "distribution/hotfix-0.1.17/README.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3061
+    },
+    {
+      "path": "distribution/pager-node22-ci.patch",
+      "type": "blob",
+      "mode": "100644",
+      "size": 397
+    },
+    {
+      "path": "distribution/RC-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2645
+    },
+    {
+      "path": "distribution/README.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12619
+    },
+    {
+      "path": "docker-compose.yml",
+      "type": "blob",
+      "mode": "100644",
+      "size": 355
+    },
+    {
+      "path": "Dockerfile",
+      "type": "blob",
+      "mode": "100644",
+      "size": 298
+    },
+    {
+      "path": "Dockerfile.cloud",
+      "type": "blob",
+      "mode": "100644",
+      "size": 303
+    },
+    {
+      "path": "docs/ARQUITETURA.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 14608
+    },
+    {
+      "path": "docs/AVISAQUI_DEPLOY_HA_001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4686
+    },
+    {
+      "path": "docs/AVISAQUI_LANDING_PILOTO_001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4068
+    },
+    {
+      "path": "docs/AVISAQUI_PAIR_001_BACKEND_EQUIPE_X_CHECKPOINT.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3936
+    },
+    {
+      "path": "docs/AVISAQUI_PAIR_001_CONTRATO_CRIPTO_V1.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 20084
+    },
+    {
+      "path": "docs/AVISAQUI_PAIR_001_CONTRATO_WINDOWS.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5423
+    },
+    {
+      "path": "docs/AVISAQUI_PAIR_001_GOV_COM_003_SEGURANCA.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7117
+    },
+    {
+      "path": "docs/AVISAQUI_PAIR_001_HOMOLOGACAO_WINDOWS_GATE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7225
+    },
+    {
+      "path": "docs/AVISAQUI_PRINT_APP_001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8723
+    },
+    {
+      "path": "docs/AVISAQUI_PRINT_C_001_CONTINUIDADE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 33612
+    },
+    {
+      "path": "docs/AVISAQUI_PRINT_HA_001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4405
+    },
+    {
+      "path": "docs/AVISAQUI_TL_001_LANDING_HANDOFF.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7012
+    },
+    {
+      "path": "docs/AVISAQUI_WALLET_INTEGRACAO_001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 14171
+    },
+    {
+      "path": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
+      "type": "blob",
+      "mode": "100644",
+      "size": 932
+    },
+    {
+      "path": "docs/AVISAQUI-HTTPS-001-publicacao.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4768
+    },
+    {
+      "path": "docs/AVISAQUI-PONG-014.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8038
+    },
+    {
+      "path": "docs/AVISAQUI-UX-ADMIN-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10670
+    },
+    {
+      "path": "docs/DECISOES_INTEGRACAO_PDV.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3760
+    },
+    {
+      "path": "docs/ESTUDO_ALERTAS_SEGUNDO_PLANO_E_WAKE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6253
+    },
+    {
+      "path": "docs/governanca/AVISAQUI_GAMES_MOBILE_HOMOLOGACAO_GATE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6260
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-ADMIN-GERENTES-CONTRATO-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9982
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-CATALOGO-MESTRE-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 23215
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-CI-CUSTO-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 16280
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-CODESPACES-ARM64.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 14498
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-CONSOLIDACAO-RC-001-FECHAMENTO.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4951
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-CORRECOES-DIRIGIDAS-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5018
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-LOGIN-REVISAO-FINAL-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3080
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-PACOTE-002.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 14121
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-PACOTE-003.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 32450
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-PAIR-HA-CONFIG-PR30.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7439
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-RC003-PORTOES-FINAIS.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 17754
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-RC003-SEGURANCA-REVISAO.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10162
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-TESTES-UNIFICADOS-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10122
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-UX-AUDITORIA-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9242
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-UX-PARIDADE-CODIGO-2026-11-17.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6419
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-WINDOWS-AUDITORIA-034.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8494
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-WINDOWS-RELEASES-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9182
+    },
+    {
+      "path": "docs/governanca/AVISAQUI-WINDOWS-ZIP-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12081
+    },
+    {
+      "path": "docs/governanca/CONTROLES-E-LIMITES.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4515
+    },
+    {
+      "path": "docs/governanca/DECISOES_DO_PROPRIETARIO_2026-11-17.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11382
+    },
+    {
+      "path": "docs/governanca/evidence/cleanup-candidates.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11719
+    },
+    {
+      "path": "docs/governanca/evidence/github-snapshot.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 41756
+    },
+    {
+      "path": "docs/governanca/GAMES_MOBILE_RECOVERY_003.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3058
+    },
+    {
+      "path": "docs/governanca/PASSAGEM-DE-BASTAO.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12452
+    },
+    {
+      "path": "docs/governanca/PLANO-DE-LIMPEZA.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7701
+    },
+    {
+      "path": "docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 17158
+    },
+    {
+      "path": "docs/governanca/ROTINA-DO-DESENVOLVEDOR.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2395
+    },
+    {
+      "path": "docs/PAGER-ACESSOS-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 18910
+    },
+    {
+      "path": "docs/PAGER-MANUAL-001.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8897
+    },
+    {
+      "path": "docs/PASSAGEM_DE_BASTAO_ATUAL.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4562
+    },
+    {
+      "path": "docs/PROD_MODOS_001_PLANOS_E_CONCESSOES.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10194
+    },
+    {
+      "path": "docs/rc/AUDIT.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 17348
+    },
+    {
+      "path": "docs/rc/branches.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 224457
+    },
+    {
+      "path": "docs/rc/evidence/https-live-recovery.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1687
+    },
+    {
+      "path": "docs/rc/evidence/local-results.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 705
+    },
+    {
+      "path": "docs/rc/evidence/npm-audit.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 362
+    },
+    {
+      "path": "docs/rc/evidence/private-build.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2525
+    },
+    {
+      "path": "docs/rc/evidence/private-tests.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1241
+    },
+    {
+      "path": "docs/rc/evidence/public-build.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4455
+    },
+    {
+      "path": "docs/rc/evidence/public-history-pattern-scan.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12549
+    },
+    {
+      "path": "docs/rc/evidence/webui-direct-017.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 466
+    },
+    {
+      "path": "docs/rc/GOVERNANCE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3179
+    },
+    {
+      "path": "docs/rc/HTTPS-RECOVERY-016.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4366
+    },
+    {
+      "path": "docs/rc/prs.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 50567
+    },
+    {
+      "path": "docs/rc/recovered-files.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8633
+    },
+    {
+      "path": "docs/rc/RELEASE-016-PUBLISHED.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3512
+    },
+    {
+      "path": "docs/rc/RELEASE-017-PUBLISHED.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3549
+    },
+    {
+      "path": "docs/rc/RELEASE.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8588
+    },
+    {
+      "path": "docs/rc/SECURITY.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3375
+    },
+    {
+      "path": "docs/rc/UPDATE-016.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4775
+    },
+    {
+      "path": "docs/rc/VALIDATION.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5005
+    },
+    {
+      "path": "docs/TESTES_CADENCIA_IMPRESSAO.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2907
+    },
+    {
+      "path": "docs/UX_AVISA_001_MODOS_E_ALERTAS.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6991
+    },
+    {
+      "path": "icon.png",
+      "type": "blob",
+      "mode": "100644",
+      "size": 111228
+    },
+    {
+      "path": "infra/.gitkeep",
+      "type": "blob",
+      "mode": "100644",
+      "size": 0
+    },
+    {
+      "path": "logo.png",
+      "type": "blob",
+      "mode": "100644",
+      "size": 194750
+    },
+    {
+      "path": "package-lock.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 55135
+    },
+    {
+      "path": "package.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1125
+    },
+    {
+      "path": "README.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4744
+    },
+    {
+      "path": "run.sh",
+      "type": "blob",
+      "mode": "100644",
+      "size": 248
+    },
+    {
+      "path": "scripts/bootstrap-admin.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1429
+    },
+    {
+      "path": "scripts/check-package-policy.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7529
+    },
+    {
+      "path": "scripts/ci/arm64-isolated-smoke.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6932
+    },
+    {
+      "path": "scripts/ci/browser-smoke.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12769
+    },
+    {
+      "path": "scripts/ci/build-windows-zip.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4003
+    },
+    {
+      "path": "scripts/ci/codespaces-arm64-pr30.sh",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4413
+    },
+    {
+      "path": "scripts/ci/codespaces-arm64-rc003.sh",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8033
+    },
+    {
+      "path": "scripts/ci/codespaces-security-rc003.sh",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3798
+    },
+    {
+      "path": "scripts/ci/navegador-unificado-preload.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 442
+    },
+    {
+      "path": "scripts/ci/relator-node-unificado.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1003
+    },
+    {
+      "path": "scripts/ci/relator-python-unificado.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3173
+    },
+    {
+      "path": "scripts/ci/smoke-addon.sh",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2198
+    },
+    {
+      "path": "scripts/ci/testes-unificados-local.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 14447
+    },
+    {
+      "path": "scripts/ci/windows-dpapi-rc003-runner.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1421
+    },
+    {
+      "path": "scripts/ci/windows-dpapi-rc003.cmd",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1382
+    },
+    {
+      "path": "scripts/export-distribution.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8822
+    },
+    {
+      "path": "scripts/impressao_windows/agente.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10927
+    },
+    {
+      "path": "scripts/impressao_windows/cliente_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8794
+    },
+    {
+      "path": "scripts/impressao_windows/CONFIGURAR_AGENTE.cmd",
+      "type": "blob",
+      "mode": "100644",
+      "size": 63
+    },
+    {
+      "path": "scripts/impressao_windows/CONSULTAR_STATUS.cmd",
+      "type": "blob",
+      "mode": "100644",
+      "size": 59
+    },
+    {
+      "path": "scripts/impressao_windows/credenciais_windows.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4872
+    },
+    {
+      "path": "scripts/impressao_windows/credencial_agente.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1559
+    },
+    {
+      "path": "scripts/impressao_windows/diagnostico_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8291
+    },
+    {
+      "path": "scripts/impressao_windows/fluxo_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11516
+    },
+    {
+      "path": "scripts/impressao_windows/fluxo_pareamento.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5854
+    },
+    {
+      "path": "scripts/impressao_windows/INICIAR_AGENTE.cmd",
+      "type": "blob",
+      "mode": "100644",
+      "size": 50
+    },
+    {
+      "path": "scripts/impressao_windows/INICIAR_PAREAMENTO.cmd",
+      "type": "blob",
+      "mode": "100644",
+      "size": 58
+    },
+    {
+      "path": "scripts/impressao_windows/interface_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2507
+    },
+    {
+      "path": "scripts/impressao_windows/janela_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 12855
+    },
+    {
+      "path": "scripts/impressao_windows/janela_pareamento.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8639
+    },
+    {
+      "path": "scripts/impressao_windows/lock_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2682
+    },
+    {
+      "path": "scripts/impressao_windows/node_pair_v1_fixture.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2231
+    },
+    {
+      "path": "scripts/impressao_windows/pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5795
+    },
+    {
+      "path": "scripts/impressao_windows/pareamento.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4945
+    },
+    {
+      "path": "scripts/impressao_windows/README_PAREAMENTO_PREVIEW.md",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3701
+    },
+    {
+      "path": "scripts/impressao_windows/retry_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 710
+    },
+    {
+      "path": "scripts/impressao_windows/test_agente_captura_isolada.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4409
+    },
+    {
+      "path": "scripts/impressao_windows/test_agente_fila_isolada.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 47045
+    },
+    {
+      "path": "scripts/impressao_windows/test_agente_inbox_isolada.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6101
+    },
+    {
+      "path": "scripts/impressao_windows/test_agente_monitor_isolado.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6559
+    },
+    {
+      "path": "scripts/impressao_windows/test_cliente_pair_v1_http_falhas.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2680
+    },
+    {
+      "path": "scripts/impressao_windows/test_cliente_pair_v1_http.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2760
+    },
+    {
+      "path": "scripts/impressao_windows/test_cliente_pair_v1_validacao.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4953
+    },
+    {
+      "path": "scripts/impressao_windows/test_credencial_agente.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5365
+    },
+    {
+      "path": "scripts/impressao_windows/test_diagnostico_m014.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6464
+    },
+    {
+      "path": "scripts/impressao_windows/test_diagnostico_m016.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2556
+    },
+    {
+      "path": "scripts/impressao_windows/test_diagnostico_m017.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 849
+    },
+    {
+      "path": "scripts/impressao_windows/test_diagnostico_m018.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2346
+    },
+    {
+      "path": "scripts/impressao_windows/test_diagnostico_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3879
+    },
+    {
+      "path": "scripts/impressao_windows/test_fluxo_pareamento.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4480
+    },
+    {
+      "path": "scripts/impressao_windows/test_interface_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4732
+    },
+    {
+      "path": "scripts/impressao_windows/test_janela_pair_v1_resume.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2538
+    },
+    {
+      "path": "scripts/impressao_windows/test_janela_pair_v1_terminal.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3200
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_arquivo_protegido.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3136
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_concorrencia.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4012
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_dpapi_integridade.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4906
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_dpapi_processos.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3761
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_falhas_persistencia.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7100
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_interoperability.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2072
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_interrupcoes.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6298
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_multiprocessos.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6934
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1_terminal.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3655
+    },
+    {
+      "path": "scripts/impressao_windows/test_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7589
+    },
+    {
+      "path": "scripts/impressao_windows/test_pareamento.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2582
+    },
+    {
+      "path": "scripts/impressao_windows/test_retry_pair_v1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5013
+    },
+    {
+      "path": "scripts/impressao_windows/tspl_png.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1341
+    },
+    {
+      "path": "scripts/impressao_windows/verificar_previa_pair_v1.ps1",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2235
+    },
+    {
+      "path": "src/.gitkeep",
+      "type": "blob",
+      "mode": "100644",
+      "size": 0
+    },
+    {
+      "path": "src/admin-gerentes.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11779
+    },
+    {
+      "path": "src/admin.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9167
+    },
+    {
+      "path": "src/auth.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11288
+    },
+    {
+      "path": "src/bootstrap-config.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 76
+    },
+    {
+      "path": "src/db.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5152
+    },
+    {
+      "path": "src/interesses.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2967
+    },
+    {
+      "path": "src/pairing/backend/assets/autorizar-pair-lab.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11729
+    },
+    {
+      "path": "src/pairing/backend/integrated-host-lab.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2534
+    },
+    {
+      "path": "src/pairing/backend/manager-page-lab.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2642
+    },
+    {
+      "path": "src/pairing/backend/protocol-v2.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5172
+    },
+    {
+      "path": "src/pairing/backend/routes-lab.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 21197
+    },
+    {
+      "path": "src/pairing/backend/schema.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5679
+    },
+    {
+      "path": "src/pairing/backend/session-adapter.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 497
+    },
+    {
+      "path": "src/pairing/crypto.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2834
+    },
+    {
+      "path": "src/pong.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 13109
+    },
+    {
+      "path": "src/public/admin.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 73793
+    },
+    {
+      "path": "src/public/avisaqui-marca-transparente.svg",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1844
+    },
+    {
+      "path": "src/public/avisaqui-marca.svg",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1834
+    },
+    {
+      "path": "src/public/cliente.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 77063
+    },
+    {
+      "path": "src/public/games/biblioteca.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 33555
+    },
+    {
+      "path": "src/public/games/catalogo-visual.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3143
+    },
+    {
+      "path": "src/public/games/catalogo.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3168
+    },
+    {
+      "path": "src/public/games/jogo-da-velha-isolado.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10529
+    },
+    {
+      "path": "src/public/games/jogo-da-velha.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3927
+    },
+    {
+      "path": "src/public/games/manifest.json",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6091
+    },
+    {
+      "path": "src/public/games/pong-local-isolado.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11100
+    },
+    {
+      "path": "src/public/games/protocolo-v1.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2399
+    },
+    {
+      "path": "src/public/icon.svg",
+      "type": "blob",
+      "mode": "100644",
+      "size": 284
+    },
+    {
+      "path": "src/public/impressao.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 26779
+    },
+    {
+      "path": "src/public/kds.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 44310
+    },
+    {
+      "path": "src/public/landing.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 22462
+    },
+    {
+      "path": "src/public/login.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6242
+    },
+    {
+      "path": "src/public/manifest.webmanifest",
+      "type": "blob",
+      "mode": "100644",
+      "size": 379
+    },
+    {
+      "path": "src/public/pong.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5691
+    },
+    {
+      "path": "src/public/push-sw.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1164
+    },
+    {
+      "path": "src/public/qrcode.min.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 19927
+    },
+    {
+      "path": "src/public/setup.html",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3844
+    },
+    {
+      "path": "src/push.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5476
+    },
+    {
+      "path": "src/routes/integracao-impressao.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6932
+    },
+    {
+      "path": "src/routes/pedidos.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 13944
+    },
+    {
+      "path": "src/runtime-config.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3541
+    },
+    {
+      "path": "src/server.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7692
+    },
+    {
+      "path": "src/setup.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3908
+    },
+    {
+      "path": "src/sse.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2368
+    },
+    {
+      "path": "src/wallet.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9308
+    },
+    {
+      "path": "src/windows-download.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2777
+    },
+    {
+      "path": "tests/admin-gerentes-041.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8642
+    },
+    {
+      "path": "tests/admin-gerentes-seguranca-034.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6228
+    },
+    {
+      "path": "tests/admin-gerentes.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6159
+    },
+    {
+      "path": "tests/agent-lab.test.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3220
+    },
+    {
+      "path": "tests/auth-api.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10144
+    },
+    {
+      "path": "tests/auth-pages.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1175
+    },
+    {
+      "path": "tests/auth-schema.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3353
+    },
+    {
+      "path": "tests/biblioteca-jogos.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4743
+    },
+    {
+      "path": "tests/cadastro-rapido.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3822
+    },
+    {
+      "path": "tests/catalogo-jogos.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2749
+    },
+    {
+      "path": "tests/cliente-som-wallet-regression.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1669
+    },
+    {
+      "path": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "type": "blob",
+      "mode": "100644",
+      "size": 11357
+    },
+    {
+      "path": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1993
+    },
+    {
+      "path": "tests/games-browser-smoke.lab.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9182
+    },
+    {
+      "path": "tests/games-contratos-034.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2551
+    },
+    {
+      "path": "tests/games-fluxo-aprovado.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9454
+    },
+    {
+      "path": "tests/games-m019-jogo-da-velha-real.test.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1154
+    },
+    {
+      "path": "tests/https-prefix-auth.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3137
+    },
+    {
+      "path": "tests/https-prefix.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5363
+    },
+    {
+      "path": "tests/integracao-impressao.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7930
+    },
+    {
+      "path": "tests/interesses-piloto.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2591
+    },
+    {
+      "path": "tests/jogo-da-velha.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1007
+    },
+    {
+      "path": "tests/kds-carregamento.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 681
+    },
+    {
+      "path": "tests/kds-historico.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1672
+    },
+    {
+      "path": "tests/legacy-conflicts.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2222
+    },
+    {
+      "path": "tests/legacy-upgrade.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6491
+    },
+    {
+      "path": "tests/login-browser-contract.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6058
+    },
+    {
+      "path": "tests/logout-browser-history.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 909
+    },
+    {
+      "path": "tests/package-policy.test.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7722
+    },
+    {
+      "path": "tests/pairing-backend-api-lab.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 18929
+    },
+    {
+      "path": "tests/pairing-backend-asset-rc003.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3406
+    },
+    {
+      "path": "tests/pairing-backend-backup-restore.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2736
+    },
+    {
+      "path": "tests/pairing-backend-http-python.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5203
+    },
+    {
+      "path": "tests/pairing-backend-https-headers.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 13788
+    },
+    {
+      "path": "tests/pairing-backend-integrated-host-lab.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 10598
+    },
+    {
+      "path": "tests/pairing-backend-manager-page-lab.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3777
+    },
+    {
+      "path": "tests/pairing-backend-schema.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3232
+    },
+    {
+      "path": "tests/pairing-backend-session-lab.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 6547
+    },
+    {
+      "path": "tests/pairing-backend-v1.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4587
+    },
+    {
+      "path": "tests/pairing-crypto.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2481
+    },
+    {
+      "path": "tests/pairing-ha-optin-config.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3178
+    },
+    {
+      "path": "tests/pairing-server-optin-rc003.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 8175
+    },
+    {
+      "path": "tests/pong-api.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 16434
+    },
+    {
+      "path": "tests/pong-browser-contract.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1606
+    },
+    {
+      "path": "tests/pong-client-path.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3015
+    },
+    {
+      "path": "tests/pong-routes.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1954
+    },
+    {
+      "path": "tests/protocolo-jogos-v1.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 1934
+    },
+    {
+      "path": "tests/proxy-origin.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3836
+    },
+    {
+      "path": "tests/push-api.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2479
+    },
+    {
+      "path": "tests/pwa-brand-identity.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2113
+    },
+    {
+      "path": "tests/restaurante-logo-api.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5864
+    },
+    {
+      "path": "tests/restaurante-logo-ux.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2150
+    },
+    {
+      "path": "tests/server-roles.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7741
+    },
+    {
+      "path": "tests/server-smoke.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4806
+    },
+    {
+      "path": "tests/sqlite-backup-restore.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5598
+    },
+    {
+      "path": "tests/sse-http.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 7423
+    },
+    {
+      "path": "tests/sse-scope.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2035
+    },
+    {
+      "path": "tests/test_arm64_isolated_smoke.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4799
+    },
+    {
+      "path": "tests/test_pr30_arm64_runner.py",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3006
+    },
+    {
+      "path": "tests/testes-unificados-local.test.mjs",
+      "type": "blob",
+      "mode": "100644",
+      "size": 9267
+    },
+    {
+      "path": "tests/ux-gerentes-interface-034.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2878
+    },
+    {
+      "path": "tests/ux-identidade-rc002.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3682
+    },
+    {
+      "path": "tests/ux-impressao-pair-rc003.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2158
+    },
+    {
+      "path": "tests/ux-paridade-prototipo-contract.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5024
+    },
+    {
+      "path": "tests/wallet-addon-config.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3079
+    },
+    {
+      "path": "tests/wallet-ready-notification.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4115
+    },
+    {
+      "path": "tests/wallet.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 5277
+    },
+    {
+      "path": "tests/webui-launcher.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 4247
+    },
+    {
+      "path": "tests/windows-download-release.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 3404
+    },
+    {
+      "path": "tests/windows-qr-complete-contract.test.js",
+      "type": "blob",
+      "mode": "100644",
+      "size": 2419
+    }
+  ],
+  "expected_mapping": [
+    {
+      "source": ".dockerignore",
+      "destination": "pager-virtual/.dockerignore"
+    },
+    {
+      "source": "distribution/governance/product.gitignore",
+      "destination": "pager-virtual/.gitignore"
+    },
+    {
+      "source": ".governance/approved-pager-ci.patch",
+      "destination": "pager-virtual/.governance/approved-pager-ci.patch"
+    },
+    {
+      "source": "distribution/governance/package-policy.json",
+      "destination": "pager-virtual/.governance/package-policy.json"
+    },
+    {
+      "source": "distribution/AGENTS.md",
+      "destination": "pager-virtual/AGENTS.md"
+    },
+    {
+      "source": "distribution/CHANGELOG.md",
+      "destination": "pager-virtual/CHANGELOG.md"
+    },
+    {
+      "source": "config.yaml",
+      "destination": "pager-virtual/config.yaml"
+    },
+    {
+      "source": "Dockerfile",
+      "destination": "pager-virtual/Dockerfile"
+    },
+    {
+      "source": "docs/AVISAQUI_PRINT_HA_001.md",
+      "destination": "pager-virtual/docs/AVISAQUI_PRINT_HA_001.md"
+    },
+    {
+      "source": "docs/AVISAQUI-HTTPS-001-nginx.conf.example",
+      "destination": "pager-virtual/docs/AVISAQUI-HTTPS-001-nginx.conf.example"
+    },
+    {
+      "source": "docs/AVISAQUI-HTTPS-001-publicacao.md",
+      "destination": "pager-virtual/docs/AVISAQUI-HTTPS-001-publicacao.md"
+    },
+    {
+      "source": "docs/AVISAQUI-PONG-014.md",
+      "destination": "pager-virtual/docs/AVISAQUI-PONG-014.md"
+    },
+    {
+      "source": "distribution/governance/GOVERNANCA-DO-PACOTE.md",
+      "destination": "pager-virtual/docs/GOVERNANCA-DO-PACOTE.md"
+    },
+    {
+      "source": "distribution/RC-001.md",
+      "destination": "pager-virtual/docs/RC-001.md"
+    },
+    {
+      "source": "distribution/hotfix-0.1.16/README.md",
+      "destination": "pager-virtual/docs/WEBUI-CATALOGO-016.md"
+    },
+    {
+      "source": "distribution/hotfix-0.1.17/README.md",
+      "destination": "pager-virtual/docs/WEBUI-PROXY-017.md"
+    },
+    {
+      "source": "package-lock.json",
+      "destination": "pager-virtual/package-lock.json"
+    },
+    {
+      "source": "package.json",
+      "destination": "pager-virtual/package.json"
+    },
+    {
+      "source": "distribution/README.md",
+      "destination": "pager-virtual/README.md"
+    },
+    {
+      "source": "run.sh",
+      "destination": "pager-virtual/run.sh"
+    },
+    {
+      "source": "scripts/bootstrap-admin.js",
+      "destination": "pager-virtual/scripts/bootstrap-admin.js"
+    },
+    {
+      "source": "scripts/check-package-policy.py",
+      "destination": "pager-virtual/scripts/check-package-policy.py"
+    },
+    {
+      "source": "scripts/impressao_windows/cliente_pair_v1.py",
+      "destination": "pager-virtual/scripts/impressao_windows/cliente_pair_v1.py"
+    },
+    {
+      "source": "scripts/impressao_windows/pair_v1.py",
+      "destination": "pager-virtual/scripts/impressao_windows/pair_v1.py"
+    },
+    {
+      "source": "src/.gitkeep",
+      "destination": "pager-virtual/src/.gitkeep"
+    },
+    {
+      "source": "src/admin-gerentes.js",
+      "destination": "pager-virtual/src/admin-gerentes.js"
+    },
+    {
+      "source": "src/admin.js",
+      "destination": "pager-virtual/src/admin.js"
+    },
+    {
+      "source": "src/auth.js",
+      "destination": "pager-virtual/src/auth.js"
+    },
+    {
+      "source": "src/bootstrap-config.js",
+      "destination": "pager-virtual/src/bootstrap-config.js"
+    },
+    {
+      "source": "src/db.js",
+      "destination": "pager-virtual/src/db.js"
+    },
+    {
+      "source": "src/interesses.js",
+      "destination": "pager-virtual/src/interesses.js"
+    },
+    {
+      "source": "src/pairing/backend/assets/autorizar-pair-lab.html",
+      "destination": "pager-virtual/src/pairing/backend/assets/autorizar-pair-lab.html"
+    },
+    {
+      "source": "src/pairing/backend/integrated-host-lab.js",
+      "destination": "pager-virtual/src/pairing/backend/integrated-host-lab.js"
+    },
+    {
+      "source": "src/pairing/backend/manager-page-lab.js",
+      "destination": "pager-virtual/src/pairing/backend/manager-page-lab.js"
+    },
+    {
+      "source": "src/pairing/backend/protocol-v2.js",
+      "destination": "pager-virtual/src/pairing/backend/protocol-v2.js"
+    },
+    {
+      "source": "src/pairing/backend/routes-lab.js",
+      "destination": "pager-virtual/src/pairing/backend/routes-lab.js"
+    },
+    {
+      "source": "src/pairing/backend/schema.js",
+      "destination": "pager-virtual/src/pairing/backend/schema.js"
+    },
+    {
+      "source": "src/pairing/backend/session-adapter.js",
+      "destination": "pager-virtual/src/pairing/backend/session-adapter.js"
+    },
+    {
+      "source": "src/pairing/crypto.js",
+      "destination": "pager-virtual/src/pairing/crypto.js"
+    },
+    {
+      "source": "src/pong.js",
+      "destination": "pager-virtual/src/pong.js"
+    },
+    {
+      "source": "src/public/admin.html",
+      "destination": "pager-virtual/src/public/admin.html"
+    },
+    {
+      "source": "src/public/avisaqui-marca-transparente.svg",
+      "destination": "pager-virtual/src/public/avisaqui-marca-transparente.svg"
+    },
+    {
+      "source": "src/public/avisaqui-marca.svg",
+      "destination": "pager-virtual/src/public/avisaqui-marca.svg"
+    },
+    {
+      "source": "src/public/cliente.html",
+      "destination": "pager-virtual/src/public/cliente.html"
+    },
+    {
+      "source": "src/public/games/biblioteca.js",
+      "destination": "pager-virtual/src/public/games/biblioteca.js"
+    },
+    {
+      "source": "src/public/games/catalogo-visual.js",
+      "destination": "pager-virtual/src/public/games/catalogo-visual.js"
+    },
+    {
+      "source": "src/public/games/catalogo.js",
+      "destination": "pager-virtual/src/public/games/catalogo.js"
+    },
+    {
+      "source": "src/public/games/jogo-da-velha-isolado.html",
+      "destination": "pager-virtual/src/public/games/jogo-da-velha-isolado.html"
+    },
+    {
+      "source": "src/public/games/jogo-da-velha.js",
+      "destination": "pager-virtual/src/public/games/jogo-da-velha.js"
+    },
+    {
+      "source": "src/public/games/manifest.json",
+      "destination": "pager-virtual/src/public/games/manifest.json"
+    },
+    {
+      "source": "src/public/games/pong-local-isolado.html",
+      "destination": "pager-virtual/src/public/games/pong-local-isolado.html"
+    },
+    {
+      "source": "src/public/games/protocolo-v1.js",
+      "destination": "pager-virtual/src/public/games/protocolo-v1.js"
+    },
+    {
+      "source": "src/public/icon.svg",
+      "destination": "pager-virtual/src/public/icon.svg"
+    },
+    {
+      "source": "src/public/impressao.html",
+      "destination": "pager-virtual/src/public/impressao.html"
+    },
+    {
+      "source": "src/public/kds.html",
+      "destination": "pager-virtual/src/public/kds.html"
+    },
+    {
+      "source": "src/public/landing.html",
+      "destination": "pager-virtual/src/public/landing.html"
+    },
+    {
+      "source": "src/public/login.html",
+      "destination": "pager-virtual/src/public/login.html"
+    },
+    {
+      "source": "src/public/manifest.webmanifest",
+      "destination": "pager-virtual/src/public/manifest.webmanifest"
+    },
+    {
+      "source": "src/public/pong.js",
+      "destination": "pager-virtual/src/public/pong.js"
+    },
+    {
+      "source": "src/public/push-sw.js",
+      "destination": "pager-virtual/src/public/push-sw.js"
+    },
+    {
+      "source": "src/public/qrcode.min.js",
+      "destination": "pager-virtual/src/public/qrcode.min.js"
+    },
+    {
+      "source": "src/public/setup.html",
+      "destination": "pager-virtual/src/public/setup.html"
+    },
+    {
+      "source": "src/push.js",
+      "destination": "pager-virtual/src/push.js"
+    },
+    {
+      "source": "src/routes/integracao-impressao.js",
+      "destination": "pager-virtual/src/routes/integracao-impressao.js"
+    },
+    {
+      "source": "src/routes/pedidos.js",
+      "destination": "pager-virtual/src/routes/pedidos.js"
+    },
+    {
+      "source": "src/runtime-config.js",
+      "destination": "pager-virtual/src/runtime-config.js"
+    },
+    {
+      "source": "src/server.js",
+      "destination": "pager-virtual/src/server.js"
+    },
+    {
+      "source": "src/setup.js",
+      "destination": "pager-virtual/src/setup.js"
+    },
+    {
+      "source": "src/sse.js",
+      "destination": "pager-virtual/src/sse.js"
+    },
+    {
+      "source": "src/wallet.js",
+      "destination": "pager-virtual/src/wallet.js"
+    },
+    {
+      "source": "src/windows-download.js",
+      "destination": "pager-virtual/src/windows-download.js"
+    },
+    {
+      "source": "tests/admin-gerentes-041.test.js",
+      "destination": "pager-virtual/tests/admin-gerentes-041.test.js"
+    },
+    {
+      "source": "tests/admin-gerentes-seguranca-034.test.js",
+      "destination": "pager-virtual/tests/admin-gerentes-seguranca-034.test.js"
+    },
+    {
+      "source": "tests/admin-gerentes.test.js",
+      "destination": "pager-virtual/tests/admin-gerentes.test.js"
+    },
+    {
+      "source": "tests/auth-api.test.js",
+      "destination": "pager-virtual/tests/auth-api.test.js"
+    },
+    {
+      "source": "tests/auth-pages.test.js",
+      "destination": "pager-virtual/tests/auth-pages.test.js"
+    },
+    {
+      "source": "tests/auth-schema.test.js",
+      "destination": "pager-virtual/tests/auth-schema.test.js"
+    },
+    {
+      "source": "tests/biblioteca-jogos.test.js",
+      "destination": "pager-virtual/tests/biblioteca-jogos.test.js"
+    },
+    {
+      "source": "tests/cadastro-rapido.test.js",
+      "destination": "pager-virtual/tests/cadastro-rapido.test.js"
+    },
+    {
+      "source": "tests/catalogo-jogos.test.js",
+      "destination": "pager-virtual/tests/catalogo-jogos.test.js"
+    },
+    {
+      "source": "tests/cliente-som-wallet-regression.test.js",
+      "destination": "pager-virtual/tests/cliente-som-wallet-regression.test.js"
+    },
+    {
+      "source": "tests/fixtures/HA-SUPERVISOR-LICENSE.txt",
+      "destination": "pager-virtual/tests/fixtures/HA-SUPERVISOR-LICENSE.txt"
+    },
+    {
+      "source": "tests/fixtures/supervisor-webui-2026.01.1.py",
+      "destination": "pager-virtual/tests/fixtures/supervisor-webui-2026.01.1.py"
+    },
+    {
+      "source": "tests/games-contratos-034.test.js",
+      "destination": "pager-virtual/tests/games-contratos-034.test.js"
+    },
+    {
+      "source": "tests/games-fluxo-aprovado.test.js",
+      "destination": "pager-virtual/tests/games-fluxo-aprovado.test.js"
+    },
+    {
+      "source": "tests/https-prefix-auth.test.js",
+      "destination": "pager-virtual/tests/https-prefix-auth.test.js"
+    },
+    {
+      "source": "tests/https-prefix.test.js",
+      "destination": "pager-virtual/tests/https-prefix.test.js"
+    },
+    {
+      "source": "tests/integracao-impressao.test.js",
+      "destination": "pager-virtual/tests/integracao-impressao.test.js"
+    },
+    {
+      "source": "tests/interesses-piloto.test.js",
+      "destination": "pager-virtual/tests/interesses-piloto.test.js"
+    },
+    {
+      "source": "tests/jogo-da-velha.test.js",
+      "destination": "pager-virtual/tests/jogo-da-velha.test.js"
+    },
+    {
+      "source": "tests/kds-carregamento.test.js",
+      "destination": "pager-virtual/tests/kds-carregamento.test.js"
+    },
+    {
+      "source": "tests/kds-historico.test.js",
+      "destination": "pager-virtual/tests/kds-historico.test.js"
+    },
+    {
+      "source": "tests/legacy-conflicts.test.js",
+      "destination": "pager-virtual/tests/legacy-conflicts.test.js"
+    },
+    {
+      "source": "tests/legacy-upgrade.test.js",
+      "destination": "pager-virtual/tests/legacy-upgrade.test.js"
+    },
+    {
+      "source": "tests/login-browser-contract.test.js",
+      "destination": "pager-virtual/tests/login-browser-contract.test.js"
+    },
+    {
+      "source": "tests/logout-browser-history.test.js",
+      "destination": "pager-virtual/tests/logout-browser-history.test.js"
+    },
+    {
+      "source": "tests/package-policy.test.py",
+      "destination": "pager-virtual/tests/package-policy.test.py"
+    },
+    {
+      "source": "tests/pairing-backend-api-lab.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-api-lab.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-asset-rc003.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-asset-rc003.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-backup-restore.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-backup-restore.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-http-python.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-http-python.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-https-headers.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-https-headers.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-integrated-host-lab.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-integrated-host-lab.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-manager-page-lab.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-manager-page-lab.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-schema.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-schema.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-session-lab.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-session-lab.test.js"
+    },
+    {
+      "source": "tests/pairing-backend-v1.test.js",
+      "destination": "pager-virtual/tests/pairing-backend-v1.test.js"
+    },
+    {
+      "source": "tests/pairing-crypto.test.js",
+      "destination": "pager-virtual/tests/pairing-crypto.test.js"
+    },
+    {
+      "source": "tests/pairing-ha-optin-config.test.js",
+      "destination": "pager-virtual/tests/pairing-ha-optin-config.test.js"
+    },
+    {
+      "source": "tests/pairing-server-optin-rc003.test.js",
+      "destination": "pager-virtual/tests/pairing-server-optin-rc003.test.js"
+    },
+    {
+      "source": "tests/pong-api.test.js",
+      "destination": "pager-virtual/tests/pong-api.test.js"
+    },
+    {
+      "source": "tests/pong-browser-contract.test.js",
+      "destination": "pager-virtual/tests/pong-browser-contract.test.js"
+    },
+    {
+      "source": "tests/pong-client-path.test.js",
+      "destination": "pager-virtual/tests/pong-client-path.test.js"
+    },
+    {
+      "source": "tests/pong-routes.test.js",
+      "destination": "pager-virtual/tests/pong-routes.test.js"
+    },
+    {
+      "source": "tests/protocolo-jogos-v1.test.js",
+      "destination": "pager-virtual/tests/protocolo-jogos-v1.test.js"
+    },
+    {
+      "source": "tests/proxy-origin.test.js",
+      "destination": "pager-virtual/tests/proxy-origin.test.js"
+    },
+    {
+      "source": "tests/push-api.test.js",
+      "destination": "pager-virtual/tests/push-api.test.js"
+    },
+    {
+      "source": "tests/pwa-brand-identity.test.js",
+      "destination": "pager-virtual/tests/pwa-brand-identity.test.js"
+    },
+    {
+      "source": "tests/restaurante-logo-api.test.js",
+      "destination": "pager-virtual/tests/restaurante-logo-api.test.js"
+    },
+    {
+      "source": "tests/restaurante-logo-ux.test.js",
+      "destination": "pager-virtual/tests/restaurante-logo-ux.test.js"
+    },
+    {
+      "source": "tests/server-roles.test.js",
+      "destination": "pager-virtual/tests/server-roles.test.js"
+    },
+    {
+      "source": "tests/server-smoke.test.js",
+      "destination": "pager-virtual/tests/server-smoke.test.js"
+    },
+    {
+      "source": "tests/sqlite-backup-restore.test.js",
+      "destination": "pager-virtual/tests/sqlite-backup-restore.test.js"
+    },
+    {
+      "source": "tests/sse-http.test.js",
+      "destination": "pager-virtual/tests/sse-http.test.js"
+    },
+    {
+      "source": "tests/sse-scope.test.js",
+      "destination": "pager-virtual/tests/sse-scope.test.js"
+    },
+    {
+      "source": "tests/ux-gerentes-interface-034.test.js",
+      "destination": "pager-virtual/tests/ux-gerentes-interface-034.test.js"
+    },
+    {
+      "source": "tests/ux-identidade-rc002.test.js",
+      "destination": "pager-virtual/tests/ux-identidade-rc002.test.js"
+    },
+    {
+      "source": "tests/ux-impressao-pair-rc003.test.js",
+      "destination": "pager-virtual/tests/ux-impressao-pair-rc003.test.js"
+    },
+    {
+      "source": "tests/ux-paridade-prototipo-contract.test.js",
+      "destination": "pager-virtual/tests/ux-paridade-prototipo-contract.test.js"
+    },
+    {
+      "source": "tests/wallet-addon-config.test.js",
+      "destination": "pager-virtual/tests/wallet-addon-config.test.js"
+    },
+    {
+      "source": "tests/wallet-ready-notification.test.js",
+      "destination": "pager-virtual/tests/wallet-ready-notification.test.js"
+    },
+    {
+      "source": "tests/wallet.test.js",
+      "destination": "pager-virtual/tests/wallet.test.js"
+    },
+    {
+      "source": "tests/webui-launcher.test.js",
+      "destination": "pager-virtual/tests/webui-launcher.test.js"
+    },
+    {
+      "source": "tests/windows-download-release.test.js",
+      "destination": "pager-virtual/tests/windows-download-release.test.js"
+    },
+    {
+      "source": "tests/windows-qr-complete-contract.test.js",
+      "destination": "pager-virtual/tests/windows-qr-complete-contract.test.js"
+    }
+  ],
+  "shared_mapping": [
+    {
+      "source": "distribution/governance/avisaqui-governance.yml",
+      "destination": ".github/workflows/avisaqui-governance.yml"
+    }
+  ]
+}

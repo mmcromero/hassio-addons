@@ -110,6 +110,52 @@ class FastlaneTests(unittest.TestCase):
             with self.assertRaises(mod.PreflightError):
                 mod.load_profile(profile)
 
+    def test_trusted_declarative_mapping_rejects_unsafe_destinations(self):
+        changes = [
+            {"../escape": "config.yaml"},
+            {"pager-virtual/.git/config": "config.yaml"},
+            {"other-addon/config.yaml": "config.yaml"},
+            {"pager-virtual/SOURCE_PROVENANCE.json": "config.yaml"},
+            {"pager-virtual/config.yaml": "../config.yaml"},
+            {"pager-virtual/config.yaml": "config\\\\evil.yaml"},
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            profile = Path(folder) / "profile.json"
+            for mapping in changes:
+                with self.subTest(mapping=mapping):
+                    cfg = dict(CONFIG)
+                    cfg.pop("declarative_rules", None)
+                    cfg.pop("declarative_ci", None)
+                    cfg["declarative_mapping"] = mapping
+                    profile.write_text(json.dumps(cfg), encoding="utf-8")
+                    with self.assertRaises(mod.PreflightError):
+                        mod.load_profile(profile)
+
+    def test_trusted_declarative_mapping_is_optional_and_validated(self):
+        self.assertNotIn("declarative_mapping", mod.load_profile(PROFILE))
+        with tempfile.TemporaryDirectory() as folder:
+            cfg = dict(CONFIG)
+            cfg.pop("declarative_rules", None)
+            cfg.pop("declarative_ci", None)
+            cfg["declarative_mapping"] = {"pager-virtual/config.yaml": "config.yaml"}
+            profile = Path(folder) / "profile.json"
+            profile.write_text(json.dumps(cfg), encoding="utf-8")
+            actual = mod.load_profile(profile)
+            self.assertEqual(actual["declarative_mapping"]["pager-virtual/config.yaml"],
+                             "config.yaml")
+
+    def test_mixed_declarative_modes_are_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cfg = dict(CONFIG)
+            self.assertIn("declarative_rules", cfg)
+            cfg["declarative_mapping"] = {
+                "pager-virtual/config.yaml": "config.yaml"}
+            path = Path(folder) / "profile.json"
+            path.write_text(json.dumps(cfg), encoding="utf-8")
+            with self.assertRaisesRegex(mod.PreflightError,
+                                        "Mixed declarative mapping modes"):
+                mod.load_profile(path)
+
     def test_git_status_preserves_leading_porcelain_column(self):
         # An unstaged modification starts with a space, which .strip() destroys.
         payload = " M pager-virtual/config.yaml\\0"

@@ -153,6 +153,105 @@ class IntegrationTests(unittest.TestCase):
         self.assertNotIn('synthetic-secret',audit);self.assertNotIn('t'*40,audit)
         self.assertIn('completed_preparation',audit)
 
+    def test_real_http_declarative_export_no_scripts_no_git_writes(self):
+        # This test creates a local bundle, never commits or publishes it.
+        profile = dict(self.profile)
+        profile["declarative_mapping"] = {
+            "demo/config.yaml": "config.yaml",
+            "demo/package.json": "package.json"
+        }
+        (self.projects / "laboratorio.json").write_text(json.dumps(profile))
+        before = {
+            str(repo): (self.git(repo, 'show-ref'),
+                        self.git(repo, 'status', '--porcelain'))
+            for repo in (self.source, self.dist)
+        }
+        with patch.object(lane, "sandbox_export",
+                          side_effect=AssertionError("untrusted script executed")):
+            code, data = self.request('POST', '/api/prepare-declarative')
+        self.assertEqual(code, 200, data)
+        self.assertFalse(data['result']['published'])
+        self.assertEqual(data['result']['method'], 'declarative_no_script')
+        candidates = list(self.preparations.iterdir())
+        self.assertEqual(len(candidates), 1)
+        output = candidates[0]
+        provenance = json.loads((output / 'DECLARATIVE_BUNDLE_MANIFEST.json').read_text())
+        self.assertEqual(provenance['commit'], self.sha)
+        self.assertEqual(len(provenance['files']), 2)
+        for item in provenance['files']:
+            path = output / item['path']
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),
+                             item['sha256'])
+        for repo in (self.source, self.dist):
+            self.assertEqual(before[str(repo)],
+                             (self.git(repo, 'show-ref'),
+                              self.git(repo, 'status', '--porcelain')))
+        self.assertNotIn('synthetic-secret', self.audit.read_text())
+        self.assertIn('completed_preparation', self.audit.read_text())
+
+    def test_declarative_rule_selection_via_actual_http(self):
+        (self.source / "src" / "nested").mkdir(parents=True)
+        (self.source / "src" / "nested" / "module.txt").write_text("synthetic")
+        self.git(self.source, 'add', '.')
+        self.git(self.source, 'commit', '-qm', 'new synthetic source tree')
+        new_sha = self.git(self.source, 'rev-parse', 'HEAD')
+        for ref in ('source_ref', 'rc_ref'):
+            self.git(self.source, 'update-ref', self.profile[ref], new_sha)
+        rules = {
+            "required": {"demo/config.yaml": "config.yaml",
+                         "demo/package.json": "package.json"},
+            "optional": {},
+            "include_prefixes": ["src/"],
+            "include_suffixes": {}
+        }
+        profile = dict(self.profile, declarative_rules=rules)
+        (self.projects / 'laboratorio.json').write_text(json.dumps(profile))
+        code, data = self.request(
+            'POST', '/api/prepare-declarative',
+            payload={"project": "laboratorio", "expected_source_sha": new_sha})
+        self.assertEqual(code, 200, data)
+        self.assertEqual(data['result']['files'], 3)
+        output = next(self.preparations.iterdir())
+        self.assertEqual((output / 'demo/src/nested/module.txt').read_text(),
+                         'synthetic')
+        self.assertFalse(data['result']['published'])
+
+    def test_standard_prepare_uses_approved_declarative_without_sandbox(self):
+        # Same preflight/Git policy as the existing route, but deterministic
+        # mappings do not execute source scripts or depend on Bubblewrap.
+        cfg = dict(self.profile)
+        cfg["declarative_mapping"] = {
+            "demo/config.yaml": "config.yaml",
+            "demo/package.json": "package.json"
+        }
+        (self.projects / "laboratorio.json").write_text(json.dumps(cfg))
+        initial = {
+            str(repo): (self.git(repo, "show-ref"),
+                        self.git(repo, "status", "--porcelain"))
+            for repo in (self.source, self.dist)
+        }
+        with patch.object(lane, "sandbox_export",
+                          side_effect=AssertionError("legacy exporter executed")):
+            code, data = self.request("POST", "/api/prepare")
+        self.assertEqual(code, 200, data)
+        self.assertEqual(data["result"]["method"], "declarative_no_script")
+        self.assertEqual(data["result"]["state"], "PREPARED_NOT_PUBLISHED")
+        self.assertFalse(data["result"]["published"])
+        outputs = list(self.preparations.iterdir())
+        self.assertEqual(len(outputs), 1)
+        manifest = json.loads(
+            (outputs[0] / "demo/SOURCE_PROVENANCE.json").read_text())
+        self.assertEqual(manifest["commit"], self.sha)
+        self.assertEqual(len(manifest["files"]), 2)
+        for item in manifest["files"]:
+            content = (outputs[0] / "demo" / item["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(content).hexdigest(), item["sha256"])
+        for repo in (self.source, self.dist):
+            self.assertEqual(initial[str(repo)],
+                             (self.git(repo, "show-ref"),
+                              self.git(repo, "status", "--porcelain")))
+        self.assertIn("completed_preparation", self.audit.read_text())
+
     def test_missing_real_checkouts_return_503(self):
         with patch.object(server,'WORKSPACES_DIR',self.root/'missing'):
             for path in ('/api/preflight','/api/prepare'):

@@ -1,5 +1,6 @@
 # Fábrica de Software — Factory Runner
 
+**Candidata 0.1.0-rc.5 em desenvolvimento (NÃO PUBLICADA/NÃO HOMOLOGADA).** A preparação mecânica de pacotes por receita confiável agora usa Git blobs fixados, sem executar código da origem; o endpoint padrão `POST /api/prepare` seleciona o caminho declarativo quando há perfil aprovado. Sem receita, Bubblewrap continua obrigatório e fail-closed. Execução autônoma de código, Git push, merge e publicação permanecem bloqueados. O teste sintético de inicialização é registrado como `[DECLARATIVE] PASS/BLOCKED`; PASS não comprova acesso aos workspaces privados. A RC4 segue publicada na main do catálogo; a versão instalada no HA não foi conferida. Consulte a Issue #2.\n\n
 **Estado atual (19/11/2026):** distribuição `0.1.0-rc.4` **PUBLICADA no catálogo** pelo PR #45, merge `350fa3c8a756c405b6766cca53bd25fe84aef9f1`. **Instalação e homologação da RC4 não foram realizadas nesta auditoria.** Não repetir publicação, build ARM64 externo ou testes estáticos já cobertos sem causa técnica concreta.
 
 Add-on Home Assistant para a infraestrutura da Fábrica de Software.

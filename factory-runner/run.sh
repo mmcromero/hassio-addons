@@ -46,4 +46,7 @@ export RUNNER_BIND_HOST=127.0.0.1
 env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/runtime_probe.py
 # A observacao de perfil nao modifica AppArmor nem substitui isolamento.
 env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/controlled_worker.py --task diagnose | sed 's/^/[WORKER] /' || echo "[WORKER] diagnostic blocked"
+# Synthetic Git/manifest check: no project access, no inherited token, no host mounts.
+# Diagnostics stay available if this check is blocked on the HA platform.
+env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/declarative_runtime_probe.py || echo "[DECLARATIVE] readiness probe unavailable; API still fail-closed"
 exec su-exec runner python3 -u /app/server.py

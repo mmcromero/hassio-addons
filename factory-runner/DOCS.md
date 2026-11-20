@@ -1,5 +1,6 @@
 # Factory Runner — Operação e segurança
 
+## Candidata de desenvolvimento RC5 — preparação declarativa\n\nO código confiável do Factory Runner lê blobs Git por SHA e prepara um bundle local de distribuição, sem executar o exportador Python do projeto. Com perfil versionado aprovado, `POST /api/prepare` usa esse caminho e registra `PREPARED_NOT_PUBLISHED`. Sem receita, a rota legada conserva Bubblewrap e retorna bloqueio se o isolamento falhar. Há diagnóstico sintético não-root na inicialização (`[DECLARATIVE]`), sem acesso a dados/credenciais dos projetos. O probe não valida os checkouts reais nem o build ARM64. A RC5 está apenas nas branches privadas/de preparação; `/api/corrigir-issue`, publicação e código gerado por IA continuam bloqueados.\n\n
 ## Limites atuais
 
 A candidata `0.1.0-rc.3` oferece **worker de tarefas controladas e pré-verificação somente leitura**. A preparação de exportadores permanece bloqueada no Home Assistant enquanto o Bubblewrap não puder isolar montagens. Esta candidata não desenvolve, fecha ou publica pacotes, mesmo com Bearer válido.
