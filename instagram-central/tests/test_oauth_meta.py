@@ -125,7 +125,7 @@ class OAuthTests(unittest.TestCase):
         with self.assertRaises(oauth.OAuthError):
             oauth.parse_callback("state=" + state + "&error=access_denied", cookie)
 
-    def test_graph_exchange_uses_post_and_fixed_host(self):
+    def test_graph_exchange_uses_get_and_fixed_host(self):
         sent = {}
         def opener(req, timeout):
             sent["req"] = req
@@ -133,13 +133,16 @@ class OAuthTests(unittest.TestCase):
             return FakeResponse(json.dumps({"access_token": "A" * 40, "expires_in": 0}).encode())
         result = oauth.exchange_code("dummy-test-code", CONFIG, opener=opener)
         self.assertEqual(result["access_token"], "A" * 40)
-        self.assertEqual(sent["req"].get_method(), "POST")
-        self.assertEqual(sent["req"].full_url,
-                         "https://graph.facebook.com/v24.0/oauth/access_token")
-        body = sent["req"].data.decode("utf-8")
-        self.assertNotIn("config_id", body)
-        self.assertIn("client_secret=", body)
-        self.assertNotIn("dummy-test-code", sent["req"].full_url)
+        self.assertEqual(sent["req"].get_method(), "GET")
+        parts = urlsplit(sent["req"].full_url)
+        self.assertEqual(parts.netloc, "graph.facebook.com")
+        self.assertEqual(parts.path, "/v24.0/oauth/access_token")
+        params = parse_qs(parts.query)
+        self.assertEqual(params["code"], ["dummy-test-code"])
+        self.assertEqual(params["client_id"], [CONFIG["meta_app_id"]])
+        self.assertEqual(params["client_secret"], [CONFIG["meta_app_secret"]])
+        self.assertNotIn("config_id", params)
+        self.assertIsNone(sent["req"].data)
 
     def test_graph_error_and_oversized_response(self):
         def bad(*args, **kwargs):
@@ -150,6 +153,16 @@ class OAuthTests(unittest.TestCase):
             return FakeResponse(b"X" * (oauth.MAX_TOKEN_BYTES + 10))
         with self.assertRaises(oauth.OAuthError):
             oauth.exchange_code("code", CONFIG, opener=huge)
+
+    def test_secure_credential_load_and_invalid_file(self):
+        credential = {"access_token": "A" * 40, "account_id": "17841454345931235"}
+        self.assertIsNone(oauth.load_token(self.folder.name))
+        oauth.store_token(self.folder.name, credential)
+        self.assertEqual(oauth.load_token(self.folder.name), credential)
+        file = Path(self.folder.name) / oauth.TOKEN_FILENAME
+        file.write_text("not encrypted")
+        with self.assertRaises(oauth.OAuthError):
+            oauth.load_token(self.folder.name)
 
     def test_encrypted_storage_has_no_plaintext(self):
         credential = {"access_token": "A" * 40, "received_at": 5000, "expires_in": 0}
