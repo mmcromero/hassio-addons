@@ -122,6 +122,93 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertEqual(r["state"],"UNCHANGED")
         self.assertFalse(list(self.workspaces.glob(".archive-*")))
 
+    def test_unrelated_public_catalog_update_reuses_verified_snapshot(self):
+        original = self.run_sync()
+        self.assertEqual(original["state"], "SYNCED")
+        # Public head advances outside the approved project's distribution
+        # scope. A closed package must not create another large snapshot.
+        with (patch.object(sync, "_public_scope_unchanged", return_value=True),
+              patch.object(sync, "_verified_profile_report", return_value={
+                  "eligible_for_preparation": False, "errors": ["NO_OPEN_PACKAGE"]
+              })):
+            result = sync.synchronize(
+                "fixture", token="notlogged", projects_dir=self.projects,
+                workspaces_dir=self.workspaces,
+                remote_head=lambda repo, ref, token: (
+                    self.source_sha if repo == "fixture/source" else "b" * 40),
+                clone=lambda *args: self.fail("unexpected clone"))
+        self.assertEqual(result["state"], "UNCHANGED_SCOPE")
+        self.assertEqual(result["public_sha"], self.public_sha)
+        self.assertEqual(result["remote_public_sha"], "b" * 40)
+        self.assertFalse(result["eligible"])
+        self.assertIn("PUBLIC_HEAD_OUTSIDE_APPROVED_SCOPE", result["errors"])
+        self.assertFalse(list(self.workspaces.glob(".archive-*")))
+
+    def test_updated_public_scope_must_archive_or_block_not_skip(self):
+        self.run_sync()
+        with patch.object(sync, "_public_scope_unchanged", return_value=False):
+            for i in range(sync.MAX_ARCHIVES):
+                (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
+            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_limit"):
+                sync.synchronize(
+                    "fixture", token="notlogged", projects_dir=self.projects,
+                    workspaces_dir=self.workspaces,
+                    remote_head=lambda repo, ref, token: (
+                        self.source_sha if repo == "fixture/source" else "b" * 40),
+                    clone=lambda *args: self.fail("must block before clone"))
+        self.assertEqual(len(list(self.workspaces.glob(".archive-*"))),
+                         sync.MAX_ARCHIVES)
+
+    def test_unrelated_catalog_fast_path_never_releases_eligible_package(self):
+        self.run_sync()
+        with (patch.object(sync, "_public_scope_unchanged", return_value=True),
+              patch.object(sync, "_verified_profile_report", return_value={
+                  "eligible_for_preparation": True, "errors": []
+              }),
+              patch.object(sync, "_clone", side_effect=AssertionError("not used"))):
+            # Reaches the standard clone path; deliberately do not bypass
+            # the fresh public checkout when a package is eligible.
+            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_limit"):
+                for i in range(sync.MAX_ARCHIVES):
+                    (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
+                sync.synchronize(
+                    "fixture", token="notlogged", projects_dir=self.projects,
+                    workspaces_dir=self.workspaces,
+                    remote_head=lambda repo, ref, token: (
+                        self.source_sha if repo == "fixture/source" else "b" * 40),
+                    clone=lambda *args: self.fail("must block before clone"))
+
+    def test_public_scope_compare_requires_ancestry_and_unrelated_files(self):
+        original = "a" * 40
+        incoming = "b" * 40
+        self.profile["distribution_prefix"] = "demo/"
+        self.profile["allowed_shared_paths"] = [".github/workflows/demo.yml"]
+        def fake_reply(changed, status="ahead", behind=0, merge=None):
+            class Reply:
+                status = 200
+                def __enter__(self): return self
+                def __exit__(self, *args): return None
+                def read(self, *args):
+                    return json.dumps({
+                        "status": status, "behind_by": behind,
+                        "merge_base_commit": {"sha": merge or original},
+                        "files": [{"filename": name} for name in changed],
+                    }).encode()
+            return Reply()
+        with patch.object(sync.request, "build_opener") as build:
+            build.return_value.open.return_value = fake_reply(["instagram-central/config.yaml"])
+            self.assertTrue(sync._public_scope_unchanged(self.profile, original, incoming))
+            for modified in (["demo/config.yaml"],
+                             [".github/workflows/demo.yml"]):
+                build.return_value.open.return_value = fake_reply(modified)
+                self.assertFalse(sync._public_scope_unchanged(self.profile, original, incoming))
+            build.return_value.open.return_value = fake_reply(
+                ["instagram-central/config.yaml"], behind=1)
+            self.assertFalse(sync._public_scope_unchanged(self.profile, original, incoming))
+            build.return_value.open.return_value = fake_reply(
+                ["instagram-central/config.yaml"] * 300)
+            self.assertFalse(sync._public_scope_unchanged(self.profile, original, incoming))
+
     def test_updated_source_archives_without_overwrite(self):
         self.run_sync()
         (self.source/"change.txt").write_text("changed")

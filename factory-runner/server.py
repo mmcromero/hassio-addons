@@ -314,7 +314,9 @@ def run_workspace_sync(project, token, auto_prepare=False):
                              workspaces_dir=WORKSPACES_DIR)
         print("[WORKSPACE] " + result["state"] + ": project=" + project
               + " source=" + result["source_sha"][:12]
-              + " public=" + result["public_sha"][:12], flush=True)
+              + " public=" + result["public_sha"][:12]
+              + (" remote_public=" + result["remote_public_sha"][:12]
+                 if result.get("remote_public_sha") else ""), flush=True)
         record("workspace_sync:" + project, None, "completed_workspace_sync",
                operation_id, actor="trusted_startup")
         readonly = "SYNC_ONLY_NO_PREPARATION" in result["errors"]
