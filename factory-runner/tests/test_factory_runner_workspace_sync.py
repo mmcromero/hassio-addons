@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 import workspace_sync as sync
 
 
+@unittest.skipIf(os.geteuid() == 0, "non-root tests also run as runner in Docker validation")
 class WorkspaceSyncTests(unittest.TestCase):
     def git(self, path, *args):
         return subprocess.check_output(["git", "-C", str(path), *args], text=True,
