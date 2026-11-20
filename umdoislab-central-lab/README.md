@@ -6,7 +6,8 @@
 
 ## Identidade criada nesta candidata, conforme cadastro único do catálogo
 
-- `name`: Fábrica de Softwares - Umdoislab Central de Atendimento (LAB)
+- `name` no pacote publicado: Fábrica de Softwares - Umdoislab Central de Atendimento (LAB)
+- `name` proposto na branch (NÃO PUBLICADO): **Fábrica de Softwares - WhatsApp Umdoislab (LAB)**
 - Pasta: `umdoislab-central-lab/`
 - `slug`: `umdoislab_central_lab`, **diferente** de `umdoislab_central`
 - Versão candidata: `0.4.1-rc.1`; `aarch64`; Ingress interno `8099`
