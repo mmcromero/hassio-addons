@@ -1,5 +1,8 @@
 # Fábrica de Software — Factory Runner
 
+**RC9 — Artesão Digital integrado em modo somente leitura (candidata):** o segundo perfil `artesao_digital` aponta para `fabricacao_e_orcamentos:main` e `fabricacao-e-orcamentos-ha:main`. Sua política de versões é diferente da do Avisaqui, por isso a sincronização verifica o blob `apps/umdoislab/artesao-release.json` e **recusa preflight, preparação e publicação**. O Avisaqui permanece com seu exportador e sua política anteriores. Com `workspace_sync_enabled=true`, o Runner passará a processar **dois projetos** quando a RC9 for publicada e instalada. Cinco testes de regressão foram acrescentados, mas **ainda não executados nesta revisão**. Ver `RC9-VALIDACAO.md` e Issue #2. A RC8 continua como última publicação comprovada.
+
+
 **Atualização RC8 — Factory Runner multiprojeto:** o campo de projeto único foi substituído por `workspace_sync_enabled` (desligado por padrão). Quando ativado, o serviço sincroniza em sequência **todos os perfis aprovados** da pasta `projects/`, sem preparar pacotes automaticamente nem publicar. Novos projetos exigem perfis versionados e validados; atualmente somente o Avisaqui possui perfil. Ver [RC8-VALIDACAO.md](RC8-VALIDACAO.md) e [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2). Esta atualização em branch não comprova instalação no HA.
 
 
