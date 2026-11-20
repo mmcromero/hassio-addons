@@ -1,3 +1,9 @@
+## 0.1.4 — correção do teste de build da 0.1.3 — 20/11/2026
+- Corrige o teste HTTP `test_get_routes_do_not_shadow_urlsplit`: ele esperava 503 de um webhook com `ingress_enabled=true`; nesse estado o servidor rejeita a requisição incompleta com 403. O teste agora desativa o webhook antes de verificar 503.
+- Nenhuma modificação nas rotas, no banco de dados, na integração OAuth ou em serviços externos.
+- A atualização 0.1.3 do Home Assistant falhou com `unknown error while trying to build the image`; o log inicial continha exceções do processo anterior 0.1.2. **O log completo do Supervisor recebido depois confirmou a causa do build**: 28 testes executados, 27 aprovados e 1 falhou no `test_get_routes_do_not_shadow_urlsplit` (linha 90: `AssertionError: 403 != 503`), levando o Dockerfile a terminar com exit code 1.
+- **Publicação no catálogo não é instalação nem homologação real no Home Assistant.** Manter OAuth, webhooks e automações desativados.
+
 ## 0.1.3 — correção 502 da interface Ingress — 20/11/2026
 - Corrige `UnboundLocalError` em todas as rotas GET: `urlsplit` deixou de ser uma variável local sombreada no `Handler.do_GET`.
 - Acrescenta teste HTTP de regressão para `/health`, `/panel` e webhook desativado, executado no build local do Supervisor.
