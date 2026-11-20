@@ -216,6 +216,42 @@ class IntegrationTests(unittest.TestCase):
                          'synthetic')
         self.assertFalse(data['result']['published'])
 
+    def test_standard_prepare_uses_approved_declarative_without_sandbox(self):
+        # Same preflight/Git policy as the existing route, but deterministic
+        # mappings do not execute source scripts or depend on Bubblewrap.
+        cfg = dict(self.profile)
+        cfg["declarative_mapping"] = {
+            "demo/config.yaml": "config.yaml",
+            "demo/package.json": "package.json"
+        }
+        (self.projects / "laboratorio.json").write_text(json.dumps(cfg))
+        initial = {
+            str(repo): (self.git(repo, "show-ref"),
+                        self.git(repo, "status", "--porcelain"))
+            for repo in (self.source, self.dist)
+        }
+        with patch.object(lane, "sandbox_export",
+                          side_effect=AssertionError("legacy exporter executed")):
+            code, data = self.request("POST", "/api/prepare")
+        self.assertEqual(code, 200, data)
+        self.assertEqual(data["result"]["method"], "declarative_no_script")
+        self.assertEqual(data["result"]["state"], "PREPARED_NOT_PUBLISHED")
+        self.assertFalse(data["result"]["published"])
+        outputs = list(self.preparations.iterdir())
+        self.assertEqual(len(outputs), 1)
+        manifest = json.loads(
+            (outputs[0] / "demo/SOURCE_PROVENANCE.json").read_text())
+        self.assertEqual(manifest["commit"], self.sha)
+        self.assertEqual(len(manifest["files"]), 2)
+        for item in manifest["files"]:
+            content = (outputs[0] / "demo" / item["path"]).read_bytes()
+            self.assertEqual(hashlib.sha256(content).hexdigest(), item["sha256"])
+        for repo in (self.source, self.dist):
+            self.assertEqual(initial[str(repo)],
+                             (self.git(repo, "show-ref"),
+                              self.git(repo, "status", "--porcelain")))
+        self.assertIn("completed_preparation", self.audit.read_text())
+
     def test_missing_real_checkouts_return_503(self):
         with patch.object(server,'WORKSPACES_DIR',self.root/'missing'):
             for path in ('/api/preflight','/api/prepare'):
