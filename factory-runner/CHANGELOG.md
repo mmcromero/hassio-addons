@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.8 — Sincronização multiprojeto por perfis aprovados (candidata)
+
+- **Corrige seleção fixa:** remove `workspace_sync_project` do schema e aceita `workspace_sync_enabled` como chave geral (padrão desligada). Sem habilitação, não há busca GitHub.
+- Com a chave ligada, sincroniza **todos os perfis versionados aprovados** em `projects/*.json`, até 32 por rodada. Uma falha não interrompe os demais. Execução sequencial compartilha a trava da API, liberada entre projetos.
+- Preparação continua **desligada por padrão** (`workspace_auto_prepare=false`) e bloqueada para pacote fechado. Nunca executa scripts não confiáveis, Git push, merge nem publicação.
+- **Laboratório:** 50/50 testes Python PASS em Linux sem root, incluindo novos testes multiprojeto e Git local real; sintaxe de Shell/Python e YAML PASS. **Pendente:** build/instalação da RC8 no HA e clone com credencial privada real.
+- O catálogo atualmente contém apenas `avisaqui.json`; Artesão Digital e projetos futuros entram por perfil separado após validação, sem mudar o motor multiprojeto.
+- **Candidata não instalada** neste estágio; rastreabilidade: `RC8-VALIDACAO.md` e Issue #2.
+
+
 ## 0.1.0-rc.7 — Sincronização privada GitHub somente leitura (CANDIDATA EM BRANCH)
 
 - Sincroniza os repositórios **pré-aprovados no perfil** em volume privado do Factory Runner, usando HTTPS GitHub, token fine-grained de leitura configurado **apenas no Home Assistant** e verificação SHA de branches Git contra API remota.

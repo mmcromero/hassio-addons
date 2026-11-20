@@ -260,24 +260,48 @@ def run_workspace_sync(project, token, auto_prepare=False):
         return None
 
 
+MAX_SYNC_PROJECTS = 32
+
+
 def launch_workspace_sync():
-    """Opt-in sync: never run when the operator left project unset."""
-    project = os.environ.pop("RUNNER_WORKSPACE_SYNC_PROJECT", "")
-    # Unset the environment secret ASAP; the worker retains it only in memory.
+    """Opt-in multi-project sync of every *approved* on-image project profile.
+
+    Adding a project requires a separately approved, versioned profile; HTTP
+    clients and HA options cannot inject repositories, branches, or file paths.
+    Sync is sequential and serializes with preparation through the API LOCK.
+    Failure of one project does not prevent the next approved project's sync.
+    """
+    enabled = os.environ.pop("RUNNER_WORKSPACE_SYNC_ENABLED", "false") == "true"
+    # The RC7 single-project option is intentionally ignored (migration to
+    # all approved profiles); it cannot silently enable remote access.
+    os.environ.pop("RUNNER_WORKSPACE_SYNC_PROJECT", None)
+    # Clear secret from process environment even when sync is disabled.
     token = os.environ.pop("RUNNER_GITHUB_READ_TOKEN", "")
     auto = os.environ.pop("RUNNER_WORKSPACE_AUTO_PREPARE", "false") == "true"
-    if not project:
+    if not enabled:
         return None
-    if not PROJECT_ID.fullmatch(project):
-        print("[WORKSPACE] BLOCKED: invalid_approved_project", flush=True)
+    projects = tuple(sorted(listed_projects()))
+    if not projects:
+        print("[WORKSPACE] BLOCKED: no_approved_projects", flush=True)
         return None
-    LOCK.acquire()
+    if len(projects) > MAX_SYNC_PROJECTS:
+        print("[WORKSPACE] BLOCKED: approved_project_limit", flush=True)
+        return None
+    print("[WORKSPACE] START: approved_projects=" + str(len(projects)), flush=True)
+
     def work():
-        try:
-            run_workspace_sync(project, token, auto_prepare=auto)
-        finally:
-            LOCK.release()
-    thread = threading.Thread(target=work, name="workspace-sync", daemon=True)
+        for project in projects:
+            with LOCK:
+                # This function contains each project's audit, errors, policy
+                # gates and credential scrubbing. No single project aborts all.
+                try:
+                    run_workspace_sync(project, token, auto_prepare=auto)
+                except Exception:
+                    # Unexpected errors are sanitized; never show token/data.
+                    print("[WORKSPACE] BLOCKED: unexpected_sync_error", flush=True)
+        print("[WORKSPACE] FINISHED: approved_projects=" + str(len(projects)), flush=True)
+
+    thread = threading.Thread(target=work, name="workspace-sync-all", daemon=True)
     thread.start()
     return thread
 

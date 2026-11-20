@@ -39,12 +39,12 @@ if [ -e /data/factory-runner/audit.jsonl ]; then
     chmod 0600 /data/factory-runner/audit.jsonl
 fi
 
-# Optional read-only GitHub workspace synchronization. No token is shown in logs.
-# A missing project keeps the current RC6 behavior without network sync.
-RUNNER_WORKSPACE_SYNC_PROJECT="$(jq -r '.workspace_sync_project // empty' "$OPTIONS_FILE")"
+# Multi-project GitHub sync is opt-in and operates on the approved profiles.
+# The old workspace_sync_project is ignored; no project is selected by hand.
+RUNNER_WORKSPACE_SYNC_ENABLED="$(jq -r '.workspace_sync_enabled // false' "$OPTIONS_FILE")"
 RUNNER_GITHUB_READ_TOKEN="$(jq -r '.github_read_token // empty' "$OPTIONS_FILE")"
 RUNNER_WORKSPACE_AUTO_PREPARE="$(jq -r '.workspace_auto_prepare // false' "$OPTIONS_FILE")"
-export RUNNER_WORKSPACE_SYNC_PROJECT RUNNER_GITHUB_READ_TOKEN RUNNER_WORKSPACE_AUTO_PREPARE
+export RUNNER_WORKSPACE_SYNC_ENABLED RUNNER_GITHUB_READ_TOKEN RUNNER_WORKSPACE_AUTO_PREPARE
 
 # No host TCP port; subprocesses inherit a non-root UID.
 export RUNNER_BIND_HOST=127.0.0.1

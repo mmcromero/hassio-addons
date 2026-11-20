@@ -1,5 +1,14 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
+## RC8 — seleção multiprojeto (vigente na candidata)
+
+O campo de projeto único `workspace_sync_project` da RC7 não existe mais no formulário. Em vez dele, `workspace_sync_enabled` é uma chave global **desligada por padrão**. Quando ativada, sincroniza todos os perfis aprovados de `/app/projects/` (até 32), um por vez, com isolamento de falha. A rotina respeita as credenciais de leitura, a política de pacote e a trava da API. `workspace_auto_prepare` permanece desligado por padrão; publicação continua desativada.
+
+**Novos projetos:** exigir cadastro de perfil aprovado, versionado e testado. Atualmente só `avisaqui.json` existe. Não presumir que Artesão Digital segue o fluxo Avisaqui; só cadastrar após conferir as políticas e a receita. Consulta e evidências: `RC8-VALIDACAO.md`.
+
+**Estado:** RC8 em preparação/publicação autorizada; isso não equivale a estar instalada no Home Assistant. As notas RC7 abaixo são históricas.
+
+
 ## Situação vigente — RC7 (candidata em branch, não publicada)
 
 A RC6 do catálogo já passou no Home Assistant em `[E2E] PASS`, com repositórios **sintéticos**. A RC7 acrescenta sincronização **opt-in** de repositórios reais definidos por perfil, via GitHub HTTPS e token `Contents: read` armazenado **somente no HA**. Não há porta pública, Docker socket, comandos remotos, liberação de Bubblewrap ou mudança de política. A primeira operação é de leitura; `workspace_auto_prepare` inicia em `false`.
