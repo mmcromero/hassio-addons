@@ -81,14 +81,17 @@ class HTTPContractTests(unittest.TestCase):
                 "Content-Type": "application/json"}
 
     def test_get_routes_do_not_shadow_urlsplit(self):
-        # Regression observed on HA v0.1.2: all GET requests raised UnboundLocalError.
+        # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         self.assertEqual(self.request("/health")[0], 200)
-        self.assertEqual(self.request("/panel")[0], 401)
+        status, headers, body = self.request("/panel")
+        self.assertEqual(status, 200)
+        self.assertNotIn("WWW-Authenticate", headers)
+        self.assertIn(b'autocomplete="current-password"', body)
+        # Basic cannot bypass the on-page login.
         status, _, body = self.request("/panel", headers=self.admin_header())
         self.assertEqual(status, 200)
-        self.assertIn(b"Central", body)
-        # The disabled path returns 503 only when the webhook feature is off.
-        # The generic setUp enables it to exercise signed-webhook tests.
+        self.assertIn(b'autocomplete="current-password"', body)
+        # Disabled webhook must be explicitly disabled in this test fixture.
         self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 403)
         self.config["ingress_enabled"] = False
         self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 503)
@@ -161,11 +164,84 @@ class HTTPContractTests(unittest.TestCase):
 
     def test_panel_requires_login_and_escapes(self):
         self.assertEqual(self.post_event()[0], 200)
-        self.assertEqual(self.request("/panel")[0], 401)
-        status, headers, body = self.request("/panel", headers=self.admin_header())
+        status, headers, body = self.request("/panel")
+        self.assertEqual(status, 200)
+        self.assertIn(b'autocomplete="username"', body)
+        self.assertIn(b'autocomplete="current-password"', body)
+        self.assertNotIn("WWW-Authenticate", headers)
+        self.assertIn("Content-Security-Policy", headers)
+        login = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()
+        status, headers, body = self.request("/auth/login", "POST", login,
+                 {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        self.assertEqual(headers.get("Location"), "../panel")
+        self.assertIn("HttpOnly; SameSite=Strict", headers["Set-Cookie"])
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        status, _, body = self.request("/panel", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
         self.assertIn(b"Assumir", body)
-        self.assertIn("Content-Security-Policy", headers)
+        self.assertNotIn(self.config["panel_password"].encode(), body)
+        status, logout_headers, _ = self.request("/auth/logout", "POST",
+                                               headers={"Cookie": cookie})
+        self.assertEqual(status, 303)
+        self.assertIn("Max-Age=0", logout_headers["Set-Cookie"])
+        status, _, body = self.request("/panel", headers={"Cookie": cookie})
+        self.assertIn(b'autocomplete="current-password"', body)
+
+    def test_browser_session_cookie_secure_on_https_origin(self):
+        body = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()
+        status, headers, _ = self.request("/auth/login", "POST", body,
+             {"Content-Type": "application/x-www-form-urlencoded",
+              "Origin": "https://romeropi.duckdns.org:8443"})
+        self.assertEqual(status, 303)
+        self.assertIn("; Secure", headers["Set-Cookie"])
+        self.assertIn("HttpOnly; SameSite=Strict", headers["Set-Cookie"])
+
+    def test_browser_login_rejects_invalid_and_revokes_after_password_change(self):
+        body = urlencode({"username": "admin", "password": "wrong"}).encode()
+        status, headers, data = self.request("/auth/login", "POST", body,
+                  {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 401)
+        self.assertNotIn("WWW-Authenticate", headers)
+        self.assertIn(b"incorretos", data)
+        body = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()
+        status, headers, _ = self.request("/auth/login", "POST", body,
+                 {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        self.assertIn(b"Central Instagram", self.request("/panel", headers={"Cookie": cookie})[2])
+        self.config["panel_password"] = "this-is-a-different-long-password"
+        result = self.request("/panel", headers={"Cookie": cookie})
+        self.assertIn(b'autocomplete="current-password"', result[2])
+        self.assertNotIn("WWW-Authenticate", result[1])
+
+    def test_browser_login_rejects_malformed_body(self):
+        bad = b"username=admin&password=wrong&password=twice"
+        status, _, _ = self.request("/auth/login", "POST", bad,
+               {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 401)
+        status, _, _ = self.request("/auth/login", "POST", bad,
+               {"Content-Type": "application/json"})
+        self.assertEqual(status, 415)
+
+    def test_browser_session_allows_csrf_protected_handoff(self):
+        self.assertEqual(self.post_event()[0], 200)
+        form = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()
+        status, headers, _ = self.request("/auth/login", "POST", form,
+                        {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        csrf = token_for("business-1", "customer-1", "human", self.config["panel_password"])
+        data = urlencode({"accountId": "business-1", "senderId": "customer-1",
+                          "state": "human", "csrf": csrf}).encode()
+        status, headers, _ = self.request("/panel/handoff", "POST", data,
+                     {"Cookie": cookie, "Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        self.assertEqual(headers.get("Location"), "../panel")
+        with server.database() as conn:
+            self.assertEqual(conn.execute(
+                "SELECT state FROM handoff WHERE sender_id='customer-1'"
+            ).fetchone(), ("human",))
 
     def test_panel_form_requires_valid_csrf(self):
         self.assertEqual(self.post_event()[0], 200)
