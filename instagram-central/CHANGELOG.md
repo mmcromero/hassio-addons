@@ -1,5 +1,12 @@
 # Histórico — Central Instagram
 
+## 0.1.1 — padronização da distribuição Home Assistant
+
+- Nome público: `Fábrica de Softwares - Central Instagram`.
+- `icon.png` e `logo.png` oficiais do catálogo compartilhado (mesmos blobs Git de Kanban e dos outros add-ons), inseridos na distribuição pública.
+- Mantidos `slug: umdoislab_instagram`, dados SQLite, `panel_icon` interno, integração desativada e versão anterior imutável.
+- Correção exclusiva de marca e versão; não instalada, nem homologada.
+
 ## 0.1.0 — primeira candidata de teste para Home Assistant (não instalada)
 
 - Add-on experimental aarch64 com Dockerfile e Ingress.

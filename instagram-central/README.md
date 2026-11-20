@@ -1,6 +1,8 @@
 # Central Instagram — Umdoislab (laboratório)
 
-**Primeira candidata:** 0.1.0 · arquitetura aarch64 · Home Assistant Ingress.
+**Candidata atual:** 0.1.1 · arquitetura aarch64 · Home Assistant Ingress.
+
+O nome de distribuição segue a norma do catálogo: **Fábrica de Softwares - Central Instagram**. O ícone e o logotipo públicos devem ser os arquivos oficiais padronizados, com blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, respectivamente.
 
 Este complemento é **independente da Central WhatsApp**. Recepção de webhooks Meta e armazenamento de rascunhos vêm **desativados**. Nenhuma rota do servidor envia Direct, consulta Gemini ou faz chamadas a WooCommerce/n8n.
 
