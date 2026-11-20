@@ -175,54 +175,89 @@ async function getGoogleAuthToken() {
 }
 
 /**
- * Atualiza o status do passe para PRONTO no Google Wallet
- * Isso acorda a tela de bloqueio e exibe a notificação do sistema
+ * Atualiza o cartão e solicita UMA notificação ao Google Wallet quando o pedido
+ * transita para "pronto". A entrega (inclusive som e tela bloqueada) depende
+ * do Google Wallet e das permissões do aparelho.
+ *
+ * A rota de pedidos chama esta função apenas na transição para "pronto".
+ * Não usar esta API em polling, abertura de página ou recuperação de SSE.
  */
 export async function notifyGoogleWalletReady(pedido) {
+  if (!pedido || pedido.status === 'pronto' || !['string', 'number'].includes(typeof (pedido.token || pedido.id))) {
+    return { updated: false, notified: false, reason: 'invalid_order_transition' };
+  }
+
+  if (!credentials || !credentials.private_key) {
+    return { updated: false, notified: false, reason: 'wallet_not_configured' };
+  }
+
+  const objectId = `${ISSUER_ID}.${pedido.token || pedido.id}`;
+  const objectUrl = `https://walletobjects.googleapis.com/walletobjects/v1/genericObject/${encodeURIComponent(objectId)}`;
+
   try {
     const accessToken = await getGoogleAuthToken();
-    const objectId = `${ISSUER_ID}.${pedido.token || pedido.id}`;
-    const url = `https://walletobjects.googleapis.com/walletobjects/v1/genericObject/${objectId}`;
-
-    const patchBody = {
-      header: {
-        defaultValue: {
-          language: 'pt-BR',
-          value: `🔔 PRONTO! Senha #${pedido.numero}`
-        }
-      },
-      textModulesData: [
-        {
-          id: 'status_pedido',
-          header: 'Status Atual',
-          body: 'Seu pedido está no balcão de entrega! Retire com a senha #' + pedido.numero
-        }
-      ],
-      state: 'ACTIVE'
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
     };
 
-    const res = await fetch(url, {
+    // Atualização visível na frente e nos detalhes do cartão.
+    const patch = await fetch(objectUrl, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(patchBody)
+      headers,
+      body: JSON.stringify({
+        header: {
+          defaultValue: { language: 'pt-BR', value: `🔔 PRONTO! Senha #${pedido.numero}` }
+        },
+        textModulesData: [{
+          id: 'status_pedido',
+          header: 'Status Atual',
+          body: `Seu pedido está no balcão de entrega! Retire com a senha #${pedido.numero}`
+        }],
+        state: 'ACTIVE'
+      })
     });
 
-    if (!res.ok) {
-      // 404 significa que o usuário não salvou o comprovante na carteira dele (comportamento normal)
-      if (res.status === 404) {
-        return { updated: false, reason: 'pass_not_saved_by_user' };
-      }
-      const err = await res.text();
-      console.warn(`[GoogleWallet] Falha ao atualizar passe ${objectId}:`, res.status, err);
-      return { updated: false, error: err };
+    if (patch.status === 404) {
+      // Nem todo pedido tem um passe salvo; isso não é erro do pedido.
+      return { updated: false, notified: false, reason: 'pass_not_found' };
+    }
+    if (!patch.ok) {
+      // Nunca imprimir corpo de resposta, URL de objeto, JWT ou credenciais.
+      console.warn('[GoogleWallet] Falha ao atualizar cartão; HTTP', patch.status);
+      return { updated: false, notified: false, reason: 'update_failed', status: patch.status };
     }
 
-    return { updated: true };
-  } catch (err) {
-    console.warn('[GoogleWallet] Erro na notificação:', err?.message || err);
-    return { updated: false, error: err?.message };
+    // Recurso oficial do Google Wallet: adicionar mensagem ao objeto,
+    // com push no Android se o usuário permitir notificações do Wallet.
+    // ID estável ajuda a rastrear o evento. Não repetir para o mesmo pedido.
+    const message = await fetch(`${objectUrl}/addMessage`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message: {
+          id: 'avisaqui_pedido_pronto',
+          header: 'Seu pedido está pronto!',
+          body: `Senha #${pedido.numero}: retire seu pedido no balcão do restaurante.`,
+          messageType: 'TEXT_AND_NOTIFY'
+        }
+      })
+    });
+
+    if (!message.ok) {
+      const reason = message.status === 429 ? 'notification_quota'
+        : message.status === 404 ? 'pass_not_found'
+        : 'notification_failed';
+      console.warn('[GoogleWallet] Cartão atualizado; aviso não confirmado; HTTP', message.status);
+      return { updated: true, notified: false, reason, status: message.status };
+    }
+
+    // "notified" confirma somente aceitação da API, não entrega no aparelho.
+    return { updated: true, notified: true };
+  } catch {
+    // Falha de rede/autenticação não deve interromper alteração de status,
+    // nem exibir erros externos que podem revelar detalhes de credenciais.
+    console.warn('[GoogleWallet] Não foi possível concluir aviso de pedido pronto.');
+    return { updated: false, notified: false, reason: 'wallet_request_failed' };
   }
 }

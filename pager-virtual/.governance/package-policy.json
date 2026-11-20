@@ -7,10 +7,10 @@
     "distribution_remote_branches_per_package": 1
   },
   "active_package": {
-    "id": "AVISAQUI-PACOTE-009",
-    "status": "open",
+    "id": "AVISAQUI-PACOTE-010",
+    "status": "release_candidate_preparing",
     "phase": "preparing_release_candidate",
-    "candidate_version": "0.1.20-rc.11",
+    "candidate_version": "0.1.20-rc.12",
     "published_version": null,
     "branches": {
       "mmcromero/pager-virtual": "release-candidate",
@@ -18,10 +18,10 @@
     },
     "prs": {},
     "base_branch": "main",
-    "new_features": "full_development_snapshot",
-    "opened_on": "2026-11-19",
-    "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/42",
-    "status_notes": "Ordem do proprietário: fechar próximo pacote completo. Escopo: alto contraste vitrine, badge Google Wallet pt-BR, layout Wallet centralizado aprovado; testes reais no Android ainda pendentes."
+    "new_features": "full_development_snapshot_google_wallet_ready_and_store_name",
+    "opened_on": "2026-11-20",
+    "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/34",
+    "status_notes": "Proprietário autorizou preparar, publicar e instalar uma candidata única para testar Google Wallet TEXT_AND_NOTIFY e nome Fábrica de Softwares - Avisaqui. Preservar slug pager_virtual, pasta, ícones, dados, outros add-ons e main privada. Testes dirigidos V8 12/12 PASS; Node oficial e teste real HA/Android não executados neste ambiente."
   },
   "publication_authority": {
     "coordination": "Governança",
@@ -79,6 +79,23 @@
       "private_release_candidate_commit": "404681eb977d8adc9e938c4f29dcf0b5fd4e3a77",
       "public_commit": "e7cc4bf0fc75b43dc8e7d753abe2f14c97360af0",
       "control_issue": "https://github.com/mmcromero/pager-virtual/issues/34"
+    },
+    {
+      "id": "AVISAQUI-PACOTE-009",
+      "status": "open",
+      "phase": "preparing_release_candidate",
+      "candidate_version": "0.1.20-rc.11",
+      "published_version": null,
+      "branches": {
+        "mmcromero/pager-virtual": "release-candidate",
+        "mmcromero/hassio-addons": "main"
+      },
+      "prs": {},
+      "base_branch": "main",
+      "new_features": "full_development_snapshot",
+      "opened_on": "2026-11-19",
+      "scope_reference": "https://github.com/mmcromero/pager-virtual/issues/42",
+      "status_notes": "Ordem do proprietário: fechar próximo pacote completo. Escopo: alto contraste vitrine, badge Google Wallet pt-BR, layout Wallet centralizado aprovado; testes reais no Android ainda pendentes."
     }
   ]
 }

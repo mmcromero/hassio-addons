@@ -5,6 +5,14 @@ Padrão de versionamento: [SemVer](https://semver.org/).
 
 ---
 
+## [0.1.20-rc.12] — 20/11/2026 — Avisaqui e alerta Google Wallet
+
+- Nome apresentado na loja: **Fábrica de Softwares - Avisaqui**, sem modificar slug, pasta, ícones, logo ou dados.
+- Integração da notificação individual Google Wallet `TEXT_AND_NOTIFY` no estado PRONTO, com atualização PATCH prévia e falha tolerada sem interromper o pedido.
+- Inclusão do código e dos testes da fonte integral de desenvolvimento, mantendo ajustes de outros módulos do mesmo pacote; ensaios isolados V8 12/12 PASS, suíte oficial Node/Android real ainda sem confirmação.
+- Publicação da candidata para instalação e teste autorizada pelo proprietário; publicação não comprova funcionamento ou instalação.
+
+
 ## [0.1.20-rc.11] — 19/11/2026 — UX Wallet e alto contraste
 
 - Snapshot integral do desenvolvimento após RC10: Google Wallet em badge vetorial português (Brasil), layout aprovado centralizado e ajustes de alto contraste na vitrine do cliente.
