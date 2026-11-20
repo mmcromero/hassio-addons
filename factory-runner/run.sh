@@ -49,4 +49,7 @@ env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner pytho
 # Synthetic Git/manifest check: no project access, no inherited token, no host mounts.
 # Diagnostics stay available if this check is blocked on the HA platform.
 env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/declarative_runtime_probe.py || echo "[DECLARATIVE] readiness probe unavailable; API still fail-closed"
+# Full synthetic API check: temporary local Git checkouts, ephemeral loopback
+# listener and test-only bearer; never touches project workspaces or real token.
+env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/factory_e2e_probe.py || echo "[E2E] WARN: functional probe unavailable; API stays policy-gated"
 exec su-exec runner python3 -u /app/server.py
