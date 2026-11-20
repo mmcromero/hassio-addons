@@ -127,15 +127,15 @@ def exchange_code(code, cfg, opener=urlopen):
     """Only one fixed official Graph endpoint; no arbitrary callback URLs."""
     if not is_ready(cfg):
         raise OAuthError("OAuth disabled or incomplete")
+    # Unified Login documentation specifies GET for the Business Integration
+    # System User token exchange. The URL is strictly server-side and never logged.
     params = urlencode({
         "client_id": cfg["meta_app_id"], "client_secret": cfg["meta_app_secret"],
-        "redirect_uri": cfg["meta_oauth_redirect_uri"], "code": code
-    }).encode("utf-8")
+        "code": code
+    })
     version = cfg["meta_graph_version"]
-    req = Request("https://graph.facebook.com/" + version + "/oauth/access_token",
-                  data=params, method="POST",
-                  headers={"Content-Type": "application/x-www-form-urlencoded",
-                           "Accept": "application/json"})
+    req = Request("https://graph.facebook.com/" + version + "/oauth/access_token?" + params,
+                  method="GET", headers={"Accept": "application/json"})
     try:
         with opener(req, timeout=12) as response:
             raw = response.read(MAX_TOKEN_BYTES + 1)
@@ -199,3 +199,24 @@ def store_token(folder, credential):
 
 def token_exists(folder):
     return (Path(folder) / TOKEN_FILENAME).is_file()
+
+
+def load_token(folder):
+    """Decrypt stored credential only inside the server, never via HTTP."""
+    path = Path(folder) / TOKEN_FILENAME
+    if not path.exists():
+        return None
+    try:
+        if path.is_symlink() or not path.is_file():
+            raise OAuthError("Invalid credential file")
+        if os.name == "posix" and (path.stat().st_mode & 0o077):
+            raise OAuthError("Credential permissions too broad")
+        raw = path.read_bytes()
+        obj = json.loads(Fernet(_private_key(folder)).decrypt(raw))
+        if not isinstance(obj, dict) or not isinstance(obj.get("access_token"), str):
+            raise OAuthError("Invalid credential")
+        return obj
+    except OAuthError:
+        raise
+    except Exception:
+        raise OAuthError("Credential cannot be decrypted") from None
