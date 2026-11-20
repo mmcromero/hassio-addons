@@ -1,4 +1,4 @@
-# 12Labs Central de Atendimento — LAB Home Assistant
+# Umdoislab Central de Atendimento — LAB Home Assistant
 
 **Situação:** candidata experimental na branch `chore/central-publicacao-p0-20261120` do catálogo. **Não publicada na `main`, não instalada e não homologada.**
 
@@ -6,7 +6,7 @@
 
 ## Identidade criada nesta candidata, conforme cadastro único do catálogo
 
-- `name`: Fábrica de Softwares - 12Labs Central de Atendimento (LAB)
+- `name`: Fábrica de Softwares - Umdoislab Central de Atendimento (LAB)
 - Pasta: `umdoislab-central-lab/`
 - `slug`: `umdoislab_central_lab`, **diferente** de `umdoislab_central`
 - Versão candidata: `0.4.1-rc.1`; `aarch64`; Ingress interno `8099`
