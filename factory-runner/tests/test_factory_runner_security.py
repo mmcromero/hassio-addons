@@ -163,6 +163,39 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(data["operations"], [])
 
+    def test_operations_lists_real_workspace_sync_outcomes(self):
+        # Workspace synchronization uses the existing audit writer, not HTTP
+        # preflight. These states were omitted from the RC12 read-only listing.
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        op = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+        with server.AUDIT_PATH.open("w", encoding="utf-8") as handle:
+            for status in ("requested", "completed_workspace_sync", "blocked_policy"):
+                handle.write(json.dumps({
+                    "time": "2026-11-20T05:00:00Z",
+                    "operation_id": op,
+                    "action": "workspace_sync:avisaqui",
+                    "issue": None, "actor": "trusted_startup",
+                    "status": status
+                }) + "\n")
+        code, result = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 200)
+        self.assertEqual(result["operations"], [{
+            "operation_id": op, "action": "workspace_sync:avisaqui",
+            "status": "blocked_policy", "time": "2026-11-20T05:00:00Z"
+        }])
+
+    def test_operations_rejects_invalid_workspace_project(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        server.AUDIT_PATH.write_text(json.dumps({
+            "time": "2026-11-20T05:00:00Z",
+            "operation_id": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+            "action": "workspace_sync:../private",
+            "status": "completed_workspace_sync"
+        }) + "\n", encoding="utf-8")
+        code, result = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 200)
+        self.assertEqual(result["operations"], [])
+
     def test_preflight_requires_auth_and_rejects_unknown_project(self):
         self.assertEqual(self.request("POST", "/api/preflight",
             payload={"project": "avisaqui", "expected_source_sha": "a" * 40})[0], 401)

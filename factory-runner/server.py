@@ -92,7 +92,8 @@ def recent_operations():
         safe_states = {
             "requested", "blocked_authorization", "blocked_policy",
             "blocked_workspace_or_git", "blocked_worker", "completed_read_only",
-            "completed_preparation"
+            "completed_preparation", "completed_workspace_sync",
+            "blocked_workspace_sync"
         }
         found = {}
         for line in reversed(lines):
@@ -110,7 +111,10 @@ def recent_operations():
                     or not re.fullmatch(r"[0-9a-f-]{36}", operation_id)
                     or not isinstance(action, str)
                     or not isinstance(state, str)
-                    or action not in safe_actions or state not in safe_states
+                    or not (action in safe_actions
+                            or (action.startswith("workspace_sync:")
+                                and bool(PROJECT_ID.fullmatch(action.split(":", 1)[1]))))
+                    or state not in safe_states
                     or not isinstance(when, str)
                     or not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", when)):
                 continue
