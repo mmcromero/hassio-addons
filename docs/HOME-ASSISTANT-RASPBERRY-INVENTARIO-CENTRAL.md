@@ -148,7 +148,7 @@ O proprietário criou:
 - Contém três locations exatas: `/oauth/meta/start` (GET), `/oauth/meta/callback` (GET) e `/webhook/instagram` (GET/POST), todas encaminhadas para `45c28620-umdoislab-instagram:8099`.
 - O nome corresponde ao padrão `nginx_proxy_default*.conf` configurado em `customize.default`.
 
-**Estado rigoroso:** arquivo criado no diretório compartilhado; não há evidência de que o NGINX já o carregou, de que a sintaxe completa passou em `nginx -t`, de que o proxy foi recarregado ou de que as rotas públicas respondem. Não declarar OAuth ou webhook ativos.
+**Estado atualizado em 20/11/2026:** arquivo criado, cópia de segurança criada e NGINX reiniciado com sucesso. O add-on permaneceu `started` na versão 4.5.1. Os testes HTTPS públicos retornaram HTTP 401 em `/oauth/meta/start`, HTTP 503 em `/oauth/meta/callback` e HTTP 503 em `/webhook/instagram` com token de verificação inválido. Esses códigos correspondem às respostas previstas no servidor quando o painel exige autenticação e OAuth/webhook permanecem desativados. Isso confirma que as três rotas públicas chegam à aplicação. OAuth e webhook continuam desativados; não houve autorização Meta nem recebimento real.
 
 **Próxima etapa documentada:** identificar o mecanismo suportado para executar validação de sintaxe dentro do ambiente do add-on `core_nginx_proxy`, sem alterar/reiniciar serviços. O Terminal & SSH não possui o comando `docker` (`docker: command not found`). A CLI informou que `ha addons` está depreciado e recomenda `ha apps`. Não contornar essa limitação com comandos presumidos; consultar `ha apps --help` ou documentação específica do add-on e usar somente método confirmado.
 
@@ -210,11 +210,11 @@ location ^~ /avisaqui/ {
 2. Não pedir novamente capturas de `customize.active/default`, nem o conteúdo dos fragmentos Artesão/Avisaqui: esses dados já estão registrados nesta seção.
 3. A CLI `ha apps` permite consultar informações, logs e controlar apps, mas não expõe execução de shell no container. `docker` não está disponível no Terminal & SSH; o app NGINX declara `docker_api: false` e `host_network: false`.
 4. Os logs enviados pelo proprietário terminam em 20/11/2026 18:52 e mostram timeouts do Supervisor/HA e recusas de conexão históricas do Avisaqui. Não mostram erro de sintaxe nem confirmam o carregamento do fragmento Instagram. Não usar esses logs para inferir falha ou sucesso do novo arquivo.
-5. O arquivo Instagram foi criado às 18:45 em 20/11/2026. O trecho de logs enviado depois contém eventos até 18:52, mas não há mensagem de reload/inicialização que identifique os arquivos personalizados. Portanto, o estado continua **criado, não validado/carregado**.
-6. Próxima ação proporcional: usar o padrão já estabelecido e realizar uma única validação controlada do NGINX. Antes de reiniciar, guardar cópia do fragmento e preparar rollback simples removendo apenas `/share/nginx_proxy_default_instagram.conf`; nunca tocar nos arquivos dos outros projetos. Reiniciar o add-on provoca interrupção temporária do proxy e só deve ocorrer em janela autorizada. Após reinício, verificar logs recentes e testar HTTPS nas três rotas; não confundir resposta HTTP do backend (já 200 internamente) com teste público.
-7. Se o add-on não iniciar, remover/renomear apenas o fragmento Instagram para fora do padrão de carregamento e reiniciar o proxy para restaurar o conjunto anterior; confirmar Artesão e Avisaqui depois. Não atualizar o add-on de 4.5.1 para 4.5.3 como parte desta tarefa.
+5. O arquivo Instagram foi criado às 18:45 em 20/11/2026. Às 19:01 o proprietário reiniciou `core_nginx_proxy`; o serviço NGINX iniciou e o app permaneceu `started` na versão 4.5.1. O backup foi criado em `/share/nginx_proxy_default_instagram.conf.rollback-20261120`; rollback não foi acionado.
+6. Reinício controlado já realizado com backup prévio do fragmento. O NGINX iniciou sem erro fatal. Não repetir reinício sem motivo técnico.
+7. Testes HTTPS públicos concluídos: `/oauth/meta/start` retornou 401; `/oauth/meta/callback` retornou 503; `/webhook/instagram` com desafio e token inválido retornou 503. O teste confirma encaminhamento ao servidor da Central e comportamento esperado com recursos desligados. Não atualizar o add-on de 4.5.1 para 4.5.3 como parte desta tarefa.
 
-**Resultado conhecido:** a arquitetura e o padrão de proxy para os três projetos estão documentados. A sintaxe e o carregamento do fragmento Instagram continuam pendentes de validação operacional.
+**Resultado conhecido:** fragmento carregado após reinício do proxy e três rotas respondendo pela URL pública HTTPS com os códigos esperados. O teste `nginx -t` foi feito apenas em ambiente isolado, não dentro do add-on real. A validação operacional das rotas foi aprovada por seus códigos de resposta; OAuth e webhook ainda estão desligados.
 
 ### 7.5.2 Validação estática do fragmento Instagram — 20/11/2026
 
@@ -229,6 +229,30 @@ Foi feita conferência direta da fonte privada `mmcromero/instagram-automacoes`,
 **Teste de sintaxe isolado:** NGINX 1.26.3 local executou `nginx -t` com sucesso para os três blocos e diretivas. Para isolar a gramática, o upstream foi substituído por `127.0.0.1:8099` e os blocos foram inseridos em um `server{}` de teste. Isso valida a sintaxe das diretivas, mas **não** valida o arquivo exato no add-on 4.5.1, a resolução DNS interna do container, o conjunto completo de includes do HA ou o carregamento real.
 
 **Resultado:** rotas e métodos conferem com o código da aplicação; sintaxe dos blocos aprovada em ambiente isolado. Falta validar a configuração real no add-on e o HTTPS público.
+
+### 7.5.3 Reinício controlado e testes HTTPS públicos — 20/11/2026
+
+**Operação executada pelo proprietário no Terminal & SSH:**
+
+- Backup criado: `/share/nginx_proxy_default_instagram.conf.rollback-20261120`.
+- `ha apps restart core_nginx_proxy` terminou com sucesso.
+- Após 5 segundos, `ha apps info core_nginx_proxy` informou `state: started`, `version: 4.5.1`.
+- Logs registraram parada normal do serviço NGINX e nova inicialização: `Generating nginx.conf from template` e `Running nginx...`.
+- O fluxo não executou rollback.
+
+**Testes HTTPS externos executados pelo proprietário em `https://romeropi.duckdns.org:8443`:**
+
+| Rota | Resultado HTTP | Interpretação |
+|---|---:|---|
+| `GET /oauth/meta/start` | 401 | Rota chegou ao servidor; painel exige autenticação |
+| `GET /oauth/meta/callback` | 503 | Rota chegou ao servidor; OAuth desativado/incompleto |
+| `GET /webhook/instagram?hub.mode=subscribe&hub.verify_token=teste-invalido&hub.challenge=123` | 503 | Rota chegou ao servidor; webhook desativado |
+
+Os três códigos são coerentes com as condições do código da aplicação. O 503 do webhook ocorreu antes da validação do token, pois `ingress_enabled` está desativado. Não é um teste de aceitação de desafio Meta. O 401 de start confirma a barreira de autenticação do painel, não a conclusão do OAuth.
+
+**Conclusão:** NGINX ativo após reinício, fragmento Instagram incluído pelo padrão configurado e três rotas alcançam o backend pela URL pública HTTPS. Não há evidência de erro fatal de configuração nos logs de inicialização apresentados. Não declarar OAuth conectado, webhook inscrito ou DM recebida.
+
+**Próxima fase:** conferir as opções efetivas da Central (sem revelar segredos), validar os campos públicos do app Meta e habilitar OAuth de forma controlada. Depois executar login Meta, validar a identidade exata de `@umdoislab`, testar a inscrição `messages` e habilitar webhook somente quando OAuth e assinatura estiverem confirmados. Não ativar envio de mensagens.
 
 ### 7.5 Limites de evidência
 
