@@ -1,3 +1,12 @@
+## 0.1.5 — login HTML no Chrome (experimental) — 20/11/2026
+- Substitui o desafio HTTP Basic do painel Ingress por tela HTML com usuário `admin` e senha `panel_password` existente.
+- O formulário inclui `autocomplete=username` e `autocomplete=current-password`, permitindo ao Chrome oferecer salvamento/preenchimento; mantém autenticação Basic legada somente nas rotas administrativas.
+- Sessões aleatórias de 12 horas, digest HMAC no SQLite, cookies HttpOnly/SameSite=Strict, Secure quando o acesso externo é HTTPS, logout e limite de tentativas.
+- Mantém os formulários administrativos protegidos por CSRF, não altera credenciais, banco existente, slug, marca ou ícones.
+- Acrescenta testes de login/sessão e contratos HTTP no Dockerfile para validação durante futuro build no Supervisor.
+- OAuth Meta, webhook e rascunhos continuam **desativados por padrão**. Não há mensagens automáticas nem alteração de WhatsApp/n8n/NGINX.
+- Publicação no catálogo **não instala** o aplicativo; a atualização no Raspberry e a homologação exigem etapa própria. Para salvar senhas no Chrome, preferir a URL HTTPS existente do Home Assistant.
+
 ## 0.1.4 — correção do teste de build da 0.1.3 — 20/11/2026
 - Corrige o teste HTTP `test_get_routes_do_not_shadow_urlsplit`: ele esperava 503 de um webhook com `ingress_enabled=true`; nesse estado o servidor rejeita a requisição incompleta com 403. O teste agora desativa o webhook antes de verificar 503.
 - Nenhuma modificação nas rotas, no banco de dados, na integração OAuth ou em serviços externos.

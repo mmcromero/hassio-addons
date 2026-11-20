@@ -16,6 +16,7 @@ from pathlib import Path
 from panel_actions import parse_action, token_for
 from policy import prepare_decision
 import oauth_meta
+import panel_login
 from urllib.parse import parse_qs, urlsplit
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
@@ -300,8 +301,95 @@ def persist(body, account_id=None):
     return inserted
 
 
+def panel_session_authorized(headers, cfg):
+    """Browser authentication uses an opaque, expiring, revocable cookie."""
+    password = cfg.get("panel_password")
+    cookie = headers.get("Cookie", "")
+    if panel_login.cookie_token(cookie) is None:
+        return False
+    try:
+        with database() as conn:
+            return panel_login.valid_session(conn, cookie, password)
+    except (OSError, sqlite3.Error, ValueError):
+        return False
+
+
+def render_login(cfg=None, invalid=False, locked=False):
+    """Own HTML form. Chrome can offer to save its standard username/password."""
+    cfg = cfg or {}
+    configured = isinstance(cfg.get("panel_password"), str) and len(cfg["panel_password"]) >= 16
+    if not configured:
+        notice = '<p class="notice" role="alert">Configure uma senha de pelo menos 16 caracteres nas opções do aplicativo.</p>'
+    elif locked:
+        notice = '<p class="notice" role="alert">Muitas tentativas. Tente novamente em alguns minutos.</p>'
+    elif invalid:
+        notice = '<p class="notice" role="alert">Usuário ou senha incorretos.</p>'
+    else:
+        notice = ''
+    fields = ("""<form method="post" action="auth/login" autocomplete="on">
+      <label for="username">Usuário</label>
+      <input id="username" name="username" type="text" value="admin"
+        autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      <label for="password">Senha</label>
+      <input id="password" name="password" type="password"
+        autocomplete="current-password" required>
+      <button type="submit">Entrar</button></form>""" if configured else "")
+    return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Entrar — Central Instagram</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:1.2rem;
+ font-family:system-ui,-apple-system,sans-serif;background:#f3f5fa;color:#17243b}
+main{width:min(100%,410px);background:white;padding:clamp(1.5rem,5vw,2.3rem);
+ border:1px solid #e1e5ee;border-radius:18px;box-shadow:0 12px 40px #13264214}
+.kicker{color:#a24321;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;font-weight:700}
+h1{font-size:1.5rem;margin:.7rem 0 .3rem}
+p{color:#526078;line-height:1.5;font-size:.94rem}
+form{display:grid;gap:.45rem;margin-top:1.5rem}
+label{font-size:.9rem;font-weight:650;margin-top:.6rem}
+input{font:inherit;width:100%;padding:.8rem .85rem;border:1px solid #a9b4c5;border-radius:9px;background:white;color:#14243c}
+input:focus-visible,button:focus-visible{outline:3px solid #6e99e7;outline-offset:2px}
+button{font:inherit;margin-top:1rem;padding:.8rem;cursor:pointer;border:0;border-radius:9px;
+ background:#152f56;color:white;font-weight:650}
+button:hover{background:#244978}
+.notice{padding:.8rem;border-radius:9px;background:#fff1e8;color:#813613}
+small{display:block;color:#59697d;margin-top:1.3rem}
+</style></head><body><main>
+<div class="kicker">Umdoislab · acesso administrativo</div>
+<h1>Central Instagram</h1>
+<p>Entre para acessar as mensagens e a fila local.</p>"""
+        + notice + fields +
+        "<small>Use a senha cadastrada nas configurações da Central. "
+        "O Chrome pode oferecer para salvá-la.</small></main></body></html>")
+
+
+def _login_form_fields(raw):
+    if not isinstance(raw, bytes) or len(raw) > 4096:
+        return None
+    try:
+        fields = parse_qs(raw.decode("utf-8"), keep_blank_values=True, max_num_fields=2)
+    except (ValueError, UnicodeDecodeError):
+        return None
+    if set(fields) != {"username", "password"} or any(len(v) != 1 for v in fields.values()):
+        return None
+    return fields["username"][0], fields["password"][0]
+
+
+def _external_https(headers):
+    # Browsers send their external Origin on form POST; TLS proxies may set
+    # X-Forwarded-Proto. These signals affect only the cookie Secure attribute.
+    # For HTTP LAN access a Secure cookie cannot be used; prefer HTTPS HA.
+    origin = headers.get("Origin", "")
+    if isinstance(origin, str) and origin.startswith("https://"):
+        return True
+    return headers.get("X-Forwarded-Proto", "").split(",")[0].strip().lower() == "https"
+
+
 def panel_authorized(headers, cfg):
     """Separate panel password; never trust client-supplied ingress headers as authentication."""
+    if panel_session_authorized(headers, cfg):
+        return True
     password = cfg.get("panel_password")
     header = headers.get("Authorization", "")
     if not isinstance(password, str) or len(password) < 16 or not header.startswith("Basic "):
@@ -352,6 +440,7 @@ def render_panel(cfg=None):
 table{border-collapse:collapse;width:100%}th,td{padding:.7rem;border-bottom:1px solid #ddd;text-align:left;overflow-wrap:anywhere}
 th{background:#f1f4f7}small{color:#58657a}form{display:inline-block;margin:3px}button{padding:.4rem .6rem;cursor:pointer}</style></head><body>
 <h1>Central Instagram</h1><p>Laboratório: ações alteram somente o estado local.</p>
+<form method="post" action="auth/logout"><button type="submit">Sair</button></form>
 <small>Últimas 50 mensagens. Não envia respostas ao Instagram.</small>
 <table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
             + body + "</tbody></table></body></html>")
@@ -423,13 +512,8 @@ class Handler(BaseHTTPRequestHandler):
                 "Mensagens e automações continuam desativadas.</body></html>", "text/html")
         if self.path in ("/", "/panel"):
             cfg = settings()
-            if not panel_authorized(self.headers, cfg):
-                self.send_response(401)
-                self.send_header("WWW-Authenticate", 'Basic realm="Instagram Central"')
-                self.send_header("Cache-Control", "no-store")
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-                return
+            if not panel_session_authorized(self.headers, cfg):
+                return self.respond(200, render_login(cfg), "text/html")
             return self.respond(200, render_panel(cfg), "text/html")
         if self.path == "/bridge/pending":
             cfg = settings()
@@ -453,6 +537,57 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path == "/auth/login":
+            cfg = settings()
+            password = cfg.get("panel_password")
+            if not isinstance(password, str) or len(password) < 16:
+                return self.respond(503, render_login(cfg), "text/html")
+            client_id = self.client_address[0]
+            if not panel_login.allowed_attempt(client_id):
+                return self.respond(429, render_login(cfg, locked=True), "text/html")
+            if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
+                return self.respond(415, {"error": "invalid content type"})
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return self.respond(400, {"error": "invalid length"})
+            if size <= 0 or size > 4096:
+                return self.respond(413, {"error": "size not allowed"})
+            fields = _login_form_fields(self.rfile.read(size))
+            if (fields is None or fields[0] != "admin" or
+                    not hmac.compare_digest(fields[1].encode("utf-8"), password.encode("utf-8"))):
+                panel_login.failed_attempt(client_id)
+                return self.respond(401, render_login(cfg, invalid=True), "text/html")
+            try:
+                with database() as conn:
+                    token = panel_login.create_session(conn, password)
+            except (OSError, sqlite3.Error, ValueError):
+                return self.respond(503, {"error": "session unavailable"})
+            panel_login.successful_attempt(client_id)
+            self.send_response(303)
+            self.send_header("Location", "../panel")
+            self.send_header("Set-Cookie", panel_login.set_cookie_header(
+                token, secure=_external_https(self.headers)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if self.path == "/auth/logout":
+            cfg = settings()
+            try:
+                with database() as conn:
+                    panel_login.revoke_session(conn, self.headers.get("Cookie", ""),
+                                               cfg.get("panel_password"))
+            except (OSError, sqlite3.Error, ValueError):
+                pass  # Still clear the browser cookie.
+            self.send_response(303)
+            self.send_header("Location", "../panel")
+            self.send_header("Set-Cookie", panel_login.clear_cookie_header(
+                secure=_external_https(self.headers)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if self.path == "/panel/handoff":
             cfg = settings()
             if not panel_authorized(self.headers, cfg):
