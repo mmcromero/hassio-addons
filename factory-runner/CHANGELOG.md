@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-rc.17 — Autodiagnóstico do plano de publicação
+
+- Valida a função somente leitura release_plan após a sincronização, com os workspaces reais já aprovados.
+- Registra apenas [RELEASE-PLAN] PASS (plano seguro, publicação desabilitada) ou BLOCKED (pré-verificação indisponível), sem caminho, token ou código arbitrário.
+- Três testes HTTP/unitários adicionais preparados para pacote bloqueado, resultado inseguro e sigilo em erro.
+- Não confirma autenticação HTTP nem publica pacotes; exige posteriormente teste dirigido autenticado do endpoint.
+- Suíte integral de testes continua obrigatória na etapa de validação Docker do build no Home Assistant.
+
+
 ## 0.1.0-rc.16 — Plano de publicação por projeto (somente leitura)
 
 - Nova rota autenticada POST /api/release-plan com project e expected_source_sha; utiliza o preflight real do perfil aprovado.
