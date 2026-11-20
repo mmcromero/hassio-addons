@@ -89,6 +89,7 @@ class HTTPContractTests(unittest.TestCase):
         self.assertIn(b"Central", body)
         # The disabled path returns 503 only when the webhook feature is off.
         # The generic setUp enables it to exercise signed-webhook tests.
+        self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 403)
         self.config["ingress_enabled"] = False
         self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 503)
 
