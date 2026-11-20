@@ -141,6 +141,54 @@ class WorkspaceSyncTests(unittest.TestCase):
             with self.assertRaises(sync.SyncError):
                 sync._branch(ref)
 
+    def test_github_head_is_independently_verified(self):
+        class Reply:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): pass
+            def read(self, *args): return json.dumps({"sha":"a"*40}).encode()
+        class Client:
+            def open(self, req, timeout):
+                self.url=req.full_url
+                self.auth=req.get_header("Authorization")
+                return Reply()
+        client=Client()
+        with patch.object(sync.request,"build_opener",return_value=client):
+            sha=sync._remote_head("fixture/source","refs/remotes/origin/release/rc","secret")
+        self.assertEqual(sha,"a"*40)
+        self.assertEqual(client.url,"https://api.github.com/repos/fixture/source/commits/release%2Frc")
+        self.assertEqual(client.auth,"Bearer secret")
+
+    def test_failed_publish_of_staging_preserves_previous_checkout(self):
+        self.run_sync()
+        original_sha=self.source_sha
+        self.put(self.source,"next.txt","changed source")
+        self.commit(self.source,"next")
+        self.git(self.source,"branch","-f","desenvolvimento","main")
+        actual=sync.os.rename
+        def guarded(a,b):
+            if str(a).split("/")[-1].startswith(".stage-fixture-") and str(b).endswith("/fixture"):
+                raise OSError("synthetic swap failure")
+            return actual(a,b)
+        with patch.object(sync.os,"rename",side_effect=guarded):
+            with self.assertRaises(OSError): self.run_sync()
+        active=json.loads((self.workspaces/"fixture"/sync.MANAGED).read_text())
+        self.assertEqual(active["source_sha"],original_sha)
+
+    def test_clone_credential_process_only_sees_secret_file_path(self):
+        from unittest.mock import Mock
+        def fake_run(*args, **kwargs):
+            env=kwargs["env"]
+            self.assertNotIn("RUNNER_GITHUB_READ_TOKEN",env)
+            self.assertNotIn("secret-value",repr(args))
+            secret_path=Path(env["FACTORY_GIT_SECRET_FILE"])
+            self.assertEqual(secret_path.read_text(),"secret-value")
+            self.assertEqual(secret_path.stat().st_mode & 0o077,0)
+            return Mock(returncode=1)
+        with patch.object(sync.subprocess,"run",side_effect=fake_run):
+            with self.assertRaisesRegex(sync.SyncError,"clone_unavailable"):
+                sync._clone("fixture/source",self.root/"candidate","secret-value")
+
     def test_closed_package_may_sync_but_never_prepare(self):
         self.put(self.source,"policy.json",json.dumps({"schema_version":1,"product":"Fixture",
             "active_package":{"status":"closed","candidate_version":"0.1.1",
