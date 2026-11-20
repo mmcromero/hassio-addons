@@ -254,6 +254,18 @@ Os três códigos são coerentes com as condições do código da aplicação. O
 
 **Próxima fase:** conferir as opções efetivas da Central (sem revelar segredos), validar os campos públicos do app Meta e habilitar OAuth de forma controlada. Depois executar login Meta, validar a identidade exata de `@umdoislab`, testar a inscrição `messages` e habilitar webhook somente quando OAuth e assinatura estiverem confirmados. Não ativar envio de mensagens.
 
+### 7.5.4 Teste de rotas após reinício — evidência do proprietário (20/11/2026)
+
+Base pública testada: `https://romeropi.duckdns.org:8443`.
+
+| Requisição | HTTP | Leitura correta |
+|---|---:|---|
+| `GET /oauth/meta/start` sem sessão | 401 | Proteção administrativa exigida; resposta esperada sem cookie de painel |
+| `GET /oauth/meta/callback` sem fluxo OAuth ativo | 503 | OAuth desativado/incompleto; resposta esperada nesta fase |
+| `GET /webhook/instagram` com desafio e token inválido | 503 | Webhook desativado (`ingress_enabled=false)); resposta esperada nesta fase |
+
+**Conclusão:** o proxy público encaminha as três rotas para a aplicação. O HTTP 401 não é falha de OAuth: o start exige sessão administrativa. Os HTTP 503 não são falha de proxy: são as travas da aplicação enquanto OAuth e webhook permanecem desligados. Próxima fase é configurar os campos Meta localmente e habilitar apenas OAuth; manter webhook desligado até a autorização da conta ser verificada.
+
 ### 7.5 Limites de evidência
 
 - A captura da configuração e os comandos foram fornecidos pelo proprietário; não foram executados diretamente por um agente remoto.
