@@ -19,6 +19,8 @@ _ATTEMPTS = {}
 _ATTEMPTS_LOCK = threading.Lock()
 _MAX_FAILURES = 8
 _FAILURE_WINDOW = 120
+_ADMIN_ACTIONS = frozenset(("check", "subscribe")) | frozenset(
+    "editorial:umdoislab:" + action for action in ("upload", "draft", "approve", "schedule", "cancel"))
 
 
 def _valid_password(password):
@@ -129,7 +131,7 @@ def admin_csrf_token(cookie_header, password, action, bucket=None):
     """Action-scoped 5-minute CSRF token bound to a browser session and panel key."""
     token = cookie_token(cookie_header)
     if (token is None or not _valid_password(password)
-            or action not in ("check", "subscribe")):
+            or action not in _ADMIN_ACTIONS):
         return ""
     bucket = int(time.time() // 300) if bucket is None else int(bucket)
     raw = ("instagram-meta-v1:" + action + ":" + token + ":" + str(bucket)).encode("ascii")

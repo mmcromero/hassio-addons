@@ -60,6 +60,11 @@ def prepare_schema(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS meta_oauth_states (
         digest TEXT PRIMARY KEY, expires_at INTEGER NOT NULL,
         consumed_at INTEGER)""")
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(meta_oauth_states)")}
+    for column, definition in (("business_id", "TEXT NOT NULL DEFAULT 'umdoislab'"),
+                               ("instagram_account_id", "TEXT NOT NULL DEFAULT ''")):
+        if column not in columns:
+            conn.execute("ALTER TABLE meta_oauth_states ADD COLUMN " + column + " " + definition)
 
 
 def start(conn, cfg, now=None):
@@ -70,8 +75,10 @@ def start(conn, cfg, now=None):
     digest = hashlib.sha256(state.encode()).hexdigest()
     prepare_schema(conn)
     conn.execute("DELETE FROM meta_oauth_states WHERE expires_at < ?", (now - 3600,))
-    conn.execute("INSERT INTO meta_oauth_states(digest,expires_at) VALUES (?,?)",
-                 (digest, now + STATE_TTL))
+    conn.execute("""INSERT INTO meta_oauth_states
+        (digest,expires_at,business_id,instagram_account_id) VALUES (?,?,?,?)""",
+        (digest, now + STATE_TTL, cfg.get("business_id", "umdoislab"),
+         cfg.get("instagram_account_id") or ""))
     query = urlencode({
         "client_id": cfg["meta_app_id"],
         "config_id": cfg["meta_login_config_id"],
@@ -111,14 +118,16 @@ def parse_callback(query, cookie_header):
     return state, code
 
 
-def consume_state(conn, state, now=None):
+def consume_state(conn, state, now=None, *, cfg=None):
+    cfg = cfg or {}
     now = int(time.time()) if now is None else int(now)
     digest = hashlib.sha256(state.encode()).hexdigest()
     prepare_schema(conn)
     conn.execute("BEGIN IMMEDIATE")
     found = conn.execute("""UPDATE meta_oauth_states SET consumed_at=?
-      WHERE digest=? AND consumed_at IS NULL AND expires_at>=?""",
-      (now, digest, now))
+      WHERE digest=? AND consumed_at IS NULL AND expires_at>=?
+        AND business_id=? AND instagram_account_id=?""",
+      (now, digest, now, cfg.get("business_id", "umdoislab"), cfg.get("instagram_account_id") or ""))
     if found.rowcount != 1:
         raise OAuthError("OAuth state expired or already used")
 

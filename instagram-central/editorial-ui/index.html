@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111c29">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Central Editorial · Umdoislab</title>
+  <link rel="stylesheet" href="./editorial.css">
+  <script src="./editorial.js" defer></script>
+</head>
+<body>
+  <a href="#principal" class="skip">Pular para conteúdo</a>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
+      <div class="section-label">CENTRAL INSTAGRAM</div>
+      <a class="nav-link" href="../">← Mensagens e conexão</a>
+      <div class="section-label">EDITORIAL</div>
+      <nav class="nav" aria-label="Seções">
+        <button class="nav-link active" data-view="overview" aria-current="page"><span>◫</span> Visão geral</button>
+        <button class="nav-link" data-view="library"><span>▧</span> Biblioteca</button>
+        <button class="nav-link" data-view="editor"><span>✎</span> Criar publicação</button>
+        <button class="nav-link" data-view="approval"><span>✓</span> Aprovações</button>
+        <button class="nav-link" data-view="calendar"><span>▦</span> Calendário</button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-led"></span><div><strong>Modo editorial</strong><small>Sem envio automático</small></div></div>
+    </aside>
+    <main id="principal" class="main">
+      <header class="topbar">
+        <div class="crumb">Umdoislab <span>/</span> <strong id="current-section">Visão geral</strong></div>
+        <div class="top-actions"><span class="account">@umdoislab</span><button id="new-post" class="btn primary">+ Nova publicação</button></div>
+      </header>
+      <section class="content" id="view-overview" data-panel="overview">
+        <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Bom conteúdo começa aqui.</h1><p>Planeje, revise e organize suas próximas publicações em um só lugar.</p></div></div>
+        <div class="metrics">
+          <article class="metric"><span>Publicações criadas</span><strong id="count-all">0</strong><small>Na sua biblioteca editorial</small></article>
+          <article class="metric"><span>Aguardando aprovação</span><strong id="count-draft">0</strong><small>Precisam de revisão</small></article>
+          <article class="metric"><span>Prontas para agendar</span><strong id="count-approved">0</strong><small>Conteúdo aprovado</small></article>
+          <article class="metric"><span>Agendadas</span><strong id="count-scheduled">0</strong><small>No calendário</small></article>
+        </div>
+        <div class="two-col">
+          <section class="panel"><div class="panel-title"><div><h2>Próximas publicações</h2><p>Seu planejamento editorial</p></div><button class="text-button" data-goto="calendar">Ver calendário →</button></div><div id="upcoming-list" class="stack"></div></section>
+          <section class="panel"><div class="panel-title"><div><h2>Comece a criar</h2><p>Escolha um formato para seu conteúdo</p></div></div>
+            <div class="format-grid">
+              <button data-new-format="feed"><span class="format-icon">▣</span><strong>Publicação</strong><small>Foto no feed</small></button>
+              <button data-new-format="carousel"><span class="format-icon">▤</span><strong>Carrossel</strong><small>Várias imagens</small></button>
+              <button data-new-format="story"><span class="format-icon">◉</span><strong>Story</strong><small>Conteúdo vertical</small></button>
+              <button data-new-format="reel"><span class="format-icon">▷</span><strong>Reel</strong><small>Vídeo curto</small></button>
+            </div>
+          </section>
+        </div>
+        <section class="note"><span>ⓘ</span><div><strong>Publicação sob seu controle</strong><p>Todo conteúdo precisa de aprovação. Nenhum material sai para o Instagram a partir deste ambiente de desenvolvimento.</p></div></section>
+      </section>
+
+      <section class="content hidden" id="view-library" data-panel="library">
+        <div class="heading horizontal"><div><span class="eyebrow">SEUS ARQUIVOS</span><h1>Biblioteca de mídias</h1><p>Organize imagens e vídeos utilizados nas publicações.</p></div><button class="btn primary" id="upload-trigger">+ Adicionar arquivos</button></div>
+        <input type="file" id="media-input" accept="image/jpeg,image/png,video/mp4" multiple hidden>
+        <div id="media-grid" class="media-grid"></div>
+      </section>
+
+      <section class="content hidden" id="view-editor" data-panel="editor">
+        <div class="heading horizontal"><div><span class="eyebrow">ESTÚDIO CRIATIVO</span><h1 id="editor-heading">Nova publicação</h1><p>Monte o conteúdo e confira a prévia antes de aprovar.</p></div><button id="clear-editor" class="btn quiet">Nova composição</button></div>
+        <div class="editor-layout">
+          <form id="post-form" class="panel form-panel">
+            <div class="field"><label for="post-format">Formato</label><select id="post-format"><option value="feed">Publicação no feed</option><option value="carousel">Carrossel</option><option value="story">Story</option><option value="reel">Reel</option></select></div>
+            <div class="field"><label for="post-caption">Legenda <span id="caption-count">0/2200</span></label><textarea id="post-caption" maxlength="2200" rows="7" placeholder="Escreva sua legenda, descrição ou chamada..."></textarea></div>
+            <div class="field"><div class="field-head"><label>Mídias selecionadas</label><button class="text-button" id="open-library-picker" type="button">Selecionar na biblioteca</button></div><div id="selected-media" class="selected-media">Nenhuma mídia selecionada.</div><small id="selection-hint">Selecione uma imagem.</small></div>
+            <div id="form-feedback" class="feedback" role="status" aria-live="polite"></div>
+            <div class="form-actions"><button class="btn quiet" type="button" id="save-draft">Salvar rascunho</button><button class="btn primary" type="submit">Salvar e revisar</button></div>
+          </form>
+          <div class="preview-area"><div class="panel-title"><div><h2>Prévia do conteúdo</h2><p>Representação visual para revisão</p></div></div>
+            <div class="phone"><div class="phone-top"><span class="avatar">U.</span><strong>umdoislab</strong><span>•••</span></div><div class="phone-media" id="phone-media"><span>Selecione uma mídia para visualizar</span></div><div class="phone-bottom"><div>♡　◇　↗</div><p id="preview-caption">Sua legenda aparece aqui.</p></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="content hidden" id="view-approval" data-panel="approval">
+        <div class="heading"><span class="eyebrow">REVISÃO HUMANA</span><h1>Aprovações</h1><p>Confira cada conteúdo antes de liberar o agendamento.</p></div>
+        <div id="approval-list" class="stack"></div>
+      </section>
+
+      <section class="content hidden" id="view-calendar" data-panel="calendar">
+        <div class="heading horizontal"><div><span class="eyebrow">PLANEJAMENTO</span><h1>Calendário editorial</h1><p>Visualize as publicações planejadas para o mês.</p></div><div class="calendar-nav"><button id="prev-month" class="btn quiet" aria-label="Mês anterior">‹</button><strong id="month-label"></strong><button id="next-month" class="btn quiet" aria-label="Próximo mês">›</button></div></div>
+        <section class="panel"><div class="calendar-weekdays"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div><div class="calendar-grid" id="calendar-grid"></div></section>
+        <section class="panel calendar-upcoming"><div class="panel-title"><h2>Publicações agendadas</h2></div><div id="calendar-list" class="stack"></div></section>
+      </section>
+    </main>
+  </div>
+  <dialog id="media-dialog" class="dialog"><div class="dialog-head"><h2>Selecionar mídias</h2><button class="icon-button" id="close-media-dialog" aria-label="Fechar">×</button></div><div id="picker-grid" class="media-grid"></div><div class="dialog-actions"><button class="btn primary" id="apply-media-selection">Usar mídias selecionadas</button></div></dialog>
+  <dialog id="schedule-dialog" class="dialog small-dialog"><div class="dialog-head"><h2>Agendar publicação</h2><button class="icon-button" id="close-schedule-dialog" aria-label="Fechar">×</button></div><p class="muted">Escolha a data e o horário de São Paulo.</p><form id="schedule-form"><label for="schedule-at">Data e horário</label><input id="schedule-at" type="datetime-local" required><div id="schedule-feedback" class="feedback" role="status" aria-live="polite"></div><div class="dialog-actions"><button class="btn primary" type="submit">Confirmar agenda</button></div></form></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

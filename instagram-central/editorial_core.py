@@ -1,0 +1,355 @@
+"""Núcleo editorial isolado. Não contém rede, endpoints ou publicação Meta.
+
+O chamador deve autenticar e autorizar o administrador antes de invocar operações.
+Dados pertencem a um volume persistente separado: /data/editorial.
+"""
+from contextlib import contextmanager
+from datetime import datetime, timezone
+import hashlib
+import os
+from pathlib import Path
+import secrets
+import re
+import stat
+import sqlite3
+import time
+
+
+class EditorialError(ValueError):
+    pass
+
+
+class EditorialConflict(EditorialError):
+    pass
+
+
+_FORMATS = {"feed", "carousel", "story", "reel"}
+_EXTENSIONS = {"jpg", "png", "mp4"}
+_MAX_BYTES = 25 * 1024 * 1024  # limite inicial de upload; videos maiores exigem streaming
+
+
+def _timestamp(value=None):
+    if value is None:
+        return int(time.time())
+    if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+        raise EditorialError("Data deve conter fuso horário")
+    return int(value.timestamp())
+
+
+def _check_media(content, extension):
+    if extension not in _EXTENSIONS or not isinstance(content, bytes):
+        raise EditorialError("Formato de arquivo não aceito")
+    if not content or len(content) > _MAX_BYTES:
+        raise EditorialError("Arquivo vazio ou acima do limite")
+    valid = {
+        "jpg": content.startswith(b"\xff\xd8\xff"),
+        "png": content.startswith(b"\x89PNG\r\n\x1a\n"),
+        "mp4": len(content) >= 12 and content[4:8] == b"ftyp",
+    }
+    if not valid[extension]:
+        raise EditorialError("Assinatura incompatível com a extensão")
+
+
+class EditorialStore:
+    def __init__(self, root):
+        self.root = Path(root).absolute()
+        for parent in (self.root, *self.root.parents):
+            if parent.is_symlink():
+                raise EditorialError("Caminho simbólico não permitido")
+        self.media_dir = self.root / "media"
+        for folder in (self.root, self.media_dir):
+            if folder.is_symlink():
+                raise EditorialError("Diretório simbólico não permitido")
+            folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+        self.db_path = self.root / "editorial.sqlite3"
+        if self.db_path.is_symlink():
+            raise EditorialError("Banco simbólico não permitido")
+        with self._db() as db:
+            db.executescript("""
+                PRAGMA journal_mode=WAL;
+                CREATE TABLE IF NOT EXISTS media (
+                    id TEXT PRIMARY KEY, extension TEXT NOT NULL,
+                    digest TEXT NOT NULL, size INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS posts (
+                    id TEXT PRIMARY KEY, format TEXT NOT NULL,
+                    caption TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1,
+                    approved_revision INTEGER, state TEXT NOT NULL DEFAULT 'draft',
+                    scheduled_at INTEGER, lease_token TEXT, lease_until INTEGER,
+                    remote_id TEXT, created_at INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS attachments (
+                    post_id TEXT NOT NULL REFERENCES posts(id),
+                    media_id TEXT NOT NULL REFERENCES media(id),
+                    position INTEGER NOT NULL,
+                    PRIMARY KEY (post_id, position));
+                CREATE TABLE IF NOT EXISTS audit (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT, post_id TEXT NOT NULL,
+                    event TEXT NOT NULL, at INTEGER NOT NULL);
+                CREATE INDEX IF NOT EXISTS posts_due ON posts(state, scheduled_at);
+            """)
+            db.execute("BEGIN IMMEDIATE")
+            columns = {r[1] for r in db.execute("PRAGMA table_info(posts)")}
+            if "version" not in columns:
+                db.execute("ALTER TABLE posts ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+            db.commit()
+        os.chmod(self.db_path, 0o600)
+
+    @contextmanager
+    def _db(self):
+        db = sqlite3.connect(self.db_path, timeout=5, isolation_level=None)
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA foreign_keys=ON")
+        db.execute("PRAGMA busy_timeout=5000")
+        try:
+            yield db
+        finally:
+            db.close()
+
+    @contextmanager
+    def _tx(self):
+        with self._db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            try:
+                yield db
+                db.commit()
+            except BaseException:
+                db.rollback()
+                raise
+
+    @staticmethod
+    def _audit(db, post_id, event):
+        if event != "created":
+            db.execute("UPDATE posts SET version=version+1 WHERE id=?", (post_id,))
+        db.execute("INSERT INTO audit(post_id,event,at) VALUES (?,?,?)",
+                   (post_id, event, _timestamp()))
+
+    def add_media(self, content: bytes, extension: str):
+        _check_media(content, extension)
+        media_id = secrets.token_hex(16)
+        path = self.media_dir / f"{media_id}.{extension}"
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            try:
+                with self._tx() as db:
+                    count, total = db.execute("SELECT COUNT(*),COALESCE(SUM(size),0) FROM media").fetchone()
+                    if count >= 500 or total + len(content) > 1024 * 1024 * 1024:
+                        raise EditorialError("Limite da biblioteca atingido (500 arquivos / 1 GiB)")
+                    db.execute("INSERT INTO media VALUES (?,?,?,?)",
+                               (media_id, extension, hashlib.sha256(content).hexdigest(), len(content)))
+            except BaseException:
+                path.unlink(missing_ok=True)
+                raise
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
+        return media_id
+
+    def create_draft(self, format: str, caption: str):
+        if format not in _FORMATS or not isinstance(caption, str) or len(caption) > 2200:
+            raise EditorialError("Formato ou legenda inválidos")
+        post_id = secrets.token_hex(16)
+        with self._tx() as db:
+            db.execute("INSERT INTO posts(id,format,caption,created_at) VALUES(?,?,?,?)",
+                       (post_id, format, caption, _timestamp()))
+            self._audit(db, post_id, "created")
+        return post_id
+
+    @staticmethod
+    def _editable(db, post_id):
+        row = db.execute("SELECT state,revision FROM posts WHERE id=?", (post_id,)).fetchone()
+        if row is None or row["state"] not in ("draft", "approved", "scheduled"):
+            raise EditorialError("Publicação inexistente ou bloqueada para edição")
+        return row
+
+    @staticmethod
+    def _invalidate(db, post_id, revision):
+        db.execute("""UPDATE posts SET state='draft', revision=?, approved_revision=NULL,
+                      scheduled_at=NULL WHERE id=?""", (revision + 1, post_id))
+
+    def edit_caption(self, post_id, caption):
+        if not isinstance(caption, str) or len(caption) > 2200:
+            raise EditorialError("Legenda inválida")
+        with self._tx() as db:
+            row = self._editable(db, post_id)
+            db.execute("UPDATE posts SET caption=? WHERE id=?", (caption, post_id))
+            self._invalidate(db, post_id, row["revision"])
+            self._audit(db, post_id, "edited")
+
+    def attach_media(self, post_id, media_id, position=0):
+        if not isinstance(position, int) or not 0 <= position < 20:
+            raise EditorialError("Posição inválida")
+        with self._tx() as db:
+            row = self._editable(db, post_id)
+            if not db.execute("SELECT 1 FROM media WHERE id=?", (media_id,)).fetchone():
+                raise EditorialError("Mídia inexistente")
+            db.execute("""INSERT INTO attachments(post_id,media_id,position) VALUES(?,?,?)
+                         ON CONFLICT(post_id,position) DO UPDATE SET media_id=excluded.media_id""",
+                       (post_id, media_id, position))
+            self._invalidate(db, post_id, row["revision"])
+            self._audit(db, post_id, "media_changed")
+
+    def approve(self, post_id, *, expected_version=None):
+        with self._tx() as db:
+            self._check_version(db, post_id, expected_version)
+            row = db.execute("SELECT format,revision,state FROM posts WHERE id=?", (post_id,)).fetchone()
+            if row is None or row["state"] not in ("draft", "approved"):
+                raise EditorialError("Só rascunhos podem ser aprovados")
+            count = db.execute("SELECT COUNT(*) FROM attachments WHERE post_id=?", (post_id,)).fetchone()[0]
+            required = 2 <= count <= 20 if row["format"] == "carousel" else count == 1
+            if not required:
+                raise EditorialError("Quantidade de mídias incompatível com a publicação")
+            if row["format"] in ("feed", "carousel", "reel"):
+                invalid = db.execute("""SELECT 1 FROM attachments a JOIN media m ON m.id=a.media_id
+                    WHERE a.post_id=? AND (m.extension='mp4') != ?""",
+                    (post_id, int(row["format"] == "reel"))).fetchone()
+                if invalid:
+                    raise EditorialError("Mídia incompatível com o formato")
+            db.execute("UPDATE posts SET state='approved',approved_revision=revision WHERE id=?", (post_id,))
+            self._audit(db, post_id, "approved")
+
+    def schedule(self, post_id, when: datetime, *, now=None, expected_version=None):
+        utc_when = _timestamp(when)
+        if utc_when <= _timestamp(now):
+            raise EditorialError("Data deve ser futura")
+        with self._tx() as db:
+            self._check_version(db, post_id, expected_version)
+            row = db.execute("SELECT state,revision,approved_revision FROM posts WHERE id=?", (post_id,)).fetchone()
+            if row is None or row["state"] != "approved" or row["revision"] != row["approved_revision"]:
+                raise EditorialError("A versão atual precisa de aprovação")
+            db.execute("UPDATE posts SET state='scheduled', scheduled_at=? WHERE id=?", (utc_when, post_id))
+            self._audit(db, post_id, "scheduled")
+
+    def cancel_schedule(self, post_id, *, expected_version=None):
+        with self._tx() as db:
+            self._check_version(db, post_id, expected_version)
+            cur = db.execute("""UPDATE posts SET state='approved', scheduled_at=NULL
+                                WHERE id=? AND state='scheduled'""", (post_id,))
+            if cur.rowcount != 1:
+                raise EditorialError("Agenda indisponível para cancelamento")
+            self._audit(db, post_id, "schedule_cancelled")
+
+    def claim_due(self, *, now=None, lease_seconds=120):
+        """Reserva para futuro executor. NÃO chama API e NÃO publica."""
+        if not isinstance(lease_seconds, int) or not 30 <= lease_seconds <= 300:
+            raise EditorialError("Lease inválido")
+        clock = _timestamp(now)
+        with self._tx() as db:
+            row = db.execute("""SELECT id FROM posts WHERE state='scheduled'
+                                AND scheduled_at<=? ORDER BY scheduled_at,id LIMIT 1""",
+                             (clock,)).fetchone()
+            if row is None:
+                return None
+            token = secrets.token_urlsafe(32)
+            db.execute("""UPDATE posts SET state='leased',lease_token=?,lease_until=?
+                          WHERE id=? AND state='scheduled'""",
+                       (token, clock + lease_seconds, row["id"]))
+            self._audit(db, row["id"], "claimed")
+            return {"id": row["id"], "lease_token": token}
+
+    def mark_review_required(self, post_id, lease_token):
+        """Ambiguidade não reenvia conteúdo automaticamente."""
+        with self._tx() as db:
+            cur = db.execute("""UPDATE posts SET state='needs_review',lease_token=NULL,lease_until=NULL
+                                WHERE id=? AND state='leased' AND lease_token=?""",
+                             (post_id, lease_token))
+            if cur.rowcount != 1:
+                raise EditorialError("Reserva inválida")
+            self._audit(db, post_id, "needs_review")
+
+    def expire_leases(self, *, now=None):
+        clock = _timestamp(now)
+        with self._tx() as db:
+            rows = db.execute("""SELECT id FROM posts WHERE state='leased' AND lease_until<=?""",
+                              (clock,)).fetchall()
+            for row in rows:
+                db.execute("""UPDATE posts SET state='needs_review',lease_token=NULL,lease_until=NULL
+                              WHERE id=?""", (row["id"],))
+                self._audit(db, row["id"], "lease_expired_review")
+            return len(rows)
+
+    def get_post(self, post_id):
+        with self._db() as db:
+            row = db.execute("""SELECT id,format,caption,revision,approved_revision,state,
+                                scheduled_at,remote_id FROM posts WHERE id=?""", (post_id,)).fetchone()
+            return dict(row) if row else None
+
+
+    @staticmethod
+    def _check_version(db, post_id, expected_version):
+        if expected_version is None:  # existing internal API compatibility
+            return
+        row = db.execute("SELECT version FROM posts WHERE id=?", (post_id,)).fetchone()
+        if type(expected_version) is not int or row is None or row[0] != expected_version:
+            raise EditorialConflict("Conteúdo mudou. Recarregue antes de tentar novamente.")
+
+    def save_draft(self, format, caption, media_ids, *, post_id=None, expected_version=None):
+        """HTTP edit is one transaction: no partial attachment/caption updates."""
+        if (not isinstance(format, str) or format not in _FORMATS or
+                not isinstance(caption, str) or len(caption) > 2200 or
+                not isinstance(media_ids, list) or len(media_ids) > 20 or
+                any(not isinstance(mid, str) or not re.fullmatch(r"[0-9a-f]{32}", mid)
+                    for mid in media_ids) or len(set(media_ids)) != len(media_ids)):
+            raise EditorialError("Rascunho inválido")
+        with self._tx() as db:
+            for mid in media_ids:
+                if not db.execute("SELECT 1 FROM media WHERE id=?", (mid,)).fetchone():
+                    raise EditorialError("Mídia inexistente")
+            if post_id is None:
+                if db.execute("SELECT COUNT(*) FROM posts").fetchone()[0] >= 1000:
+                    raise EditorialError("Limite de 1000 publicações atingido")
+                post_id = secrets.token_hex(16)
+                db.execute("INSERT INTO posts(id,format,caption,created_at) VALUES(?,?,?,?)",
+                           (post_id, format, caption, _timestamp()))
+                event = "created"
+            else:
+                self._check_version(db, post_id, expected_version)
+                row = self._editable(db, post_id)
+                self._invalidate(db, post_id, row["revision"])
+                db.execute("UPDATE posts SET format=?,caption=? WHERE id=?", (format, caption, post_id))
+                db.execute("DELETE FROM attachments WHERE post_id=?", (post_id,))
+                event = "edited"
+            db.executemany("INSERT INTO attachments VALUES(?,?,?)",
+                           [(post_id, mid, i) for i, mid in enumerate(media_ids)])
+            self._audit(db, post_id, event)
+        return post_id
+
+    def snapshot(self):
+        with self._db() as db:
+            db.execute("BEGIN")
+            posts = []
+            for row in db.execute("SELECT * FROM posts ORDER BY created_at DESC,id"):
+                mids = [r[0] for r in db.execute(
+                    "SELECT media_id FROM attachments WHERE post_id=? ORDER BY position", (row["id"],))]
+                posts.append({"id": row["id"], "format": row["format"], "caption": row["caption"],
+                              "revision": row["revision"], "approvedRevision": row["approved_revision"],
+                              "version": row["version"], "status": row["state"], "mediaIds": mids,
+                              "scheduledAt": row["scheduled_at"] * 1000 if row["scheduled_at"] else None,
+                              "createdAt": row["created_at"] * 1000})
+            media = [{"id": r["id"], "name": r["id"] + "." + r["extension"],
+                      "size": r["size"], "type": {"png": "image/png", "jpg": "image/jpeg", "mp4": "video/mp4"}[r["extension"]],
+                      "url": "media/" + r["id"]} for r in db.execute("SELECT * FROM media ORDER BY rowid")]
+            return {"posts": posts, "media": media}
+
+    def read_media(self, media_id):
+        if not isinstance(media_id, str) or not re.fullmatch(r"[0-9a-f]{32}", media_id):
+            raise EditorialError("Mídia inexistente")
+        with self._db() as db:
+            row = db.execute("SELECT * FROM media WHERE id=?", (media_id,)).fetchone()
+        if row is None:
+            raise EditorialError("Mídia inexistente")
+        path = self.media_dir / (media_id + "." + row["extension"])
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            with os.fdopen(fd, "rb") as handle:
+                info = os.fstat(handle.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size != row["size"] or info.st_size > _MAX_BYTES:
+                    raise EditorialError("Mídia inválida")
+                content = handle.read(_MAX_BYTES + 1)
+        except OSError:
+            raise EditorialError("Mídia indisponível") from None
+        if hashlib.sha256(content).hexdigest() != row["digest"]:
+            raise EditorialError("Integridade da mídia inválida")
+        return content, {"png": "image/png", "jpg": "image/jpeg", "mp4": "video/mp4"}[row["extension"]]

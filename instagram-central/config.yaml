@@ -1,7 +1,7 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.6"
+version: "0.1.7"
 slug: umdoislab_instagram
-description: "Central isolada para mensagens Instagram Direct (laboratorio)"
+description: "Central Instagram Umdoislab: Mensagens e Editorial local (Meta desativada)"
 arch:
   - aarch64
 startup: application

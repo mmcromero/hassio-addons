@@ -1,64 +1,51 @@
-# Central Instagram — Umdoislab (laboratório)
+# Central Instagram Umdoislab — distribuição 0.1.7
 
-**Candidata experimental:** 0.1.6 · arquitetura aarch64 · Home Assistant Ingress. O login HTML já foi publicado na versão 0.1.5; conexão Meta real requer configuração e homologação próprias.
+**Estado:** versão **0.1.7 publicada no catálogo GitHub**; atualização e homologação no Home Assistant **ainda não executadas**. A versão 0.1.6 é a distribuição anterior e foi informada pelo proprietário como instalada. Esta 0.1.7 reúne Mensagens + Editorial no **mesmo aplicativo, sessão, login e Ingress**, sem criar outra integração.
 
-O nome de distribuição segue a norma do catálogo: **Fábrica de Softwares - Central Instagram**. O ícone e o logotipo públicos devem ser os arquivos oficiais padronizados, com blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, respectivamente.
+- Repositório privado: `mmcromero/instagram-automacoes`.
+- Branch da candidata: `release/instagram-0.1.7-rc.1`.
+- Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
+- Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
+- Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
 
-Este complemento é **independente da Central WhatsApp**. Recepção de webhooks Meta e armazenamento de rascunhos vêm **desativados**. Nenhuma rota do servidor envia Direct, consulta Gemini ou faz chamadas a WooCommerce/n8n.
+## Funcionalidades incluídas no código 0.1.7
 
-## Primeiro teste no Home Assistant
+**Mensagens:** interface administrativa com formulário HTML e sessão única, visão de mensagens, indicador de estado de conexão, handoff e auditoria, deduplicação e filas locais com claim/ACK, políticas offline e OAuth Meta preparado mas desligado. O painel usa a senha própria `panel_password` e não envia Direct.
 
-Após uma **instalação autorizada**, o Supervisor fará o build do Dockerfile, incluindo quatro testes locais (assinatura e autenticação, SQLite/deduplicação, reserva+ACK e handoff). O build não exige GitHub Actions, QEMU ou imagem ARM64 pré-compilada.
+**Editorial:** a navegação abre `/editorial/` no mesmo servidor e sessão de Mensagens. Biblioteca de mídia, upload JPG/PNG/MP4 com validação de tipos/limites, rascunhos, edição, aprovação, agenda no fuso `America/Sao_Paulo`, cancelamento e recarga persistente via HTTP+SQLite. Edição invalida aprovação/agenda anterior; operações obsoletas recebem conflito de versão. **A agenda é local, não realiza postagem.** Não há segundo login nem serviço Editorial separado.
 
-Nesta branch, o painel Ingress exibe uma **tela HTML própria** para autenticação, com usuário `admin` e a senha existente em `panel_password` (mínimo 16 caracteres). Os campos `autocomplete=username` e `autocomplete=current-password` permitem que o Chrome ofereça armazenamento e preenchimento. Login cria sessão revogável no SQLite, expira após 12 horas, com botão **Sair**. Sem senha configurada, a entrada continua bloqueada. **Essa mudança não está publicada/instalada na versão 0.1.4.**
+**Estrutura multicontas:** cadastro interno de negócios, separação entre `business_id` e ID da conta oficial Meta e isolamento de tokens/mídias. Nesta candidata, **somente Umdoislab** tem rotas administrativas operacionais. Outras contas são apenas sintéticas em testes; nenhuma ativação real.
 
-Preferir o Home Assistant via HTTPS já existente; em `http://192.168.0.6:8123`, o navegador sinaliza **conexão não privada** e credenciais trafegam sem TLS. A tela HTML não corrige esse risco de transporte. Testar inicialização, logs, login, logout e persistência somente após instalação autorizada.
+## Dados e compatibilidade
 
-**Não ativar `ingress_enabled` ou `drafts_enabled` nesta candidata.** Ainda não há integração real Meta; nenhum token deve ser configurado sem a etapa própria.
+- Mensagens, fila, estados, sessões e registro de contas: `/data/instagram.sqlite3` (SQLite WAL).
+- Editorial da Umdoislab: `/data/editorial/editorial.sqlite3` e `/data/editorial/media/`.
+- Chaves e token cifrado Meta, **se existirem**: permanecem na raiz `/data`, sem migração destrutiva; `/data/options.json` contém opções operacionais privadas no ambiente do add-on. Nunca copiar dados, tokens, opções ou chaves reais para o pacote ou para o Git.
+- Migrações são aditivas; preservar diretórios, credenciais, mídias, chaves e os dois bancos durante qualquer atualização futura autorizada. Histórico `IndexedDB` do protótipo não é apagado nem importado automaticamente. Um backup consistente, inclusive WAL e mídia, deve ser avaliado no portão da instalação; não bloqueia a preparação privada deste pacote.
 
-Banco de dados persistente: `/data/instagram.sqlite3`. Não apagar, copiar para o Git nem compartilhar conteúdo real. Não expor a porta 8099 diretamente.
+## Estado seguro por padrão
 
-## Segurança e limites
+`ingress_enabled: false`, `drafts_enabled: false`, `meta_oauth_enabled: false`. São opções de integração específicas, **não** o campo `ingress: true` que apresenta o painel pelo Home Assistant. Senhas/segredos começam vazios no manifesto e nunca devem aparecer no Git.
 
-- Painel HTML com autenticação independente e proteção CSRF, sem envio.
-- Bridge por `X-Instagram-Bridge-Secret` (mínimo 32 caracteres), mas sem n8n conectado.
-- Entrada Meta com assinatura HMAC-SHA256, desligada por padrão.
-- Não há credenciais, logins, dados reais de clientes ou serviços externos no pacote.
-- Publicação no catálogo não equivale a instalação ou homologação no Raspberry.
+A Central **não** publica posts, não envia Direct, não liga robô Gemini, não chama WooCommerce/n8n ou WhatsApp, não configura NGINX e não expõe a porta 8099 diretamente. Meta real, webhooks e primeira DM pertencem a homologação futura com autorização específica. `publishingEnabled:false` nas APIs editoriais.
 
-Fonte de desenvolvimento: `mmcromero/instagram-automacoes`, branch `feat/central-instagram-fase1`, PR #2. Evidências e acompanhamento: Issue #1.
+Acesso administrativo deve ser por HA Ingress e HTTPS confiável quando usado com credenciais reais. A sessão do painel e as rotas Editorial exigem autenticação; mutações exigem CSRF por ação, e a mídia é privada. MP4 passa por verificação **estrutural**; não há transcodificação nem antivírus. Limites atuais: 25 MiB por upload, 20 MP para imagens, biblioteca até 500 arquivos/1 GiB e até 1000 publicações locais. Não há rotina automática de limpeza.
 
+## Testes de desenvolvimento — evidências já aceitas com ressalvas
 
-## OAuth Meta — desenvolvimento isolado (ainda não instalado)
+No código base do PR #7, sem alterações de lógica nesta candidata:
+- `python3 scripts/validate_offline.py`: **152/152 PASS**.
+- `node instagram-central/tests/editorial_browser.cjs`: **PASS** em navegador Chromium com dados sintéticos.
+- Build complementar no Linux/amd64, montando CA temporária do executor como segredo BuildKit: **149/149 testes do add-on PASS**. O Dockerfile original falhou por confiança TLS ao buscar índices Alpine naquele ambiente (exit 1); a execução não ocorreu em novo ambiente Codex independente.
 
-A branch `feat/instagram-meta-unified-oauth` acrescenta o fluxo **Meta Unified Login** com `config_id`, retorno `GET /oauth/meta/callback`, `state` único com cookie seguro, troca do código no Graph e credencial criptografada em `/data`. Continua **desativado por padrão** (`meta_oauth_enabled:false`). Essa função ainda não está presente na versão 0.1.1 instalada antes da atualização autorizada.
+Essas evidências **não comprovam** build `aarch64` ou execução no Home Assistant, e não devem ser repetidas por rotina quando só versão/documentação mudou. O Supervisor poderá construir no hardware alvo **apenas durante uma instalação autorizada**. Norma: [P0 do catálogo Home Assistant](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md).
 
-Rotas de laboratório: `/oauth/meta/start` e `/oauth/meta/status` requerem Basic do administrador. `/oauth/meta/callback` é público somente após futura configuração de proxy HTTPS específico e OAuth ativado. O token **não é mostrado em resposta, log ou painel**. A existência do token não comprova acesso validado à conta Instagram. Nenhuma chamada de envio de mensagens foi adicionada.
+## Distribuição Home Assistant — catálogo publicado, instalação pendente
 
-**Não cadastre URL de redirecionamento na Meta agora**: é necessário antes definir e homologar uma rota pública HTTPS que encaminhe somente os caminhos OAuth, sem expor os endpoints de bridge, o painel ou outros serviços. Consulte `docs/META-OAUTH-UNIFIED-001.md`.
+A fonte privada 0.1.7 permanece em `release/instagram-0.1.7-rc.1`. A distribuição correspondente está em `mmcromero/hassio-addons:main/instagram-central/`, preservando os dois arquivos de marca oficiais, `icon.png` e `logo.png`.
 
-## Versão 0.1.2 — ativação não automática
+**Próximo passo, mediante autorização específica:** atualizar apenas o add-on Central Instagram no Home Assistant, preservando opções e dados. Após a instalação, conferir o build do Supervisor, login, Mensagens e Editorial. Registrar a evidência na Issue #1.
 
-Atualização experimental com OAuth Meta desativado por padrão. O callback só funcionará após configuração específica e homologada do HTTPS em `https://romeropi.duckdns.org:8443/oauth/meta/callback` e opção `meta_oauth_enabled: true`. **Não preencha nem ative as credenciais OAuth neste primeiro teste.** O formulário Meta só deve receber a URL depois que a rota pública estiver verificada. Não há envio de mensagens ou acesso ao WhatsApp.
+O método oficial é publicar **os arquivos da pasta no GitHub**, não gerar TAR, ZIP ou imagem Docker separada. Na atualização autorizada do Home Assistant, o Supervisor poderá construir o add-on pelo Dockerfile na arquitetura alvo. **Publicação no catálogo não equivale a instalação ou homologação**. Não iniciar Actions, fazer merge automático do PR #7 nem ativar Meta.
 
-## Lote 1 — Conectar Instagram e receber uma mensagem real
-
-A versão 0.1.6 apresenta no painel:
-- Checklist de campos Meta preenchidos (sem revelar segredos).
-- **Autorização pela Meta:** depois do callback OAuth, o servidor verifica `/me/assigned_instagram_accounts` e exige a identidade exata de `@umdoislab` antes de guardar o token cifrado.
-- **Verificar acesso Meta:** testa a credencial na Graph API com uma ação administrativa explícita.
-- **Assinar mensagens na Meta:** solicita somente eventos `messages` para a conta Instagram identificada. Não envia mensagens e não habilita robôs.
-- Contador de mensagens recebidas pelo webhook com HMAC válido e última data registrada; carregamento do painel não dispara chamadas Meta.
-
-**Identificadores públicos confirmados no painel Meta:**
-- Meta App ID: `1783613199623321`
-- Login config ID: `990074610355962`
-- Instagram Account ID: `17841454345931235`
-- Callback OAuth candidato: `https://romeropi.duckdns.org:8443/oauth/meta/callback`
-- Webhook candidato: `https://romeropi.duckdns.org:8443/webhook/instagram`
-
-**Importante:** os caminhos HTTPS precisam ser validados no NGINX real. O arquivo de proxy foi preparado somente no repositório privado; não foi instalado no Raspberry. A Meta ainda não foi autorizada, não houve assinatura do webhook e nenhum recebimento real foi homologado. A versão 0.1.6 **não liga OAuth, webhook ou rascunhos automaticamente**. Nenhuma integração WhatsApp/n8n/Gemini é alterada.
-
-Requisitos Meta: `instagram_basic` e `instagram_manage_messages`, token de usuário do sistema da configuração *Unified Login*, Graph API em `graph.facebook.com`. Token e segredo do app nunca entram no GitHub ou em conversas.
-
-**Roteiro e critérios de aceite:** `docs/IG-LOT1-REAL-001.md` no repositório privado `mmcromero/instagram-automacoes` e Issue #1.
+Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.

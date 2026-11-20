@@ -79,14 +79,16 @@ def verify_access(cfg, token, opener=urlopen):
     if len(matches) != 1:
         raise ConnectionError("Expected Instagram account was not granted")
     username = matches[0].get("username")
-    if not isinstance(username, str) or username.lower().lstrip("@") != "umdoislab":
+    expected_username = str(cfg.get("instagram_expected_username") or "umdoislab").lower().lstrip("@")
+    if not isinstance(username, str) or username.lower().lstrip("@") != expected_username:
         raise ConnectionError("Instagram account name mismatch")
     business = request_graph(version, "/me", token,
         fields={"fields": "client_business_id"}, opener=opener)
     business_id = business.get("client_business_id")
     if not isinstance(business_id, str) or not IG_ACCOUNT.fullmatch(business_id):
         raise ConnectionError("Business portfolio access not verified")
-    return {"account_id": expected_id, "username": username,
+    return {"business_id": cfg.get("business_id", "umdoislab"),
+            "account_id": expected_id, "username": username,
             "client_business_id": business_id, "verified_at": int(time.time())}
 
 
@@ -95,7 +97,8 @@ def subscribe_messages(cfg, credential, opener=urlopen):
     account_id = cfg.get("instagram_account_id")
     if not isinstance(account_id, str) or not IG_ACCOUNT.fullmatch(account_id):
         raise ConnectionError("Instagram account not configured")
-    if not isinstance(credential, dict) or credential.get("account_id") != account_id:
+    if (not isinstance(credential, dict) or credential.get("account_id") != account_id
+            or credential.get("business_id", "umdoislab") != cfg.get("business_id", "umdoislab")):
         raise ConnectionError("Account must be verified")
     if not (isinstance(cfg.get("meta_verify_token"), str) and len(cfg["meta_verify_token"]) >= 24
             and isinstance(cfg.get("meta_app_secret"), str) and len(cfg["meta_app_secret"]) >= 16
@@ -115,9 +118,11 @@ def credential_status(credential, cfg):
         return {"account_verified": False, "subscription_requested": False}
     account_id = cfg.get("instagram_account_id")
     username = credential.get("username")
-    verified = (isinstance(account_id, str)
+    verified = (credential.get("business_id", "umdoislab") == cfg.get("business_id", "umdoislab")
+                and isinstance(account_id, str)
                 and credential.get("account_id") == account_id
-                and isinstance(username, str) and username.lower() == "umdoislab"
+                and isinstance(username, str) and username.lower().lstrip("@") ==
+                    str(cfg.get("instagram_expected_username") or "umdoislab").lower().lstrip("@")
                 and isinstance(credential.get("verified_at"), int)
                 and credential["verified_at"] > 0)
     return {"account_verified": bool(verified),

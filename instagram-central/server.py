@@ -17,6 +17,9 @@ from panel_actions import parse_action, token_for
 from policy import prepare_decision
 import oauth_meta
 import instagram_connection
+import account_registry
+import editorial_core
+import editorial_http
 import panel_login
 from urllib.parse import parse_qs, urlsplit
 
@@ -92,23 +95,37 @@ def _utc_now():
     return datetime.now(timezone.utc)
 
 
-def list_pending(limit=50):
-    """Read-only queue overview; does NOT reserve messages."""
+def primary_meta_id(cfg=None):
+    """The legacy bridge may operate only the Umdoislab tenant."""
+    current = settings() if cfg is None else cfg
+    with database() as conn:
+        account_registry.ensure_primary(conn, current.get("instagram_account_id"))
+        return account_registry.require_business(
+            conn, account_registry.PRIMARY_BUSINESS)["instagram_account_id"]
+
+
+def list_pending(limit=50, *, account_id=None):
+    """Read-only queue for a single Meta recipient, never the whole database."""
+    if account_id is None:
+        account_id = primary_meta_id()
     with database() as conn:
         rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_id,
             i.message_text, i.received_at,
             COALESCE(h.state, 'bot') AS handoff_state
             FROM inbound i LEFT JOIN handoff h
               ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
-            WHERE i.processed_at IS NULL
-            ORDER BY i.received_at, i.rowid LIMIT ?""", (min(max(int(limit), 1), 50),)).fetchall()
+            WHERE i.processed_at IS NULL AND i.recipient_id=?
+            ORDER BY i.received_at, i.rowid LIMIT ?""",
+            (account_id, min(max(int(limit), 1), 50))).fetchall()
     return [{"channel": "instagram", "accountId": r[0],
              "senderId": r[1], "messageId": r[2], "messageText": r[3],
              "receivedAt": r[4], "handoffState": r[5]} for r in rows]
 
 
-def claim_message(lease_seconds=120):
-    """Reserve exactly one message atomically; no external request or send."""
+def claim_message(lease_seconds=120, *, account_id=None):
+    """Reserve a message only within the authorized recipient queue."""
+    if account_id is None:
+        account_id = primary_meta_id()
     now = _utc_now()
     now_iso = now.isoformat()
     until_iso = (now + timedelta(seconds=lease_seconds)).isoformat()
@@ -119,9 +136,11 @@ def claim_message(lease_seconds=120):
           i.message_text, i.received_at, COALESCE(h.state, 'bot')
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
-          WHERE i.processed_at IS NULL AND COALESCE(h.state, 'bot') = 'bot'
+          WHERE i.processed_at IS NULL AND i.recipient_id=?
+            AND COALESCE(h.state, 'bot') = 'bot'
             AND (i.claim_until IS NULL OR i.claim_until <= ?)
-          ORDER BY i.received_at, i.rowid LIMIT 1""", (now_iso,)).fetchone()
+          ORDER BY i.received_at, i.rowid LIMIT 1""",
+          (account_id, now_iso)).fetchone()
         if row is None:
             return None
         conn.execute("""UPDATE inbound SET claim_token=?, claim_until=?
@@ -250,9 +269,14 @@ def signature_valid(body, signature, app_secret):
 
 
 def normalized_messages(payload, account_id=None):
-    """Only normal text messages. Ignore echoes, unsupported media and malformed objects."""
+    """Only normal text messages, scoped to permitted Meta recipient IDs."""
     if not isinstance(payload, dict) or payload.get("object") != "instagram":
         return []
+    allowed = (frozenset(value for value in account_id
+                         if isinstance(value, str) and value)
+               if isinstance(account_id, (list, set, frozenset, tuple))
+               else frozenset((account_id,)) if isinstance(account_id, str) and account_id
+               else frozenset())
     found = []
     entries = payload.get("entry")
     if not isinstance(entries, list):
@@ -274,8 +298,8 @@ def normalized_messages(payload, account_id=None):
             recipient_id = recipient.get("id")
             mid = msg.get("mid")
             text = msg.get("text")
-            if not isinstance(account_id, str) or not account_id or recipient_id != account_id:
-                continue  # reject events from other Instagram business accounts
+            if not isinstance(recipient_id, str) or recipient_id not in allowed:
+                continue  # reject unknown/disabled recipients; preserve official accountId
             if sender_id == recipient_id:
                 continue  # never treat business-originated content as a customer request
             if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (sender_id, recipient_id, mid)):
@@ -287,14 +311,26 @@ def normalized_messages(payload, account_id=None):
 
 
 def persist(body, account_id=None):
+    """Route signed events by known recipient, never by caller-provided business_id."""
     try:
         payload = json.loads(body)
     except (ValueError, UnicodeDecodeError):
         return None
-    messages = normalized_messages(payload, account_id)
+    # Only a payload already matching the configured legacy recipient can
+    # bootstrap the single existing account; arbitrary events cannot remap it.
+    legacy_messages = normalized_messages(payload, account_id)
     inserted = 0
     with database() as conn:
+        account_registry.prepare(conn)
+        if legacy_messages:
+            account_registry.ensure_primary(conn, account_id)
+        # Do not activate secondary tenants through the legacy single-account
+        # webhook. Future multi-account webhook auth must explicitly authorize them.
+        allowed = account_registry.active_meta_ids(conn).intersection((account_id,))
+        messages = normalized_messages(payload, allowed)
         for rid, sid, mid, msg in messages:
+            if account_registry.resolve_meta(conn, rid) is None:
+                continue
             cursor = conn.execute(
                 "INSERT OR IGNORE INTO inbound (recipient_id,sender_id,message_id,message_text,received_at) VALUES(?,?,?,?,?)",
                 (rid, sid, mid, msg, datetime.now(timezone.utc).isoformat()))
@@ -405,17 +441,60 @@ def panel_authorized(headers, cfg):
 
 
 
-def _meta_credential():
+def _meta_credential(business_id=account_registry.PRIMARY_BUSINESS):
+    """Read only this context's token directory; never fall back to primary."""
     try:
-        return oauth_meta.load_token(DATA_DIR)
-    except oauth_meta.OAuthError:
+        cfg = meta_configuration_for_business(business_id)
+        root = account_registry.credential_root(DATA_DIR, business_id).absolute()
+        if any(parent.is_symlink() for parent in (root, *root.parents)):
+            return None
+        credential = oauth_meta.load_token(root)
+        if credential is None:
+            return None
+        # Legacy unlabelled tokens belong only to Umdoislab.
+        if credential.get("business_id", "umdoislab") != business_id:
+            return None
+        if credential.get("account_id") not in (None, cfg["instagram_account_id"]):
+            return None
+        return credential
+    except (oauth_meta.OAuthError, account_registry.RegistryError):
         return None
+
+
+def editorial_store_for_business(business_id=account_registry.PRIMARY_BUSINESS):
+    """Internal-only scoped EditorialStore, same add-on, no alternate login/API."""
+    with database() as conn:
+        account_registry.ensure_primary(conn, settings().get("instagram_account_id"))
+        account_registry.require_business(conn, business_id)
+    return editorial_core.EditorialStore(
+        account_registry.editorial_root(DATA_DIR, business_id))
+
+
+def meta_configuration_for_business(business_id=account_registry.PRIMARY_BUSINESS):
+    """Return scoped settings; future tenants inherit no active integration switches."""
+    with database() as conn:
+        account_registry.ensure_primary(conn, settings().get("instagram_account_id"))
+        account = account_registry.require_business(conn, business_id)
+    cfg = dict(settings())
+    cfg["business_id"] = business_id
+    cfg["instagram_account_id"] = account["instagram_account_id"]
+    cfg["instagram_expected_username"] = account["username"]
+    if business_id != account_registry.PRIMARY_BUSINESS:
+        # Never reuse Umdoislab's legacy bridge secret or active switches.
+        # Secondary OAuth and webhooks require explicit per-tenant configuration.
+        cfg = {key: cfg[key] for key in ("meta_app_id", "meta_login_config_id", "meta_graph_version",
+               "business_id", "instagram_account_id", "instagram_expected_username") if key in cfg}
+        cfg["bridge_secret"] = ""
+        cfg["meta_oauth_enabled"] = False
+        cfg["ingress_enabled"] = False
+        cfg["drafts_enabled"] = False
+    return cfg
 
 
 def connection_summary(cfg, credential=None):
     """Local evidence only. A saved token is NOT proof of webhook delivery."""
     if credential is None:
-        credential = _meta_credential()
+        credential = _meta_credential(cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
     state = instagram_connection.credential_status(credential, cfg)
     account_id = cfg.get("instagram_account_id", "")
     with database() as conn:
@@ -427,7 +506,7 @@ def connection_summary(cfg, credential=None):
             row = (0, None)
     return {
         "oauthReady": oauth_meta.is_ready(cfg),
-        "tokenStored": oauth_meta.token_exists(DATA_DIR),
+        "tokenStored": bool(credential),
         "accountVerified": state["account_verified"],
         "subscriptionRequested": state["subscription_requested"],
         "webhookEnabled": cfg.get("ingress_enabled") is True,
@@ -504,6 +583,8 @@ def _meta_action_body(raw):
 
 def render_panel(cfg=None):
     """Escaped local-only panel, with no Meta send or browser scripts."""
+    cfg = cfg or {}
+    account_id = primary_meta_id(cfg)
     with database() as conn:
         rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
           i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
@@ -512,7 +593,8 @@ def render_panel(cfg=None):
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
           LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
             AND i.sender_id=d.sender_id AND i.message_id=d.message_id
-          ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""").fetchall()
+          WHERE i.recipient_id=?
+          ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""", (account_id,)).fetchall()
     entries = []
     cfg = cfg or {}
     for account, sender, message, received, processed, state, draft, draft_status in rows:
@@ -540,7 +622,7 @@ def render_panel(cfg=None):
 <style>body{font:16px system-ui;margin:2rem;max-width:1100px;color:#182334}
 table{border-collapse:collapse;width:100%}th,td{padding:.7rem;border-bottom:1px solid #ddd;text-align:left;overflow-wrap:anywhere}
 th{background:#f1f4f7}small{color:#58657a}form{display:inline-block;margin:3px}button{padding:.4rem .6rem;cursor:pointer}</style></head><body>
-<h1>Central Instagram</h1><p>Laboratório: ações alteram somente o estado local.</p>
+<h1>Central Instagram</h1><nav aria-label="Módulos"><a href="./">Mensagens</a> · <a href="editorial/">Editorial</a></nav><p>Laboratório: ações alteram somente o estado local.</p>
 <form method="post" action="auth/logout"><button type="submit">Sair</button></form>
 """ + connection_section + """
 <small>Últimas 50 mensagens. Não envia respostas ao Instagram.</small>
@@ -549,15 +631,20 @@ th{background:#f1f4f7}small{color:#58657a}form{display:inline-block;margin:3px}b
 
 
 class Handler(BaseHTTPRequestHandler):
-    def respond(self, status, body, content_type="application/json"):
-        raw = body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
+    def respond(self, status, body, content_type="application/json", *, csp=None):
+        raw = body if isinstance(body, bytes) else body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
         self.send_response(status)
-        self.send_header("Content-Type", content_type + "; charset=utf-8")
+        self.send_header("Content-Type", content_type + ("; charset=utf-8" if content_type.startswith("text/") or content_type == "application/json" else ""))
         self.send_header("Content-Length", str(len(raw)))
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
-        if content_type == "text/html":
+        if csp:
+            self.send_header("Content-Security-Policy", csp if content_type == "text/html" else "default-src 'none'; sandbox")
+            if content_type in ("image/png", "image/jpeg", "video/mp4"):
+                self.send_header("Content-Disposition", "inline")
+                self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        elif content_type == "text/html":
             self.send_header("Content-Security-Policy",
                              "default-src 'none'; style-src 'unsafe-inline'; "
                              "form-action 'self'; base-uri 'none'; object-src 'none'")
@@ -566,8 +653,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         route = urlsplit(self.path)
-        if route.path == "/oauth/meta/status" and not route.query:
+        if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, settings(),
+                panel_session_authorized(self.headers, settings()), editorial_store_for_business):
+            return
+        if route.path == "/panel/account-context" and not route.query:
             cfg = settings()
+            if not panel_session_authorized(self.headers, cfg):
+                return self.respond(403, {"error": "access denied"})
+            account_id = primary_meta_id(cfg)
+            return self.respond(200, {
+                "businessId": account_registry.PRIMARY_BUSINESS,
+                "instagramAccountId": account_id,
+                "editorialCorePrepared": True,
+                "editorialUIIntegrated": True,
+                "sendingEnabled": False,
+                "publishingEnabled": False
+            })
+        if route.path == "/oauth/meta/status" and not route.query:
+            try:
+                cfg = meta_configuration_for_business()
+            except account_registry.RegistryError:
+                return self.respond(503, {"error": "account context unavailable"})
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
             summary = connection_summary(cfg)
@@ -578,7 +684,10 @@ class Handler(BaseHTTPRequestHandler):
             summary["sendingEnabled"] = False
             return self.respond(200, summary)
         if route.path == "/oauth/meta/start" and not route.query:
-            cfg = settings()
+            try:
+                cfg = meta_configuration_for_business()
+            except account_registry.RegistryError:
+                return self.respond(503, {"error": "account context unavailable"})
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
             try:
@@ -595,18 +704,22 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if route.path == "/oauth/meta/callback":
-            cfg = settings()
+            try:
+                cfg = meta_configuration_for_business()
+            except account_registry.RegistryError:
+                return self.respond(503, {"error": "account context unavailable"})
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
             try:
                 state, code = oauth_meta.parse_callback(
                     route.query, self.headers.get("Cookie", ""))
                 with database() as conn:
-                    oauth_meta.consume_state(conn, state)
+                    oauth_meta.consume_state(conn, state, cfg=cfg)
                 credential = oauth_meta.exchange_code(code, cfg)
                 identity = instagram_connection.verify_access(
                     cfg, credential["access_token"])
                 credential.update(identity)
+                credential["business_id"] = cfg["business_id"]
                 oauth_meta.store_token(DATA_DIR, credential)
             except oauth_meta.OAuthError:
                 return self.respond(400, {"error": "OAuth refused or expired"})
@@ -639,7 +752,7 @@ class Handler(BaseHTTPRequestHandler):
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
-            return self.respond(200, {"messages": list_pending()})
+            return self.respond(200, {"messages": list_pending(account_id=primary_meta_id(cfg))})
         if self.path == "/health":
             return self.respond(200, {"ok": True, "service": "instagram-central", "mode": "isolated"})
         if self.path.startswith("/webhook/instagram?"):
@@ -657,8 +770,15 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "not found"})
 
     def do_POST(self):
+        route = urlsplit(self.path)
+        if route.path.startswith("/editorial") and editorial_http.handle(self, "POST", route, settings(),
+                panel_session_authorized(self.headers, settings()), editorial_store_for_business):
+            return
         if self.path in ("/panel/meta/check", "/panel/meta/subscribe"):
-            cfg = settings()
+            try:
+                cfg = meta_configuration_for_business()
+            except account_registry.RegistryError:
+                return self.respond(503, {"error": "account context unavailable"})
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
             if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
@@ -679,7 +799,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
             try:
                 credential = _meta_credential()
-                if credential is None:
+                if credential is None or credential.get("business_id", "umdoislab") != cfg["business_id"]:
                     raise instagram_connection.ConnectionError("No token available")
                 if action == "check":
                     identity = instagram_connection.verify_access(
@@ -774,7 +894,7 @@ class Handler(BaseHTTPRequestHandler):
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
-            return self.respond(200, {"message": claim_message()})
+            return self.respond(200, {"message": claim_message(account_id=primary_meta_id(cfg))})
         if self.path in ("/bridge/handoff", "/bridge/ack", "/bridge/decision", "/bridge/draft"):
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
@@ -789,6 +909,10 @@ class Handler(BaseHTTPRequestHandler):
                 data = json.loads(self.rfile.read(size))
             except (ValueError, UnicodeDecodeError):
                 return self.respond(400, {"error": "invalid JSON"})
+            # The existing bridge_secret belongs to Umdoislab only.
+            # Per-account bridge secrets are a future feature, not enabled here.
+            if not isinstance(data, dict) or data.get("accountId") != primary_meta_id(cfg):
+                return self.respond(403, {"error": "wrong account scope"})
             if self.path == "/bridge/handoff":
                 if not set_handoff(data):
                     return self.respond(422, {"error": "invalid handoff"})
