@@ -123,3 +123,23 @@ def failed_attempt(client_id, now=None):
 def successful_attempt(client_id):
     with _ATTEMPTS_LOCK:
         _ATTEMPTS.pop(client_id, None)
+
+
+def admin_csrf_token(cookie_header, password, action, bucket=None):
+    """Action-scoped 5-minute CSRF token bound to a browser session and panel key."""
+    token = cookie_token(cookie_header)
+    if (token is None or not _valid_password(password)
+            or action not in ("check", "subscribe")):
+        return ""
+    bucket = int(time.time() // 300) if bucket is None else int(bucket)
+    raw = ("instagram-meta-v1:" + action + ":" + token + ":" + str(bucket)).encode("ascii")
+    return hmac.new(password.encode("utf-8"), raw, hashlib.sha256).hexdigest()
+
+
+def admin_csrf_valid(cookie_header, password, action, candidate):
+    if not isinstance(candidate, str) or not re.fullmatch("[0-9a-f]{64}", candidate):
+        return False
+    bucket = int(time.time() // 300)
+    return any(hmac.compare_digest(candidate,
+                  admin_csrf_token(cookie_header, password, action, b))
+               for b in (bucket, bucket - 1))
