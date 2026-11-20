@@ -65,6 +65,67 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
         # Do not silently accept privileged actions if audit storage is unavailable.
         raise RuntimeError("Audit storage unavailable")
 
+def recent_operations():
+    """Return bounded, sanitized audit statuses; no paths, tokens or bodies."""
+    if AUDIT_PATH.is_symlink():
+        raise RuntimeError("Unsafe audit log")
+    if not AUDIT_PATH.exists():
+        return []
+    try:
+        if not AUDIT_PATH.is_file():
+            raise RuntimeError("Unsafe audit log")
+        with AUDIT_PATH.open("rb") as log:
+            log.seek(0, os.SEEK_END)
+            length = log.tell()
+            window = min(length, 131072)
+            log.seek(length - window)
+            raw = log.read(window)
+        if length > window:
+            # First entry may be partial: discard it.
+            raw = raw.partition(b"\n")[2]
+        lines = raw.splitlines()[-256:]
+        safe_actions = OPERATIONS | {
+            "/api/preflight", "/api/prepare", "/api/prepare-declarative",
+            "/api/worker/run:diagnose", "/api/worker/run:profile",
+            "/api/worker/run:preflight"
+        }
+        safe_states = {
+            "requested", "blocked_authorization", "blocked_policy",
+            "blocked_workspace_or_git", "blocked_worker", "completed_read_only",
+            "completed_preparation"
+        }
+        found = {}
+        for line in reversed(lines):
+            try:
+                event = json.loads(line)
+            except (UnicodeError, ValueError):
+                continue
+            if not isinstance(event, dict):
+                continue
+            operation_id = event.get("operation_id")
+            action = event.get("action")
+            state = event.get("status")
+            when = event.get("time")
+            if (not isinstance(operation_id, str)
+                    or not re.fullmatch(r"[0-9a-f-]{36}", operation_id)
+                    or not isinstance(action, str)
+                    or not isinstance(state, str)
+                    or action not in safe_actions or state not in safe_states
+                    or not isinstance(when, str)
+                    or not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", when)):
+                continue
+            if operation_id not in found:
+                found[operation_id] = {
+                    "operation_id": operation_id, "action": action,
+                    "status": state, "time": when
+                }
+            if len(found) >= 20:
+                break
+        return list(found.values())
+    except OSError as exc:
+        raise RuntimeError("Audit log unreadable") from exc
+
+
 def listed_projects():
     """Only configured, validated project profiles; never auto-discover scripts."""
     result = {}
@@ -396,12 +457,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        if self.path not in ("/", "/api/status", "/api/projects"):
+        if self.path not in ("/", "/api/status", "/api/projects", "/api/operations"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
         if self.path == "/api/projects":
             return self.respond(200, {"projects": list(listed_projects().values())})
+        if self.path == "/api/operations":
+            try:
+                return self.respond(200, {"operations": recent_operations(),
+                                          "source": "sanitized_audit"})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
         return self.respond(200, {
             "service": "factory-runner",
             "status": "read_only_preflight",

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.12 — Histórico autenticado de operações (RC experimental)
+
+- Novo endpoint somente leitura `GET /api/operations` com Bearer, até 20 operações recentes; dados sanitizados (`operation_id`, `action`, `status`, `time`).
+- Leitura limitada a 128 KiB; linhas inválidas ignoradas e log inseguro/indisponível bloqueado sem expor segredos.
+- Quatro testes HTTP adicionais de autenticação, estados, sigilo, symlink e dados inválidos.
+- Dois testes extras do executor externo exigem recusa de tokens de produção e Docker remoto; executor continua FORA da imagem final e sem permissão Docker no HA.
+- Verificação local reproduzida da função de leitura de operações: 5 cenários PASS. A suíte completa do repositório ainda deverá rodar no estágio Docker validation do HA; sem alegar PASS antecipado.
+- Nenhum outro add-on alterado; sem Actions, instalação no Raspberry, merge privado ou publicação de pacotes dos projetos. Issue #2.
+
+
 ## 0.1.0-rc.11 — Correção dos testes do build HA
 
 - Corrigida chamada de `isolated_builder_preflight` no teste: agora passa SHA e versão exigidos.
