@@ -223,4 +223,97 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertFalse(r["eligible"])
         self.assertIn("NO_OPEN_PACKAGE",r["errors"])
 
+
+    def sync_only_profile(self):
+        """Artesão Digital-shaped fixture with no Avisaqui release policy."""
+        self.put(self.source, "apps/umdoislab/artesao-release.json",
+                 json.dumps({"version": "0.2.0-dev.28", "distributions":
+                             ["home-assistant", "debian"]}))
+        self.commit(self.source, "artesao version")
+        self.git(self.source, "branch", "-f", "desenvolvimento", "main")
+        self.profile = {"schema_version": 1, "mode": "sync_only",
+            "id": "fixture", "product": "Artesão Digital",
+            "source_repo": "fixture/source", "distribution_repo": "fixture/catalog",
+            "source_ref": "refs/remotes/origin/desenvolvimento",
+            "public_ref": "refs/remotes/origin/main",
+            "source_version_file": "apps/umdoislab/artesao-release.json"}
+        (self.projects / "fixture.json").write_text(json.dumps(self.profile))
+        return self.git(self.source, "rev-parse", "HEAD")
+
+    def test_artesao_sync_only_git_and_version_verified(self):
+        from rc_fastlane import load_profile
+        source_sha = self.sync_only_profile()
+        self.assertEqual(load_profile(self.projects / "fixture.json")["mode"], "sync_only")
+        result = self.run_sync()
+        self.assertEqual(result["state"], "SYNCED")
+        self.assertEqual(result["source_sha"], source_sha)
+        self.assertFalse(result["eligible"])
+        self.assertEqual(result["errors"], ["SYNC_ONLY_NO_PREPARATION"])
+        self.assertTrue((self.workspaces / "fixture" / "source" / ".git").is_dir())
+        self.assertFalse((self.workspaces / "fixture" / "source" /
+                          "apps/umdoislab/artesao-release.json").exists())
+        self.assertEqual(self.run_sync()["state"], "UNCHANGED")
+
+    def test_artesao_sync_only_invalid_profile_is_rejected(self):
+        from rc_fastlane import PreflightError, load_profile
+        self.sync_only_profile()
+        for extra in ({"exporter_path": "scripts/run.py"},
+                      {"source_version_file": "../options.json"},
+                      {"source_ref": "refs/remotes/origin/../main"},
+                      {"source_repo": "https://unapproved.invalid/repo"}):
+            invalid = dict(self.profile, **extra)
+            (self.projects / "fixture.json").write_text(json.dumps(invalid))
+            with self.assertRaises(PreflightError):
+                load_profile(self.projects / "fixture.json")
+        (self.projects / "fixture.json").write_text(json.dumps(self.profile))
+
+    def test_artesao_sync_only_missing_version_refuses_adoption(self):
+        self.sync_only_profile()
+        self.profile["source_version_file"] = "apps/umdoislab/missing.json"
+        (self.projects / "fixture.json").write_text(json.dumps(self.profile))
+        with self.assertRaisesRegex(sync.SyncError, "source_version_unavailable"):
+            self.run_sync()
+        self.assertFalse((self.workspaces / "fixture").exists())
+
+    def test_artesao_sync_only_prepare_and_preflight_are_denied(self):
+        import server
+        from rc_fastlane import PreflightError, evaluate
+        self.sync_only_profile()
+        result = self.run_sync()
+        with (patch.object(server, "PROJECTS_DIR", self.projects),
+              patch.object(server, "WORKSPACES_DIR", self.workspaces),
+              patch.object(server, "PREPARATIONS_DIR", self.root / "preparations")):
+            status = server.listed_projects()["fixture"]
+            self.assertEqual(status["preparation"], "disabled_sync_only")
+            with self.assertRaises(PreflightError):
+                server.preflight_project("fixture", result["source_sha"])
+            with self.assertRaises(PreflightError):
+                server.prepare_project("fixture", result["source_sha"], "fixture-op")
+            with self.assertRaises(PreflightError):
+                server.prepare_project_declarative("fixture", result["source_sha"], "fixture-op")
+        with self.assertRaises(PreflightError):
+            evaluate(self.source, self.dist, result["source_sha"], profile=self.profile)
+        self.assertFalse((self.root / "preparations").exists())
+
+    def test_artesao_sync_only_auto_prepare_cannot_bypass_gate(self):
+        import io
+        import contextlib
+        import server
+        self.sync_only_profile()
+        result = self.run_sync()
+        logs = io.StringIO()
+        with (patch.object(sync, "synchronize", return_value=result),
+              patch.object(server, "PROJECTS_DIR", self.projects),
+              patch.object(server, "WORKSPACES_DIR", self.workspaces),
+              patch.object(server, "AUDIT_PATH", self.root / "audit.jsonl"),
+              patch.object(server, "prepare_project",
+                           side_effect=AssertionError("must never prepare")),
+              patch.object(server, "preflight_project",
+                           side_effect=AssertionError("must never preflight")),
+              contextlib.redirect_stdout(logs)):
+            server.run_workspace_sync("fixture", "secret-not-for-log", auto_prepare=True)
+        self.assertIn("[WORKSPACE] SYNC_ONLY:", logs.getvalue())
+        self.assertIn("[WORKSPACE] PREPARE_BLOCKED_BY_PROFILE:", logs.getvalue())
+        self.assertNotIn("secret-not-for-log", logs.getvalue())
+
 if __name__=="__main__": unittest.main()
