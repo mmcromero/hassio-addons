@@ -1,5 +1,8 @@
 # Fábrica de Software — Factory Runner
 
+**Atualização RC8 — Factory Runner multiprojeto:** o campo de projeto único foi substituído por `workspace_sync_enabled` (desligado por padrão). Quando ativado, o serviço sincroniza em sequência **todos os perfis aprovados** da pasta `projects/`, sem preparar pacotes automaticamente nem publicar. Novos projetos exigem perfis versionados e validados; atualmente somente o Avisaqui possui perfil. Ver [RC8-VALIDACAO.md](RC8-VALIDACAO.md) e [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2). Esta atualização em branch não comprova instalação no HA.
+
+
 **ESTADO ATUAL — Factory Runner RC7 (somente branch; NÃO PUBLICADA/NÃO INSTALADA):** sincronização segura de checkouts GitHub aprovados, com token opcional apenas nas opções protegidas do HA, leitura por SHA e bloqueio por política. A RC6 já foi publicada no catálogo e o log enviado pelo operador confirmou `[E2E] PASS` no HA com dados sintéticos. A versão física da RC7 não foi instalada nem testada. Nunca executar scripts privados sem sandbox; Bubblewrap permanece fail-closed fora da cópia declarativa. Consulte `RC7-VALIDACAO.md` e a Issue #2.
 
 
