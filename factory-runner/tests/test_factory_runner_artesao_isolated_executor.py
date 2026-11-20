@@ -147,7 +147,7 @@ class IsolatedBuilderTests(unittest.TestCase):
             wrong = dict(self.good_policy(), network_policy="online")
             self.write("policy.json", wrong)
             with self.assertRaisesRegex(executor.ExecutorBlocked, "BUILDER_POLICY_NOT_APPROVED"):
-                executor.isolated_builder_preflight(source, dist, out, policy)
+                executor.isolated_builder_preflight(source, dist, out, policy, self.SHA, self.VERSION)
 
     def plan_report(self):
         return {"blocking_errors": [], "candidate_version": self.VERSION,

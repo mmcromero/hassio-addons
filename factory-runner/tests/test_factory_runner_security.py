@@ -206,9 +206,14 @@ class SecurityTests(unittest.TestCase):
 
     def test_declarative_endpoint_respects_closed_package(self):
         auth = "Bearer test-secret-not-for-production-0123456789"
-        with patch.object(server, "preflight_project", return_value={
-            "eligible_for_preparation": False, "errors": ["NO_OPEN_PACKAGE"]
-        }), patch.object(server, "prepare_declarative") as executor:
+        # The route resolves its workspace before evaluating package policy.
+        # Provide only a synthetic workspace; do not change fail-closed behavior.
+        with (patch.object(server, "project_workspace", return_value=(
+                  {"mode": "avisaqui"}, Path(self.folder.name), Path(self.folder.name))),
+              patch.object(server, "preflight_project", return_value={
+                  "eligible_for_preparation": False, "errors": ["NO_OPEN_PACKAGE"]
+              }),
+              patch.object(server, "prepare_declarative") as executor):
             code, data = self.request(
                 "POST", "/api/prepare-declarative",
                 payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
