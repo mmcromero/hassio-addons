@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.1.0-rc.18 — Lote consolidado de integridade e autorização
+
+- Preparação declarativa com recibo SHA-256, escopo exato e preservação de executáveis; repetição idempotente, trava entre processos e diretório final atômico.
+- Console local de projetos/status/preparo/operações, sem porta adicional; auditoria recusa symlink, hardlink e FIFO.
+- Componente separado de publicação SOMENTE em Git local sintético: autorização independente vinculada ao artefato, expiração/revogação/replay, prévia, CAS e recuperação de interrupção. Excluído da imagem final do HA.
+- Verificador offline dos artefatos distintos HA ARM64 e Debian AMD64 do builder Artesão, excluído da imagem final; evidência sintética não equivale a build real.
+- Publicação de pacotes pela API permanece desabilitada. Recibos de preparo permanecem com testes PENDING até execução e aprovação legítimas.
+- Suíte offline integral e revisão técnica registradas no relatório do lote; build/instalação HA e fluxos reais de produtos são homologações separadas.
+
+## Histórico de desenvolvimento anterior ao lote consolidado
+
+Os registros seguintes preservam o estado declarado nos lotes anteriores; evidências novas estão na RC18 e no relatório do lote.
+
+## Em desenvolvimento — executor isolado HA + Debian
+
+- Adicionado `artesao_isolated_executor.py`, executável **exclusivamente fora do Home Assistant**, com pipeline oficial `release-evidence.py` → `prepare-distributions.py` → HA ARM64 e Debian AMD64 → verificação de `SHA256SUMS`/metadados → recibo local.
+- Pré-requisitos de execução: VM descartável independente, prova externa de isolamento de rede, política local vinculada a SHA/versão, cache npm e imagens Docker já disponíveis offline; nenhuma credencial de servidores. O código recusa ambiente de HA, Docker remoto, root, checkout sujo ou HEAD diferente.
+- Interface `--execute` é *opt-in* somente na VM aprovada; sem flag, apenas planeja. Falha não gera recibo de sucesso; saída marcada `INCOMPLETE-NOT-FOR-PUBLICATION`. ZIP da Forja Windows exige descriptor oficial existente, nunca sintetizado.
+- 15 testes adicionais de executor/recibo/hash/política criados; **execução ainda pendente**. Script incluído somente no estágio de validação Docker, excluído da imagem final do add-on. `ARTESAO-BUILDER-002.md` descreve contrato.
+- **Sem nova versão do Factory Runner no catálogo, sem merge, Actions, publicação, instalação ou alteração de servidores.**
+
+
+## Em desenvolvimento — adaptador de pacotes Artesão Digital
+
+- `artesao_adapter.py` analisa a mesma origem Git fixada para dois destinos independentes: HA ARM64 (contingência) e Debian AMD64 (Forja 01 principal).
+- Perfil `artesao_digital.json` usa `mode: artesao_package`, com caminhos e cinco receitas oficiais fixadas por SHA Git; Avisaqui mantém seu perfil e suas regras.
+- Versão e schema são verificados na origem e no catálogo, com gate para reuso de versão, ancestralidade da base, proveniência e migração.
+- **Somente plano/pré-verificação**: não executa scripts, não gera pacote, não compila imagem, não publica. `/api/prepare` continua bloqueado até recibo de validação e builds reais; `/api/prepare-declarative` não reaproveita as regras do Avisaqui.
+- Nove testes de regressão criados com repositórios Git sintéticos; **execução não comprovada** neste lote. Consultar `ARTESAO-ADAPTER-001.md`. Sem alteração de versão de add-on, Actions, merge, catálogo ou servidor.
+
+
 ## 0.1.0-rc.17 — Autodiagnóstico do plano de publicação
 
 - Valida a função somente leitura release_plan após a sincronização, com os workspaces reais já aprovados.

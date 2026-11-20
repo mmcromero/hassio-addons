@@ -237,6 +237,12 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(data["result"]["method"], "declarative_no_script")
         self.assertEqual(data["result"]["state"], "PREPARED_NOT_PUBLISHED")
         self.assertFalse(data["result"]["published"])
+        self.assertEqual(data['result']['tests'], 'PENDING')
+        first_receipt = data['result']['receipt_sha256']
+        code, again = self.request('POST', '/api/prepare')
+        self.assertEqual(code, 200, again)
+        self.assertTrue(again['result']['idempotent'])
+        self.assertEqual(again['result']['receipt_sha256'], first_receipt)
         outputs = list(self.preparations.iterdir())
         self.assertEqual(len(outputs), 1)
         manifest = json.loads(

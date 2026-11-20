@@ -31,6 +31,10 @@ def safe_path(value: str) -> str:
             or any(part in ("", ".", "..") or not SEGMENT.fullmatch(part)
                    for part in value.split("/")) or ".git" in value.split("/")):
         raise DeclarativeExportError("unsafe_path")
+    for part in value.split('/'):
+        if (part in ('.aws', '.ssh', 'id_rsa', 'id_ed25519', 'options.json', '.env')
+                or (part.startswith('.env.') and part != '.env.example')):
+            raise DeclarativeExportError('sensitive_artifact_path')
     return value
 
 def _git(repo: Path, *args: str) -> bytes:
@@ -320,16 +324,22 @@ def prepare_declarative(source_repo: Path, source_sha: str, output_dir: Path,
                                  if line.startswith("version:")), None)
             if version_line is None or version_line.split(":", 1)[1].strip().strip('"').strip("'") != expected_version:
                 raise DeclarativeExportError("source_version_mismatch")
-        files.append((destination, origin, payload))
+        # Preserve the executable bit from the immutable tree, not the checkout.
+        entry = _git(source_repo, 'ls-tree', '-z', source_sha, '--', origin)
+        mode = entry.split(b' ', 1)[0]
+        if mode not in (b'100644', b'100755'):
+            raise DeclarativeExportError('unsupported_git_object')
+        files.append((destination, origin, payload, mode))
     output_dir.mkdir(mode=0o700)
     records = []
-    for destination, origin, payload in files:
+    for destination, origin, payload, mode in files:
         if time.monotonic() - started > MAX_ELAPSED_SECONDS:
             raise DeclarativeExportError("elapsed_budget_exceeded")
         target = output_dir / destination
         target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         with target.open("xb") as stream:
             stream.write(payload)
+        target.chmod(0o755 if mode == b'100755' else 0o644)
         records.append({"path": destination, "source_path": origin,
                         "sha256": hashlib.sha256(payload).hexdigest()})
     manifest = {"format": "factory-runner-bundle-v1", "project": project, "commit": source_sha,

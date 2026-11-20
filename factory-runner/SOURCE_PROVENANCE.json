@@ -1,0 +1,126 @@
+{
+  "format": "factory-runner-source-v1",
+  "repository": "mmcromero/orquestrador-projetos-base",
+  "commit": "2d0edc1a9fdad74ef5604ce7da0034b95b5ea7ba",
+  "version": "0.1.0-rc.18",
+  "expected_distribution_sha": "e44de9ef84de6cd1d260fdd423b9981f2b3a4071",
+  "scope": "factory-runner/",
+  "export_mode": "reviewed_changed_files_only_preserve_existing",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "source_path": "factory-runner-add-on/CHANGELOG.md",
+      "git_blob": "ef971139f442d35e5af916d4b5fa20037b3f3a0f",
+      "mode": "100644",
+      "sha256": "7e53131ebcf5619d1cc7ac4940cd9b8238d88f926af63dec4d99629e226882c7"
+    },
+    {
+      "path": "Dockerfile",
+      "source_path": "factory-runner-add-on/Dockerfile",
+      "git_blob": "b98aaf3c5cbb170980ef0387b52898fa33be0a95",
+      "mode": "100644",
+      "sha256": "16db8cceeb08433a1bbe8d984e738b7ec5759590ebdb1c5487e02bb2dbc80882"
+    },
+    {
+      "path": "RELEASE-PIPELINE.md",
+      "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
+      "git_blob": "d6cb0bb659c7ca1b3521d593b45e04583286bbe3",
+      "mode": "100644",
+      "sha256": "449b682d12c093f8bdfbdc88330bf9affc3d2a51055d8b1a172a692e9f8766c8"
+    },
+    {
+      "path": "artesao_artifacts.py",
+      "source_path": "factory-runner-add-on/artesao_artifacts.py",
+      "git_blob": "10a88cf6cfb043895fedb267857d4cc3c8e76f41",
+      "mode": "100644",
+      "sha256": "13909d1ac2e2871c661a5b1815300e45b40c82c375f3cc6ee84bae72f4955188"
+    },
+    {
+      "path": "artesao_isolated_executor.py",
+      "source_path": "factory-runner-add-on/artesao_isolated_executor.py",
+      "git_blob": "1547e2db9785ab391a3d48cfca6e3d10e78ff632",
+      "mode": "100644",
+      "sha256": "bdcfa6cfbbe6b591e82d66e3667d4121926eac982877f4a2a6d15e513911ea36"
+    },
+    {
+      "path": "config.yaml",
+      "source_path": "factory-runner-add-on/config.yaml",
+      "git_blob": "fc0ba215ae5bdbeba43549af5ac7b1ba3647f124",
+      "mode": "100644",
+      "sha256": "b118efce16500b9e39e921779f369df1da490592997be0fe29e52f71a882e1cd"
+    },
+    {
+      "path": "declarative_export.py",
+      "source_path": "factory-runner-add-on/declarative_export.py",
+      "git_blob": "f02f5312ef2e7dd6141a1842816012ab585ef8cf",
+      "mode": "100644",
+      "sha256": "6b3a57cca2a10d0be381d7b3b387d40bd3a1d3922d50b29efc03a55580296a64"
+    },
+    {
+      "path": "local_publisher.py",
+      "source_path": "factory-runner-add-on/local_publisher.py",
+      "git_blob": "c81cf90b3d65d5cc6c4c5e2cb3096bf666510713",
+      "mode": "100644",
+      "sha256": "e69e14b4231fe73ae76da530f4c326b78859cdc52d936abf820a0c3a920bfb45"
+    },
+    {
+      "path": "release_console.py",
+      "source_path": "factory-runner-add-on/release_console.py",
+      "git_blob": "b95ba697043130686d7a0282f1d02a089b889a8c",
+      "mode": "100644",
+      "sha256": "d3c5ca2a31206cf250f160b55ba8555dc25dc14e8fa3e7c8c29875792af2e6bf"
+    },
+    {
+      "path": "release_receipt.py",
+      "source_path": "factory-runner-add-on/release_receipt.py",
+      "git_blob": "373696fa0d8e767d5ac6f6b9b519ded80cdc7335",
+      "mode": "100644",
+      "sha256": "d26c17ec86800e84b8d1345313e14b48456bfc3b8bf0f29d93971c61de413673"
+    },
+    {
+      "path": "server.py",
+      "source_path": "factory-runner-add-on/server.py",
+      "git_blob": "3eccced73349ac6be2e5fa514ee031078de28347",
+      "mode": "100644",
+      "sha256": "0b47e3a6f3451a7fd5598bfeef89c531fb77b9f6dd55cbf0b23d24ab50e7407a"
+    },
+    {
+      "path": "tests/test_factory_runner_artesao_artifacts.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_artifacts.py",
+      "git_blob": "3d2b0e067cba55e32495ad99d204f1a516e15f79",
+      "mode": "100644",
+      "sha256": "6dbec4dbbd90d291c19fe5a14f92a4d9bd3282c3355ac9649da60594ba9208b2"
+    },
+    {
+      "path": "tests/test_factory_runner_integration.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_integration.py",
+      "git_blob": "425bbd7a5c9c77ef954ad0ad611e050d086476a1",
+      "mode": "100644",
+      "sha256": "9950c196e8a307307484fe2e42ac6b3e8253847f947529900f2d89b226f3d556"
+    },
+    {
+      "path": "tests/test_factory_runner_release_pipeline.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_release_pipeline.py",
+      "git_blob": "1cbbf78554f5a7c4a0104e61748f284e1cbee47b",
+      "mode": "100644",
+      "sha256": "f5df231b0dd374a475919831ac0721648d25107447759e5c85c5cde611b10831"
+    },
+    {
+      "path": "tests/test_factory_runner_security.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_security.py",
+      "git_blob": "f76f8b845e5e1a52e7c3b753b743b79191ac4a48",
+      "mode": "100644",
+      "sha256": "afeec100b0ba74809e535ceebc635efcf30a55eda517c03ba0750515b159ac8e"
+    },
+    {
+      "path": "validate_offline.py",
+      "source_path": "factory-runner-add-on/validate_offline.py",
+      "git_blob": "e72cc910c5beaae975156d1d1d16d448d7aa076e",
+      "mode": "100644",
+      "sha256": "f05133f76d0ca2600c6a6d6f3e4bec3d2dd97f5265e7158faba74b84986d2cba"
+    }
+  ],
+  "validation_sha256": "8ae25f5cf43a9686c737a36d248b214665c45060f85e306f19a942a774e03fd9",
+  "publication_authority": "Issue #2 comments 7033822682 and 7033857731; consolidated experimental Runner RC only",
+  "project_package_publication": "disabled"
+}

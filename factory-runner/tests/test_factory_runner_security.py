@@ -481,11 +481,9 @@ class SecurityTests(unittest.TestCase):
             Path(self.folder.name) / "distribution"
         )), patch.object(server, "trusted_git", side_effect=read_pinned), (
             patch.object(server, "PREPARATIONS_DIR", Path(self.folder.name) / "preparations")
-        ), patch.object(server, "prepare_declarative", return_value={
-            "files": [{"path": "demo/config.yaml"}]
-        }) as copied, patch.object(server, "write_distribution_provenance", return_value={
-            "files": [{"path": "config.yaml"}]
-        }):
+        ), patch.object(server, "_store_declarative", return_value={
+            "state": "PREPARED_NOT_PUBLISHED"
+        }) as copied:
             result = server.prepare_project_declarative("avisaqui", "a" * 40, "fixture")
         self.assertEqual(result["state"], "PREPARED_NOT_PUBLISHED")
         self.assertIn(("show", public_commit), calls)

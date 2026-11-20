@@ -224,6 +224,17 @@ def _checked_profile(profile_file: Path):
     return profile
 
 
+def verify_completed_builder(output, expected_sha, version):
+    """Revalidate imported artifacts while preserving the CLI exception class."""
+    from artesao_artifacts import verify_builder_artifacts
+    from artesao_isolated_executor import ExecutorBlocked as ArtifactBlocked
+    from release_receipt import ReceiptError
+    try:
+        return verify_builder_artifacts(output, expected_sha, version)
+    except (ArtifactBlocked, ReceiptError) as exc:
+        raise ExecutorBlocked('DUAL_ARTIFACT_VERIFICATION_FAILED') from exc
+
+
 def _docker(args: list[str], *, cwd: Path, timeout: int):
     return _run(["docker", "--host=unix:///var/run/docker.sock", *args],
                 cwd=cwd, timeout=timeout)
@@ -397,6 +408,7 @@ def build(source: Path, distribution: Path, profile_file: Path, expected_sha: st
         with out.open("x", encoding="utf-8") as handle:
             json.dump(report_out, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
+        verify_completed_builder(output, expected_sha, version)
         return report_out
     except BaseException:
         # Never conceal a partial build as a completed deliverable.

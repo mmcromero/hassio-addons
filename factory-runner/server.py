@@ -15,6 +15,9 @@ import subprocess
 import threading
 import time
 import uuid
+import fcntl
+import stat
+from contextlib import contextmanager
 from pathlib import Path
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare, git as trusted_git
@@ -22,6 +25,8 @@ from sandbox_export import SandboxUnavailable
 from declarative_export import (DeclarativeExportError, prepare_declarative,
                                 expand_trusted_rules, extend_approved_mapping,
                                 write_distribution_provenance)
+from release_receipt import (seal_receipt, verify_receipt, digest,
+                             ReceiptError)
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -58,7 +63,15 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
     }
     try:
         AUDIT_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-        with AUDIT_PATH.open("a", encoding="utf-8") as log:
+        if AUDIT_PATH.is_symlink() or AUDIT_PATH.parent.resolve() != AUDIT_PATH.parent.absolute():
+            raise OSError("Unsafe audit path")
+        fd = os.open(AUDIT_PATH, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            os.close(fd)
+            raise OSError("Unsafe audit file")
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as log:
             log.write(json.dumps(event, separators=(",", ":")) + "\n")
         AUDIT_PATH.chmod(0o600)
     except OSError:
@@ -288,6 +301,25 @@ def prepare_project(project_id, expected_sha, operation_id):
             "changed_files": prepared["changed_files"],
             "source_sha": expected_sha, "published": False}
 
+@contextmanager
+def preparation_lock(destination):
+    """Serialize API and console writers across processes after policy gates."""
+    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path = destination.parent / (destination.name + '.lock')
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise ReceiptError('unsafe_preparation_lock')
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise ReceiptError('preparation_busy') from exc
+        yield
+    finally:
+        os.close(fd)
+
+
 def prepare_project_declarative(project_id, expected_sha, operation_id):
     """Prepare a local artifact from trusted mappings. Never execute exporter code."""
     # Use the same policy gate as /api/prepare. Do not accept mappings in HTTP.
@@ -339,21 +371,49 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
     destination = PREPARATIONS_DIR.absolute()
     if destination.is_symlink() or destination.resolve() != destination:
         raise DeclarativeExportError("unsafe_preparations_directory")
+    with preparation_lock(destination):
+        return _store_declarative(destination, project_id, expected_sha, profile,
+                                  source, report, mapping, ci_contract)
+
+
+def _store_declarative(destination, project_id, expected_sha, profile,
+                       source, report, mapping, ci_contract):
     destination.mkdir(mode=0o700, parents=True, exist_ok=True)
-    output = destination / (project_id + "-" + expected_sha[:12] + "-" + operation_id)
+    # Server-owned identity covers source, destination snapshot and trusted recipe.
+    # A retry verifies existing bytes rather than creating a second candidate.
+    identity = digest({"source": expected_sha, "distribution": report["public_main_sha"],
+                       "profile": profile})
+    output = destination / (project_id + "-" + identity)
+    if output.exists() or output.is_symlink():
+        receipt = verify_receipt(output)
+        if (receipt["source_sha"] != expected_sha
+                or receipt["profile_sha256"] != digest(profile)
+                or receipt["expected_distribution_sha"] != report["public_main_sha"]):
+            raise ReceiptError("cached_preparation_mismatch")
+        return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
+                "source_sha": expected_sha, "published": False,
+                "receipt_sha256": digest(receipt), "idempotent": True,
+                "publication": "disabled", "tests": receipt["tests"]["status"]}
+    # Publish the local directory atomically only after sealing it. Failed
+    # staging directories are retained for inspection and never reused.
+    staging = destination / (output.name + '.incomplete-' + uuid.uuid4().hex)
     manifest = prepare_declarative(
-        source, expected_sha, output, mapping,
+        source, expected_sha, staging, mapping,
         expected_version=report["candidate_version"], project=project_id)
     release_provenance = write_distribution_provenance(
-        output, manifest, source_repository=profile["source_repo"],
+        staging, manifest, source_repository=profile["source_repo"],
         distribution_prefix=profile["distribution_prefix"],
         provenance_path=profile["provenance_path"],
         ci_patch_source=(ci_contract["patch_source"] if ci_contract else None),
         allowed_shared_paths=profile["allowed_shared_paths"])
+    receipt = seal_receipt(staging, profile=profile, report=report)
+    staging.rename(output)
     return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
             "files": len(manifest["files"]), "source_sha": expected_sha,
             "provenance_files": len(release_provenance["files"]),
-            "published": False, "method": "declarative_no_script"}
+            "published": False, "method": "declarative_no_script",
+            "receipt_sha256": digest(receipt), "idempotent": False,
+            "publication": "disabled", "tests": receipt["tests"]["status"]}
 
 
 def run_workspace_sync(project, token, auto_prepare=False):
@@ -408,7 +468,7 @@ def run_workspace_sync(project, token, auto_prepare=False):
                     print("[WORKSPACE] PREPARED_NOT_PUBLISHED: project=" + project
                           + " source=" + result["source_sha"][:12], flush=True)
         return result
-    except (SyncError, PreflightError, DeclarativeExportError, SandboxUnavailable,
+    except (SyncError, PreflightError, DeclarativeExportError, ReceiptError, SandboxUnavailable,
             OSError, ValueError, TypeError, subprocess.TimeoutExpired, RuntimeError) as exc:
         # Report only constant error codes; no URL, token, request payload or
         # subprocess stderr. Audit failure is fatal to this operation.
@@ -647,7 +707,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         result = prepare_project(project, source_sha, operation_id)
                     else:
                         result = prepare_project_declarative(project, source_sha, operation_id)
-                except (PreflightError, SandboxUnavailable, DeclarativeExportError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+                except (PreflightError, SandboxUnavailable, DeclarativeExportError, ReceiptError, OSError, subprocess.TimeoutExpired, ValueError, TypeError):
                     record(action, None, "blocked_workspace_or_git", operation_id)
                     return self.respond(503, {"error": "workspace_or_export_unavailable",
                                               "operation_id": operation_id})
