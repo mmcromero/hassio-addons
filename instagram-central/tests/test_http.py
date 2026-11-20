@@ -141,6 +141,54 @@ class HTTPContractTests(unittest.TestCase):
         self.assertTrue(json.loads(body)["accountVerified"])
         self.assertFalse(json.loads(body)["sendingEnabled"])
 
+    def test_oauth_callback_logs_safe_failure_stage_without_code(self):
+        self.config.update({
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+            "meta_graph_version": "v27.0",
+            "instagram_account_id": "17841454345931235"})
+        status, headers, _ = self.request("/oauth/meta/start", headers=self.admin_header())
+        self.assertEqual(status, 302)
+        state = parse_qs(urlsplit(headers["Location"]).query)["state"][0]
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        params = urlencode({"code": "test-only-code", "state": state})
+        with patch.object(server.oauth_meta, "exchange_code",
+                          side_effect=server.oauth_meta.OAuthError("Meta authorization exchange failed")):
+            with self.assertLogs(server.LOGGER, level="ERROR") as captured:
+                status, _, _ = self.request("/oauth/meta/callback?" + params,
+                                            headers={"Cookie": cookie})
+        self.assertEqual(status, 400)
+        diagnostic = "\\n".join(captured.output)
+        self.assertIn("stage=exchange_code", diagnostic)
+        self.assertNotIn("test-only-code", diagnostic)
+        self.assertNotIn(state, diagnostic)
+
+    def test_meta_oauth_link_opens_in_new_tab(self):
+        cfg = {
+            **self.config,
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://romeropi.duckdns.org:8443/oauth/meta/callback",
+            "meta_graph_version": "v27.0",
+        }
+        summary = {
+            "oauthReady": True,
+            "accountVerified": False,
+            "webhookEnabled": True,
+            "subscriptionRequested": False,
+            "lastMessageReceived": None,
+            "messagesStored": 0,
+        }
+        rendered = server.render_connection_section(cfg, summary)
+        self.assertIn('target="_blank"', rendered)
+        self.assertIn('rel="noopener noreferrer"', rendered)
+        self.assertIn('Conectar Instagram pela Meta', rendered)
+
     def test_meta_status_never_falsely_claims_connected(self):
         cfg = self.config
         cfg["meta_oauth_enabled"] = False

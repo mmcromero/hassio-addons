@@ -1,11 +1,19 @@
-## 0.1.9 — correção do erro de build Python no Home Assistant (PUBLICADO; RETESTE PENDENTE) — 20/11/2026
+## 0.1.10 — diagnóstico seguro de retorno OAuth e nova aba — 20/11/2026
 
-- **Falha reproduzida no Supervisor, versão 0.1.8:** o Dockerfile parou em `python3 -m py_compile` com `SyntaxError: bytes can only contain ASCII literal characters` em `tests/test_http.py:224`. A instalação da 0.1.8 não foi concluída.
-- **Hotfix exato:** `self.assertIn(b'aria-label="Módulos"', body)` → `self.assertIn('aria-label="Módulos"'.encode("utf-8"), body)`. Mantém a mesma asserção no teste H07, sem modificar a aplicação.
-- **Compatibilidade:** somente `tests/test_http.py`, versão `config.yaml` de 0.1.8 para 0.1.9 e documentos. Os 22 módulos/arquivos de testes Python foram inspecionados por busca textual de literais bytes não ASCII; nenhum outro caso foi encontrado. Isso não substitui a compilação completa nem os testes do HA.
-- **Situação:** pacote 0.1.9 publicado para nova atualização no HA. Sem GitHub Actions, mudança de Dockerfile, outros add-ons, autenticação, banco, mídia, slug, ícones ou integração Meta. Testes completos e inicialização ainda aguardam execução pelo Supervisor.
+- **Correção de experiência:** o link `Conectar Instagram pela Meta` abre em nova aba com `target="_blank"` e `rel="noopener noreferrer"`, evitando que a interface incorporada do Home Assistant tente abrir a autorização Meta dentro de iframe.
+- **Diagnóstico de falha real:** a Meta retornou a `/oauth/meta/callback`, mas a Central exibiu `OAuth refused or expired`; a conta permaneceu não verificada. O callback agora registra **somente a etapa interna** de falha (`parse_callback`, `consume_state`, `exchange_code`, `verify_instagram_account` ou `store_credential`) e uma razão interna segura. A resposta pública continua genérica e não expõe credenciais.
+- **Teste de regressão adicionado:** valida presença de nova aba e mensagem de etapa `exchange_code` sem imprimir state ou código OAuth. O teste foi incluído na suíte de build do Supervisor, mas sua execução ainda precisa ser comprovada no hardware alvo.
+- **Compatibilidade:** preservar slug, nome da loja, `ingress`, portas, opções, chaves, credenciais, bancos, mídias, Mensagens, Editorial e demais add-ons. Sem migração destrutiva. Não habilita publicações externas nem respostas automáticas.
+- **Esteira:** procedimento `hassio-addons/CONTRIBUTING.md` P0. Sem Actions. Publicação no catálogo e instalação no Supervisor são fases separadas.
 
-## 0.1.8 — patch de UX e legendas locais (PUBLICADO NO GITHUB; INSTALAÇÃO PENDENTE) — 20/11/2026
+## 0.1.9 — correção de falha de compilação no Supervisor (hotfix) — 20/11/2026
+
+- **Erro real confirmado:** a atualização 0.1.8 falhou no passo Dockerfile `python3 -m py_compile`, em `tests/test_http.py:224`: `SyntaxError: bytes can only contain ASCII literal characters`. Nenhum teste da 0.1.8 foi executado pelo Supervisor após essa falha.
+- **Correção restrita:** troca `b'aria-label="Módulos"'` por `'aria-label="Módulos"'.encode("utf-8")`, mantendo a verificação exata do cabeçalho. A origem foi inspecionada nos 22 arquivos Python da candidata; não foram encontrados outros literais bytes com caracteres não ASCII pelo verificador textual (não equivale ao `py_compile` integral).
+- **Identidade e compatibilidade:** incremento de versão 0.1.8 → 0.1.9; sem alteração nos módulos de execução, Dockerfile, login, bancos, dados persistidos, SVG/PNG, slug, arquitetura, opções ou Meta.
+- **Esteira:** seguir `hassio-addons/CONTRIBUTING.md` P0; sem GitHub Actions ou build ARM64 externo obrigatório. A prova final será o build e suíte no Supervisor durante a atualização autorizada.
+
+## 0.1.8 — patch privado de UX e legendas locais (NÃO PUBLICADO/INSTALADO) — 20/11/2026
 
 - **Publicação no feed:** uma única opção visível; 1 foto gera `feed`, 2 a 20 fotos geram `carousel` automaticamente. O formato interno e rascunhos anteriores continuam compatíveis.
 - **Legendas:** escolha de uma legenda geral ou texto separado para cada imagem de carrossel. Persistência local aditiva no SQLite e na API privada (`captionMode`, `slideCaptions`); rascunhos 0.1.7 são preservados com modo geral por padrão. Nenhuma legenda individual é enviada à API Meta; publicação externa segue desativada.
@@ -18,7 +26,7 @@
 - **Calendário após edição:** reserva anterior de data/hora é preservada em campo não executável; a publicação aparece no calendário com destaque **Aguardando nova aprovação** e botão **Aprovar** direto na lista. Reaprovação restaura automaticamente o horário se ainda futuro; se passou, mostra horário expirado e permite reagendar. Cancelar agenda continua limpando a reserva.
 - **Persistência e segurança:** migração sem exclusão de dados, CSRF e mesma sessão administrativa, arquivos de mídia privados, nenhuma porta ou serviço novo. Limite de JSON de rascunho de 256 KiB para até 20 legendas de 2.200 caracteres; demais ações permanecem limitadas a 16 KiB.
 - **Testes direcionados adicionados:** migração de base anterior, rascunhos persistentes, validação de payloads/limites, fluxo HTTP e roteiro Chromium de carrossel/modal. **Ainda não executados nesta conversa:** não declarar PASS, build de imagem ou homologação 0.1.8.
-- **Situação da distribuição:** publicada em `hassio-addons:main/instagram-central/` no commit `a666f3e7dc837d68a2a80392fb8d9c2e8fb0e928`, com 13 arquivos do add-on atualizados, ícones preservados e sem Actions, merge da fonte privada ou alteração de outros apps. **Instalação e homologação 0.1.8 ainda pendentes**; Meta permanece desativada. A 0.1.7 foi instalada e testada manualmente pelo proprietário com ressalvas (H02/H09/H10/H11); referência: Issue #1.
+- **Situação:** desenvolvimento em branch privada `feat/instagram-editorial-ux-patch-001`, sem merge, publicação, atualização Home Assistant, ativação Meta ou GitHub Actions. A 0.1.7 foi publicada no catálogo (commit `b39f9edf2772f295d13180b456ff040271071329`), instalada e teve abertura visual e H01 aprovados **por relato do proprietário**; H02 passou por relato, com falha de preservação da agenda registrada.
 - **Navegação após F5 no Ingress:** o retorno à tela de Mensagens foi relatado como não bloqueante. Não foi identificado mecanismo do wrapper HA que explique a troca; nenhuma mudança especulativa de roteamento/Ingress foi feita neste patch.
 
 ## 0.1.7 — Central Instagram unificada: Mensagens + Editorial (CANDIDATA PRIVADA, NÃO PUBLICADA/INSTALADA) — 20/11/2026

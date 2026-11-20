@@ -1,12 +1,20 @@
-# Central Instagram Umdoislab — distribuição 0.1.9
+# Central Instagram Umdoislab — candidata 0.1.10 (diagnóstico OAuth)
 
-**Estado:** **0.1.9 publicada no catálogo GitHub** para nova tentativa de atualização/homologação no Home Assistant. A 0.1.8 foi publicada mas o build no Supervisor falhou em `tests/test_http.py:224` por literal bytes não ASCII; a versão instalada exibida no momento da falha era a **0.1.7**. A 0.1.9 corrige esse erro de sintaxe. A instalação e homologação da 0.1.9 **ainda não foram confirmadas**. Mensagens + Editorial seguem no mesmo aplicativo, sessão, login e Ingress.
+**Estado:** candidata 0.1.10 preparada na fonte privada para distribuição e homologação. A versão 0.1.9 já foi utilizada no Home Assistant para testar o fluxo real de Meta; a URL de webhook foi verificada, mas o callback OAuth retornou erro genérico `OAuth refused or expired` e não concluiu a verificação da conta. A 0.1.10 abre o login Meta em nova aba e acrescenta diagnóstico seguro por etapa. **Não declarar OAuth, mensagens, stories ou posts homologados.** Mensagens e Editorial preservam o mesmo login e Ingress.
 
 - Repositório privado: `mmcromero/instagram-automacoes`.
 - Branch do patch: `feat/instagram-editorial-ux-patch-001` (deriva da candidata privada 0.1.7).
 - Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
 - Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
 - Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
+
+
+## Candidata 0.1.10 — retorno OAuth e nova aba
+
+- Link externo da Meta usa nova aba e `rel="noopener noreferrer"` para não abrir login dentro do iframe do Home Assistant.
+- Logs locais do callback identificam a **etapa** da falha sem exibir URL com `code`, `state`, cookies, credenciais ou dados retornados pela Meta.
+- Inclui teste de regressão dirigido; a suíte integral é verificada pelo Dockerfile no build do Supervisor. Nenhum PASS do Supervisor é declarado antes da atualização real.
+- Sem alterações nos bancos, rascunhos, credenciais existentes ou nas rotas de publicação; não habilita envio ou publicação Meta.
 
 ## Funcionalidades incluídas no código 0.1.7
 
@@ -16,7 +24,7 @@
 
 **Estrutura multicontas:** cadastro interno de negócios, separação entre `business_id` e ID da conta oficial Meta e isolamento de tokens/mídias. Nesta candidata, **somente Umdoislab** tem rotas administrativas operacionais. Outras contas são apenas sintéticas em testes; nenhuma ativação real.
 
-## Patch 0.1.8 — interface Editorial (publicado para homologação)
+## Patch 0.1.8 — interface Editorial (não publicado)
 
 - **Feed automático:** a opção Publicação no feed aceita 1–20 imagens; uma imagem mantém `feed`, várias imagens são gravadas como `carousel`. Story e Reel continuam separados. Rascunhos anteriores mantêm o tipo.
 - **Legendas locais por imagem:** quando o carrossel tem 2 ou mais imagens, escolher *Uma legenda para todas as imagens* ou *Legenda individual por imagem*. O SQLite mantém `caption_mode` na publicação e `slide_caption` em cada anexo, com migração **aditiva**. A API aceita `captionMode` e `slideCaptions` opcionais, mantendo chamadas antigas válidas. **A API Meta não está habilitada para publicar essas legendas**; não há conversão ou descarte silencioso.
@@ -54,10 +62,8 @@ No código base do PR #7, sem alterações de lógica nesta candidata:
 
 Essas evidências **não comprovam** build `aarch64` ou execução no Home Assistant, e não devem ser repetidas por rotina quando só versão/documentação mudou. O Supervisor poderá construir no hardware alvo **apenas durante uma instalação autorizada**. Norma: [P0 do catálogo Home Assistant](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md).
 
-## Distribuição Home Assistant — 0.1.9 publicada no GitHub, build do Supervisor pendente
+## Distribuição Home Assistant — hotfix 0.1.9 para corrigir build ARM64
 
-A 0.1.9 foi publicada em `mmcromero/hassio-addons:main/instagram-central/` a partir de `mmcromero/instagram-automacoes:feat/instagram-editorial-ux-patch-001` commit `12735c3c7351793c45a572cc200bab50db82d784`. O patch altera somente `config.yaml` (versão), `tests/test_http.py` (conversão UTF-8 correta na asserção) e documentação. A atualização anterior para 0.1.8 falhou durante `python3 -m py_compile`, antes da suíte. O Dockerfile e o código da aplicação não foram alterados. Slug, logos, dados `/data`, opções e demais add-ons são preservados.
-
-**A 0.1.9 ainda não está instalada nem homologada no HA.** O operador autorizado poderá atualizar o add-on existente pela loja, preservando `/data` e as opções; o Supervisor poderá construir a imagem no hardware `aarch64`. Verificar inicialização, logs e fluxos alterados; reportar os resultados na Issue #1. Publicação de conteúdo Instagram/Meta continua desativada. Não criar TAR/ZIP, outra instalação ou novo login.
+A versão 0.1.8 foi publicada no catálogo, mas **não passou na compilação dos testes dentro do Dockerfile no HA**, conforme o log do proprietário. O erro ocorreu antes da execução dos testes e da inicialização da nova versão. A 0.1.9 corrige a expressão Python inválida, usando `.encode("utf-8")` na asserção do `aria-label`. Nenhum módulo de execução, dado `/data`, token, opção de autenticação, ícone ou slug é alterado. A fonte do pacote novo está nesta branch; a publicação é feita pela P0 do catálogo apenas após conferência do diff e dos testes dirigidos. O Supervisor validará `py_compile` e a suíte no próximo build de atualização autorizada. O estado instalado atual deve ser confirmado no HA, não inferido do GitHub.
 
 Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.

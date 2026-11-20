@@ -5,6 +5,7 @@ import hashlib
 import html
 import hmac
 import json
+import logging
 import os
 import secrets
 from contextlib import contextmanager
@@ -27,6 +28,7 @@ DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
 DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
+LOGGER = logging.getLogger("instagram-central")
 
 
 def settings():
@@ -540,7 +542,7 @@ def render_connection_section(cfg, summary):
         # for the public proxy route to recognize the session cookie.
         start_url = url[:-len("/oauth/meta/callback")] + "/oauth/meta/start"
         actions.append('<a href="' + html.escape(start_url, quote=True)
-                       + '">Conectar Instagram pela Meta</a>')
+                       + '" target="_blank" rel="noopener noreferrer">Conectar Instagram pela Meta</a>')
     setup = (
         ("App Meta", bool(str(cfg.get("meta_app_id") or "").isdigit())),
         ("Login unificado", bool(str(cfg.get("meta_login_config_id") or "").isdigit())),
@@ -815,20 +817,31 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(503, {"error": "account context unavailable"})
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            callback_stage = "parse_callback"
             try:
                 state, code = oauth_meta.parse_callback(
                     route.query, self.headers.get("Cookie", ""))
+                callback_stage = "consume_state"
                 with database() as conn:
                     oauth_meta.consume_state(conn, state, cfg=cfg)
+                callback_stage = "exchange_code"
                 credential = oauth_meta.exchange_code(code, cfg)
+                callback_stage = "verify_instagram_account"
                 identity = instagram_connection.verify_access(
                     cfg, credential["access_token"])
                 credential.update(identity)
                 credential["business_id"] = cfg["business_id"]
+                callback_stage = "store_credential"
                 oauth_meta.store_token(DATA_DIR, credential)
-            except oauth_meta.OAuthError:
+            except oauth_meta.OAuthError as exc:
+                # Only fixed internal reason strings and stage are logged. Never log
+                # callback query, authorization code, cookies, tokens or secrets.
+                LOGGER.error("Meta OAuth callback rejected at stage=%s: %s",
+                             callback_stage, str(exc))
                 return self.respond(400, {"error": "OAuth refused or expired"})
-            except Exception:
+            except Exception as exc:
+                LOGGER.error("Meta OAuth callback failed at stage=%s (%s)",
+                             callback_stage, type(exc).__name__)
                 return self.respond(502, {"error": "OAuth unavailable"})
             # No token, authorization code, client ID, or secret is reflected to the client.
             return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
