@@ -1,4 +1,4 @@
-## 0.1.8 — patch privado de UX e legendas locais (NÃO PUBLICADO/INSTALADO) — 20/11/2026
+## 0.1.8 — patch de UX e legendas locais (PUBLICADO NO GITHUB; INSTALAÇÃO PENDENTE) — 20/11/2026
 
 - **Publicação no feed:** uma única opção visível; 1 foto gera `feed`, 2 a 20 fotos geram `carousel` automaticamente. O formato interno e rascunhos anteriores continuam compatíveis.
 - **Legendas:** escolha de uma legenda geral ou texto separado para cada imagem de carrossel. Persistência local aditiva no SQLite e na API privada (`captionMode`, `slideCaptions`); rascunhos 0.1.7 são preservados com modo geral por padrão. Nenhuma legenda individual é enviada à API Meta; publicação externa segue desativada.
@@ -11,7 +11,7 @@
 - **Calendário após edição:** reserva anterior de data/hora é preservada em campo não executável; a publicação aparece no calendário com destaque **Aguardando nova aprovação** e botão **Aprovar** direto na lista. Reaprovação restaura automaticamente o horário se ainda futuro; se passou, mostra horário expirado e permite reagendar. Cancelar agenda continua limpando a reserva.
 - **Persistência e segurança:** migração sem exclusão de dados, CSRF e mesma sessão administrativa, arquivos de mídia privados, nenhuma porta ou serviço novo. Limite de JSON de rascunho de 256 KiB para até 20 legendas de 2.200 caracteres; demais ações permanecem limitadas a 16 KiB.
 - **Testes direcionados adicionados:** migração de base anterior, rascunhos persistentes, validação de payloads/limites, fluxo HTTP e roteiro Chromium de carrossel/modal. **Ainda não executados nesta conversa:** não declarar PASS, build de imagem ou homologação 0.1.8.
-- **Situação:** desenvolvimento em branch privada `feat/instagram-editorial-ux-patch-001`, sem merge, publicação, atualização Home Assistant, ativação Meta ou GitHub Actions. A 0.1.7 foi publicada no catálogo (commit `b39f9edf2772f295d13180b456ff040271071329`), instalada e teve abertura visual e H01 aprovados **por relato do proprietário**; H02 passou por relato, com falha de preservação da agenda registrada.
+- **Situação da distribuição:** publicada em `hassio-addons:main/instagram-central/` no commit `a666f3e7dc837d68a2a80392fb8d9c2e8fb0e928`, com 13 arquivos do add-on atualizados, ícones preservados e sem Actions, merge da fonte privada ou alteração de outros apps. **Instalação e homologação 0.1.8 ainda pendentes**; Meta permanece desativada. A 0.1.7 foi instalada e testada manualmente pelo proprietário com ressalvas (H02/H09/H10/H11); referência: Issue #1.
 - **Navegação após F5 no Ingress:** o retorno à tela de Mensagens foi relatado como não bloqueante. Não foi identificado mecanismo do wrapper HA que explique a troca; nenhuma mudança especulativa de roteamento/Ingress foi feita neste patch.
 
 ## 0.1.7 — Central Instagram unificada: Mensagens + Editorial (CANDIDATA PRIVADA, NÃO PUBLICADA/INSTALADA) — 20/11/2026

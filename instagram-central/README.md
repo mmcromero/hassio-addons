@@ -1,6 +1,6 @@
-# Central Instagram Umdoislab — patch privado 0.1.8
+# Central Instagram Umdoislab — distribuição 0.1.8
 
-**Estado:** patch **0.1.8 em desenvolvimento privado**, sem publicação ou instalação. A 0.1.7 foi publicada no catálogo, instalada no Home Assistant e teve abertura visual e rascunho H01 confirmados pelo proprietário. Mensagens + Editorial continuam no **mesmo aplicativo, sessão, login e Ingress**.
+**Estado:** **0.1.8 publicada no catálogo GitHub** para atualização e homologação no Home Assistant, **ainda não instalada nem homologada** nesta revisão. A 0.1.7 foi instalada e teve os testes manuais H01–H11 executados pelo proprietário, com ressalvas registradas na Issue #1. Mensagens + Editorial continuam no **mesmo aplicativo, sessão, login e Ingress**.
 
 - Repositório privado: `mmcromero/instagram-automacoes`.
 - Branch do patch: `feat/instagram-editorial-ux-patch-001` (deriva da candidata privada 0.1.7).
@@ -16,7 +16,7 @@
 
 **Estrutura multicontas:** cadastro interno de negócios, separação entre `business_id` e ID da conta oficial Meta e isolamento de tokens/mídias. Nesta candidata, **somente Umdoislab** tem rotas administrativas operacionais. Outras contas são apenas sintéticas em testes; nenhuma ativação real.
 
-## Patch 0.1.8 — interface Editorial (não publicado)
+## Patch 0.1.8 — interface Editorial (publicado para homologação)
 
 - **Feed automático:** a opção Publicação no feed aceita 1–20 imagens; uma imagem mantém `feed`, várias imagens são gravadas como `carousel`. Story e Reel continuam separados. Rascunhos anteriores mantêm o tipo.
 - **Legendas locais por imagem:** quando o carrossel tem 2 ou mais imagens, escolher *Uma legenda para todas as imagens* ou *Legenda individual por imagem*. O SQLite mantém `caption_mode` na publicação e `slide_caption` em cada anexo, com migração **aditiva**. A API aceita `captionMode` e `slideCaptions` opcionais, mantendo chamadas antigas válidas. **A API Meta não está habilitada para publicar essas legendas**; não há conversão ou descarte silencioso.
@@ -54,8 +54,10 @@ No código base do PR #7, sem alterações de lógica nesta candidata:
 
 Essas evidências **não comprovam** build `aarch64` ou execução no Home Assistant, e não devem ser repetidas por rotina quando só versão/documentação mudou. O Supervisor poderá construir no hardware alvo **apenas durante uma instalação autorizada**. Norma: [P0 do catálogo Home Assistant](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md).
 
-## Distribuição Home Assistant — patch 0.1.8 privado
+## Distribuição Home Assistant — 0.1.8 publicada no GitHub, instalação pendente
 
-O catálogo público `mmcromero/hassio-addons:main/instagram-central/` permanece com a **0.1.7** (commit `b39f9edf2772f295d13180b456ff040271071329`). Esta **0.1.8 não foi publicada nem instalada**. Não criar TAR/ZIP nem usar GitHub Actions. Quando desenvolvimento e testes dirigidos estiverem verificados e houver autorização separada de publicação, seguir o procedimento P0, copiando **somente `instagram-central/`** para a loja. Manter os arquivos `icon.png` e `logo.png` já presentes, o slug, os dados `/data`, as opções e a identidade. Instalação e homologação no Home Assistant são etapas posteriores, também autorizadas separadamente.
+A 0.1.8 foi publicada no catálogo `mmcromero/hassio-addons:main/instagram-central/` no [commit `a666f3e7`](https://github.com/mmcromero/hassio-addons/commit/a666f3e7dc837d68a2a80392fb8d9c2e8fb0e928), a partir da fonte privada `feat/instagram-editorial-ux-patch-001` em `92428bf48a4ad92d7fc0716edb0de0c608b0609d`. A publicação alterou apenas 13 arquivos `instagram-central/`, preservando `icon.png`, `logo.png`, slug, arquitetura, rotas, opções e demais add-ons. GitHub Actions não foi usado (commit com `[skip ci]`).
+
+**A 0.1.8 ainda não está instalada nem homologada no HA.** O operador autorizado poderá atualizar o add-on existente pela loja, preservando `/data` e as opções; o Supervisor poderá construir a imagem no hardware `aarch64`. Verificar inicialização, logs e fluxos alterados; reportar os resultados na Issue #1. Publicação de conteúdo Instagram/Meta continua desativada. Não criar TAR/ZIP, outra instalação ou novo login.
 
 Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.
