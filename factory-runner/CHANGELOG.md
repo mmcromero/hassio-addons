@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.16 — Plano de publicação por projeto (somente leitura)
+
+- Nova rota autenticada POST /api/release-plan com project e expected_source_sha; utiliza o preflight real do perfil aprovado.
+- Relatório limitado a projeto, SHA, elegibilidade de preparação, códigos de bloqueio e requisitos de publicação.
+- Publicação continua desabilitada até existir autorização independente por artefato e executor seguro. Autenticação Bearer não aprova publicação.
+- Quatro testes HTTP de autenticação, bloqueio, elegibilidade, sanitização e rejeição de aprovação fornecida pelo cliente.
+- Suíte integral continua no estágio de validação Docker do add-on; não foi executada nesta sessão.
+- Nenhuma alteração em outros add-ons, Actions, servidor ou projetos atendidos.
+
+
 ## 0.1.0-rc.15 — Sincronização por escopo sem arquivamento desnecessário
 
 - Corrigido `workspace_archive_limit` causado por commits em outros add-ons no catálogo público.
