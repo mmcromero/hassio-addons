@@ -42,6 +42,9 @@ class ControlledWorkerTests(unittest.TestCase):
         with patch.dict(os.environ, {"RUNNER_AUTH_TOKEN": "DO_NOT_EXPOSE_ME"}):
             report = worker.security_diagnostic()
         self.assertEqual(report["sandbox_ready"], False)
+        self.assertIn("landlock", report)
+        self.assertFalse(report["landlock"]["enforcement_verified"])
+        self.assertFalse(report["landlock"]["safe_for_untrusted_code"])
         self.assertNotIn("DO_NOT_EXPOSE_ME", json.dumps(report))
 
     def test_profile_only_from_fixed_directory(self):
