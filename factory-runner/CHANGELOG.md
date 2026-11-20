@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-rc.11 — Correção dos testes do build HA
+
+- Corrigida chamada de `isolated_builder_preflight` no teste: agora passa SHA e versão exigidos.
+- Corrigida fixture HTTP de pacote fechado para fornecer workspace sintético antes de verificar resposta 409, sem liberar operações bloqueadas.
+- Dois erros da RC10 comprovados nos logs do Supervisor, que registrou 188 testes (169 ok, 1 FAIL, 1 ERROR, 17 SKIP).
+- Testes continuam obrigatórios durante o build do Home Assistant. RC11 ainda não foi instalada nem homologada; nenhum PASS antecipado.
+- GitHub Actions e instalação no Raspberry não executados nesta publicação. Issue #2.
+
+
 ## 0.1.0-rc.10 — Adaptador Artesão Digital (RC experimental)
 
 - Pré-verificação para HA ARM64 e Debian AMD64 sem gerar pacotes ou publicar automaticamente.
