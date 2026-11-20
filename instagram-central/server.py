@@ -16,7 +16,7 @@ from pathlib import Path
 from panel_actions import parse_action, token_for
 from policy import prepare_decision
 import oauth_meta
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
 DB_PATH = DATA_DIR / "instagram.sqlite3"
@@ -439,7 +439,6 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/health":
             return self.respond(200, {"ok": True, "service": "instagram-central", "mode": "isolated"})
         if self.path.startswith("/webhook/instagram?"):
-            from urllib.parse import parse_qs, urlsplit
             cfg = settings()
             if cfg.get("ingress_enabled") is not True:
                 return self.respond(503, {"error": "webhook disabled"})
