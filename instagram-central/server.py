@@ -15,6 +15,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from panel_actions import parse_action, token_for
 from policy import prepare_decision
+import oauth_meta
+from urllib.parse import urlsplit
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
 DB_PATH = DATA_DIR / "instagram.sqlite3"
@@ -372,6 +374,53 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def do_GET(self):
+        route = urlsplit(self.path)
+        if route.path == "/oauth/meta/status" and not route.query:
+            cfg = settings()
+            if not panel_authorized(self.headers, cfg):
+                return self.respond(401, {"error": "authentication required"})
+            return self.respond(200, {
+                "enabled": oauth_meta.is_ready(cfg),
+                "credentialStored": oauth_meta.token_exists(DATA_DIR),
+                "connectionVerified": False,
+                "sendingEnabled": False
+            })
+        if route.path == "/oauth/meta/start" and not route.query:
+            cfg = settings()
+            if not panel_authorized(self.headers, cfg):
+                return self.respond(401, {"error": "authentication required"})
+            try:
+                with database() as conn:
+                    url, cookie = oauth_meta.start(conn, cfg)
+            except oauth_meta.OAuthError:
+                return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            self.send_response(302)
+            self.send_header("Location", url)
+            self.send_header("Set-Cookie", cookie)
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        if route.path == "/oauth/meta/callback":
+            cfg = settings()
+            if not oauth_meta.is_ready(cfg):
+                return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            try:
+                state, code = oauth_meta.parse_callback(
+                    route.query, self.headers.get("Cookie", ""))
+                with database() as conn:
+                    oauth_meta.consume_state(conn, state)
+                credential = oauth_meta.exchange_code(code, cfg)
+                oauth_meta.store_token(DATA_DIR, credential)
+            except oauth_meta.OAuthError:
+                return self.respond(400, {"error": "OAuth refused or expired"})
+            except Exception:
+                return self.respond(502, {"error": "OAuth unavailable"})
+            # No token, authorization code, client ID, or secret is reflected to the client.
+            return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
+                "<title>Instagram</title><body>Autorização recebida e armazenada. "
+                "Mensagens e automações continuam desativadas.</body></html>", "text/html")
         if self.path in ("/", "/panel"):
             cfg = settings()
             if not panel_authorized(self.headers, cfg):

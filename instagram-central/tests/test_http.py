@@ -11,7 +11,8 @@ import unittest
 from http.server import ThreadingHTTPServer
 from http.client import HTTPConnection
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qs, urlsplit
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -35,6 +36,7 @@ class HTTPContractTests(unittest.TestCase):
             "bridge_secret": "test-bridge-secret-with-at-least-32-characters",
             "ingress_enabled": True,
             "drafts_enabled": False,
+            "meta_oauth_enabled": False,
         }
         server.settings = lambda: self.config
         self.http = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
@@ -77,6 +79,46 @@ class HTTPContractTests(unittest.TestCase):
     def bridge_header(self):
         return {"X-Instagram-Bridge-Secret": self.config["bridge_secret"],
                 "Content-Type": "application/json"}
+
+    def test_oauth_off_by_default_and_admin_only(self):
+        self.assertEqual(self.request("/oauth/meta/status")[0], 401)
+        status, _, body = self.request("/oauth/meta/status", headers=self.admin_header())
+        self.assertEqual(status, 200)
+        result = json.loads(body)
+        self.assertFalse(result["enabled"])
+        self.assertFalse(result["credentialStored"])
+        self.assertFalse(result["sendingEnabled"])
+        self.assertEqual(self.request("/oauth/meta/start", headers=self.admin_header())[0], 503)
+        self.assertEqual(self.request("/oauth/meta/callback?code=abc&state=fake")[0], 503)
+
+    def test_oauth_callback_requires_state_and_does_not_expose_token(self):
+        self.config.update({
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+            "meta_graph_version": "v24.0"})
+        status, headers, _ = self.request("/oauth/meta/start", headers=self.admin_header())
+        self.assertEqual(status, 302)
+        self.assertTrue(headers["Location"].startswith("https://www.facebook.com/dialog/oauth?"))
+        self.assertIn("Secure; HttpOnly; SameSite=Lax", headers["Set-Cookie"])
+        state = parse_qs(urlsplit(headers["Location"]).query)["state"][0]
+        params = urlencode({"code": "test-only-code", "state": state})
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        self.assertEqual(self.request("/oauth/meta/callback?" + params)[0], 400)
+        credential = {"access_token": "X"*40, "expires_in": 0, "received_at": 5000}
+        with patch.object(server.oauth_meta, "exchange_code", return_value=credential) as exchange:
+            status, _, body = self.request("/oauth/meta/callback?" + params,
+                                          headers={"Cookie": cookie})
+            self.assertEqual(status, 200)
+            self.assertNotIn(b"X"*40, body)
+            self.assertEqual(exchange.call_count, 1)
+            self.assertEqual(self.request("/oauth/meta/callback?" + params,
+                                          headers={"Cookie": cookie})[0], 400)
+        status, _, body = self.request("/oauth/meta/status", headers=self.admin_header())
+        self.assertTrue(json.loads(body)["credentialStored"])
+        self.assertFalse(json.loads(body)["sendingEnabled"])
 
     def test_meta_challenge_good_and_bad(self):
         status, _, body = self.request("/webhook/instagram?hub.mode=subscribe&hub.verify_token=test-verify-token&hub.challenge=123")

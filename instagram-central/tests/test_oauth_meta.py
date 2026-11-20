@@ -1,0 +1,170 @@
+"""Targeted offline tests for Meta Unified Login; never contact Meta."""
+import importlib.util
+import json
+import os
+import sqlite3
+import tempfile
+import unittest
+from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
+from unittest.mock import patch
+
+BASE = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("oauth_meta", BASE / "oauth_meta.py")
+oauth = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(oauth)
+
+CONFIG = {
+    "meta_oauth_enabled": True,
+    "meta_app_id": "178361319962332",
+    "meta_login_config_id": "990074610355962",
+    "meta_app_secret": "LOCAL_TEST_APP_SECRET_NEVER_REAL",
+    "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+    "meta_graph_version": "v24.0"
+}
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+    def __enter__(self):
+        return self
+    def __exit__(self, *args):
+        return False
+    def read(self, size):
+        return self.payload[:size]
+
+
+class OAuthTests(unittest.TestCase):
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.db = sqlite3.connect(":memory:")
+
+    def tearDown(self):
+        self.db.close()
+        self.folder.cleanup()
+
+    def test_disabled_by_default(self):
+        cfg = {**CONFIG, "meta_oauth_enabled": False}
+        self.assertFalse(oauth.is_ready(cfg))
+        with self.assertRaises(oauth.OAuthError):
+            oauth.start(self.db, cfg)
+
+    def test_missing_credentials_and_insecure_redirect(self):
+        for field in ("meta_app_id", "meta_login_config_id", "meta_app_secret"):
+            self.assertFalse(oauth.is_ready({**CONFIG, field: ""}))
+        self.assertFalse(oauth.is_ready({**CONFIG, "meta_oauth_redirect_uri": "http://example.org/oauth/meta/callback"}))
+        self.assertFalse(oauth.is_ready({**CONFIG, "meta_oauth_redirect_uri": "https://evil.example.org/other"}))
+        self.assertFalse(oauth.is_ready({**CONFIG, "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback?next=evil"}))
+        self.assertFalse(oauth.is_ready({**CONFIG, "meta_graph_version": "../../latest"}))
+
+    def test_reject_local_and_malformed_callback_hosts(self):
+        for uri in (
+            "https://localhost/oauth/meta/callback",
+            "https://homeassistant.local/oauth/meta/callback",
+            "https://[::1/oauth/meta/callback",
+            "https://example.org:99999/oauth/meta/callback",
+            "https:///oauth/meta/callback"
+        ):
+            self.assertFalse(oauth.is_ready({**CONFIG, "meta_oauth_redirect_uri": uri}))
+
+    def test_reject_broad_key_permissions(self):
+        if os.name != "posix":
+            self.skipTest("POSIX permission behavior only")
+        credential = {"access_token": "A" * 40}
+        oauth.store_token(self.folder.name, credential)
+        key = Path(self.folder.name, oauth.KEY_FILENAME)
+        key.chmod(0o644)
+        with self.assertRaises(oauth.OAuthError):
+            oauth.store_token(self.folder.name, credential)
+
+    def test_start_sets_secure_cookie_and_exact_config(self):
+        url, cookie = oauth.start(self.db, CONFIG)
+        params = parse_qs(urlsplit(url).query)
+        self.assertEqual(urlsplit(url).netloc, "www.facebook.com")
+        self.assertEqual(params["config_id"], [CONFIG["meta_login_config_id"]])
+        self.assertEqual(params["client_id"], [CONFIG["meta_app_id"]])
+        self.assertEqual(params["redirect_uri"], [CONFIG["meta_oauth_redirect_uri"]])
+        self.assertEqual(params["response_type"], ["code"])
+        self.assertNotIn("scope", params)
+        self.assertNotIn(CONFIG["meta_app_secret"], url)
+        self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
+        self.assertIn("Path=/oauth/meta/callback", cookie)
+
+    def test_callback_requires_browser_cookie_and_no_duplicates(self):
+        url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        query = "code=test-code&state=" + state
+        self.assertEqual(oauth.parse_callback(query, cookie) , (state, "test-code"))
+        with self.assertRaises(oauth.OAuthError):
+            oauth.parse_callback(query, "")
+        with self.assertRaises(oauth.OAuthError):
+            oauth.parse_callback(query + "&state=attacker", cookie)
+        with self.assertRaises(oauth.OAuthError):
+            oauth.parse_callback("state=" + state + "&code=a&code=b", cookie)
+
+    def test_replay_and_expiry_fail_closed(self):
+        with patch.object(oauth.time, "time", return_value=100000):
+            url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        self.db.commit()
+        oauth.consume_state(self.db, state, now=100001)
+        self.db.commit()
+        with self.assertRaises(oauth.OAuthError):
+            oauth.consume_state(self.db, state, now=100002)
+        with patch.object(oauth.time, "time", return_value=100000):
+            new_url, cookie = oauth.start(self.db, CONFIG)
+        state2 = parse_qs(urlsplit(new_url).query)["state"][0]
+        self.db.commit()
+        with self.assertRaises(oauth.OAuthError):
+            oauth.consume_state(self.db, state2, now=100700)
+
+    def test_cancel_rejected_without_exchange(self):
+        url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        with self.assertRaises(oauth.OAuthError):
+            oauth.parse_callback("state=" + state + "&error=access_denied", cookie)
+
+    def test_graph_exchange_uses_post_and_fixed_host(self):
+        sent = {}
+        def opener(req, timeout):
+            sent["req"] = req
+            sent["timeout"] = timeout
+            return FakeResponse(json.dumps({"access_token": "A" * 40, "expires_in": 0}).encode())
+        result = oauth.exchange_code("dummy-test-code", CONFIG, opener=opener)
+        self.assertEqual(result["access_token"], "A" * 40)
+        self.assertEqual(sent["req"].get_method(), "POST")
+        self.assertEqual(sent["req"].full_url,
+                         "https://graph.facebook.com/v24.0/oauth/access_token")
+        body = sent["req"].data.decode("utf-8")
+        self.assertNotIn("config_id", body)
+        self.assertIn("client_secret=", body)
+        self.assertNotIn("dummy-test-code", sent["req"].full_url)
+
+    def test_graph_error_and_oversized_response(self):
+        def bad(*args, **kwargs):
+            return FakeResponse(b'{"error":{"message":"denied"}}')
+        with self.assertRaises(oauth.OAuthError):
+            oauth.exchange_code("code", CONFIG, opener=bad)
+        def huge(*args, **kwargs):
+            return FakeResponse(b"X" * (oauth.MAX_TOKEN_BYTES + 10))
+        with self.assertRaises(oauth.OAuthError):
+            oauth.exchange_code("code", CONFIG, opener=huge)
+
+    def test_encrypted_storage_has_no_plaintext(self):
+        credential = {"access_token": "A" * 40, "received_at": 5000, "expires_in": 0}
+        oauth.store_token(self.folder.name, credential)
+        saved = Path(self.folder.name, oauth.TOKEN_FILENAME)
+        key = Path(self.folder.name, oauth.KEY_FILENAME)
+        self.assertTrue(oauth.token_exists(self.folder.name))
+        self.assertNotIn("A" * 40, saved.read_text())
+        from cryptography.fernet import Fernet
+        restored = json.loads(Fernet(key.read_bytes()).decrypt(saved.read_bytes()))
+        self.assertEqual(restored, credential)
+        if os.name == "posix":
+            self.assertEqual(saved.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(key.stat().st_mode & 0o777, 0o600)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.1"
+version: "0.1.2"
 slug: umdoislab_instagram
 description: "Central isolada para mensagens Instagram Direct (laboratorio)"
 arch:
@@ -22,6 +22,11 @@ options:
   bridge_secret: ""
   ingress_enabled: false
   drafts_enabled: false
+  meta_oauth_enabled: false
+  meta_app_id: ""
+  meta_login_config_id: ""
+  meta_oauth_redirect_uri: ""
+  meta_graph_version: "v24.0"
 schema:
   meta_app_secret: password
   meta_verify_token: password
@@ -30,3 +35,8 @@ schema:
   bridge_secret: password
   ingress_enabled: bool
   drafts_enabled: bool
+  meta_oauth_enabled: bool
+  meta_app_id: str?
+  meta_login_config_id: str?
+  meta_oauth_redirect_uri: str?
+  meta_graph_version: str

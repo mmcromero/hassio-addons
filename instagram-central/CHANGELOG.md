@@ -1,3 +1,11 @@
+## 0.1.2 — OAuth Meta unificado (experimental, desativado por padrão) — 20/11/2026
+- Adiciona login unificado Meta com `config_id`, `state` descartável, callback HTTPS e troca de código no servidor.
+- Armazena credenciais cifradas no volume local do aplicativo; mantém os tokens fora da interface e dos logs.
+- Todos os novos campos opcionais ficam vazios ou desativados por padrão; sem mensagens automáticas e sem ações no WhatsApp.
+- Preserva painel Ingress, banco SQLite, slug e credenciais da versão 0.1.1; não muda a porta do aplicativo.
+- Adiciona o pacote `py3-cryptography` e integra 4 testes de smoke + 11 testes OAuth no build local do Supervisor.
+- **A publicação não configura o NGINX nem habilita o OAuth.** Instalação e homologação exigem autorizações próprias.
+
 # Histórico — Central Instagram
 
 ## 0.1.1 — padronização da distribuição Home Assistant
@@ -17,3 +25,12 @@
 - Quatro verificações dirigidas sem rede executadas **durante futuro build do Supervisor**.
 - Nenhum workflow n8n ou integração WhatsApp incluído na distribuição.
 - Estado: preparação de candidata; sem instalação e sem homologação.
+
+
+## Histórico do desenvolvimento — OAuth Meta Unified Login
+
+- Endpoints internos de início e callback OAuth, com `state` de 10 minutos e cookie HTTPS seguro.
+- Troca de código por Graph API (inativa até autorização), e token cifrado em arquivo restrito no volume `/data`.
+- Metadados `meta_app_id`, `meta_login_config_id` e URL de retorno configuráveis; `meta_oauth_enabled:false` por padrão.
+- 11 testes OAuth offline dirigidos, além dos testes HTTP criados para o callback; não ativa webhooks ou mensagens automáticas.
+- **Não foi publicado/instalado na versão 0.1.1**. Nenhum arquivo do catálogo público modificado.
