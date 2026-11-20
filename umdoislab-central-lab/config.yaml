@@ -1,0 +1,30 @@
+name: "Fábrica de Softwares - Umdoislab Central de Atendimento (LAB)"
+version: "0.4.1-rc.1"
+slug: umdoislab_central_lab
+description: "Instância isolada de testes da Central Umdoislab; envio WhatsApp bloqueado"
+arch:
+  - aarch64
+startup: application
+boot: manual
+init: false
+stage: experimental
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:message-processing-outline
+panel_title: "Umdoislab Atendimento LAB"
+panel_admin: true
+backup: cold
+options:
+  bridge_secret: ""
+  evolution_webhook_secret: ""
+  evolution_url: "http://homeassistant.local:8080"
+  evolution_instance: "umdoislab"
+  evolution_api_key: ""
+  auto_test_sender: "CONTATO_TESTE_NAO_CONFIGURADO"
+schema:
+  bridge_secret: password
+  evolution_webhook_secret: password
+  evolution_url: str
+  evolution_instance: str
+  evolution_api_key: password
+  auto_test_sender: str
