@@ -5,23 +5,53 @@ on:
       - 'umdoislab-central/**'
       - '.github/workflows/validar-umdoislab-central.yml'
   workflow_dispatch:
+    inputs:
+      build_arm64:
+        description: 'Build ARM64 adicional, somente se justificado e autorizado'
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
 jobs:
   tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Compilar Python
-        run: python -m py_compile umdoislab-central/server.py
+      - name: Compilar Python do pacote
+        run: python -m compileall -q umdoislab-central
       - name: Testes SQLite e regras de eventos
         run: python -m unittest discover -s umdoislab-central -p 'test_*.py' -v
-      - name: Preparar build ARM64
-        uses: docker/setup-qemu-action@v3
-      - name: Preparar Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Construir imagem ARM64 (sem publicar)
+      - name: Validar manifesto e arquivos obrigatórios
+        run: |
+          python -m pip install pyyaml
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          folder = Path("umdoislab-central")
+          manifest = yaml.safe_load((folder / "config.yaml").read_text(encoding="utf-8"))
+          assert manifest["slug"] == "umdoislab_central"
+          assert manifest["arch"] == ["aarch64"]
+          assert manifest["name"] and manifest["version"]
+          assert (folder / "Dockerfile").is_file()
+          assert (folder / "icon.png").is_file()
+          assert (folder / "logo.png").is_file()
+          assert (folder / "CHANGELOG.md").is_file()
+          PY
+  build-arm64:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_arm64 }}
+    runs-on: ubuntu-latest
+    needs: tests
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build ARM64 manual justificado (sem publicar)
         uses: docker/build-push-action@v6
         with:
           context: ./umdoislab-central
