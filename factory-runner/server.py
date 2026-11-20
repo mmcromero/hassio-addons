@@ -86,6 +86,7 @@ def recent_operations():
         lines = raw.splitlines()[-256:]
         safe_actions = OPERATIONS | {
             "/api/preflight", "/api/prepare", "/api/prepare-declarative",
+            "/api/release-plan",
             "/api/worker/run:diagnose", "/api/worker/run:profile",
             "/api/worker/run:preflight"
         }
@@ -195,6 +196,42 @@ def preflight_project(project_id, expected_sha):
         from artesao_adapter import evaluate_artesao
         return evaluate_artesao(source, distribution, expected_sha, profile=profile)
     return evaluate(source, distribution, expected_sha, profile=profile)
+
+
+def release_plan(project_id, expected_sha):
+    """Read-only publication readiness; bearer authentication is NOT approval.
+
+    Only a trusted project profile and pinned workspace may inform this
+    report. Never return credentials, checkout paths or arbitrary metadata.
+    """
+    report = preflight_project(project_id, expected_sha)
+    if not isinstance(report, dict):
+        raise PreflightError("Invalid preflight result")
+    raw_errors = report.get("errors")
+    if not isinstance(raw_errors, list) or any(
+            not isinstance(code, str)
+            or not re.fullmatch(r"[A-Z][A-Z0-9_]{0,79}", code)
+            for code in raw_errors):
+        raise PreflightError("Invalid policy evidence")
+    eligible = report.get("eligible_for_preparation")
+    if type(eligible) is not bool:
+        raise PreflightError("Unverified preparation eligibility")
+    return {
+        "project": project_id,
+        "source_sha": expected_sha,
+        "preparation": "eligible_for_separate_preparation" if eligible
+                       else "blocked_by_project_policy",
+        "policy_errors": sorted(set(raw_errors)),
+        "publication": "disabled_pending_independent_authorization",
+        "published": False,
+        "requirements": [
+            "verified_project_package_and_version",
+            "immutable_source_and_distribution_shas",
+            "tests_and_provenance_for_exact_artifact",
+            "independent_owner_approval_for_scope_and_destination",
+            "safe_publisher_and_idempotent_remote_verification"
+        ]
+    }
 
 
 def prepare_project(project_id, expected_sha, operation_id):
@@ -510,7 +547,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/worker/run"):
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run"):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -562,7 +599,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             finally:
                 LOCK.release()
 
-        if self.path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative"):
+        if self.path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
             project = body["project"]
@@ -579,6 +616,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 try:
                     if action == "/api/preflight":
                         result = preflight_project(project, source_sha)
+                    elif action == "/api/release-plan":
+                        result = release_plan(project, source_sha)
                     elif action == "/api/prepare":
                         result = prepare_project(project, source_sha, operation_id)
                     else:

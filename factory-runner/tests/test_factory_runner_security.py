@@ -230,6 +230,71 @@ class SecurityTests(unittest.TestCase):
         self.assertIn("audit_unavailable", str(output.call_args_list))
         self.assertNotIn("sensitive-data", str(output.call_args_list))
 
+    def test_release_plan_requires_auth_and_is_never_publication(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        payload = {"project": "avisaqui", "expected_source_sha": "a" * 40}
+        self.assertEqual(self.request("POST", "/api/release-plan",
+                                      payload=payload)[0], 401)
+        with patch.object(server, "preflight_project", return_value={
+                "eligible_for_preparation": False,
+                "errors": ["NO_OPEN_PACKAGE", "VERSION_ALREADY_PUBLISHED"]}):
+            code, data = self.request("POST", "/api/release-plan",
+                                      payload=payload, token=auth)
+        self.assertEqual(code, 200)
+        plan = data["result"]
+        self.assertFalse(plan["published"])
+        self.assertEqual(plan["preparation"], "blocked_by_project_policy")
+        self.assertIn("NO_OPEN_PACKAGE", plan["policy_errors"])
+        self.assertEqual(plan["publication"],
+                         "disabled_pending_independent_authorization")
+        self.assertEqual(set(plan), {"project", "source_sha", "preparation",
+                                    "policy_errors", "publication", "published",
+                                    "requirements"})
+        self.assertIn("completed_read_only",
+                      server.AUDIT_PATH.read_text(encoding="utf-8"))
+
+    def test_release_plan_never_promotes_eligible_preflight_to_approval(self):
+        payload = {"project": "avisaqui", "expected_source_sha": "a" * 40}
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        with patch.object(server, "preflight_project", return_value={
+                "eligible_for_preparation": True, "errors": [],
+                "private_token": "not-for-client",
+                "workspace_path": "/data/private"}):
+            code, data = self.request("POST", "/api/release-plan",
+                                      payload=payload, token=auth)
+        self.assertEqual(code, 200)
+        self.assertEqual(data["result"]["preparation"],
+                         "eligible_for_separate_preparation")
+        self.assertFalse(data["result"]["published"])
+        self.assertNotIn("not-for-client", json.dumps(data))
+        self.assertNotIn("/data/private", json.dumps(data))
+        self.assertNotIn("approved", data["result"]["publication"])
+
+    def test_release_plan_rejects_untrusted_policy_results(self):
+        payload = {"project": "avisaqui", "expected_source_sha": "a" * 40}
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        for report in (
+                {"eligible_for_preparation": 1, "errors": []},
+                {"eligible_for_preparation": True, "errors": ["/data/secret"]},
+                {"eligible_for_preparation": False, "errors": "NO_OPEN_PACKAGE"},
+                {"eligible_for_preparation": True, "errors": [{"secret": True}]}):
+            with self.subTest(report=report):
+                with patch.object(server, "preflight_project", return_value=report):
+                    code, data = self.request("POST", "/api/release-plan",
+                                              payload=payload, token=auth)
+                self.assertEqual(code, 503)
+                self.assertEqual(data["error"], "workspace_or_export_unavailable")
+                self.assertNotIn("secret", json.dumps(data))
+
+    def test_release_plan_rejects_client_supplied_approval(self):
+        payload = {"project": "avisaqui", "expected_source_sha": "a" * 40,
+                   "owner_approved": True}
+        code, data = self.request(
+            "POST", "/api/release-plan", payload=payload,
+            token="Bearer test-secret-not-for-production-0123456789")
+        self.assertEqual(code, 400)
+        self.assertEqual(data["error"], "invalid_payload")
+
     def test_preflight_requires_auth_and_rejects_unknown_project(self):
         self.assertEqual(self.request("POST", "/api/preflight",
             payload={"project": "avisaqui", "expected_source_sha": "a" * 40})[0], 401)
