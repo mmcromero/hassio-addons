@@ -125,6 +125,10 @@ def prepare_project(project_id, expected_sha, operation_id):
     if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
         raise PreflightError("Invalid source SHA")
     profile, source, distribution = project_workspace(project_id)
+    # An approved deterministic recipe requires no source-script execution.
+    # Keep the original Bubblewrap path strictly fail-closed for other profiles.
+    if "declarative_rules" in profile or "declarative_mapping" in profile:
+        return prepare_project_declarative(project_id, expected_sha, operation_id)
     preflight = evaluate(source, distribution, expected_sha, profile=profile)
     if not preflight["eligible_for_preparation"]:
         return {"eligible": False, "errors": preflight["errors"]}
