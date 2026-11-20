@@ -1,4 +1,4 @@
-name: "Fábrica de Softwares - 12Labs Central de Atendimento (LAB)"
+name: "Fábrica de Softwares - Umdoislab Central de Atendimento (LAB)"
 version: "0.4.1-rc.1"
 slug: umdoislab_central_lab
 description: "Instância isolada de testes da Central Umdoislab; envio WhatsApp bloqueado"
