@@ -1,4 +1,4 @@
-name: "Fábrica de Softwares - 12Labs Central de Atendimento"
+name: "Fábrica de Softwares - WhatsApp Umdoislab"
 version: "0.4.0"
 slug: umdoislab_central
 description: "Painel mobile-first para atendimento humano da Umdoislab"
@@ -11,7 +11,7 @@ stage: experimental
 ingress: true
 ingress_port: 8099
 panel_icon: mdi:message-processing-outline
-panel_title: "Umdoislab Atendimento"
+panel_title: "WhatsApp Umdoislab"
 panel_admin: true
 backup: cold
 options:
