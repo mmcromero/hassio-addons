@@ -80,6 +80,15 @@ class HTTPContractTests(unittest.TestCase):
         return {"X-Instagram-Bridge-Secret": self.config["bridge_secret"],
                 "Content-Type": "application/json"}
 
+    def test_get_routes_do_not_shadow_urlsplit(self):
+        # Regression observed on HA v0.1.2: all GET requests raised UnboundLocalError.
+        self.assertEqual(self.request("/health")[0], 200)
+        self.assertEqual(self.request("/panel")[0], 401)
+        status, _, body = self.request("/panel", headers=self.admin_header())
+        self.assertEqual(status, 200)
+        self.assertIn(b"Central", body)
+        self.assertEqual(self.request("/webhook/instagram?hub.mode=subscribe")[0], 503)
+
     def test_oauth_off_by_default_and_admin_only(self):
         self.assertEqual(self.request("/oauth/meta/status")[0], 401)
         status, _, body = self.request("/oauth/meta/status", headers=self.admin_header())
