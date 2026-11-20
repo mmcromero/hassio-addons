@@ -63,6 +63,42 @@ def fullsha(repo, ref):
 def load_profile(path):
     """Read a configured project; never accept commands or arbitrary Git paths."""
     obj = read_json(Path(path).read_text(encoding="utf-8"), "project profile")
+    # Explicit read-only adapter for products with independent release rules.
+    # A sync-only profile MUST NEVER inherit the Avisaqui packaging contract.
+    if obj.get("mode") == "sync_only":
+        allowed = {"schema_version", "mode", "id", "product", "source_repo",
+                   "distribution_repo", "source_ref", "public_ref",
+                   "source_version_file"}
+        if set(obj) != allowed or obj.get("schema_version") != 1:
+            raise PreflightError("Invalid sync-only profile schema")
+        if (not isinstance(obj["id"], str)
+                or not re.fullmatch(r"[a-z][a-z0-9_-]{1,47}", obj["id"])
+                or not isinstance(obj["product"], str)
+                or not 1 <= len(obj["product"]) <= 100
+                or any(ord(c) < 32 for c in obj["product"])):
+            raise PreflightError("Invalid sync-only profile identity")
+        for repo_key in ("source_repo", "distribution_repo"):
+            value = obj[repo_key]
+            if not isinstance(value, str) or not re.fullmatch(
+                    r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", value):
+                raise PreflightError("Invalid sync-only repository")
+        for ref_key in ("source_ref", "public_ref"):
+            ref = obj[ref_key]
+            if (not isinstance(ref, str)
+                    or not re.fullmatch(r"refs/remotes/origin/[A-Za-z0-9._/-]+", ref)
+                    or any(part in ("", ".", "..")
+                           for part in ref.removeprefix(
+                               "refs/remotes/origin/").split("/"))):
+                raise PreflightError("Invalid sync-only branch ref")
+        version_file = obj["source_version_file"]
+        if (not isinstance(version_file, str)
+                or not re.fullmatch(
+                    r"[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*", version_file)
+                or any(part in (".", "..") for part in version_file.split("/"))):
+            raise PreflightError("Invalid sync-only version file")
+        return obj
+    if "mode" in obj:
+        raise PreflightError("Unsupported profile mode")
     mandatory = ("id", "product", "source_repo", "distribution_repo",
                  "source_ref", "rc_ref", "public_ref", "package_policy_path",
                  "package_json_path", "manifest_path", "provenance_path",
@@ -212,6 +248,8 @@ def load_profile(path):
 
 def evaluate(source, distribution, expected_sha, *, profile):
     """Read-only inspection, including history divergence and release gates."""
+    if profile.get("mode") == "sync_only":
+        raise PreflightError("Sync-only project has no approved release adapter")
     source, distribution = Path(source), Path(distribution)
     if not SHA.fullmatch(expected_sha):
         raise PreflightError("--expected-source-sha must contain 40 hex characters")
