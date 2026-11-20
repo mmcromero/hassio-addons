@@ -101,6 +101,68 @@ class SecurityTests(unittest.TestCase):
         self.assertIsInstance(data["projects"], list)
         self.assertFalse(any("token" in str(item).lower() for item in data["projects"]))
 
+    def test_operations_requires_auth_and_returns_sanitized_status(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        self.assertEqual(self.request("GET", "/api/operations")[0], 401)
+        self.assertEqual(self.request("GET", "/api/operations", token=auth),
+                         (200, {"operations": [], "source": "sanitized_audit"}))
+        with patch.object(server, "preflight_project", return_value={
+                "eligible_for_preparation": False,
+                "errors": ["NO_OPEN_PACKAGE"]}):
+            code, response = self.request(
+                "POST", "/api/preflight",
+                payload={"project": "avisaqui", "expected_source_sha": "a" * 40},
+                token=auth)
+        self.assertEqual(code, 200)
+        code, listing = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 200)
+        found = [item for item in listing["operations"]
+                 if item["operation_id"] == response["operation_id"]]
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["status"], "completed_read_only")
+        self.assertEqual(found[0]["action"], "/api/preflight")
+        self.assertNotIn("test-secret-not-for-production", json.dumps(listing))
+        self.assertNotIn("source_sha", json.dumps(listing))
+
+    def test_operations_rejects_symlinked_log(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        private = Path(self.folder.name) / "private.txt"
+        private.write_text("secret-not-for-client\n", encoding="utf-8")
+        server.AUDIT_PATH.symlink_to(private)
+        code, data = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 503)
+        self.assertEqual(data["error"], "audit_unavailable")
+        self.assertNotIn("secret-not-for-client", json.dumps(data))
+
+    def test_operations_discard_untrusted_audit_fields(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        server.AUDIT_PATH.write_text(json.dumps({
+            "operation_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "action": "/api/preflight", "status": "requested",
+            "time": "2026-11-20T05:00:00Z", "secret": "must-not-leak",
+            "path": "/data/private", "actor": "attacker"
+        }) + "\n")
+        code, data = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 200)
+        self.assertEqual(len(data["operations"]), 1)
+        self.assertEqual(set(data["operations"][0]),
+                         {"operation_id", "action", "status", "time"})
+        self.assertNotIn("must-not-leak", json.dumps(data))
+        self.assertNotIn("/data/private", json.dumps(data))
+
+    def test_operations_ignore_invalid_audit_types(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        invalid = {
+            "operation_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+            "action": {"not": "a-string"},
+            "status": ["not-a-string"],
+            "time": "2026-11-20T05:00:00Z"
+        }
+        server.AUDIT_PATH.write_text(json.dumps(invalid) + "\n")
+        code, data = self.request("GET", "/api/operations", token=auth)
+        self.assertEqual(code, 200)
+        self.assertEqual(data["operations"], [])
+
     def test_preflight_requires_auth_and_rejects_unknown_project(self):
         self.assertEqual(self.request("POST", "/api/preflight",
             payload={"project": "avisaqui", "expected_source_sha": "a" * 40})[0], 401)

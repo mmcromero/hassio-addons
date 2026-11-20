@@ -149,6 +149,46 @@ class IsolatedBuilderTests(unittest.TestCase):
             with self.assertRaisesRegex(executor.ExecutorBlocked, "BUILDER_POLICY_NOT_APPROVED"):
                 executor.isolated_builder_preflight(source, dist, out, policy, self.SHA, self.VERSION)
 
+    def test_executor_blocks_production_secrets_before_policy_read(self):
+        # The builder must refuse any production credential even when a local
+        # policy claims to be approved. No Docker, filesystem or network calls.
+        source = self.root / "source"
+        distribution = self.root / "distribution"
+        output = self.root / "output"
+        policy = self.root / "policy.json"
+        for name in ("SUPERVISOR_TOKEN", "HASSIO_TOKEN",
+                     "GITHUB_TOKEN", "GH_TOKEN", "RUNNER_AUTH_TOKEN"):
+            with (patch.object(executor.os, "geteuid", return_value=12345),
+                  patch.dict(os.environ, {name: "must-not-be-used"}),
+                  patch.object(executor, "_json_file",
+                               side_effect=AssertionError("policy read forbidden"))):
+                with self.assertRaisesRegex(executor.ExecutorBlocked,
+                                            "PRODUCTION_CREDENTIAL_ENV_DETECTED"):
+                    executor.isolated_builder_preflight(
+                        source, distribution, output, policy,
+                        self.SHA, self.VERSION)
+
+    def test_executor_blocks_remote_docker_before_policy_read(self):
+        # Docker endpoints supplied by the environment must never override
+        # the locally pinned disposable builder socket.
+        source = self.root / "source"
+        distribution = self.root / "distribution"
+        output = self.root / "output"
+        policy = self.root / "policy.json"
+        for key, value in (("DOCKER_HOST", "tcp://127.0.0.1:2375"),
+                           ("DOCKER_CONTEXT", "remote"),
+                           ("DOCKER_TLS_VERIFY", "1"),
+                           ("DOCKER_CERT_PATH", "/tmp/client-certs")):
+            with (patch.object(executor.os, "geteuid", return_value=12345),
+                  patch.dict(os.environ, {key: value}),
+                  patch.object(executor, "_json_file",
+                               side_effect=AssertionError("policy read forbidden"))):
+                with self.assertRaisesRegex(executor.ExecutorBlocked,
+                                            "REMOTE_DOCKER_NOT_ALLOWED"):
+                    executor.isolated_builder_preflight(
+                        source, distribution, output, policy,
+                        self.SHA, self.VERSION)
+
     def plan_report(self):
         return {"blocking_errors": [], "candidate_version": self.VERSION,
                 "public_sha": "b"*40, "source_sha": self.SHA,
