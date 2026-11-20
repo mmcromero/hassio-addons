@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.0-rc.5 — Preparação declarativa sem execução de scripts (CANDIDATA EM BRANCH)
+
+- A rota autenticada `POST /api/prepare` utiliza exportação declarativa quando o perfil confiável possui receita aprovada; scripts externos **não** são executados nessa operação. A rota alternativa `/api/prepare-declarative` permanece disponível para diagnóstico dirigido.
+- Sem receita aprovada, o caminho legado continua fail-closed com Bubblewrap obrigatório. `/api/corrigir-issue` e publicação/commit/push remoto permanecem bloqueados; nenhuma permissão do Home Assistant foi ampliada.
+- Núcleo com leitura Git por SHA fixado, mapeamento/condições validados, rejeição de symlinks, controle de tamanho/quantidade/tempo, hashes SHA-256, manifesto e proveniência. Workflow compartilhado somente quando o commit público fixado comprova compatibilidade.
+- **Execução local real:** 18/18 testes do núcleo (blobs idênticos aos da branch), 19/19 testes de preflight (após correção das fixtures), 8/8 testes HTTP dirigidos e 3/3 testes HTTP com preflight real, Git sintético e preparação por `/api/prepare`. O exportador canônico pinado e o novo método geraram 29 arquivos de pacote + 1 workflow compartilhado com bytes e proveniência idênticos em fixture sintética, e `--verify` passou.
+- **Verificações da fonte:** 135/135 caminhos de distribuição equivalentes à receita original no snapshot real e 1 workflow compartilhado separado; blobs Git de código/testes conferidos; os programas dependentes de Landlock e planejador pré-existentes permanecem.
+- **Não concluído:** execução da suíte completa em Docker, build ARM64 e homologação do funcionamento no Home Assistant físico. Nenhuma execução de GitHub Actions, merge, publicação na `main`, instalação no Raspberry ou liberação de execução de código não confiável foi realizada.
+- **Status:** CANDIDATA DE DESENVOLVIMENTO, não instalada nem homologada; publicar somente após revisão do diff, gates da norma de catálogo e autorização aplicável.
+
+
 ## 0.1.0-rc.4 — Publicação autorizada para teste (19/11/2026; instalação independente)
 
 - Reforço fail-closed no carregamento de perfis: tipos incorretos, refs com segmentos vazios/dot segments, prefixos ambíguos e barras invertidas na allowlist são recusados.
