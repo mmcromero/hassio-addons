@@ -1,5 +1,14 @@
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
+## Situação vigente — RC7 (candidata em branch, não publicada)
+
+A RC6 do catálogo já passou no Home Assistant em `[E2E] PASS`, com repositórios **sintéticos**. A RC7 acrescenta sincronização **opt-in** de repositórios reais definidos por perfil, via GitHub HTTPS e token `Contents: read` armazenado **somente no HA**. Não há porta pública, Docker socket, comandos remotos, liberação de Bubblewrap ou mudança de política. A primeira operação é de leitura; `workspace_auto_prepare` inicia em `false`.
+
+Na configuração do add-on, definir `workspace_sync_project` para o ID aprovado, por exemplo `avisaqui`, e `github_read_token` **sem enviar o segredo a chats ou logs**. Ao iniciar, o log `[WORKSPACE] SYNCED/UNCHANGED` mostra os SHAs abreviados; `[WORKSPACE] POLICY_BLOCKED` impede preparação quando o pacote não está aberto. Repositórios reais ficam no volume privado do Runner; cópias anteriores são arquivadas, não apagadas. Ver `RC7-VALIDACAO.md`.
+
+**Avisaqui atualmente:** pacote 009 fechado; sincronizar não implica preparar, testar novo pacote ou publicar. Toda documentação RC2–RC6 abaixo é **histórica**, salvo regras permanentes de segurança ainda compatíveis.
+
+
 ## Atualização RC5 — preparação determinística em desenvolvimento (NÃO PUBLICADA)\n\nA nova rota declarativa e a rota padrão `POST /api/prepare` executam somente o código confiável do Runner quando o perfil versionado contém uma receita aprovada, SHA fixado e política de pacote aberto. O método usa Git blobs, valida versão, hashes e proveniência e nunca executa scripts do projeto. O Bubblewrap permanece no caminho legado para demais perfis; execução de IA/usuário continua bloqueada.\n\nLaboratório: 18/18 testes do núcleo, 19/19 do preflight, 8/8 de HTTP dirigido, 3/3 HTTP com preflight real e 4/4 do probe; equivalência sintética do exportador oficial (29 arquivos + 1 workflow, bytes e manifesto iguais). Execução real não-root do probe com UID 65534 PASS no laboratório. Não equiparar isso a Docker build, ARM64, homologação no HA ou workspaces provisionados. `run.sh` invoca o probe sintético antes da API, sem o token. Sem Actions/merge/publicação/instalação.\n\n
 **Estado confirmado em 19/11/2026:** RC4 `0.1.0-rc.4` **PUBLICADA** em `hassio-addons:main/factory-runner/` pelo PR #45, commit `350fa3c8a756c405b6766cca53bd25fe84aef9f1`, após autorização do proprietário. **Não instalada, não homologada.** O pacote já foi publicado; **não reabrir o fluxo de publicação nem condicionar essa entrega a Docker/QEMU/Actions externos**. O Dockerfile executa regressões Python durante o build do Supervisor; resultado ainda não coletado no Raspberry. O Bubblewrap segue falhando em `/api/prepare` conforme relato anterior, que deve permanecer fail-closed; não confundir com teste de publicação. A versão atualmente instalada no HA não foi conferida. O próximo passo é **instalação/atualização pelo operador autorizado, quando houver autorização específica**, seguida de registro de build, inicialização e testes funcionais dirigidos. **Produto independente** dos projetos atendidos.
 
@@ -24,7 +33,7 @@ O Runner não contém credenciais Git nem clona repositórios privados automatic
 
 Esses caminhos pertencem ao volume privado do add-on; não montar /config, Docker socket ou diretórios de produção. Para outro projeto, cadastrar perfil separado e criar `<id>/source` e `<id>/distribution` após aprovação de escopo. Checkouts precisam conter as refs `refs/remotes/origin/*`. O preflight exige o SHA exato que foi verificado no GitHub. O Avisaqui é somente um exemplo real.
 
-**Atenção:** os caminhos acima são pré-requisitos; não são criados pela API. Sem eles, o endpoint devolve `503 workspace_or_export_unavailable`. Sem isolamento, prepare também falha com 503 e auditoria; nunca há fallback para Python não isolado. Não comunicar fechamento automático enquanto os portões não forem comprovados.
+**Atenção:** os caminhos acima são pré-requisitos; não são criados pela API. Sem eles, o endpoint devolve `503 workspace_or_export_unavailable`. Sem receita declarativa, a preparação legada com Bubblewrap indisponível falha com 503; nunca há fallback para execução insegura de Python. A RC7 permite preparação apenas quando o perfil confiável e a política permitem. Não comunicar fechamento automático enquanto os portões não forem comprovados.
 
 ## Segurança
 
@@ -75,7 +84,7 @@ Antes de publicar apenas `factory-runner/` em `hassio-addons:main`, cumprir os t
 - `RUNNER_PREPARATIONS_DIR` é configuração do operador, nunca do cliente HTTP.
   Symlinks na raiz de preparação são recusados. Git recebe ambiente mínimo;
   o exportador usa Python isolado e ambiente limpo, sem credenciais herdadas.
-- Blob aprovado e Bubblewrap são obrigatórios. O serviço perde root após ler
+- Blob Git e perfil aprovados são obrigatórios. Bubblewrap continua exigido para scripts externos no caminho legado; não é exigido para a cópia declarativa por código interno confiável. O serviço perde root após ler
   as opções; o volume privado dá ao grupo runner somente travessia no diretório
   /data, preservando bytes, proprietário e modo de options.json. Inicialização
   recusa symlinks nos caminhos que administra antes de chown/install.

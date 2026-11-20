@@ -1,14 +1,25 @@
 # Changelog
 
-## 0.1.0-rc.6 — Teste E2E interno sem portas expostas (CANDIDATA EM BRANCH)
+## 0.1.0-rc.7 — Sincronização privada GitHub somente leitura (CANDIDATA EM BRANCH)
+
+- Sincroniza os repositórios **pré-aprovados no perfil** em volume privado do Factory Runner, usando HTTPS GitHub, token fine-grained de leitura configurado **apenas no Home Assistant** e verificação SHA de branches Git contra API remota.
+- É **opt-in**: `workspace_sync_project` vazio preserva comportamento atual; `github_read_token` é segredo mascarado; `workspace_auto_prepare` inicia em `false`. Sem habilitação, não faz rede nem clonagem extra no startup.
+- Git usa `--no-checkout` e não executa scripts/hook/submódulo nem envia token na URL, processo Git ou logs. Credencial existe somente em arquivo temporário `0600`, apagado ao concluir clone.
+- Bloqueia diretórios desconhecidos, SHA divergente, URLs fora do perfil, volumes simbólicos e política fechada; atualizações preservam snapshots anteriores e usam troca recuperável. Trabalho isolado pela trava global da API, sem publicar ou alterar outros serviços.
+- **Laboratório:** 18 testes novos PASS com Git local real e usuário sem root; conjunto local disponível 45 PASS; sintaxe shell/Python e YAML verificados. **Não executados:** clone GitHub privado real com token, build Docker da RC7 nem HA físico.
+- **Avisaqui na data da verificação:** pacote `AVISAQUI-PACOTE-009` fechado e aguardando homologação; deve sincronizar somente leitura e **recusar preparação de nova RC**, sem reabrir política.
+- Publicação na loja e instalação exigem autorização própria. RC6 da loja e teste E2E no HA permanecem inalterados.
+
+
+## 0.1.0-rc.6 — Teste E2E interno sem portas expostas (PUBLICADA; E2E HA PASS)
 
 - `factory_e2e_probe.py`: durante a inicialização, cria **apenas repositórios sintéticos temporários** e executa a API real por loopback efêmero `127.0.0.1:0`, com token de teste gerado no processo isolado. O token real do add-on não é transmitido ao teste.
 - Confere autenticação, preflight com política aberta, preparação declarativa pela rota padrão, blobs e SHA-256, proveniência, não alteração dos repositórios, bloqueio de publicação, SHA inválido e pacote fechado. Apaga automaticamente os arquivos sintéticos.
 - `run.sh` chama o teste com usuário sem root e ambiente limpo antes da API principal. O log apresenta `[E2E] PASS` ou `[E2E] BLOCKED`; falha do teste não libera operações nem altera as políticas de segurança.
 - Dockerfile copia o probe para a **imagem final**, compila-o e executa os testes de regressão no estágio de validação. Sem GitHub Actions nem dependência de download de projeto.
 - **Laboratório real:** execução direta sob `nobody`: `[E2E] PASS`; 4/4 testes novos PASS; conjunto local de 56/56 testes PASS. Código verificado pelos hashes Git, sem Docker/ARM64 neste laboratório.
-- **PENDENTE:** executar a RC6 no Supervisor/Raspberry e observar o `[E2E]` real. Mesmo um PASS prova apenas pacote sintético e política interna, **não** provisionamento dos projetos reais, permissões externas ou publicação.
-- **NÃO PUBLICADA/INSTALADA:** esta versão permanece em branch até autorização separada de publicação.
+- **HOMOLOGAÇÃO PARCIAL REAL:** o último bloco de logs fornecido pelo operador confirmou `[E2E] PASS` e `[API] READY` no HA. Esse PASS cobre apenas pacote sintético e política interna, não provisionamento de projetos privados.
+- **PUBLICADA:** RC6 no catálogo por PR #48 (commit `55363aecb421cc4cd7c4c2976325f087f622e5b9`), sem alteração de outros add-ons; instalação inferida pelo log E2E e versão exata a conferir pelo Supervisor.
 
 
 ## 0.1.0-rc.5 — Preparação declarativa sem execução de scripts (CANDIDATA EM BRANCH)
