@@ -209,6 +209,79 @@ def prepare_project_declarative(project_id, expected_sha, operation_id):
             "published": False, "method": "declarative_no_script"}
 
 
+def run_workspace_sync(project, token, auto_prepare=False):
+    """One trusted startup synchronization with audit and serialization.
+
+    Invoked on a background thread while the API is available. The caller
+    already holds the global operation lock. No URLs, Git parameters or
+    credentials are received over the HTTP API.
+    """
+    from workspace_sync import SyncError, synchronize
+    operation_id = str(uuid.uuid4())
+    try:
+        record("workspace_sync:" + project, None, "requested", operation_id,
+               actor="trusted_startup")
+        result = synchronize(project, token=token, projects_dir=PROJECTS_DIR,
+                             workspaces_dir=WORKSPACES_DIR)
+        print("[WORKSPACE] " + result["state"] + ": project=" + project
+              + " source=" + result["source_sha"][:12]
+              + " public=" + result["public_sha"][:12], flush=True)
+        record("workspace_sync:" + project, None, "completed_workspace_sync",
+               operation_id, actor="trusted_startup")
+        if result["eligible"] is False:
+            print("[WORKSPACE] POLICY_BLOCKED: " + ",".join(result["errors"]), flush=True)
+            record("workspace_sync:" + project, None, "blocked_policy",
+                   operation_id, actor="trusted_startup")
+        if auto_prepare:
+            report = preflight_project(project, result["source_sha"])
+            if not report["eligible_for_preparation"]:
+                print("[WORKSPACE] PREPARE_BLOCKED_BY_POLICY: " +
+                      ",".join(report["errors"]), flush=True)
+            else:
+                prepared = prepare_project(project, result["source_sha"], operation_id)
+                if not prepared["eligible"] or prepared["published"]:
+                    raise RuntimeError("unexpected_prepare_result")
+                record("workspace_sync:" + project, None, "completed_preparation",
+                       operation_id, actor="trusted_startup")
+                print("[WORKSPACE] PREPARED_NOT_PUBLISHED: project=" + project
+                      + " source=" + result["source_sha"][:12], flush=True)
+        return result
+    except (SyncError, PreflightError, DeclarativeExportError, SandboxUnavailable,
+            OSError, ValueError, TypeError, subprocess.TimeoutExpired, RuntimeError) as exc:
+        # Report only constant error codes; no URL, token, request payload or
+        # subprocess stderr. Audit failure is fatal to this operation.
+        code = str(exc) if isinstance(exc, (SyncError, DeclarativeExportError)) else type(exc).__name__
+        print("[WORKSPACE] BLOCKED: " + code[:80], flush=True)
+        try:
+            record("workspace_sync:" + project, None, "blocked_workspace_sync",
+                   operation_id, actor="trusted_startup")
+        except RuntimeError:
+            pass
+        return None
+
+
+def launch_workspace_sync():
+    """Opt-in sync: never run when the operator left project unset."""
+    project = os.environ.pop("RUNNER_WORKSPACE_SYNC_PROJECT", "")
+    # Unset the environment secret ASAP; the worker retains it only in memory.
+    token = os.environ.pop("RUNNER_GITHUB_READ_TOKEN", "")
+    auto = os.environ.pop("RUNNER_WORKSPACE_AUTO_PREPARE", "false") == "true"
+    if not project:
+        return None
+    if not PROJECT_ID.fullmatch(project):
+        print("[WORKSPACE] BLOCKED: invalid_approved_project", flush=True)
+        return None
+    LOCK.acquire()
+    def work():
+        try:
+            run_workspace_sync(project, token, auto_prepare=auto)
+        finally:
+            LOCK.release()
+    thread = threading.Thread(target=work, name="workspace-sync", daemon=True)
+    thread.start()
+    return thread
+
+
 class WorkerUnavailable(Exception):
     """Worker failed or returned untrusted data; no privileged fallback."""
     pass
@@ -401,6 +474,7 @@ if __name__ == "__main__":
         raise SystemExit("RUNNER_AUTH_TOKEN required; refusing to start")
     server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
     server.daemon_threads = True
+    launch_workspace_sync()
     print("[API] READY: loopback-only; authenticated; worker read-only; publication disabled", flush=True)
     try:
         server.serve_forever()
