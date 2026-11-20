@@ -2,7 +2,7 @@
 
 **Versão de catálogo:** 0.1.5 (experimental) · arquitetura aarch64 · Home Assistant Ingress. Instalação depende de etapa própria.
 
-O nome de distribuição segue a norma do catálogo: **Fábrica de Softwares - Central Instagram**. O ícone e o logotipo públicos devem ser os arquivos oficiais padronizados, com blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, respectivamente.
+O nome de distribuição ainda publicado é **Fábrica de Softwares - Central Instagram**. Padronização **preparada somente em branch**: **Fábrica de Softwares - Instagram Umdoislab**, com `panel_title` = `Instagram Umdoislab`. O slug `umdoislab_instagram`, a versão 0.1.5, os ícones, login e integrações permanecem intactos. O ícone e o logotipo públicos devem ser os arquivos oficiais padronizados, com blobs Git `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`, respectivamente.
 
 Este complemento é **independente da Central WhatsApp**. Recepção de webhooks Meta e armazenamento de rascunhos vêm **desativados**. Nenhuma rota do servidor envia Direct, consulta Gemini ou faz chamadas a WooCommerce/n8n.
 
