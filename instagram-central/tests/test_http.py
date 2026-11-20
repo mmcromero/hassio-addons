@@ -114,7 +114,8 @@ class HTTPContractTests(unittest.TestCase):
             "meta_login_config_id": "990074610355962",
             "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
             "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
-            "meta_graph_version": "v24.0"})
+            "meta_graph_version": "v24.0",
+            "instagram_account_id": "17841454345931235"})
         status, headers, _ = self.request("/oauth/meta/start", headers=self.admin_header())
         self.assertEqual(status, 302)
         self.assertTrue(headers["Location"].startswith("https://www.facebook.com/dialog/oauth?"))
@@ -124,7 +125,10 @@ class HTTPContractTests(unittest.TestCase):
         cookie = headers["Set-Cookie"].split(";", 1)[0]
         self.assertEqual(self.request("/oauth/meta/callback?" + params)[0], 400)
         credential = {"access_token": "X"*40, "expires_in": 0, "received_at": 5000}
-        with patch.object(server.oauth_meta, "exchange_code", return_value=credential) as exchange:
+        identity = {"account_id": "17841454345931235", "username": "umdoislab",
+                    "client_business_id": "338861439025441", "verified_at": 10000}
+        with patch.object(server.oauth_meta, "exchange_code", return_value=credential) as exchange, \
+             patch.object(server.instagram_connection, "verify_access", return_value=identity) as verify:
             status, _, body = self.request("/oauth/meta/callback?" + params,
                                           headers={"Cookie": cookie})
             self.assertEqual(status, 200)
@@ -134,7 +138,24 @@ class HTTPContractTests(unittest.TestCase):
                                           headers={"Cookie": cookie})[0], 400)
         status, _, body = self.request("/oauth/meta/status", headers=self.admin_header())
         self.assertTrue(json.loads(body)["credentialStored"])
+        self.assertTrue(json.loads(body)["accountVerified"])
         self.assertFalse(json.loads(body)["sendingEnabled"])
+
+    def test_meta_status_never_falsely_claims_connected(self):
+        cfg = self.config
+        cfg["meta_oauth_enabled"] = False
+        status, _, body = self.request("/oauth/meta/status", headers=self.admin_header())
+        result = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertFalse(result["accountVerified"])
+        self.assertFalse(result["subscriptionRequested"])
+        self.assertFalse(result["sendingEnabled"])
+
+    def test_meta_check_and_subscribe_require_browser_session(self):
+        for path in ("/panel/meta/check", "/panel/meta/subscribe"):
+            status, _, _ = self.request(path, "POST", b"csrf=bad",
+                            {"Content-Type": "application/x-www-form-urlencoded"})
+            self.assertEqual(status, 403)
 
     def test_meta_challenge_good_and_bad(self):
         status, _, body = self.request("/webhook/instagram?hub.mode=subscribe&hub.verify_token=test-verify-token&hub.challenge=123")
@@ -157,6 +178,23 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(self.post_event()[0], 200)
         with server.database() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM inbound").fetchone()[0], 1)
+
+    def test_signed_message_updates_visible_panel_and_status(self):
+        self.assertEqual(self.post_event()[0], 200)
+        login = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()
+        code, headers, _ = self.request("/auth/login", "POST", login,
+            {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(code, 303)
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        status, _, html = self.request("/panel", headers={"Cookie": cookie})
+        self.assertEqual(status, 200)
+        self.assertIn(b"Mensagens armazenadas: 1", html)
+        self.assertIn(b"customer-1", html)
+        status, _, body = self.request("/oauth/meta/status", headers={"Cookie": cookie})
+        self.assertEqual(status, 200)
+        result = json.loads(body)
+        self.assertEqual(result["messagesStored"], 1)
+        self.assertFalse(result["sendingEnabled"])
 
     def test_disabled_meta_webhook(self):
         self.config["ingress_enabled"] = False
