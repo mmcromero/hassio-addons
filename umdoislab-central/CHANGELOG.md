@@ -1,5 +1,14 @@
 # Histórico da distribuição — Central WhatsApp Umdoislab
 
+## 0.5.0-rc.2 — retorno sendText com PN/LID comprovados (20/11/2026)
+
+- **Correção real de runtime:** a Central agora aceita `key.remoteJid=@lid` apenas se o LID for numérico (5–25 dígitos) e `key.remoteJidAlt` corresponder exatamente ao PN destinatário do envio. Mantido o caminho PN direto.
+- Exige também `key.fromMe is True` e `key.id` válido; rejeita grupos, LID sem vínculo e PN divergente. O ID só é persistido em `bot_outbound_ids` quando os dados são completos e coerentes.
+- A rota `/bridge/send-auto` continua a responder `accepted_not_confirmed`; não afirma entrega nem libera repetição em resultados incertos.
+- Gateway de ecos n8n corrigido e publicado separadamente em versão `8fe90509-1af2-4936-852a-817c5a842578`. Webhook, Comercial, opções, slug e worker preservados.
+- Testes dirigidos do helper isolado **16 PASS**, zero falhas; testes integrados adicionais foram versionados na fonte privada, mas a suíte completa do novo SHA não foi executada. Os **230 PASS antigos** pertencem ao SHA da RC1/M002 e não são atribuídos à RC2.
+- Nenhuma migração de banco, instalação/atualização HA, envio de WhatsApp ou ativação do worker por este corte. Homologação ARM64/Ingress permanece com o operador da instalação original.
+
 ## 0.5.0-rc.1 — candidata multicontas para homologação controlada
 
 - Mantido o **mesmo slug** `umdoislab_central` da Central original, com nome visual padronizado `Fábrica de Softwares - WhatsApp Umdoislab`.

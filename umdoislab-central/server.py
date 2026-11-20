@@ -427,15 +427,20 @@ def process_inbound(ev, enqueue=False, account=None):
 def evolution_outbound_id(raw, expected_sender):
     """Retorna ID só se a Evolution confirmar destino e autoria do envio.
 
-    Campos ausentes ou LID sem mapeamento não são inferidos.
+    Aceita PN direto ou LID numérico com PN alternativo idêntico ao destino.
+    Campos ausentes ou LID sem vínculo explícito nunca são inferidos.
     """
-    if not isinstance(raw, dict) or not valid_sender_for_send(expected_sender):
+    if not isinstance(raw, dict) or not isinstance(expected_sender, str) or not valid_sender_for_send(expected_sender):
         return None
     key = raw.get("key")
-    if not isinstance(key, dict):
+    if not isinstance(key, dict) or key.get("fromMe") is not True:
         return None
-    if key.get("remoteJid") != expected_sender or key.get("fromMe") is not True:
-        return None
+    remote = key.get("remoteJid")
+    if remote != expected_sender:
+        if (not isinstance(remote, str) or
+                re.fullmatch(r"[0-9]{5,25}@lid", remote) is None or
+                key.get("remoteJidAlt") != expected_sender):
+            return None
     ident = key.get("id")
     if not isinstance(ident, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,160}", ident):
         return None

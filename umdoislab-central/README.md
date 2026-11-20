@@ -8,7 +8,7 @@ A fonte de desenvolvimento e testes permanece privada em `mmcromero/whatsapp-aut
 | Campo | Valor |
 |---|---|
 | Nome na loja | Fábrica de Softwares - WhatsApp Umdoislab |
-| Versão candidata | `0.5.0-rc.1` |
+| Versão candidata | `0.5.0-rc.2` |
 | Pasta | `umdoislab-central/` |
 | Slug original preservado | `umdoislab_central` |
 | Arquitetura | `aarch64` |
@@ -17,6 +17,10 @@ A fonte de desenvolvimento e testes permanece privada em `mmcromero/whatsapp-aut
 | Persistência existente | `/data/central.sqlite3` |
 
 **Atenção:** a presença do pacote na loja não comprova instalação ou homologação. A instalação correta é **Atualizar** a Central existente, nunca criar uma nova.
+
+## O que foi corrigido na RC2
+
+A resposta de `message/sendText` pode identificar o destinatário por um LID e informar o PN exato em `key.remoteJidAlt`. A Central agora registra o ID somente quando esse vínculo é explícito, `fromMe` é `true` e o ID é válido. Quando não há vínculo, a saída permanece não comprovada e não autoriza recuperação automática. O Gateway n8n já publica a observação de ecos, sem alterar o webhook nem o envio comercial nesta atualização.
 
 ## O que foi incluído
 
@@ -32,7 +36,7 @@ O pacote usa `/data` do **mesmo slug original**, mantendo o banco legado. Não m
 
 ## Testes e processo
 
-O Codex registrou **230 PASS** em testes offline da fonte privada, sem FAIL, ERROR ou SKIP; a revisão técnica independente foi estática. Nenhum teste real ARM64/Ingress da nova versão foi declarado aprovado.
+Baseline anterior: o Codex registrou **230 PASS** na RC1/M002. Para RC2, foi executado **teste dirigido isolado 16/16 PASS** do helper PN/LID. Testes de integração adicionais foram versionados na fonte privada, mas a suíte completa no novo SHA ainda não foi executada. Nenhum teste real ARM64/Ingress da RC2 foi declarado aprovado.
 
 A rotina oficial é [`../CONTRIBUTING.md`](../CONTRIBUTING.md) (P0). O Supervisor poderá compilar o Dockerfile no Raspberry durante a **atualização autorizada**. O plano de homologação H01–H11 está no repositório privado, em `docs/WA-MULTI-001-HOMOLOGACAO-P0-PLANO.md`.
 

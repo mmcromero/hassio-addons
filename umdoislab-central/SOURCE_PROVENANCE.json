@@ -2,20 +2,23 @@
   "schema_version": 1,
   "product": "Fábrica de Softwares - WhatsApp Umdoislab",
   "source_repository": "mmcromero/whatsapp-automacoes",
-  "source_commit": "3165bf6aa9b448e1270e9aade60a8f367450d2a4",
+  "source_commit": "e0b0194cf497fdf18bb1d5a3bd010d1d2968ccc8",
   "code_test_commit": "33ea55f67f94c21b5b61ed80abbfdc72bd39f3bd",
   "source_pull_request": 10,
   "source_issue": 7,
-  "release_version": "0.5.0-rc.1",
+  "release_version": "0.5.0-rc.2",
   "target_slug": "umdoislab_central",
   "target_folder": "umdoislab-central/",
-  "test_receipt": "docs/WA-MULTI-001-M002-EVIDENCIAS.json",
+  "test_receipt": "docs/WA-MULTI-001-RC2-RELATORIO.md",
   "test_result_reported": {
-    "central_pass": 225,
-    "tools_pass": 5,
-    "fail": 0,
-    "error": 0,
-    "skip": 0
+    "previous_baseline_commit": "33ea55f67f94c21b5b61ed80abbfdc72bd39f3bd",
+    "previous_baseline_central_pass": 225,
+    "previous_baseline_tools_pass": 5,
+    "directed_rc2_isolated_pass": 16,
+    "directed_rc2_fail": 0,
+    "directed_rc2_error": 0,
+    "rc2_full_suite_executed": false,
+    "rc2_ha_arm64_tested": false
   },
   "files": [
     {
@@ -25,13 +28,13 @@
     },
     {
       "path": "umdoislab-central/config.yaml",
-      "git_blob_sha": "d4cb73709f414aef7204ef928106aaf2a37da2ab",
+      "git_blob_sha": "409d0442881e027f6701a36efdf030875aba5902",
       "bytes": 787
     },
     {
       "path": "umdoislab-central/server.py",
-      "git_blob_sha": "151a79756c72fefbbdca9b52b200af5e1b9611a0",
-      "bytes": 59500
+      "git_blob_sha": "6345ad2c1ef49f419c79687f6c2e51a7469a16a5",
+      "bytes": 59825
     },
     {
       "path": "umdoislab-central/accounts.py",
@@ -85,8 +88,10 @@
     }
   ],
   "notes": [
-    "No product runtime Python/Dockerfile changes after code_test_commit; release config changes only name, panel_title and version.",
-    "Blob SHAs are Git object hashes; no secrets from Home Assistant included.",
-    "Publication and HA installation are separate; Raspberry ARM64 boot not yet homologated."
+    "RC2 real runtime diff: server.py changed in evolution_outbound_id() to recognize an exact PN alternate linked to numeric LID, while preserving strict proof and fail-closed behavior.",
+    "Git blob hashes of the remaining eleven runtime files and icon/logo are unchanged from RC1; no secrets or Home Assistant data exported.",
+    "Sixteen isolated Python function tests executed on the literal modified helper; new end-to-end mocked regressions are present in private source, but full private suite not rerun for RC2 SHA.",
+    "Previously reported 230 PASS refer to an earlier tested SHA only, not this RC2.",
+    "Publication in GitHub, installation in Home Assistant and live H08 homologation remain distinct."
   ]
 }
