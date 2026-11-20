@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "product": "Fábrica de Softwares - WhatsApp Umdoislab",
+  "source_repository": "mmcromero/whatsapp-automacoes",
+  "source_commit": "3165bf6aa9b448e1270e9aade60a8f367450d2a4",
+  "code_test_commit": "33ea55f67f94c21b5b61ed80abbfdc72bd39f3bd",
+  "source_pull_request": 10,
+  "source_issue": 7,
+  "release_version": "0.5.0-rc.1",
+  "target_slug": "umdoislab_central",
+  "target_folder": "umdoislab-central/",
+  "test_receipt": "docs/WA-MULTI-001-M002-EVIDENCIAS.json",
+  "test_result_reported": {
+    "central_pass": 225,
+    "tools_pass": 5,
+    "fail": 0,
+    "error": 0,
+    "skip": 0
+  },
+  "files": [
+    {
+      "path": "umdoislab-central/Dockerfile",
+      "git_blob_sha": "ce68c2557513a582034d6e20dfef3d16d272e575",
+      "bytes": 514
+    },
+    {
+      "path": "umdoislab-central/config.yaml",
+      "git_blob_sha": "d4cb73709f414aef7204ef928106aaf2a37da2ab",
+      "bytes": 787
+    },
+    {
+      "path": "umdoislab-central/server.py",
+      "git_blob_sha": "151a79756c72fefbbdca9b52b200af5e1b9611a0",
+      "bytes": 59500
+    },
+    {
+      "path": "umdoislab-central/accounts.py",
+      "git_blob_sha": "89c770ea1994044bb37c3ae243b138ab91cdb6d5",
+      "bytes": 5258
+    },
+    {
+      "path": "umdoislab-central/evolution_adapter.py",
+      "git_blob_sha": "293932c9dfb3be5f8a61c8bf9227128d4bcf2cd9",
+      "bytes": 1761
+    },
+    {
+      "path": "umdoislab-central/n8n_outbox.py",
+      "git_blob_sha": "f749b0b80cb76da89a53ec0eb5884508de355441",
+      "bytes": 9208
+    },
+    {
+      "path": "umdoislab-central/recovery_reconcile.py",
+      "git_blob_sha": "c72dcb63196109f7c6d332c1dfa12400c53bbe33",
+      "bytes": 6384
+    },
+    {
+      "path": "umdoislab-central/evolution_history.py",
+      "git_blob_sha": "5386ef77747cf83e5976ac3dab281ed46f812003",
+      "bytes": 9892
+    },
+    {
+      "path": "umdoislab-central/outgoing_verification.py",
+      "git_blob_sha": "3867417fde2f42d945b5e6aab28f1a75b8b9ddd3",
+      "bytes": 4844
+    },
+    {
+      "path": "umdoislab-central/recovery_worker.py",
+      "git_blob_sha": "b2a06da0331cb67db113c6c80b957e9a16163b93",
+      "bytes": 3450
+    },
+    {
+      "path": "umdoislab-central/static/index.html",
+      "git_blob_sha": "4a48397385044414d2e3db59d195f3fa355ea084",
+      "bytes": 19255
+    },
+    {
+      "path": "umdoislab-central/icon.png",
+      "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a",
+      "bytes": 111228
+    },
+    {
+      "path": "umdoislab-central/logo.png",
+      "git_blob_sha": "7e500016222b0a5bf395be8ed17447edeb3e2af9",
+      "bytes": 194750
+    }
+  ],
+  "notes": [
+    "No product runtime Python/Dockerfile changes after code_test_commit; release config changes only name, panel_title and version.",
+    "Blob SHAs are Git object hashes; no secrets from Home Assistant included.",
+    "Publication and HA installation are separate; Raspberry ARM64 boot not yet homologated."
+  ]
+}

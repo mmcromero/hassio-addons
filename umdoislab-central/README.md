@@ -1,33 +1,39 @@
-# Central Umdoislab — pacote de distribuição Home Assistant
+# Central WhatsApp Umdoislab — distribuição Home Assistant
 
-**Finalidade deste diretório:** fornecer o pacote instalável da Central de Atendimento ao catálogo público `mmcromero/hassio-addons`. **Não é a fonte de desenvolvimento oficial.**
+Este diretório distribui o **aplicativo único e original** da Central WhatsApp pelo catálogo `mmcromero/hassio-addons`.
+A fonte de desenvolvimento e testes permanece privada em `mmcromero/whatsapp-automacoes`, [PR #10](https://github.com/mmcromero/whatsapp-automacoes/pull/10), Issue #7.
 
-**Fonte privada oficial:** `mmcromero/whatsapp-automacoes` (acesso autorizado necessário). Workflows n8n, integrações ChatGPT/MCP, histórico de desenvolvimento, decisões e testes detalhados permanecem na fonte privada; **não são distribuídos aqui**.
+## Identidade do pacote
 
-## Manifesto desta revisão
-
-| Campo | Valor do `config.yaml` |
-| --- | --- |
-| Nome | Fábrica de Softwares - 12Labs Central de Atendimento |
-| Versão | 0.4.0 |
-| Slug | `umdoislab_central` |
+| Campo | Valor |
+|---|---|
+| Nome na loja | Fábrica de Softwares - WhatsApp Umdoislab |
+| Versão candidata | `0.5.0-rc.1` |
+| Pasta | `umdoislab-central/` |
+| Slug original preservado | `umdoislab_central` |
 | Arquitetura | `aarch64` |
-| Ingress | Ativado, porta interna `8099` |
+| Ingress | Ativo, porta interna `8099`; sem porta pública de host |
 | Inicialização | Manual |
-| Backup declarado | `cold` |
+| Persistência existente | `/data/central.sqlite3` |
 
-**Importante:** a versão do manifesto é a versão do **pacote versionado**, não confirmação da versão instalada no Raspberry. O código de distribuição é validado, publicado e homologado separadamente conforme `CONTRIBUTING.md` da loja.
+**Atenção:** a presença do pacote na loja não comprova instalação ou homologação. A instalação correta é **Atualizar** a Central existente, nunca criar uma nova.
 
-## Configuração segura
+## O que foi incluído
 
-O manifesto dispõe de opções `bridge_secret`, `evolution_url`, `evolution_instance`, `evolution_api_key` e `auto_test_sender`. Segredos devem ser configurados na interface segura do Supervisor, **nunca em arquivos Git**.
+A versão candidata inclui a estrutura de contas isoladas (apenas Umdoislab ativa), resolução de instância, política, histórico, saída autenticada PN/LID, outbox e reconciliação conservadora. O envio automático de recuperação permanece **desligado**; a entrada HTTP ainda não ativa enfileiramento automático. Não há nova conta, número, interface com abas ou webhook da Evolution.
 
-Não reutilizar tokens de WhatsApp, ChatGPT ou da Central fora de seu escopo autorizado. Não alterar versões, slugs, volumes persistentes ou endpoints sem plano de atualização e autorização do proprietário.
+O Dockerfile copia os módulos Python presentes em [`SOURCE_PROVENANCE.json`](SOURCE_PROVENANCE.json); a UI `static/index.html`, `icon.png` e `logo.png` têm os mesmos hashes da distribuição anterior. Imagens e `panel_icon` são coisas diferentes.
 
-## Operação e proveniência
+## Segurança e configuração
 
-O `Dockerfile` contém a receita para a imagem instalável, com `server.py` e `static/` necessários ao build local. **Esses componentes permanecem visíveis neste repositório público**, mesmo com a fonte canônica no Git privado. Distribuição pública não oferece sigilo do código.
+As opções `bridge_secret`, `evolution_webhook_secret`, `evolution_url`, `evolution_instance`, `evolution_api_key` e `auto_test_sender` pertencem ao Supervisor. Segredos não devem ser gravados aqui. `evolution_webhook_secret` foi acrescentado com default vazio e schema de senha.
 
-Para a documentação de operação, workflows, MCP V2, histórico e recuperação de backups, utilizar o repositório privado `mmcromero/whatsapp-automacoes`. O catálogo público mantém apenas documentação necessária à distribuição.
+O pacote usa `/data` do **mesmo slug original**, mantendo o banco legado. Não modificar webhook ativo do n8n/Evolution por causa desta atualização nem ativar worker até ensaio específico.
 
-**Não apagar esta pasta da loja pública enquanto não existir outro canal de atualização do add-on homologado.**
+## Testes e processo
+
+O Codex registrou **230 PASS** em testes offline da fonte privada, sem FAIL, ERROR ou SKIP; a revisão técnica independente foi estática. Nenhum teste real ARM64/Ingress da nova versão foi declarado aprovado.
+
+A rotina oficial é [`../CONTRIBUTING.md`](../CONTRIBUTING.md) (P0). O Supervisor poderá compilar o Dockerfile no Raspberry durante a **atualização autorizada**. O plano de homologação H01–H11 está no repositório privado, em `docs/WA-MULTI-001-HOMOLOGACAO-P0-PLANO.md`.
+
+**Não apagar ou substituir este diretório**: ele é o canal oficial de atualização do aplicativo já existente. Não usar o antigo pacote experimental `umdoislab-central-lab` como atualização.

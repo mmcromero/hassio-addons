@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Umdoislab Central: Ingress UI + authenticated n8n ingest, SQLite state."""
-import hmac
 import hashlib
 import json
 import os
@@ -10,13 +9,17 @@ import threading
 import urllib.error
 import urllib.request
 import uuid
+from accounts import (Account, AccountRegistry, DEFAULT_ACCOUNT_ID, database_path,
+                      CHOICE_PROMPT, HUMAN_OFFER_PROMPT, HANDOFF_PROMPT)
+from evolution_adapter import normalize_evolution
+from n8n_outbox import ensure_outbox, put as queue_decision, cancel_for_manual
+from outgoing_verification import verify_outgoing
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 BASE = Path(os.environ.get("CENTRAL_DATA_DIR", "/data"))
 BASE.mkdir(parents=True, exist_ok=True)
-DB = BASE / "central.sqlite3"
 OPTIONS = Path(os.environ.get("CENTRAL_OPTIONS", "/data/options.json"))
 UI = Path(__file__).parent / "static" / "index.html"
 SUPERVISOR_IP = os.environ.get("CENTRAL_INGRESS_IP", "172.30.32.2")
@@ -29,9 +32,47 @@ def now():
 
 def options():
     try:
-        return json.loads(OPTIONS.read_text(encoding="utf-8"))
+        data = json.loads(OPTIONS.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
     except (OSError, ValueError):
         return {}
+
+
+# Registro de produção contém somente Umdoislab. Injeção explícita para testes;
+# não existe configuração HTTP/Ingress para provisionar outra conta.
+ACCOUNTS = None
+
+
+def account_registry():
+    if ACCOUNTS is not None:
+        return ACCOUNTS
+    raw = options()
+    cfg = {key: raw[key] for key in (
+        "bridge_secret", "evolution_webhook_secret", "evolution_url",
+        "evolution_instance", "evolution_api_key", "auto_test_sender") if key in raw}
+    # Nome/telefone não definem o identificador persistente acct_001.
+    if cfg.get("evolution_instance", "umdoislab") != "umdoislab":
+        return AccountRegistry([])  # configuração divergente nunca muda o destino
+    account = Account(DEFAULT_ACCOUNT_ID, "umdoislab", "Umdoislab", "business_001",
+                      database_path(BASE, DEFAULT_ACCOUNT_ID), cfg, lock=LOCK)
+    return AccountRegistry([account])
+
+
+def default_account():
+    account = account_registry().resolve(account_id=DEFAULT_ACCOUNT_ID)
+    if account is None:
+        raise ValueError("Conta padrão indisponível")
+    return account
+
+
+def event_account(ev, account=None):
+    if not isinstance(ev, dict):
+        return None
+    resolved = account or account_registry().resolve(instance=ev.get("instance"))
+    if (resolved is None or not resolved.enabled or ev.get("instance") != resolved.instance or
+            ("account_id" in ev and ev["account_id"] != resolved.account_id)):
+        return None
+    return resolved
 
 
 # Políticas são armazenadas na Central, nunca embutidas no workflow.
@@ -72,7 +113,7 @@ def contact_policy(db, sender):
         "SELECT 1 FROM contact_rules WHERE sender_id=? AND category='test'", (sender,)).fetchone()
     if policy["mode"] == "tests":
         # Retrocompatibilidade de um único remetente no add-on, enquanto o painel migra.
-        old_test = str(options().get("auto_test_sender") or "")
+        old_test = str(db.account.config.get("auto_test_sender") or "")
         return {"allowed": bool(test or sender == old_test), "reason": "test" if test or sender == old_test else "not_in_test_list"}
     if policy["mode"] == "all":
         return {"allowed": True, "reason": "all"}
@@ -82,7 +123,8 @@ def contact_policy(db, sender):
     return {"allowed": not bool(known), "reason": "known_contact" if known else "new_contact"}
 
 
-def update_contacts(category, submitted):
+def update_contacts(category, submitted, account=None):
+    account = account or default_account()
     if category not in ("test", "excluded") or not isinstance(submitted, list) or len(submitted) > 300:
         return None
     unique = []
@@ -92,16 +134,16 @@ def update_contacts(category, submitted):
             return None
         if number not in unique:
             unique.append(number)
-    with LOCK, connect() as db:
+    with account.lock, connect(account) as db:
         for number in unique:
             db.execute("INSERT OR IGNORE INTO contact_rules(sender_id,category) VALUES(?,?)",
                        (number,category))
     return unique
 
 
-def historical_baseline():
+def historical_baseline(account=None):
     """Fetch contacts and chats BEFORE enabling 'new'. No guesses on API failures."""
-    cfg = options()
+    cfg = (account or default_account()).config
     base = str(cfg.get("evolution_url") or "").rstrip("/")
     key = str(cfg.get("evolution_api_key") or "")
     instance = str(cfg.get("evolution_instance") or "")
@@ -138,14 +180,42 @@ def valid_sender_for_send(sender):
     return bool(re.fullmatch(r"[0-9]{10,15}@s\.whatsapp\.net", sender))
 
 
-def connect():
-    db = sqlite3.connect(DB, timeout=10)
+class AccountConnection(sqlite3.Connection):
+    """A configuração acompanha a conexão; nenhuma conta global é selecionada."""
+
+
+def connect(account=None):
+    account = account or default_account()
+    if not account.enabled:
+        raise ValueError("Conta desabilitada")
+    # Verificar também no uso para rejeitar symlink introduzido após o registro.
+    expected = database_path(BASE, account.account_id)
+    if account.database.resolve() != expected.resolve():
+        raise ValueError("Banco fora do diretório da conta")
+    account.database.parent.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(account.database, timeout=10, factory=AccountConnection)
+    db.account = account
     db.row_factory = sqlite3.Row
     return db
 
 
-def init():
-    with connect() as db:
+def init(account=None):
+    account = account or default_account()
+    with connect(account) as db:
+        ensure_outbox(db)
+        db.execute("""CREATE TABLE IF NOT EXISTS bot_outbound_ids (
+            sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
+            created_at TEXT NOT NULL, PRIMARY KEY(sender_id,message_id)
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS outgoing_observations (
+            sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
+            classification TEXT NOT NULL CHECK(classification IN ('bot','manual','uncertain')),
+            created_at TEXT NOT NULL, PRIMARY KEY(sender_id,message_id)
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS operator_activity (
+            sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
+            created_at TEXT NOT NULL, PRIMARY KEY(sender_id,message_id)
+        )""")
         db.execute("""CREATE TABLE IF NOT EXISTS conversations(
           sender_id TEXT PRIMARY KEY, sender_name TEXT NOT NULL DEFAULT '',
           subject TEXT NOT NULL DEFAULT '', summary TEXT NOT NULL DEFAULT '',
@@ -201,15 +271,6 @@ def init():
         )""")
 
 
-# Textos de protocolo: não permitir que o n8n substitua essas mensagens.
-CHOICE_PROMPT = ("Ainda não conseguimos iniciar o atendimento pessoal. "
-                 "Você prefere aguardar ou quer continuar com o atendimento automático? "
-                 "Responda 1 para aguardar ou 2 para continuar.")
-HUMAN_OFFER_PROMPT = "Quer que eu encaminhe sua dúvida para um atendente? Responda SIM ou NÃO."
-HANDOFF_PROMPT = ("Não consegui resolver sua solicitação agora. "
-                  "Vou encaminhar seu atendimento para uma pessoa da Umdoislab. "
-                  "Assim que possível, alguém entra em contato. 😊")
-
 
 def normalized(text):
     import unicodedata
@@ -244,8 +305,8 @@ def is_handoff_no(message):
     return normalized(message).strip(" .!?") in ("nao", "n", "nao obrigado", "nao obrigada", "prefiro nao")
 
 
-def valid_event(ev):
-    return (ev.get("instance") == "umdoislab"
+def valid_event(ev, account=None):
+    return (event_account(ev, account) is not None
             and ev.get("isClientMessage") is True
             and ev.get("isGroup") is False
             and valid_sender_for_send(str(ev.get("senderId") or ""))
@@ -253,13 +314,14 @@ def valid_event(ev):
             and 1 <= len(ev["messageId"]) <= 160)
 
 
-def process_inbound(ev):
+def process_inbound(ev, enqueue=False, account=None):
     """Atomic finite-state processing; returns only bounded actions.
 
     Intentionally no LLM inference here. Explicit opt-in is a strict command.
     Multiple deliveries of one incoming event return 'ignore'.
     """
-    if not isinstance(ev, dict) or not valid_event(ev):
+    account = event_account(ev, account)
+    if account is None or not valid_event(ev, account):
         return None
     sender, mid = ev["senderId"], ev["messageId"]
     ts = now()
@@ -268,7 +330,7 @@ def process_inbound(ev):
     subject = str(ev.get("category") or "Atendimento")[:100]
     summary = str(ev.get("summary") or "")[:500]
     handoff = ev.get("handoffRequested") is True
-    with LOCK, connect() as db:
+    with account.lock, connect(account) as db:
         eligibility = contact_policy(db, sender)
         if not eligibility["allowed"]:
             return {"action": "ignore", "state": "policy_blocked",
@@ -354,13 +416,125 @@ def process_inbound(ev):
         if message.strip():
             db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
                           VALUES(?,?,?,?,?)""",(sender,mid,"client",message,ts))
+        if enqueue:
+            # Registro e decisão na MESMA transação SQLite. Nenhum envio aqui.
+            queue_decision(db, ev, {"action": action}, account=account)
 
-    return {"action": action, "state": routing_decision("umdoislab",sender)["state"],
-            "messageId": mid, "senderId": sender, "instance": "umdoislab"}
+    return {"action": action, "state": routing_decision(account.instance,sender, account)["state"],
+            "messageId": mid, "senderId": sender, "instance": account.instance}
 
 
-def store_event(ev):
-    if ev.get("instance") != "umdoislab" or ev.get("isClientMessage") is not True or ev.get("isGroup") is True:
+def evolution_outbound_id(raw, expected_sender):
+    """Retorna ID só se a Evolution confirmar destino e autoria do envio.
+
+    Campos ausentes ou LID sem mapeamento não são inferidos.
+    """
+    if not isinstance(raw, dict) or not valid_sender_for_send(expected_sender):
+        return None
+    key = raw.get("key")
+    if not isinstance(key, dict):
+        return None
+    if key.get("remoteJid") != expected_sender or key.get("fromMe") is not True:
+        return None
+    ident = key.get("id")
+    if not isinstance(ident, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,160}", ident):
+        return None
+    return ident
+
+
+def observe_outgoing(ev, account=None):
+    """Trata eco fromMe pela Central, correlacionando ID com saída do robô.
+
+    Evento sem ID de saída comprovado não pode autorizar recuperação.
+    Quando a origem é incerta, bloqueia o envio até revisão manual.
+    """
+    account = event_account(ev, account)
+    if (account is None
+            or ev.get("fromMe") is not True or ev.get("isGroup") is not False):
+        return None
+    sender, mid = ev.get("senderId"), ev.get("messageId")
+    if not isinstance(sender, str) or not valid_sender_for_send(sender):
+        return None
+    if not isinstance(mid, str) or not re.fullmatch(r"[A-Za-z0-9_.:-]{1,160}", mid):
+        return None
+    # Não confiar no webhook: conferir a existência e autoria do ID na API
+    # autenticada da Evolution antes de alterar a Central ou cancelar a fila.
+    cfg = account.config
+    if not verify_outgoing(sender, mid,
+            base_url=str(cfg.get("evolution_url") or ""),
+            instance=str(cfg.get("evolution_instance") or ""),
+            api_key=str(cfg.get("evolution_api_key") or ""), account=account):
+        return None
+    with account.lock, connect(account) as db:
+        previous = db.execute("""SELECT classification FROM outgoing_observations
+            WHERE sender_id=? AND message_id=?""", (sender, mid)).fetchone()
+        if previous:
+            return {"ok": True, "classification": previous["classification"], "duplicate": True}
+        bot = db.execute("""SELECT 1 FROM bot_outbound_ids
+            WHERE sender_id=? AND message_id=?""", (sender, mid)).fetchone()
+        if bot:
+            classification = "bot"
+        else:
+            # Não inferir que é manual só porque fromMe=true.
+            # Em resultado incerto da Evolution, o eco pode ser do próprio robô.
+            classification = "uncertain"
+            db.execute("""INSERT INTO conversations(sender_id,sender_name,subject,summary,
+                last_message,last_message_id,status,updated_at,created_at,choice_state)
+                VALUES(?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(sender_id) DO UPDATE SET status='human',updated_at=excluded.updated_at""",
+                (sender, "Contato", "Revisão de origem",
+                 "Saída não reconhecida; verificar se operador assumiu",
+                 "", mid, "human", now(), now(), "idle"))
+            cancel_for_manual(db, sender)
+        db.execute("""INSERT INTO outgoing_observations
+            (sender_id,message_id,classification,created_at) VALUES(?,?,?,?)""",
+            (sender, mid, classification, now()))
+    return {"ok": True, "classification": classification, "duplicate": False}
+
+
+def record_operator_activity(ev, account=None):
+    """Registra mensagem manual enviada pelo operador via Evolution.
+
+    Exige evento confirmado fromMe=true, chat individual e número explícito.
+    Ignora corpo da mensagem: só o ID e o destinatário são persistidos.
+    """
+    # fromMe=true também identifica mensagens do robô na Evolution.
+    # Nunca ativar este endpoint para eventos crus: somente origem manual
+    # comprovada por correlação de ID ou ato explícito do operador.
+    account = event_account(ev, account)
+    if (account is None
+            or ev.get("fromMe") is not True or ev.get("isGroup") is not False
+            or ev.get("verifiedManual") is not True):
+        return None
+    sender, mid = ev.get("senderId"), ev.get("messageId")
+    if not isinstance(sender, str) or not valid_sender_for_send(sender):
+        return None
+    if not isinstance(mid, str) or not 1 <= len(mid) <= 160:
+        return None
+    stamp = now()
+    with account.lock, connect(account) as db:
+        added = db.execute("INSERT OR IGNORE INTO operator_activity(sender_id,message_id,created_at) VALUES(?,?,?)",
+                           (sender, mid, stamp)).rowcount == 1
+        if not added:
+            return {"ok": True, "duplicate": True, "manualActive": True}
+        existing = db.execute("SELECT sender_id FROM conversations WHERE sender_id=?", (sender,)).fetchone()
+        if existing:
+            db.execute("""UPDATE conversations SET status='human',choice_state='idle',
+                          choice_message_id='',updated_at=? WHERE sender_id=?""", (stamp, sender))
+        else:
+            db.execute("""INSERT INTO conversations(sender_id,sender_name,subject,summary,
+                          last_message,last_message_id,status,updated_at,created_at,choice_state)
+                          VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                       (sender, "Contato", "Atendimento manual", "Operador respondeu pelo WhatsApp",
+                        "", mid, "human", stamp, stamp, "idle"))
+        canceled = cancel_for_manual(db, sender)
+        db.execute("DELETE FROM handoff_offers WHERE sender_id=?", (sender,))
+    return {"ok": True, "duplicate": False, "manualActive": True, "queue": canceled}
+
+
+def store_event(ev, account=None):
+    account = event_account(ev, account)
+    if account is None or ev.get("isClientMessage") is not True or ev.get("isGroup") is True:
         return False
     sender = str(ev.get("senderId") or "")[:160]
     mid = str(ev.get("messageId") or "")[:160]
@@ -370,7 +544,7 @@ def store_event(ev):
     subject = str(ev.get("category") or "Atendimento")[:100]
     summary = str(ev.get("summary") or "")[:500]
     message = str(ev.get("messageText") or "")[:500]
-    with LOCK, connect() as db:
+    with account.lock, connect(account) as db:
         old = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
         if old is None and ev.get("handoffRequested") is not True:
             return False  # no ticket without explicit human handoff
@@ -389,11 +563,12 @@ def store_event(ev):
     return True
 
 
-def routing_decision(instance, sender):
+def routing_decision(instance, sender, account=None):
     """Read authoritative state for n8n. No state lookup error may imply permission."""
-    if instance != "umdoislab" or not valid_sender_for_send(sender):
+    account = event_account({"instance": instance}, account)
+    if account is None or not valid_sender_for_send(sender):
         return None
-    with LOCK, connect() as db:
+    with account.lock, connect(account) as db:
         row = db.execute("SELECT status,choice_state FROM conversations WHERE sender_id=?", (sender,)).fetchone()
         eligibility = contact_policy(db, sender)
     status = row["status"] if row else "none"
@@ -432,11 +607,11 @@ class Handler(BaseHTTPRequestHandler):
         return self.client_address[0] == SUPERVISOR_IP
 
     def bridge(self):
-        secret = str(options().get("bridge_secret") or "")
-        auth = self.headers.get("Authorization", "")
-        return len(secret) >= 24 and hmac.compare_digest(auth, "Bearer " + secret)
+        return self.account.authenticate(self.headers.get("Authorization", ""))
 
     def read_json(self):
+        if hasattr(self, "_json_body"):
+            return self._json_body
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if not 0 < length <= 16384:
@@ -446,7 +621,72 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, UnicodeError):
             return None
 
+    def dispatch_account(self, method):
+        self.account = None
+        self._json_body = None
+        registry = account_registry()
+        original_path = self.path
+        path = self.path
+        selected = None
+        if path.startswith("/accounts/"):
+            match = re.fullmatch(r"/accounts/([^/]+)(/.*)", path)
+            if match is None:
+                return self.respond(404, {"error": "Conta não encontrada"})
+            selected = registry.resolve(account_id=match[1])
+            if selected is None:
+                return self.respond(404, {"error": "Conta não encontrada"})
+            path = match[2]
+        if method == "POST":
+            # Limpar cache antes da única leitura; reuso de conexão HTTP não vaza contexto.
+            del self._json_body
+            self._json_body = self.read_json()
+        payload = self._json_body
+        is_bridge = path.startswith("/bridge/")
+        is_evolution = path == "/evolution/ingress-check"
+        if is_bridge or is_evolution:
+            legacy_context = path == "/bridge/context" and selected is None
+            instance = payload.get("instance") if isinstance(payload, dict) else None
+            if selected is None:
+                selected = registry.resolve(instance=instance) if instance is not None else (
+                    registry.resolve(account_id=DEFAULT_ACCOUNT_ID) if legacy_context else None)
+            # Auth inválida/missing não deve revelar conta ou ler banco.
+            if selected is None:
+                default = registry.resolve(account_id=DEFAULT_ACCOUNT_ID)
+                key = "evolution_webhook_secret" if is_evolution else "bridge_secret"
+                if default is None or not default.authenticate(self.headers.get("Authorization", ""), key):
+                    return self.respond(403, {"error": "Acesso negado"})
+                if not isinstance(payload, dict):
+                    return self.respond(422 if is_evolution else 400, {"error": "JSON inválido"})
+                return self.respond(422, {"error": "Instância obrigatória ou desconhecida"})
+            key = "evolution_webhook_secret" if is_evolution else "bridge_secret"
+            if not selected.authenticate(self.headers.get("Authorization", ""), key):
+                return self.respond(403, {"error": "Acesso negado"})
+            if not isinstance(payload, dict):
+                return self.respond(422 if is_evolution else 400, {"error": "JSON inválido"})
+            if instance != selected.instance and not (legacy_context and instance is None):
+                return self.respond(422, {"error": "Instância incompatível"})
+        else:
+            selected = selected or registry.resolve(account_id=DEFAULT_ACCOUNT_ID)
+        if selected is None:
+            return self.respond(404, {"error": "Conta não encontrada"})
+        if isinstance(payload, dict) and "account_id" in payload and payload["account_id"] != selected.account_id:
+            return self.respond(422, {"error": "Conta incompatível"})
+        self.account = selected
+        self.path = path
+        try:
+            if method == "GET":
+                return Handler.get_account(self)
+            return Handler.post_account(self)
+        finally:
+            self.path = original_path
+
     def do_GET(self):
+        return Handler.dispatch_account(self, "GET")
+
+    def do_POST(self):
+        return Handler.dispatch_account(self, "POST")
+
+    def get_account(self):
         if not self.ingress():
             return self.respond(403, {"error": "Somente Ingress"})
         if self.path in ("/", "/index.html"):
@@ -461,8 +701,10 @@ class Handler(BaseHTTPRequestHandler):
                 "connect-src 'self'; img-src 'self'; base-uri 'none'; frame-ancestors 'self'")
             self.end_headers()
             return self.wfile.write(raw)
+        if self.path == "/api/accounts":
+            return self.respond(200, {"items": account_registry().available()})
         if self.path == "/api/policy":
-            with LOCK, connect() as db:
+            with self.account.lock, connect(self.account) as db:
                 policy = get_policy(db)
                 policy["test"] = [r[0] for r in db.execute(
                     "SELECT sender_id FROM contact_rules WHERE category='test' ORDER BY sender_id")]
@@ -470,7 +712,7 @@ class Handler(BaseHTTPRequestHandler):
                     "SELECT sender_id FROM contact_rules WHERE category='excluded' ORDER BY sender_id")]
             return self.respond(200, policy)
         if self.path == "/api/conversations":
-            with connect() as db:
+            with connect(self.account) as db:
                 # Nunca ocultar pendências por causa de muitos atendimentos resolvidos.
                 active = db.execute("""SELECT sender_id,sender_name,subject,summary,last_message,status,
                        updated_at,created_at,last_reply_at FROM conversations
@@ -484,13 +726,18 @@ class Handler(BaseHTTPRequestHandler):
             sender = self.path.removeprefix("/api/conversations/")
             from urllib.parse import unquote
             sender = unquote(sender)
-            with connect() as db:
+            with connect(self.account) as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
             return self.respond(200, {"item": dict(row)}) if row else self.respond(404, {"error": "Não encontrado"})
         return self.respond(404, {"error": "Não encontrado"})
 
     def send_automated(self, data):
         """Safe outbound dispatch: atomic with operator actions, dedupe per inbound ID."""
+        if os.environ.get("CENTRAL_LAB_NO_WHATSAPP") == "1":
+            return self.respond(403, {"error": "LAB: saída WhatsApp desativada"})
+        account = event_account(data, getattr(self, "account", None))
+        if account is None:
+            return self.respond(422, {"error": "Instância inválida"})
         sender = data.get("senderId")
         instance = data.get("instance")
         message_id = data.get("messageId")
@@ -501,7 +748,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(422, {"error": "Tipo de envio inválido"})
         if not 1 <= len(message_id) <= 160:
             return self.respond(422, {"error": "messageId inválido"})
-        cfg = options()
+        cfg = account.config
         if not valid_sender_for_send(sender):
             return self.respond(403, {"error": "Destino inválido"})
         key = str(cfg.get("evolution_api_key") or "")
@@ -511,9 +758,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(503, {"error": "Evolution API não configurada"})
         if instance != configured_instance:
             return self.respond(422, {"error": "Instância inválida"})
-        message = (CHOICE_PROMPT if kind == "choice" else
-                   HANDOFF_PROMPT if kind == "handoff" else
-                   HUMAN_OFFER_PROMPT if kind == "human_offer" else data.get("text"))
+        message = (account.prompt(kind) if kind in ("choice", "handoff", "human_offer") else data.get("text"))
         if not isinstance(message, str) or not 0 < len(message.strip()) <= 1500:
             return self.respond(422, {"error": "Texto inválido"})
         message = message.strip()
@@ -527,9 +772,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(422, {"error": "Oferta de atendimento deve usar tipo human_offer"})
         delivery_key = "auto-" + hashlib.sha256(
             (sender + "|" + message_id + "|" + kind).encode()).hexdigest()
-        with LOCK:
-            decision = routing_decision(instance, sender)
-            with connect() as db:
+        with account.lock:
+            decision = routing_decision(instance, sender, account)
+            with connect(account) as db:
                 row = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
                 guard = db.execute("SELECT * FROM bot_guard WHERE sender_id=?", (sender,)).fetchone()
                 # Exclusão e modo de autorização valem também para mensagens protocolares.
@@ -575,11 +820,19 @@ class Handler(BaseHTTPRequestHandler):
                 headers={"Content-Type":"application/json", "apikey":key}, method="POST")
             try:
                 with urllib.request.urlopen(request, timeout=12) as response:
-                    response.read(8192)
+                    reply_raw = response.read(8192)
                     if not 200 <= response.status < 300:
                         raise ValueError("Evolution rejected request")
-                with connect() as db:
+                try:
+                    bot_id = evolution_outbound_id(json.loads(reply_raw), sender)
+                except (ValueError, UnicodeError, TypeError):
+                    bot_id = None
+                with connect(account) as db:
                     db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (delivery_key,))
+                    if bot_id:
+                        db.execute("""INSERT OR IGNORE INTO bot_outbound_ids
+                            (sender_id,message_id,created_at) VALUES(?,?,?)""",
+                            (sender,bot_id,now()))
                     db.execute("""INSERT OR IGNORE INTO conversation_turns(sender_id,message_id,role,text,created_at)
                                   VALUES(?,?,?,?,?)""",(sender,delivery_key,"assistant",message[:1500],now()))
 
@@ -606,11 +859,20 @@ class Handler(BaseHTTPRequestHandler):
                                        (message[:1500], 1 if kind == "fallback" else 0, sender))
                 return self.respond(200, {"ok":True, "delivery":"accepted_not_confirmed", "kind":kind})
             except Exception:
-                with connect() as db:
+                with connect(account) as db:
                     db.execute("UPDATE replies SET outcome='uncertain' WHERE request_id=?", (delivery_key,))
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
-    def do_POST(self):
+    def post_account(self):
+        if self.path == "/evolution/ingress-check":
+            # Isolated preflight: does NOT persist, dispatch, or send.
+            if not self.account.authenticate(self.headers.get("Authorization", ""), "evolution_webhook_secret"):
+                return self.respond(403, {"error": "Acesso negado"})
+            payload = self.read_json()
+            event = normalize_evolution(payload, expected_instance=self.account.instance)
+            if event is None:
+                return self.respond(422, {"error": "Evento não suportado"})
+            return self.respond(200, {"accepted": True, "dispatch": False})
         if self.path == "/bridge/context":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
@@ -621,7 +883,7 @@ class Handler(BaseHTTPRequestHandler):
             message_id = payload.get("messageId")
             if not valid_sender_for_send(str(sender or "")) or not isinstance(message_id,str):
                 return self.respond(422, {"error": "Identificador inválido"})
-            with LOCK, connect() as db:
+            with self.account.lock, connect(self.account) as db:
                 current = db.execute("""SELECT 1 FROM inbound_ids
                                         WHERE sender_id=? AND message_id=?""",
                                      (sender,message_id)).fetchone()
@@ -639,7 +901,7 @@ class Handler(BaseHTTPRequestHandler):
             if body is None:
                 return self.respond(400, {"error": "JSON inválido"})
             if self.path == "/api/policy/contacts":
-                result = update_contacts(body.get("category"), body.get("numbers"))
+                result = update_contacts(body.get("category"), body.get("numbers"), self.account)
                 if result is None:
                     return self.respond(422, {"error": "Número inválido; use DDI + DDD + número, só dígitos"})
                 return self.respond(200, {"ok": True, "added": len(result)})
@@ -647,37 +909,47 @@ class Handler(BaseHTTPRequestHandler):
                 category, sender = body.get("category"), canonical_number(body.get("number"))
                 if category not in ("test", "excluded") or not sender:
                     return self.respond(422, {"error": "Contato inválido"})
-                with LOCK, connect() as db:
+                with self.account.lock, connect(self.account) as db:
                     db.execute("DELETE FROM contact_rules WHERE sender_id=? AND category=?", (sender, category))
                 return self.respond(200, {"ok": True})
             if self.path == "/api/policy/mode":
                 mode = body.get("mode")
                 if mode not in POLICY_MODES:
                     return self.respond(422, {"error": "Modo inválido"})
-                with LOCK, connect() as db:
+                with self.account.lock, connect(self.account) as db:
                     if mode == "new" and not get_policy(db)["baseline_ready"]:
                         return self.respond(409, {"error": "Sincronize o histórico antes de ativar contatos novos"})
                     db.execute("""INSERT INTO policy_settings VALUES('mode',?)
                                   ON CONFLICT(key) DO UPDATE SET value=excluded.value""",(mode,))
                 return self.respond(200, {"ok": True, "mode": mode})
             try:
-                found = historical_baseline()
+                found = historical_baseline(self.account)
             except (ValueError, OSError, urllib.error.URLError, json.JSONDecodeError):
                 return self.respond(503, {"error": "Não foi possível verificar o histórico completo na Evolution"})
-            with LOCK, connect() as db:
+            with self.account.lock, connect(self.account) as db:
                 for sender in found:
                     db.execute("INSERT OR IGNORE INTO known_contacts VALUES(?)", (sender,))
                 for key, value in (("baseline_ready", "1"), ("baseline_count", str(len(found))), ("baseline_at", now())):
                     db.execute("""INSERT INTO policy_settings VALUES(?,?)
                                   ON CONFLICT(key) DO UPDATE SET value=excluded.value""",(key,value))
             return self.respond(200, {"ok": True, "count": len(found)})
+        if self.path == "/bridge/outgoing-observation":
+            if not self.bridge():
+                return self.respond(403, {"error": "Acesso negado"})
+            ev = self.read_json()
+            if ev is None:
+                return self.respond(400, {"error": "JSON inválido"})
+            result = observe_outgoing(ev, account=self.account)
+            if result is None:
+                return self.respond(422, {"error": "Evento de saída inválido"})
+            return self.respond(200, result)
         if self.path == "/bridge/inbound":
             if not self.bridge():
                 return self.respond(403, {"error": "Acesso negado"})
             ev = self.read_json()
             if ev is None:
                 return self.respond(400, {"error": "JSON inválido"})
-            result = process_inbound(ev)
+            result = process_inbound(ev, account=self.account)
             if result is None:
                 return self.respond(422, {"error": "Evento inválido ou destino não suportado"})
             return self.respond(200, result)
@@ -699,7 +971,7 @@ class Handler(BaseHTTPRequestHandler):
             sender = request.get("senderId")
             if not isinstance(instance, str) or not isinstance(sender, str):
                 return self.respond(422, {"error": "Instância e destinatário obrigatórios"})
-            decision = routing_decision(instance, sender)
+            decision = routing_decision(instance, sender, self.account)
             if decision is None:
                 return self.respond(422, {"error": "Instância ou destinatário incompatível"})
             return self.respond(200, decision)
@@ -709,7 +981,7 @@ class Handler(BaseHTTPRequestHandler):
             event = self.read_json()
             if event is None:
                 return self.respond(400, {"error": "JSON inválido"})
-            return self.respond(200, {"recorded": store_event(event)})
+            return self.respond(200, {"recorded": store_event(event, account=self.account)})
         if not self.ingress() or self.headers.get("X-Requested-With") != "UmdoislabCentral":
             return self.respond(403, {"error": "Acesso negado"})
         from urllib.parse import unquote
@@ -723,7 +995,9 @@ class Handler(BaseHTTPRequestHandler):
         # Validar configuração/destino ANTES de reservar a chave de idempotência.
         # Uma configuração ausente não pode impedir uma futura tentativa corrigida.
         if action == "reply":
-            cfg = options()
+            if os.environ.get("CENTRAL_LAB_NO_WHATSAPP") == "1":
+                return self.respond(403, {"error": "LAB: saída WhatsApp desativada"})
+            cfg = self.account.config
             api_key = str(cfg.get("evolution_api_key") or "")
             endpoint = str(cfg.get("evolution_url") or "").rstrip("/")
             instance = str(cfg.get("evolution_instance") or "")
@@ -731,7 +1005,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(503, {"error": "Evolution API não configurada"})
             if not valid_sender_for_send(sender):
                 return self.respond(422, {"error": "Identificador do contato incompatível com envio seguro; confira o JID recebido"})
-        with LOCK, connect() as db:
+        with self.account.lock, connect(self.account) as db:
             existing = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
             if not existing:
                 return self.respond(404, {"error": "Conversa não encontrada"})
@@ -739,6 +1013,8 @@ class Handler(BaseHTTPRequestHandler):
                 status = {"assume": "human", "resolve": "done", "reopen": "pending"}[action]
                 db.execute("UPDATE conversations SET status=?, updated_at=? WHERE sender_id=?",
                            (status, now(), sender))
+                if action == "assume":
+                    cancel_for_manual(db, sender)
                 if action == "resolve":
                     db.execute("""UPDATE conversations SET choice_state='idle',
                                   last_bot_text='',fallback_count=0,bot_repeat_count=0,
@@ -759,6 +1035,7 @@ class Handler(BaseHTTPRequestHandler):
             # Em resultado incerto, manter estado humano até decisão do responsável.
             db.execute("UPDATE conversations SET status='human', updated_at=? WHERE sender_id=?",
                        (now(), sender))
+            cancel_for_manual(db, sender)
         url = endpoint + "/message/sendText/" + instance
         body = json.dumps({"number":sender.split("@")[0], "text":message}).encode()
         req = urllib.request.Request(url, data=body,
@@ -768,18 +1045,31 @@ class Handler(BaseHTTPRequestHandler):
                 payload = res.read(8192)
                 if not 200 <= res.status < 300:
                     raise urllib.error.HTTPError(url,res.status,"HTTP failure",{},None)
+            # Resposta pela própria Central já marca o contato como humano.
+            # Acompanhamos o ID para classificar o eco como conhecido.
+            try:
+                human_id = evolution_outbound_id(json.loads(payload), sender)
+            except (ValueError, UnicodeError, TypeError):
+                human_id = None
+            if human_id:
+                with self.account.lock, connect(self.account) as db:
+                    db.execute("""INSERT OR IGNORE INTO outgoing_observations
+                        (sender_id,message_id,classification,created_at)
+                        VALUES(?,?,?,?)""", (sender,human_id,"manual",now()))
             # HTTP success = request accepted by Evolution, NOT delivery proof
-            with LOCK, connect() as db:
+            with self.account.lock, connect(self.account) as db:
                 db.execute("UPDATE replies SET outcome='accepted' WHERE request_id=?", (req_id,))
                 db.execute("""UPDATE conversations SET last_reply=?,last_reply_at=?,status='human',
                               updated_at=? WHERE sender_id=?""",(message[:1500],now(),now(),sender))
             return self.respond(200, {"ok":True,"detail":"Evolution API aceitou o envio; entrega não confirmada"})
         except Exception:
-            with LOCK, connect() as db:
+            with self.account.lock, connect(self.account) as db:
                 db.execute("UPDATE replies SET outcome='uncertain' WHERE request_id=?", (req_id,))
             return self.respond(502, {"error":"Envio sem confirmação. Confira o WhatsApp antes de tentar novamente."})
 
 
 if __name__ == "__main__":
-    init()
+    for account in account_registry().by_id.values():
+        if account.enabled:
+            init(account)
     ThreadingHTTPServer(("0.0.0.0", 8099), Handler).serve_forever()
