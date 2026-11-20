@@ -29,7 +29,8 @@
       "slug": "umdoislab_central",
       "architectures": [
         "aarch64"
-      ]
+      ],
+      "source_repo": "https://github.com/mmcromero/whatsapp-automacoes"
     },
     {
       "id": "factory-runner",
