@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-rc.13 — Histórico de sincronização multiprojeto
+
+- Corrigido o filtro autenticado de `GET /api/operations` para reconhecer as ações reais `workspace_sync:<projeto>`.
+- Agora o histórico mostra `completed_workspace_sync`, `blocked_workspace_sync` e o estado final de bloqueio da política, sem incluir dados de credenciais ou caminhos.
+- O identificador de projeto é validado; valores com traversal e entradas inválidas não aparecem no retorno.
+- Dois testes HTTP adicionados para sincronização e rejeição de identificadores inválidos.
+- Oito testes locais dirigidos da função de leitura: PASS. A suíte completa e o build do add-on continuam sujeitos à validação no Home Assistant.
+- Nenhuma publicação de pacote de projetos foi habilitada, nenhum add-on alheio foi alterado. A RC é experimental e a instalação é responsabilidade separada.
+
+
 ## 0.1.0-rc.12 — Histórico autenticado de operações (RC experimental)
 
 - Novo endpoint somente leitura `GET /api/operations` com Bearer, até 20 operações recentes; dados sanitizados (`operation_id`, `action`, `status`, `time`).
