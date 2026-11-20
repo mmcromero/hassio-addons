@@ -51,6 +51,15 @@
         "aarch64"
       ],
       "source_repo": "https://github.com/mmcromero/instagram-automacoes"
+    },
+    {
+      "id": "umdoislab-central-lab",
+      "directory": "umdoislab-central-lab",
+      "slug": "umdoislab_central_lab",
+      "architectures": [
+        "aarch64"
+      ],
+      "source_repo": "https://github.com/mmcromero/whatsapp-automacoes"
     }
   ]
 }
