@@ -124,6 +124,8 @@ class FastlaneTests(unittest.TestCase):
             for mapping in changes:
                 with self.subTest(mapping=mapping):
                     cfg = dict(CONFIG)
+                    cfg.pop("declarative_rules", None)
+                    cfg.pop("declarative_ci", None)
                     cfg["declarative_mapping"] = mapping
                     profile.write_text(json.dumps(cfg), encoding="utf-8")
                     with self.assertRaises(mod.PreflightError):
@@ -133,12 +135,26 @@ class FastlaneTests(unittest.TestCase):
         self.assertNotIn("declarative_mapping", mod.load_profile(PROFILE))
         with tempfile.TemporaryDirectory() as folder:
             cfg = dict(CONFIG)
+            cfg.pop("declarative_rules", None)
+            cfg.pop("declarative_ci", None)
             cfg["declarative_mapping"] = {"pager-virtual/config.yaml": "config.yaml"}
             profile = Path(folder) / "profile.json"
             profile.write_text(json.dumps(cfg), encoding="utf-8")
             actual = mod.load_profile(profile)
             self.assertEqual(actual["declarative_mapping"]["pager-virtual/config.yaml"],
                              "config.yaml")
+
+    def test_mixed_declarative_modes_are_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            cfg = dict(CONFIG)
+            self.assertIn("declarative_rules", cfg)
+            cfg["declarative_mapping"] = {
+                "pager-virtual/config.yaml": "config.yaml"}
+            path = Path(folder) / "profile.json"
+            path.write_text(json.dumps(cfg), encoding="utf-8")
+            with self.assertRaisesRegex(mod.PreflightError,
+                                        "Mixed declarative mapping modes"):
+                mod.load_profile(path)
 
     def test_git_status_preserves_leading_porcelain_column(self):
         # An unstaged modification starts with a space, which .strip() destroys.
