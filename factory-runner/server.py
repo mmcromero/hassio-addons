@@ -234,6 +234,27 @@ def release_plan(project_id, expected_sha):
     }
 
 
+def release_plan_health(project_id, expected_sha):
+    """Read-only verification against the existing trusted workspace.
+
+    Prints only constant status codes and an approved project ID. It does not
+    assert the HTTP authentication path, grant publishing, or expose policy data.
+    """
+    try:
+        plan = release_plan(project_id, expected_sha)
+        if (plan["published"] is not False
+                or plan["publication"] != "disabled_pending_independent_authorization"):
+            raise PreflightError("Unsafe publication plan")
+        print("[RELEASE-PLAN] PASS: project=" + project_id
+              + " preparation=" + plan["preparation"]
+              + " publication=disabled", flush=True)
+        return True
+    except (PreflightError, OSError, ValueError, TypeError):
+        print("[RELEASE-PLAN] BLOCKED: project=" + project_id
+              + " preflight_unavailable", flush=True)
+        return False
+
+
 def prepare_project(project_id, expected_sha, operation_id):
     """Export into an isolated local checkout. No Git push or release publication."""
     if not isinstance(expected_sha, str) or not SHA.fullmatch(expected_sha):
@@ -366,6 +387,10 @@ def run_workspace_sync(project, token, auto_prepare=False):
             print("[WORKSPACE] POLICY_BLOCKED: " + ",".join(result["errors"]), flush=True)
             record("workspace_sync:" + project, None, "blocked_policy",
                    operation_id, actor="trusted_startup")
+        if not readonly:
+            # Exercise the real read-only plan against the verified workspace.
+            # A blocked package is a valid plan, not authorization to publish.
+            release_plan_health(project, result["source_sha"])
         if auto_prepare:
             if readonly:
                 print("[WORKSPACE] PREPARE_BLOCKED_BY_PROFILE: project=" + project, flush=True)

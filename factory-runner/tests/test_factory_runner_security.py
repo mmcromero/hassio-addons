@@ -295,6 +295,31 @@ class SecurityTests(unittest.TestCase):
         self.assertEqual(code, 400)
         self.assertEqual(data["error"], "invalid_payload")
 
+    def test_release_plan_health_validates_blocked_package(self):
+        with (patch.object(server, "release_plan", return_value={
+                "publication": "disabled_pending_independent_authorization",
+                "published": False, "preparation": "blocked_by_project_policy"}),
+              patch("builtins.print") as printed):
+            self.assertTrue(server.release_plan_health("avisaqui", "a" * 40))
+        out = str(printed.call_args_list)
+        self.assertIn("[RELEASE-PLAN] PASS", out)
+        self.assertIn("publication=disabled", out)
+
+    def test_release_plan_health_refuses_published_result(self):
+        with (patch.object(server, "release_plan", return_value={
+                "publication": "disabled_pending_independent_authorization",
+                "published": True, "preparation": "eligible_for_separate_preparation"}),
+              patch("builtins.print") as printed):
+            self.assertFalse(server.release_plan_health("avisaqui", "a" * 40))
+        self.assertIn("preflight_unavailable", str(printed.call_args_list))
+
+    def test_release_plan_health_handles_unavailable_workspace_without_leak(self):
+        with (patch.object(server, "release_plan",
+                           side_effect=server.PreflightError("/data/private-token")),
+              patch("builtins.print") as printed):
+            self.assertFalse(server.release_plan_health("avisaqui", "a" * 40))
+        self.assertNotIn("/data/private-token", str(printed.call_args_list))
+
     def test_preflight_requires_auth_and_rejects_unknown_project(self):
         self.assertEqual(self.request("POST", "/api/preflight",
             payload={"project": "avisaqui", "expected_source_sha": "a" * 40})[0], 401)
