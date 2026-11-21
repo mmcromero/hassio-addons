@@ -8,6 +8,8 @@ import json
 import logging
 import os
 import secrets
+import ssl
+import threading
 from contextlib import contextmanager
 from datetime import timedelta
 import sqlite3
@@ -22,6 +24,7 @@ import account_registry
 import editorial_core
 import editorial_http
 import panel_login
+import standalone_https
 from urllib.parse import parse_qs, urlsplit
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
@@ -29,7 +32,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.16"
+APP_VERSION = "0.1.17"
 
 
 def settings():
@@ -357,6 +360,12 @@ def panel_session_authorized(headers, cfg):
 def render_login(cfg=None, invalid=False, locked=False):
     """Own HTML form. Chrome can offer to save its standard username/password."""
     cfg = cfg or {}
+    try:
+        origin = standalone_https.public_origin(cfg)
+    except ValueError:
+        origin = ""
+    standalone_link = ('<p><a href="' + html.escape(origin + '/panel', quote=True) +
+                       '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a></p>') if origin else ''
     configured = isinstance(cfg.get("panel_password"), str) and len(cfg["panel_password"]) >= 16
     if not configured:
         notice = '<p class="notice" role="alert">Configure uma senha de pelo menos 16 caracteres nas opções do aplicativo.</p>'
@@ -399,7 +408,7 @@ small{display:block;color:#59697d;margin-top:1.3rem}
 <div class="kicker">Umdoislab · acesso administrativo</div>
 <h1>Central Instagram</h1>
 <p>Entre para acessar as mensagens e a fila local.</p>"""
-        + notice + fields +
+        + notice + standalone_link + fields +
         "<small>Use a senha cadastrada nas configurações da Central. "
         "O Chrome pode oferecer para salvá-la.</small></main></body></html>")
 
@@ -416,10 +425,12 @@ def _login_form_fields(raw):
     return fields["username"][0], fields["password"][0]
 
 
-def _external_https(headers):
+def _external_https(headers, native_tls=False):
     # Browsers send their external Origin on form POST; TLS proxies may set
     # X-Forwarded-Proto. These signals affect only the cookie Secure attribute.
     # For HTTP LAN access a Secure cookie cannot be used; prefer HTTPS HA.
+    if native_tls:
+        return True
     origin = headers.get("Origin", "")
     if isinstance(origin, str) and origin.startswith("https://"):
         return True
@@ -538,7 +549,17 @@ def render_connection_section(cfg, summary):
     last = summary["lastMessageReceived"] or "Nenhuma"
     url = cfg.get("meta_oauth_redirect_uri", "")
     actions = []
-    if summary["oauthReady"] and not summary["accountVerified"]:
+    try:
+        origin = standalone_https.public_origin(cfg)
+        origin_matches = standalone_https.oauth_origin_matches(cfg)
+    except ValueError:
+        origin, origin_matches = "", False
+    if origin:
+        actions.append('<a href="' + html.escape(origin + "/panel", quote=True)
+                       + '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a>')
+    if not origin_matches:
+        actions.append('<p>Configure o retorno OAuth na mesma URL pública HTTPS da Central antes de conectar.</p>')
+    if summary["oauthReady"] and not summary["accountVerified"] and origin_matches:
         # A browser session established via the same HTTPS hostname is required
         # for the public proxy route to recognize the session cookie.
         start_url = url[:-len("/oauth/meta/callback")] + "/oauth/meta/start"
@@ -773,6 +794,15 @@ class Handler(BaseHTTPRequestHandler):
     def parse_request(self):
         if not super().parse_request():
             return False
+        if isinstance(self.connection, ssl.SSLSocket):
+            try:
+                origin = standalone_https.public_origin(settings())
+            except ValueError:
+                self.respond(503, {"error": "public HTTPS origin unavailable"})
+                return False
+            if not origin or self.headers.get("Host", "").lower() != urlsplit(origin).netloc:
+                self.respond(421, {"error": "use configured public HTTPS origin"})
+                return False
         # HTTP/2 intermediaries may forward split Cookie fields. HTTPMessage.get
         # returns only the first field; coalesce before ALL auth/CSRF/OAuth paths.
         # Keep every pair, so duplicated state cookies still fail closed.
@@ -781,6 +811,26 @@ class Handler(BaseHTTPRequestHandler):
         if len(fields) > 1:
             del self.headers["Cookie"]
             self.headers["Cookie"] = "; ".join(fields)
+        return True
+
+    def transport_https(self):
+        return (isinstance(self.connection, ssl.SSLSocket) or
+                self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https")
+
+    def oauth_origin_allowed(self, cfg):
+        try:
+            origin = standalone_https.public_origin(cfg)
+            matches = standalone_https.oauth_origin_matches(cfg)
+        except ValueError:
+            origin, matches = "", False
+        if not matches:
+            LOGGER.error("OAuth refused: standalone public origin and callback mismatch version=%s", APP_VERSION)
+            self.respond(503, {"error": "configure OAuth callback on the public HTTPS origin"})
+            return False
+        if origin and (self.headers.get("Host", "").lower() != urlsplit(origin).netloc
+                       or not self.transport_https()):
+            self.respond(421, {"error": "use configured public HTTPS origin"})
+            return False
         return True
 
     def respond(self, status, body, content_type="application/json", *, csp=None):
@@ -840,6 +890,8 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = meta_configuration_for_business()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
+            if not self.oauth_origin_allowed(cfg):
+                return
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
             try:
@@ -862,7 +914,7 @@ class Handler(BaseHTTPRequestHandler):
                         "secure=True httponly=True samesite_lax=True callback_path=True max_age=%s",
                         "probe" if route.query == "probe=1" else "oauth", APP_VERSION,
                         self.headers.get("Host", "").strip().lower() == expected,
-                        self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https",
+                        self.transport_https(),
                         60 if route.query == "probe=1" else 600)
             return
         if route.path == "/oauth/meta/callback":
@@ -870,12 +922,14 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = meta_configuration_for_business()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
+            if not self.oauth_origin_allowed(cfg):
+                return
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
             if route.query.startswith("probe="):
                 expected = urlsplit(cfg["meta_oauth_redirect_uri"]).netloc.lower()
                 host_ok = bool(expected and self.headers.get("Host", "").strip().lower() == expected)
-                https_ok = self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
+                https_ok = self.transport_https()
                 diagnostic = oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", ""), probe=True)
                 diagnostic["cookie_header_fields"] = self.cookie_header_fields
                 try:
@@ -922,8 +976,7 @@ class Handler(BaseHTTPRequestHandler):
                     received_authority = self.headers.get("Host", "").strip().lower()
                     authority_match = bool(
                         expected_authority and received_authority == expected_authority)
-                    forwarded_https = (
-                        self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https")
+                    forwarded_https = self.transport_https()
                     LOGGER.error(
                         "Meta OAuth callback rejected at stage=%s: %s "
                         "(redirect_authority_match=%s, forwarded_https=%s) transport=%s",
@@ -1069,7 +1122,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(303)
             self.send_header("Location", "../panel")
             self.send_header("Set-Cookie", panel_login.set_cookie_header(
-                token, secure=_external_https(self.headers)))
+                token, secure=_external_https(self.headers, isinstance(self.connection, ssl.SSLSocket))))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
@@ -1085,7 +1138,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(303)
             self.send_header("Location", "../panel")
             self.send_header("Set-Cookie", panel_login.clear_cookie_header(
-                secure=_external_https(self.headers)))
+                secure=_external_https(self.headers, isinstance(self.connection, ssl.SSLSocket))))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
@@ -1182,4 +1235,18 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     with database():
         pass
-    ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler).serve_forever()
+    try:
+        https_server = standalone_https.create_server(settings(), Handler)
+    except (OSError, ValueError):
+        https_server = None
+        LOGGER.error("Standalone HTTPS unavailable: check public_base_url, panel_password and /ssl certificates; internal HTTP retained")
+    if https_server:
+        threading.Thread(target=https_server.serve_forever, daemon=True).start()
+        LOGGER.info("Standalone HTTPS ready: port=9443 version=%s", APP_VERSION)
+    try:
+        with ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler) as internal:
+            internal.serve_forever()
+    finally:
+        if https_server:
+            https_server.shutdown()
+            https_server.server_close()

@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.16")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.17")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.16", body)
+        self.assertIn(b"0.1.17", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.16", body)
+            self.assertIn(b"0.1.17", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -507,6 +507,20 @@ class HTTPContractTests(unittest.TestCase):
         self.config.update(meta_oauth_enabled=True, meta_app_id='12345678', meta_login_config_id='87654321',
                            meta_app_secret='SYNTHETIC_UNUSED_APP_SECRET', meta_graph_version='v27.0',
                            meta_oauth_redirect_uri='https://example.org/oauth/meta/callback')
+
+    def test_old_ha_origin_cannot_start_or_consume_standalone_oauth(self):
+        self.configure_oauth()
+        self.config.update(public_base_url='https://example.org:9443',
+                           meta_oauth_redirect_uri='https://example.org:9443/oauth/meta/callback')
+        headers = {**self.admin_header(), 'Host': 'example.org:8443', 'X-Forwarded-Proto': 'https'}
+        with patch.object(server.oauth_meta, 'start') as start, \
+             patch.object(server.oauth_meta, 'consume_state') as consume:
+            for route in ('/oauth/meta/start', '/oauth/meta/start?probe=1', '/oauth/meta/callback?state=old&code=old'):
+                status, response_headers, _ = self.request(route, headers=headers)
+                self.assertEqual(status, 421)
+                self.assertNotIn('Location', response_headers)
+                self.assertNotIn('Set-Cookie', response_headers)
+            start.assert_not_called(); consume.assert_not_called()
 
     def test_probe_screen_distinguishes_no_header_from_unrelated_cookie_safely(self):
         self.configure_oauth()

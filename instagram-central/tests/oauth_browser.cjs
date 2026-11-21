@@ -16,7 +16,7 @@ async function start(){
 (async()=>{
  const data=await start();
  function control(route){return new Promise((resolve,reject)=>{const q=http.get({hostname:'127.0.0.1',port:data.control,path:route},r=>{let s='';r.on('data',v=>s+=v);r.on('end',()=>resolve(JSON.parse(s)));});q.on('error',reject);});}
- browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--no-proxy-server','--disable-background-networking','--disable-component-update','--host-resolver-rules=MAP probe-review.test 127.0.0.1, MAP alias-review.test 127.0.0.1, MAP meta-review.test 127.0.0.1, MAP * ~NOTFOUND']});
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--ignore-certificate-errors','--no-proxy-server','--disable-background-networking','--disable-component-update','--host-resolver-rules=MAP probe-review.test 127.0.0.1, MAP alias-review.test 127.0.0.1, MAP meta-review.test 127.0.0.1, MAP * ~NOTFOUND']});
  const base='https://probe-review.test:'+data.https;
  async function context(){
   const ctx=await browser.newContext({ignoreHTTPSErrors:true,serviceWorkers:'block',extraHTTPHeaders:{Authorization:'Basic '+Buffer.from('admin:oauth_fixture_password_only_123').toString('base64')}});
@@ -32,7 +32,7 @@ async function start(){
   const expected='ig_oauth_state_'+crypto.createHash('sha256').update(nonce).digest('hex').slice(0,32);
   obs.expectedStored=(await ctx.cookies(base+'/oauth/meta/callback')).some(c=>c.name===expected);
   assert.equal(obs.status,['same_https','same_host_other_port','split_cookie_header'].includes(kind)?200:400,kind);
-  const text=await page.locator('body').innerText();assert(text.includes('0.1.16'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
+  const text=await page.locator('body').innerText();assert(text.includes('0.1.17'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
   if(kind==='strip_request_cookie'||kind==='insecure_start'||kind==='strip_set_cookie'||kind==='different_start_host')assert(text.includes('Nenhum cabeçalho Cookie'),kind+' classification');
   if(kind==='rewrite_nonce')assert(text.includes('Cookies chegaram'),kind+' wrong-name classification');
   console.log('PASS probe '+JSON.stringify(obs));await ctx.close();
@@ -50,8 +50,38 @@ async function start(){
  const result=drift.waitForResponse(r=>new URL(r.url()).pathname==='/oauth/meta/callback');await drift.getByRole('link',{name:'Voltar à Central'}).click();
  assert.equal((await result).status(),400);assert.equal((await control('/observe')).exchanges,before);
  console.log('PASS configuration drift rejected before exchange');await ctx.close();
+ await control('/set/same_https');
+ const workerContext=await browser.newContext({ignoreHTTPSErrors:true,serviceWorkers:'allow',
+  extraHTTPHeaders:{Authorization:'Basic '+Buffer.from('admin:oauth_fixture_password_only_123').toString('base64')}});
+ const old=await workerContext.newPage();await old.goto(base+'/worker-lab');
+ await old.evaluate(async()=>{await navigator.serviceWorker.register('/sw-modern.js',{scope:'/'});await navigator.serviceWorker.ready;
+  if(!navigator.serviceWorker.controller)await new Promise(r=>navigator.serviceWorker.addEventListener('controllerchange',r,{once:true}));});
+ assert.equal(await old.evaluate(()=>!!navigator.serviceWorker.controller),true);
+ assert.equal((await old.goto(base+'/oauth/meta/start?probe=1')).status(),400);
+ console.log('PASS synthetic root worker interferes on old origin; reproduced without bypass');
+ await control('/set/native_https');
+ const isolated='https://probe-review.test:'+data.native;
+ const own=await workerContext.newPage();await own.goto(isolated+'/panel');
+ assert.equal(await own.evaluate(()=>navigator.serviceWorker.controller===null),true);
+ await own.getByLabel('Senha',{exact:true}).fill('oauth_fixture_password_only_123');
+ await own.getByRole('button',{name:'Entrar',exact:true}).click();await own.waitForURL('**/panel');
+ assert((await own.locator('body').innerText()).includes('Conexão com o Instagram'));
+ const session=(await workerContext.cookies(isolated)).find(c=>c.name==='ig_panel_session');
+ assert(session&&session.secure&&session.httpOnly&&session.sameSite==='Strict','native TLS session attributes');
+ const probe=await workerContext.newPage();assert.equal((await probe.goto(isolated+'/oauth/meta/start?probe=1')).status(),200);
+ assert((await probe.locator('body').innerText()).includes('Teste aprovado'));
+ assert.equal(await probe.evaluate(()=>navigator.serviceWorker.controller===null),true);
+ console.log('PASS native HTTPS: existing login, Secure/HttpOnly session, probe, no forwarded headers, no root worker from other port');
+ const nativeBefore=(await control('/observe')).exchanges;
+ await probe.goto(isolated+'/oauth/meta/start');
+ await probe.getByRole('link',{name:'Voltar à Central'}).click();
+ assert((await probe.locator('body').innerText()).includes('verificada e autorizada'));
+ assert.equal(new URL(probe.url()).origin,isolated);
+ assert.equal((await control('/observe')).exchanges,nativeBefore+1);
+ console.log('PASS native HTTPS OAuth: synthetic provider round trip returns to isolated origin and existing account store');
+ await workerContext.close();
  console.log('PASS OAuth Chromium: 9 probe cases, concurrent tabs, config binding. Local HTTPS only; no real Meta/HA.');
-})().catch(error=>{console.error('FAIL OAuth Chromium '+error.name);process.exitCode=1;}).finally(async()=>{
+})().catch(error=>{console.error('FAIL OAuth Chromium '+error.name+' '+String(error.message).replace(/https?:\/\/[^\s]+/g,'[local-test-url]').replace(/[A-Za-z0-9_-]{40,}/g,'[synthetic-value]'));process.exitCode=1;}).finally(async()=>{
  if(browser)await browser.close();
  if(child&&child.exitCode===null){const done=new Promise(r=>child.once('exit',r));child.kill('SIGTERM');await done;}
  fs.rmSync(root,{recursive:true,force:true});

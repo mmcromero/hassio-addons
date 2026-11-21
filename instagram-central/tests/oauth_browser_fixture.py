@@ -72,6 +72,21 @@ class Proxy(BaseHTTPRequestHandler):
     def log_message(self, *_): pass
     def do_GET(self):
         route = urlsplit(self.path)
+        if route.path in ('/worker-lab', '/sw-modern.js'):
+            if route.path == '/worker-lab':
+                raw = b'<!doctype html><title>Worker fixture</title><p>Synthetic old origin</p>'
+                kind = 'text/html'
+            else:
+                # Deliberately replay a synthetic redirect without Set-Cookie.
+                # This models interference; it is not HA's installed source.
+                callback = CONFIG['meta_oauth_redirect_uri'] + '?probe=' + 'A' * 43
+                raw = ("self.addEventListener('install',()=>self.skipWaiting());"
+                       "self.addEventListener('activate',e=>e.waitUntil(clients.claim()));"
+                       "self.addEventListener('fetch',e=>{if(new URL(e.request.url).pathname==='/oauth/meta/start')"
+                       "e.respondWith(Promise.resolve(Response.redirect(" + json.dumps(callback) + ",302)));});").encode()
+                kind = 'application/javascript'
+            self.send_response(200); self.send_header('Content-Type', kind)
+            self.send_header('Content-Length', str(len(raw))); self.end_headers(); self.wfile.write(raw); return
         if route.path == '/favicon.ico': self.send_response(204); self.end_headers(); return
         if route.path == '/fake-authorize':
             value = parse_qs(route.query)['state'][0]
@@ -124,6 +139,11 @@ class Control(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/set/'):
             state['kind'] = self.path.split('/')[-1]; state['obs'] = {}; CONFIG['meta_login_config_id'] = '87654321'
+            CONFIG['public_base_url'] = ''
+            CONFIG['meta_oauth_redirect_uri'] = 'https://probe-review.test:' + str(first.server_address[1]) + '/oauth/meta/callback'
+            if state['kind'] == 'native_https':
+                CONFIG['public_base_url'] = 'https://probe-review.test:' + str(native.server_address[1])
+                CONFIG['meta_oauth_redirect_uri'] = CONFIG['public_base_url'] + '/oauth/meta/callback'
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
         elif self.path == '/drift': CONFIG['meta_login_config_id'] = '98765432'; data = {}
@@ -148,10 +168,13 @@ cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(subject).pub
 fd = os.memfd_create('offline-oauth-fixture')
 os.write(fd, cert.public_bytes(serialization.Encoding.PEM) + key.private_bytes(serialization.Encoding.PEM,
          serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption()))
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); context.load_cert_chain('/proc/self/fd/' + str(fd)); os.close(fd)
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); context.load_cert_chain('/proc/self/fd/' + str(fd))
+native = server.standalone_https.create_server(
+    {**CONFIG, 'public_base_url': 'https://probe-review.test:9443', 'certfile': str(fd), 'keyfile': str(fd)},
+    server.Handler, address=('127.0.0.1', 0), ssl_root='/proc/self/fd')
 first.socket = context.wrap_socket(first.socket, server_side=True)
 second.socket = context.wrap_socket(second.socket, server_side=True)
-for http in (backend, first, second, plain): threading.Thread(target=http.serve_forever, daemon=True).start()
+for http in (backend, first, second, plain, native): threading.Thread(target=http.serve_forever, daemon=True).start()
 print(json.dumps({'control': control.server_address[1], 'https': first.server_address[1],
-                  'other': second.server_address[1], 'http': plain.server_address[1]}), flush=True)
+                  'other': second.server_address[1], 'http': plain.server_address[1], 'native': native.server_address[1]}), flush=True)
 control.serve_forever()

@@ -1,3 +1,11 @@
+## 0.1.17 — HTTPS independente da origem do HA — 21/11/2026
+
+- Adiciona listener TLS 1.2+ em 9443 com certificado/chave de `/ssl` montado somente para leitura; ativado ao preencher `public_base_url`. Certificados são relidos em novas conexões. Falhas não abrem HTTP público e preservam o listener interno 8099.
+- Declara porta HTTPS e webui; mantém Ingress opcional e acrescenta links para janela própria no login/painel. Reutiliza Handler, autenticação, sessão, CSRF e `/data`, sem migração de dados nem segunda conta.
+- Reconhece TLS nativo sem depender de X-Forwarded-Proto, mantendo Secure/HttpOnly/SameSite=Strict na sessão e SameSite=Lax nos cookies OAuth.
+- Bloqueia OAuth se `meta_oauth_redirect_uri` divergir da origem independente; recusa Host antigo antes de iniciar/consumir autorização ou trocar código. Não altera Meta, webhook, NGINX, service worker do HA ou outros aplicativos.
+- Chromium inclui worker sintético ativo na origem antiga e acesso na nova porta sem bypass, login real local, probe e autorização simulada. Instruções de certificado, porta/NAT e callback no README. Infraestrutura/Meta reais não foram alteradas nem homologadas.
+
 ## 0.1.16 — não perder cookies em campos HTTP separados — 21/11/2026
 
 - Corrige perda comprovada de cookies quando um intermediário envia múltiplos cabeçalhos Cookie: o servidor lia só o primeiro. Agora reúne todos os pares antes de sessão, CSRF, probe e callback OAuth.
