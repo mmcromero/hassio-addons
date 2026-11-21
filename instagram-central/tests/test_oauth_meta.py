@@ -180,7 +180,7 @@ class OAuthTests(unittest.TestCase):
             oauth.check_cookie_probe(callback.query, cookie + "; " +
                                      cookie.split(";", 1)[0])
         other = ("A" if nonce[0] != "A" else "B") + nonce[1:]
-        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe mismatch"):
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe missing"):
             oauth.check_cookie_probe(callback.query, "ig_oauth_probe=" + other)
         for bad in ("probe=short", "probe=" + nonce + "&probe=" + nonce,
                     "code=ignored&probe=" + nonce, "probe=" + nonce + "&state=other"):
