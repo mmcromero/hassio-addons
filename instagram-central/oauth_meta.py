@@ -87,12 +87,19 @@ def start(conn, cfg, now=None):
         "override_default_response_type": "true",
         "state": state,
     })
-    cookie = "ig_oauth_state=" + state + "; Max-Age=600; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax"
+    cookie_name = _state_cookie_name(state)
+    cookie = cookie_name + "=" + state + "; Max-Age=600; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax"
     return AUTHORIZE + "?" + query, cookie
 
 
+def _state_cookie_name(state):
+    """Give each OAuth attempt its own cookie, so concurrent tabs cannot overwrite state."""
+    digest = hashlib.sha256(state.encode("ascii")).hexdigest()
+    return "ig_oauth_state_" + digest[:32]
+
+
 def parse_callback(query, cookie_header):
-    """Require single query values; enforce browser binding with Secure Lax cookie."""
+    """Require the cookie bound to this exact state; concurrent flows stay isolated."""
     if not isinstance(query, str) or len(query) > 8192:
         raise OAuthError("Invalid OAuth callback")
     try:
@@ -111,8 +118,9 @@ def parse_callback(query, cookie_header):
     if not isinstance(code, str) or not 1 <= len(code) <= 2048:
         raise OAuthError("Invalid authorization code")
     # Never use user-provided redirect_uri, app IDs or account IDs from callback.
+    cookie_prefix = _state_cookie_name(state) + "="
     cookie_values = [c.strip().split("=", 1)[1] for c in (cookie_header or "").split(";")
-                     if c.strip().startswith("ig_oauth_state=") and "=" in c]
+                     if c.strip().startswith(cookie_prefix) and "=" in c]
     if not cookie_values:
         raise OAuthError("OAuth state cookie missing")
     if len(cookie_values) > 1:
