@@ -1,3 +1,10 @@
+## 0.1.21
+
+- Reconhece eventos de texto em entry[].changes[] / field=messages do login unificado; preserva entry[].messaging[] e deduplicação entre formatos.
+- Mantém assinatura HMAC obrigatória e filtro pelo destinatário, sem fallback para a principal nem ativação de secundárias/comentários/envios.
+- Acrescenta logs de webhook com motivos fixos/contagens, sem conteúdo, IDs ou credenciais, para distinguir entrega/rejeição/reconhecimento/gravação.
+- Mantém manifesto válido da 0.1.20, dados, opções, proxy e URLs; não requer reconectar a conta.
+
 ## 0.1.20
 
 - Corrige a exclusão da Central da loja pelo Supervisor: removido `webui` com hostname/porta fixos, que viola o formato exigido `[HOST]:[PORT:...]`.

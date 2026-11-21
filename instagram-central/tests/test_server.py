@@ -55,6 +55,47 @@ class InstagramIngressTests(unittest.TestCase):
         with server.database() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM inbound").fetchone()[0], 1)
 
+    def test_unified_messages_preserve_identity_and_cross_format_idempotency(self):
+        legacy = self.sample()
+        entry = legacy['entry'][0]
+        unified = {'object': 'instagram', 'entry': [{'id': entry['id'],
+            'changes': [{'field': 'messages', 'value': entry['messaging'][0]}]}]}
+        self.assertEqual(server.normalized_messages(unified, 'business-1'),
+                         [('business-1', 'customer-1', 'message-1', 'oi')])
+        self.assertEqual(server.persist(json.dumps(unified).encode(), 'business-1'), 1)
+        self.assertEqual(server.persist(json.dumps(legacy).encode(), 'business-1'), 0)
+        self.assertEqual(server.list_pending(account_id='business-1')[0]['messageText'], 'oi')
+
+    def test_unified_changes_reject_unknown_fields_recipients_and_nonmessages(self):
+        import copy
+        event = self.sample()['entry'][0]['messaging'][0]
+        rejected = []
+        for path, value in [(('recipient','id'),'other-business'), (('recipient','id'),None),
+                            (('sender','id'),'business-1'), (('message','is_echo'),True),
+                            (('message','text'),''), (('message','text'),'x'*2001),
+                            (('message','mid'),None)]:
+            item=copy.deepcopy(event);item[path[0]][path[1]]=value;rejected.append(item)
+        for item in rejected:
+            payload={'object':'instagram','entry':[{'id':'business-1',
+                'changes':[{'field':'messages','value':item}]}]}
+            with self.subTest(event=item):
+                self.assertEqual(server.normalized_messages(payload,'business-1'),[])
+        for field in ('comments','message_edit','message_reactions','messaging_seen',None):
+            payload={'object':'instagram','entry':[{'changes':[{'field':field,'value':event}]}]}
+            self.assertEqual(server.normalized_messages(payload,'business-1'),[])
+        for malformed in (None, {}, [None, {'field':'messages','value':[]},
+                                     {'field':'messages','value':'not-an-event'}]):
+            self.assertEqual(server.normalized_messages({'object':'instagram',
+                'entry':[{'changes':malformed}]},'business-1'),[])
+
+    def test_unified_envelopes_are_bounded_and_do_not_fallback_to_entry_id(self):
+        event = self.sample()['entry'][0]['messaging'][0]
+        changes = [{'field':'messages','value':event}]*101
+        payload={'object':'instagram','entry':[{'id':'other-business','changes':changes}]*101}
+        self.assertEqual(len(server.normalized_messages(payload,'business-1')),10000)
+        self.assertEqual(server.normalized_messages(payload,'other-business'),[])
+        self.assertEqual(server.normalized_messages(payload),[])
+
     def test_database_context_closes_connection(self):
         with server.database() as conn:
             self.assertIsNotNone(conn.execute("SELECT 1").fetchone())

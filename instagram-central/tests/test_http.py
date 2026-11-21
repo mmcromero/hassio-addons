@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.20")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.21")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.20", body)
+        self.assertIn(b"0.1.21", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.20", body)
+            self.assertIn(b"0.1.21", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -348,6 +348,63 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(self.post_event()[0], 200)
         with server.database() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM inbound").fetchone()[0], 1)
+
+    def test_signed_unified_webhook_is_stored_visible_and_diagnostics_are_redacted(self):
+        payload=json.loads(self.event());entry=payload['entry'][0]
+        event=entry.pop('messaging')[0]
+        event['message']['text']='private synthetic message must not be logged'
+        entry['changes']=[{'field':'messages','value':event}]
+        raw=json.dumps(payload).encode()
+        digest=hmac.new(self.config['meta_app_secret'].encode(),raw,hashlib.sha256).hexdigest()
+        with self.assertLogs(server.LOGGER,level='INFO') as logs:
+            status,_,body=self.request('/webhook/instagram','POST',raw,
+                {'X-Hub-Signature-256':'sha256='+digest,'Content-Type':'application/json'})
+        self.assertEqual(status,200)
+        self.assertEqual(json.loads(body),{'accepted':True,'new_text_messages':1})
+        log='\n'.join(logs.output)
+        for expected in ('Meta webhook accepted:', 'legacy_events=0', 'unified_events=1',
+                         'recipient_match=1', 'matched_text=1', 'stored=1'):
+            self.assertIn(expected,log)
+        for private in ('business-1','customer-1',event['message']['text'],digest,
+                        self.config['meta_app_secret'],self.config['meta_verify_token']):
+            self.assertNotIn(private,log)
+        self.assertEqual(self.post_event()[0],200)  # same mid through old shape
+        with server.database() as conn:
+            self.assertEqual(conn.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],1)
+        login=urlencode({'username':'admin','password':self.config['panel_password']}).encode()
+        _,headers,_=self.request('/auth/login','POST',login,
+            {'Content-Type':'application/x-www-form-urlencoded'})
+        cookie=headers['Set-Cookie'].split(';',1)[0]
+        _,_,page=self.request('/panel',headers={'Cookie':cookie})
+        self.assertIn(event['message']['text'].encode(),page)
+        self.assertIn(b'Mensagens armazenadas: 1',page)
+
+    def test_unified_webhook_invalid_signature_is_not_parsed_or_stored(self):
+        payload=json.loads(self.event());entry=payload['entry'][0]
+        entry['changes']=[{'field':'messages','value':entry.pop('messaging')[0]}]
+        with self.assertLogs(server.LOGGER,level='INFO') as logs:
+            status,_,_=self.request('/webhook/instagram','POST',json.dumps(payload).encode(),
+                {'X-Hub-Signature-256':'sha256='+'0'*64})
+        self.assertEqual(status,403)
+        self.assertIn('reason=invalid_signature','\n'.join(logs.output))
+        self.assertNotIn('unified_events','\n'.join(logs.output))
+        with server.database() as conn:
+            self.assertEqual(conn.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],0)
+
+    def test_unified_unknown_recipient_is_acknowledged_without_primary_fallback(self):
+        payload=json.loads(self.event());entry=payload['entry'][0]
+        event=entry.pop('messaging')[0];event['recipient']['id']='other-business'
+        entry['changes']=[{'field':'messages','value':event}]
+        raw=json.dumps(payload).encode()
+        sig='sha256='+hmac.new(self.config['meta_app_secret'].encode(),raw,hashlib.sha256).hexdigest()
+        with self.assertLogs(server.LOGGER,level='INFO') as logs:
+            status,_,body=self.request('/webhook/instagram','POST',raw,{'X-Hub-Signature-256':sig})
+        self.assertEqual(status,200)
+        self.assertEqual(json.loads(body)['new_text_messages'],0)
+        log='\n'.join(logs.output)
+        self.assertIn('unified_events=1 recipient_match=0 matched_text=0 stored=0',log)
+        self.assertNotIn('other-business',log)
+        self.assertEqual(server.list_pending(account_id='business-1'),[])
 
     def test_signed_message_updates_visible_panel_and_status(self):
         self.assertEqual(self.post_event()[0], 200)

@@ -32,7 +32,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.20"
+APP_VERSION = "0.1.21"
 
 
 def settings():
@@ -274,6 +274,27 @@ def signature_valid(body, signature, app_secret):
     return hmac.compare_digest("sha256=" + digest, signature)
 
 
+def _message_envelopes(payload):
+    """Yield bounded message events from both documented Instagram envelopes."""
+    if not isinstance(payload, dict) or payload.get("object") != "instagram":
+        return
+    entries = payload.get("entry")
+    if not isinstance(entries, list):
+        return
+    for entry in entries[:100]:
+        if not isinstance(entry, dict):
+            continue
+        legacy = entry.get("messaging")
+        for event in legacy[:100] if isinstance(legacy, list) else []:
+            if isinstance(event, dict):
+                yield "legacy", event
+        changes = entry.get("changes")
+        for change in changes[:100] if isinstance(changes, list) else []:
+            if (isinstance(change, dict) and change.get("field") == "messages"
+                    and isinstance(change.get("value"), dict)):
+                yield "unified", change["value"]
+
+
 def normalized_messages(payload, account_id=None):
     """Only normal text messages, scoped to permitted Meta recipient IDs."""
     if not isinstance(payload, dict) or payload.get("object") != "instagram":
@@ -284,36 +305,43 @@ def normalized_messages(payload, account_id=None):
                else frozenset((account_id,)) if isinstance(account_id, str) and account_id
                else frozenset())
     found = []
-    entries = payload.get("entry")
-    if not isinstance(entries, list):
-        return found
-    for entry in entries[:100]:
-        if not isinstance(entry, dict):
+    for _, ev in _message_envelopes(payload):
+        if not isinstance(ev, dict):
             continue
-        for ev in entry.get("messaging", [])[:100] if isinstance(entry.get("messaging"), list) else []:
-            if not isinstance(ev, dict):
-                continue
-            msg = ev.get("message")
-            sender = ev.get("sender")
-            recipient = ev.get("recipient")
-            if not isinstance(msg, dict) or not isinstance(sender, dict) or not isinstance(recipient, dict):
-                continue
-            if msg.get("is_echo") is True:
-                continue
-            sender_id = sender.get("id")
-            recipient_id = recipient.get("id")
-            mid = msg.get("mid")
-            text = msg.get("text")
-            if not isinstance(recipient_id, str) or recipient_id not in allowed:
-                continue  # reject unknown/disabled recipients; preserve official accountId
-            if sender_id == recipient_id:
-                continue  # never treat business-originated content as a customer request
-            if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (sender_id, recipient_id, mid)):
-                continue
-            if not isinstance(text, str) or not 1 <= len(text.strip()) <= 2000:
-                continue
-            found.append((recipient_id, sender_id, mid, text.strip()))
+        msg = ev.get("message")
+        sender = ev.get("sender")
+        recipient = ev.get("recipient")
+        if not isinstance(msg, dict) or not isinstance(sender, dict) or not isinstance(recipient, dict):
+            continue
+        if msg.get("is_echo") is True:
+            continue
+        sender_id = sender.get("id")
+        recipient_id = recipient.get("id")
+        mid = msg.get("mid")
+        text = msg.get("text")
+        if not isinstance(recipient_id, str) or recipient_id not in allowed:
+            continue  # reject unknown/disabled recipients; preserve official accountId
+        if sender_id == recipient_id:
+            continue  # never treat business-originated content as a customer request
+        if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (sender_id, recipient_id, mid)):
+            continue
+        if not isinstance(text, str) or not 1 <= len(text.strip()) <= 2000:
+            continue
+        found.append((recipient_id, sender_id, mid, text.strip()))
     return found
+
+
+def webhook_diagnostics(body, account_id):
+    """Counts only; never log event fields, identifiers, text or credentials."""
+    payload = json.loads(body)
+    counts = {"legacy": 0, "unified": 0, "recipient_match": 0}
+    for shape, event in _message_envelopes(payload):
+        counts[shape] += 1
+        recipient = event.get("recipient")
+        if isinstance(recipient, dict) and recipient.get("id") == account_id:
+            counts["recipient_match"] += 1
+    counts["matched_text"] = len(normalized_messages(payload, account_id))
+    return counts
 
 
 def persist(body, account_id=None):
@@ -1316,6 +1344,7 @@ class Handler(BaseHTTPRequestHandler):
         secret = str(cfg.get("meta_app_secret") or "")
         account_id = str(cfg.get("instagram_account_id") or "")
         if cfg.get("ingress_enabled") is not True or not secret or not account_id:
+            LOGGER.info("Meta webhook rejected: version=%s reason=disabled_or_incomplete", APP_VERSION)
             return self.respond(503, {"error": "webhook disabled"})
         try:
             size = int(self.headers.get("Content-Length", "0"))
@@ -1325,10 +1354,17 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(413, {"error": "size not allowed"})
         body = self.rfile.read(size)
         if not signature_valid(body, self.headers.get("X-Hub-Signature-256"), secret):
+            LOGGER.info("Meta webhook rejected: version=%s reason=invalid_signature", APP_VERSION)
             return self.respond(403, {"error": "invalid signature"})
         count = persist(body, account_id)
         if count is None:
+            LOGGER.info("Meta webhook rejected: version=%s reason=invalid_json", APP_VERSION)
             return self.respond(400, {"error": "invalid JSON"})
+        stats = webhook_diagnostics(body, account_id)
+        LOGGER.info("Meta webhook accepted: version=%s legacy_events=%d unified_events=%d "
+                    "recipient_match=%d matched_text=%d stored=%d", APP_VERSION,
+                    stats["legacy"], stats["unified"], stats["recipient_match"],
+                    stats["matched_text"], count)
         return self.respond(200, {"accepted": True, "new_text_messages": count})
 
     def log_message(self, fmt, *args):

@@ -1,4 +1,12 @@
-# Central Instagram — 0.1.20 (correção do catálogo e multicontas)
+# Central Instagram — 0.1.21 (recebimento no login unificado)
+
+A **0.1.21** corrige o reconhecimento de mensagens recebidas no envelope `entry[].changes[]` com `field=messages`, usado no login unificado, além de preservar `entry[].messaging[]`. Antes, um evento unificado válido podia receber HTTP 200 sem que sua mensagem fosse gravada. Assinatura HMAC, conta destinatária, deduplicação e isolamento permanecem obrigatórios. Outros campos, como comments, continuam sem processamento/resposta automática.
+
+**Atualização da 0.1.20:** preservar opções e /data e atualizar somente a Central. Nenhuma alteração de proxy, certificado, URL de webhook, callback, senha ou consentimento OAuth é necessária por causa deste hotfix. O webhook real continua na URL que o operador verificou na Meta: `https://romeropi.duckdns.org:8443/webhook/instagram`; a URL do painel/OAuth permanece no subdomínio dedicado. Esses endereços têm finalidades distintas. A 0.1.20 já restaurou o manifesto aceito pelo catálogo; esse formato foi mantido.
+
+Para testar: envie uma nova mensagem de texto após a atualização e atualize o painel. Em caso de falha, os logs agora registram somente `Meta webhook accepted` com versão e contagens `legacy_events`, `unified_events`, `recipient_match`, `matched_text`, `stored`, ou `Meta webhook rejected` com motivo fixo. Nunca incluem conteúdo, IDs de pessoas/contas, assinatura, token, segredo ou URL. Um evento fictício do botão Teste pode ser aceito com recipient_match=0/stored=0, pois não corresponde à conta real; isso não autoriza armazená-lo na principal.
+
+A entrega do evento fictício pela Meta passou, segundo a captura do operador; o recebimento da primeira DM real ainda aguarda aceite na 0.1.21. Não concluir que o estado Não publicado é sozinho a causa: Standard Access permite testes com pessoas com função no app; a elegibilidade de entrega real depende das regras da API e não é comprovada por um toast do teste. O executor não mudou modo do app, permissões, assinaturas ou funções na Meta.
 
 **Primeira conta real:** o proprietário confirmou `@umdoislab` verificada e autorizada na 0.1.18. A 0.1.19 preserva essa credencial, chave, mensagens e Editorial. As contas adicionais deste lote foram testadas com dados/provedor sintéticos; não representam autorizações reais de outras contas.
 
