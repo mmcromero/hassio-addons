@@ -113,9 +113,50 @@ def parse_callback(query, cookie_header):
     # Never use user-provided redirect_uri, app IDs or account IDs from callback.
     cookie_values = [c.strip().split("=", 1)[1] for c in (cookie_header or "").split(";")
                      if c.strip().startswith("ig_oauth_state=") and "=" in c]
-    if len(cookie_values) != 1 or not hmac.compare_digest(state, cookie_values[0]):
+    if not cookie_values:
+        raise OAuthError("OAuth state cookie missing")
+    if len(cookie_values) > 1:
+        raise OAuthError("OAuth state cookie duplicated")
+    if not hmac.compare_digest(state, cookie_values[0]):
         raise OAuthError("OAuth browser state mismatch")
     return state, code
+
+
+
+def start_cookie_probe(cfg):
+    """Verify HTTPS browser/proxy cookie roundtrip without contacting Meta."""
+    if not is_ready(cfg):
+        raise OAuthError("OAuth disabled or incomplete")
+    nonce = secrets.token_urlsafe(32)
+    callback = cfg["meta_oauth_redirect_uri"] + "?probe=" + nonce
+    cookie = ("ig_oauth_probe=" + nonce +
+              "; Max-Age=60; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax")
+    return callback, cookie
+
+
+def check_cookie_probe(query, cookie_header):
+    """Check the same cookie scope used by OAuth without consuming OAuth state."""
+    if not isinstance(query, str) or len(query) > 128:
+        raise OAuthError("OAuth cookie probe invalid")
+    try:
+        qs = parse_qs(query, keep_blank_values=True, max_num_fields=2)
+    except ValueError:
+        raise OAuthError("OAuth cookie probe invalid") from None
+    if set(qs) != {"probe"} or len(qs["probe"]) != 1:
+        raise OAuthError("OAuth cookie probe invalid")
+    nonce = qs["probe"][0]
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", nonce):
+        raise OAuthError("OAuth cookie probe invalid")
+    cookies = [item.strip().split("=", 1)[1]
+               for item in (cookie_header or "").split(";")
+               if item.strip().startswith("ig_oauth_probe=") and "=" in item]
+    if not cookies:
+        raise OAuthError("OAuth cookie probe missing")
+    if len(cookies) > 1:
+        raise OAuthError("OAuth cookie probe duplicated")
+    if not hmac.compare_digest(cookies[0], nonce):
+        raise OAuthError("OAuth cookie probe mismatch")
+    return True
 
 
 def consume_state(conn, state, now=None, *, cfg=None):

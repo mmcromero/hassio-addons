@@ -1,3 +1,15 @@
+## 0.1.12 — diagnóstico de cookie OAuth e contexto do proxy — 20/11/2026
+
+- **Distribuição:** versão 0.1.12 publicada em `mmcromero/hassio-addons:main/instagram-central/` em 20/11/2026. O build do Supervisor, a suíte integral do Dockerfile, a instalação e a homologação real continuam pendentes. A publicação não altera o Raspberry, NGINX ativo, opções ou credenciais.
+- Inclui as correções já publicadas em 0.1.11: `redirect_uri` na troca do código, armazenamento por `account_registry.credential_root`, tratamento de erro de verificação e testes de regressão.
+- Distingue no callback três situações sem registrar valores: cookie `ig_oauth_state` ausente, duplicado ou divergente do `state`.
+- Adiciona teste de navegador e proxy **sem Meta**: `/oauth/meta/start?probe=1` exige a mesma autenticação administrativa, emite cookie temporário (60 s) com o mesmo escopo do OAuth e redireciona à rota pública existente de callback. A callback confirma cookie, host e HTTPS sem criar estado OAuth, trocar token ou abrir o Facebook.
+- Exibe **Testar navegador e proxy (sem Meta)** na Central, em nova aba; nenhuma rota pública nova nem alteração de NGINX exigida.
+- Registra apenas indicadores booleanos `redirect_authority_match` e `forwarded_https` para separar origem/Host e encaminhamento HTTPS do NGINX.
+- Mantém `Path=/oauth/meta/callback`, `Secure`, `HttpOnly` e `SameSite=Lax`; não amplia o escopo do cookie sem evidência.
+- Não altera configuração ativa do NGINX, Ingress, opções do Home Assistant ou painel da Meta. Não habilita mensagens, webhook, envio ou publicação.
+- Testes dirigidos adicionados; execução ainda não comprovada nesta etapa.
+
 ## 0.1.11 — correção da troca de código OAuth Meta (redirect_uri obrigatório) — 20/11/2026
 
 - **Diagnóstico da causa raiz (P0):** a requisição de troca de código por token de acesso (`oauth_meta.exchange_code`) para a Meta Graph API (`https://graph.facebook.com/{version}/oauth/access_token`) omitia o parâmetro `redirect_uri`. Conforme a especificação OAuth 2.0 (RFC 6749 §4.1.3) e as regras da Meta Graph API, quando `redirect_uri` é informado na autorização inicial (`/dialog/oauth`), o mesmo valor idêntico é obrigatório na requisição de troca do código. A ausência causava rejeição pela Meta (HTTP 400), levantando `OAuthError("Meta authorization exchange failed")` na etapa `exchange_code` e retornando ao navegador `{"error":"OAuth refused or expired"}`.

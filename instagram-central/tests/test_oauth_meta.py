@@ -96,12 +96,55 @@ class OAuthTests(unittest.TestCase):
         state = parse_qs(urlsplit(url).query)["state"][0]
         query = "code=test-code&state=" + state
         self.assertEqual(oauth.parse_callback(query, cookie) , (state, "test-code"))
-        with self.assertRaises(oauth.OAuthError):
+        with self.assertRaisesRegex(oauth.OAuthError, "OAuth state cookie missing"):
             oauth.parse_callback(query, "")
         with self.assertRaises(oauth.OAuthError):
             oauth.parse_callback(query + "&state=attacker", cookie)
         with self.assertRaises(oauth.OAuthError):
             oauth.parse_callback("state=" + state + "&code=a&code=b", cookie)
+
+    def test_callback_distinguishes_duplicate_state_cookie(self):
+        url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        query = "code=test-code&state=" + state
+        cookie_pair = cookie.split(";", 1)[0]
+        with self.assertRaisesRegex(oauth.OAuthError, "OAuth state cookie duplicated"):
+            oauth.parse_callback(query, cookie + "; " + cookie_pair)
+
+    def test_callback_distinguishes_mismatched_state_cookie(self):
+        url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        query = "code=test-code&state=" + state
+        wrong_value = ("A" if state[0] != "A" else "B") + state[1:]
+        wrong_cookie = "ig_oauth_state=" + wrong_value
+        with self.assertRaisesRegex(oauth.OAuthError, "OAuth browser state mismatch"):
+            oauth.parse_callback(query, wrong_cookie)
+
+    def test_cookie_probe_validates_browser_roundtrip_without_meta(self):
+        url, cookie = oauth.start_cookie_probe(CONFIG)
+        callback = urlsplit(url)
+        nonce = parse_qs(callback.query)["probe"][0]
+        self.assertEqual(callback.scheme, "https")
+        self.assertEqual(callback.path, "/oauth/meta/callback")
+        self.assertEqual(len(nonce), 43)
+        self.assertIn("Path=/oauth/meta/callback", cookie)
+        self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
+        self.assertTrue(oauth.check_cookie_probe(callback.query, cookie))
+        # A probe does not create OAuth states or start a Meta authorization.
+        self.assertIsNone(self.db.execute(
+            "SELECT name FROM sqlite_master WHERE name='meta_oauth_states'").fetchone())
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe missing"):
+            oauth.check_cookie_probe(callback.query, "")
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe duplicated"):
+            oauth.check_cookie_probe(callback.query, cookie + "; " +
+                                     cookie.split(";", 1)[0])
+        other = ("A" if nonce[0] != "A" else "B") + nonce[1:]
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe mismatch"):
+            oauth.check_cookie_probe(callback.query, "ig_oauth_probe=" + other)
+        for bad in ("probe=short", "probe=" + nonce + "&probe=" + nonce,
+                    "code=ignored&probe=" + nonce, "probe=" + nonce + "&state=other"):
+            with self.assertRaisesRegex(oauth.OAuthError, "cookie probe invalid"):
+                oauth.check_cookie_probe(bad, cookie)
 
     def test_replay_and_expiry_fail_closed(self):
         with patch.object(oauth.time, "time", return_value=100000):

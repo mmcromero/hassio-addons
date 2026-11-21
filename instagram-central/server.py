@@ -541,6 +541,8 @@ def render_connection_section(cfg, summary):
         # A browser session established via the same HTTPS hostname is required
         # for the public proxy route to recognize the session cookie.
         start_url = url[:-len("/oauth/meta/callback")] + "/oauth/meta/start"
+        actions.append('<a href="' + html.escape(start_url + "?probe=1", quote=True)
+                       + '" target="_blank" rel="noopener noreferrer">Testar navegador e proxy (sem Meta)</a>')
         actions.append('<a href="' + html.escape(start_url, quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Conectar Instagram pela Meta</a>')
     setup = (
@@ -790,7 +792,7 @@ class Handler(BaseHTTPRequestHandler):
             summary["connectionVerified"] = summary["accountVerified"]
             summary["sendingEnabled"] = False
             return self.respond(200, summary)
-        if route.path == "/oauth/meta/start" and not route.query:
+        if route.path == "/oauth/meta/start" and route.query in ("", "probe=1"):
             try:
                 cfg = meta_configuration_for_business()
             except account_registry.RegistryError:
@@ -798,8 +800,11 @@ class Handler(BaseHTTPRequestHandler):
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
             try:
-                with database() as conn:
-                    url, cookie = oauth_meta.start(conn, cfg)
+                if route.query == "probe=1":
+                    url, cookie = oauth_meta.start_cookie_probe(cfg)
+                else:
+                    with database() as conn:
+                        url, cookie = oauth_meta.start(conn, cfg)
             except oauth_meta.OAuthError:
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
             self.send_response(302)
@@ -817,6 +822,31 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(503, {"error": "account context unavailable"})
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            if route.query.startswith("probe="):
+                expected = urlsplit(cfg["meta_oauth_redirect_uri"]).netloc.lower()
+                host_ok = bool(expected and self.headers.get("Host", "").strip().lower() == expected)
+                https_ok = self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
+                try:
+                    oauth_meta.check_cookie_probe(route.query, self.headers.get("Cookie", ""))
+                except oauth_meta.OAuthError as exc:
+                    LOGGER.error("OAuth cookie probe failed: %s (host_ok=%s, https_ok=%s)",
+                                 str(exc), host_ok, https_ok)
+                    return self.respond(400,
+                        "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
+                        "<title>Teste de conexão</title><body>Cookie não retornou corretamente. "
+                        "Verifique navegador e proxy antes da autorização Meta.</body></html>",
+                        "text/html")
+                if not host_ok or not https_ok:
+                    LOGGER.error("OAuth cookie probe failed: proxy authority or HTTPS mismatch")
+                    return self.respond(400,
+                        "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
+                        "<title>Teste de conexão</title><body>O proxy não preservou "
+                        "a origem HTTPS esperada.</body></html>", "text/html")
+                return self.respond(200,
+                    "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
+                    "<title>Teste de conexão</title><body>Teste aprovado: cookie, "
+                    "domínio público e encaminhamento HTTPS. Nenhuma autorização "
+                    "foi enviada à Meta.</body></html>", "text/html")
             callback_stage = "parse_callback"
             try:
                 state, code = oauth_meta.parse_callback(
@@ -836,10 +866,22 @@ class Handler(BaseHTTPRequestHandler):
                     DATA_DIR, cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
                 oauth_meta.store_token(root, credential)
             except oauth_meta.OAuthError as exc:
-                # Only fixed internal reason strings and stage are logged. Never log
-                # callback query, authorization code, cookies, tokens or secrets.
-                LOGGER.error("Meta OAuth callback rejected at stage=%s: %s",
-                             callback_stage, str(exc))
+                # Only fixed internal reason strings and boolean proxy context are logged.
+                # Never log callback query, authorization code, cookies, tokens or secrets.
+                if callback_stage == "parse_callback":
+                    expected_authority = urlsplit(cfg["meta_oauth_redirect_uri"]).netloc.lower()
+                    received_authority = self.headers.get("Host", "").strip().lower()
+                    authority_match = bool(
+                        expected_authority and received_authority == expected_authority)
+                    forwarded_https = (
+                        self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https")
+                    LOGGER.error(
+                        "Meta OAuth callback rejected at stage=%s: %s "
+                        "(redirect_authority_match=%s, forwarded_https=%s)",
+                        callback_stage, str(exc), authority_match, forwarded_https)
+                else:
+                    LOGGER.error("Meta OAuth callback rejected at stage=%s: %s",
+                                 callback_stage, str(exc))
                 return self.respond(400, {"error": "OAuth refused or expired"})
             except instagram_connection.ConnectionError as exc:
                 LOGGER.error("Meta OAuth callback failed at stage=%s: %s",

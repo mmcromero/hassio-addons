@@ -161,7 +161,7 @@ class HTTPContractTests(unittest.TestCase):
                 status, _, _ = self.request("/oauth/meta/callback?" + params,
                                             headers={"Cookie": cookie})
         self.assertEqual(status, 400)
-        diagnostic = "\\n".join(captured.output)
+        diagnostic = "\n".join(captured.output)
         self.assertIn("stage=exchange_code", diagnostic)
         self.assertNotIn("test-only-code", diagnostic)
         self.assertNotIn(state, diagnostic)
@@ -208,6 +208,77 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(req_query.get("redirect_uri"), ["https://example.org/oauth/meta/callback"])
         self.assertEqual(req_query.get("code"), ["valid-auth-code"])
 
+    def test_oauth_callback_logs_cookie_and_proxy_diagnostics_safely(self):
+        self.config.update({
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+            "meta_graph_version": "v27.0",
+            "instagram_account_id": "17841454345931235"})
+        status, headers, _ = self.request("/oauth/meta/start", headers=self.admin_header())
+        self.assertEqual(status, 302)
+        state = parse_qs(urlsplit(headers["Location"]).query)["state"][0]
+        params = urlencode({"code": "test-only-code", "state": state})
+        with self.assertLogs(server.LOGGER, level="ERROR") as captured:
+            status, _, _ = self.request(
+                "/oauth/meta/callback?" + params,
+                headers={"Host": "example.org", "X-Forwarded-Proto": "https"})
+        self.assertEqual(status, 400)
+        diagnostic = "\n".join(captured.output)
+        self.assertIn("stage=parse_callback", diagnostic)
+        self.assertIn("OAuth state cookie missing", diagnostic)
+        self.assertIn("redirect_authority_match=True", diagnostic)
+        self.assertIn("forwarded_https=True", diagnostic)
+        self.assertNotIn("test-only-code", diagnostic)
+        self.assertNotIn(state, diagnostic)
+
+    def test_cookie_probe_checks_public_https_transport_without_meta(self):
+        self.config.update({
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+            "meta_graph_version": "v27.0",
+            "instagram_account_id": "17841454345931235"})
+        self.assertEqual(self.request("/oauth/meta/start?probe=1")[0], 401)
+        status, headers, _ = self.request(
+            "/oauth/meta/start?probe=1", headers=self.admin_header())
+        self.assertEqual(status, 302)
+        self.assertIn("?probe=", headers["Location"])
+        self.assertEqual(urlsplit(headers["Location"]).netloc, "example.org")
+        self.assertIn("Path=/oauth/meta/callback", headers["Set-Cookie"])
+        probe_query = urlsplit(headers["Location"]).query
+        nonce = parse_qs(probe_query)["probe"][0]
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        public_headers = {"Host": "example.org", "X-Forwarded-Proto": "https",
+                          "Cookie": cookie}
+        with patch.object(server.oauth_meta, "exchange_code",
+                          side_effect=AssertionError("must not call Meta")):
+            status, _, body = self.request(
+                "/oauth/meta/callback?" + probe_query, headers=public_headers)
+        self.assertEqual(status, 200)
+        self.assertIn(b"Teste aprovado", body)
+        self.assertNotIn(nonce.encode("ascii"), body)
+        # Missing browser cookie fails before any Meta request.
+        with self.assertLogs(server.LOGGER, level="ERROR") as captured:
+            status, _, body = self.request(
+                "/oauth/meta/callback?" + probe_query,
+                headers={"Host": "example.org", "X-Forwarded-Proto": "https"})
+        self.assertEqual(status, 400)
+        self.assertIn("cookie probe missing", "\n".join(captured.output))
+        self.assertNotIn(nonce, "\n".join(captured.output))
+        # A wrong authority or missing HTTPS at the proxy is also rejected.
+        for changes in ({"Host": "wrong.example.org"},
+                        {"X-Forwarded-Proto": "http"}):
+            with self.assertLogs(server.LOGGER, level="ERROR"):
+                status, _, _ = self.request(
+                    "/oauth/meta/callback?" + probe_query,
+                    headers={**public_headers, **changes})
+            self.assertEqual(status, 400)
+
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
             **self.config,
@@ -230,6 +301,8 @@ class HTTPContractTests(unittest.TestCase):
         self.assertIn('target="_blank"', rendered)
         self.assertIn('rel="noopener noreferrer"', rendered)
         self.assertIn('Conectar Instagram pela Meta', rendered)
+        self.assertIn('Testar navegador e proxy (sem Meta)', rendered)
+        self.assertIn('/oauth/meta/start?probe=1', rendered)
 
     def test_meta_status_never_falsely_claims_connected(self):
         cfg = self.config

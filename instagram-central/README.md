@@ -1,15 +1,33 @@
-# Central Instagram Umdoislab — versão 0.1.11 (troca OAuth Meta)
+# Central Instagram Umdoislab — versão 0.1.12 (diagnóstico OAuth)
 
-**Estado:** versão 0.1.11 preparada para distribuição e homologação. Corrige a omissão de `redirect_uri` na requisição à Graph API (`/oauth/access_token`), necessária para concluir a troca de código por token e verificação da conta Meta.
+**Estado:** versão 0.1.12 publicada no catálogo público `mmcromero/hassio-addons:main/instagram-central/` em 20/11/2026. Instalação/atualização e homologação no Home Assistant permanecem pendentes. O log real da versão 0.1.11 indicou falha em `parse_callback`; a conta ainda não foi verificada. Não declarar OAuth, mensagens, stories ou posts homologados. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
 
-## Correção 0.1.11 — inclusão de redirect_uri na troca OAuth
+- Repositório privado de origem: `mmcromero/instagram-automacoes`.
+- Candidata de origem: [PR #8](https://github.com/mmcromero/instagram-automacoes/pull/8), branch `fix/instagram-oauth-state-diagnostics-001`, HEAD `c5953fd8e9da556179ac54c7df6dd329a0403f05`.
+- Branch base: `feat/instagram-editorial-ux-patch-001`; branch atual da candidata: `fix/instagram-oauth-state-diagnostics-001`.
+- Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
+- Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
+- Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
 
-- Inclusão do parâmetro obrigatório `redirect_uri` na troca do código de autorização Meta (`oauth_meta.exchange_code`).
-- Preservação da gravação criptografada multi-contas via `account_registry.credential_root`.
-- Registro seguro do motivo de rejeição em `verify_instagram_account` para diagnóstico aprofundado sem vazamento de segredos.
-- Testes automatizados de regressão cobrindo o envio e conformidade de `redirect_uri`.
 
-## Histórico 0.1.10 — retorno OAuth e nova aba
+## Versão 0.1.12 — diagnóstico de cookie, origem e proxy
+
+- Reúne as alterações funcionais de 0.1.11 já publicadas: `redirect_uri` idêntico na troca de código e gravação de credenciais no diretório correto por negócio.
+- Separa falhas de cookie ausente, duplicado e divergente. O log não imprime cookie, `state`, código OAuth ou segredo.
+- Botão **Testar navegador e proxy (sem Meta)** verifica, em nova aba, se o navegador aceita e devolve um cookie temporário pelo HTTPS público; testa o mesmo caminho de callback e não contata a Meta. Reutiliza as rotas existentes `/oauth/meta/start` e `/oauth/meta/callback`; não altera o OAuth real.
+- Acrescenta indicadores booleanos de correspondência entre Host público e autoridade do callback configurado, e de `X-Forwarded-Proto=https`.
+- Mantém o cookie restrito a `Path=/oauth/meta/callback`; esse caminho corresponde ao callback. Não amplia para `/`.
+- Não altera NGINX ativo, Ingress, Meta, credenciais, banco, mídias ou opções do HA.
+- **Distribuição:** publicada na `main` do catálogo, somente na pasta `instagram-central/`. O build e a suíte integral do Dockerfile ainda dependem da instalação/atualização autorizada no Supervisor. Esta publicação não altera o Raspberry, NGINX ativo, opções, credenciais ou painel Meta.
+
+## Versão 0.1.11 — correção de redirect_uri e isolamento de credenciais
+
+- Inclui `redirect_uri` na troca do código OAuth.
+- Usa `account_registry.credential_root(...)` ao armazenar token no callback e na assinatura.
+- Adiciona testes de regressão unitário e HTTP.
+- Publicação no catálogo público: PR #64, commit `fe90bd3ee77e03a15a40d9320d034616a3c72656`. O erro de `parse_callback` persistiu após a atualização relatada pelo proprietário.
+
+## Candidata 0.1.10 — retorno OAuth e nova aba
 
 - Link externo da Meta usa nova aba e `rel="noopener noreferrer"` para não abrir login dentro do iframe do Home Assistant.
 - Logs locais do callback identificam a **etapa** da falha sem exibir URL com `code`, `state`, cookies, credenciais ou dados retornados pela Meta.
@@ -55,7 +73,7 @@ Acesso administrativo deve ser por HA Ingress e HTTPS confiável quando usado co
 
 ## Testes de desenvolvimento — evidências já aceitas com ressalvas
 
-No código base do PR #7, sem alterações de lógica nesta candidata:
+No corte base do PR #7, anterior às alterações OAuth 0.1.11 e 0.1.12:
 - `python3 scripts/validate_offline.py`: **152/152 PASS**.
 - `node instagram-central/tests/editorial_browser.cjs`: **PASS** em navegador Chromium com dados sintéticos.
 - Build complementar no Linux/amd64, montando CA temporária do executor como segredo BuildKit: **149/149 testes do add-on PASS**. O Dockerfile original falhou por confiança TLS ao buscar índices Alpine naquele ambiente (exit 1); a execução não ocorreu em novo ambiente Codex independente.
