@@ -166,6 +166,48 @@ class HTTPContractTests(unittest.TestCase):
         self.assertNotIn("test-only-code", diagnostic)
         self.assertNotIn(state, diagnostic)
 
+    def test_oauth_callback_exchange_passes_redirect_uri_and_succeeds(self):
+        """End-to-end regression test: callback invokes exchange_code which sends redirect_uri to Meta."""
+        class _Resp:
+            def __init__(self, data):
+                self._data = data
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def read(self, size):
+                return self._data[:size]
+
+        self.config.update({
+            "meta_oauth_enabled": True,
+            "meta_app_id": "178361319962332",
+            "meta_login_config_id": "990074610355962",
+            "meta_app_secret": "LOCAL_TEST_SECRET_NEVER_REAL",
+            "meta_oauth_redirect_uri": "https://example.org/oauth/meta/callback",
+            "meta_graph_version": "v27.0",
+            "instagram_account_id": "17841454345931235"})
+        status, headers, _ = self.request("/oauth/meta/start", headers=self.admin_header())
+        self.assertEqual(status, 302)
+        state = parse_qs(urlsplit(headers["Location"]).query)["state"][0]
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        params = urlencode({"code": "valid-auth-code", "state": state})
+        sent_requests = []
+        def fake_opener(req, timeout=12):
+            sent_requests.append(req)
+            return _Resp(json.dumps({"access_token": "T" * 40, "expires_in": 3600}).encode("utf-8"))
+        identity = {"account_id": "17841454345931235", "username": "umdoislab",
+                    "client_business_id": "338861439025441", "verified_at": 10000}
+        with patch.object(server.oauth_meta, "urlopen", fake_opener), \
+             patch.object(server.instagram_connection, "verify_access", return_value=identity):
+            status, _, body = self.request("/oauth/meta/callback?" + params,
+                                          headers={"Cookie": cookie})
+        self.assertEqual(status, 200)
+        self.assertIn("Conta @umdoislab verificada e autorizada".encode("utf-8"), body)
+        self.assertEqual(len(sent_requests), 1)
+        req_query = parse_qs(urlsplit(sent_requests[0].full_url).query)
+        self.assertEqual(req_query.get("redirect_uri"), ["https://example.org/oauth/meta/callback"])
+        self.assertEqual(req_query.get("code"), ["valid-auth-code"])
+
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
             **self.config,

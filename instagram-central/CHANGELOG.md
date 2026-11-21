@@ -1,3 +1,12 @@
+## 0.1.11 — correção da troca de código OAuth Meta (redirect_uri obrigatório) — 20/11/2026
+
+- **Diagnóstico da causa raiz (P0):** a requisição de troca de código por token de acesso (`oauth_meta.exchange_code`) para a Meta Graph API (`https://graph.facebook.com/{version}/oauth/access_token`) omitia o parâmetro `redirect_uri`. Conforme a especificação OAuth 2.0 (RFC 6749 §4.1.3) e as regras da Meta Graph API, quando `redirect_uri` é informado na autorização inicial (`/dialog/oauth`), o mesmo valor idêntico é obrigatório na requisição de troca do código. A ausência causava rejeição pela Meta (HTTP 400), levantando `OAuthError("Meta authorization exchange failed")` na etapa `exchange_code` e retornando ao navegador `{"error":"OAuth refused or expired"}`.
+- **Correção da troca de código:** inclusão explícita de `"redirect_uri": cfg["meta_oauth_redirect_uri"]` nos parâmetros de `oauth_meta.exchange_code`, alinhado à documentação e ao endpoint de autorização.
+- **Isolamento de credenciais multi-contas:** padronização da gravação de tokens criptografados (`store_token`) em `server.py` utilizando `account_registry.credential_root(...)`, assegurando compatibilidade retroativa para a conta primária `umdoislab` (`/data`) e isolamento nativo para futuras contas secundárias (`/data/accounts/<business_id>`).
+- **Diagnóstico ampliado de conexão:** tratamento específico de `instagram_connection.ConnectionError` no callback para registro seguro do motivo da rejeição da conta Instagram nos logs sem expor tokens ou segredos.
+- **Testes de regressão:** adicionados testes em `test_oauth_meta.py` e `test_http.py` comprovando envio do `redirect_uri` correto na chamada Graph API e sucesso de autenticação no fluxo ponta a ponta.
+- **Compatibilidade:** preservados slug (`umdoislab_instagram`), SQLite, dados em `/data`, Ingress, portas, Editorial, Mensagens e arquitetura multi-contas. Sem migrações destrutivas.
+
 ## 0.1.10 — diagnóstico seguro de retorno OAuth e nova aba — 20/11/2026
 
 - **Correção de experiência:** o link `Conectar Instagram pela Meta` abre em nova aba com `target="_blank"` e `rel="noopener noreferrer"`, evitando que a interface incorporada do Home Assistant tente abrir a autorização Meta dentro de iframe.

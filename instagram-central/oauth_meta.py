@@ -132,14 +132,17 @@ def consume_state(conn, state, now=None, *, cfg=None):
         raise OAuthError("OAuth state expired or already used")
 
 
-def exchange_code(code, cfg, opener=urlopen):
+def exchange_code(code, cfg, opener=None):
     """Only one fixed official Graph endpoint; no arbitrary callback URLs."""
     if not is_ready(cfg):
         raise OAuthError("OAuth disabled or incomplete")
+    if opener is None:
+        opener = urlopen
     # Unified Login documentation specifies GET for the Business Integration
     # System User token exchange. The URL is strictly server-side and never logged.
     params = urlencode({
         "client_id": cfg["meta_app_id"], "client_secret": cfg["meta_app_secret"],
+        "redirect_uri": cfg["meta_oauth_redirect_uri"],
         "code": code
     })
     version = cfg["meta_graph_version"]

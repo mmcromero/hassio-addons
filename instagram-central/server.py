@@ -832,13 +832,19 @@ class Handler(BaseHTTPRequestHandler):
                 credential.update(identity)
                 credential["business_id"] = cfg["business_id"]
                 callback_stage = "store_credential"
-                oauth_meta.store_token(DATA_DIR, credential)
+                root = account_registry.credential_root(
+                    DATA_DIR, cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
+                oauth_meta.store_token(root, credential)
             except oauth_meta.OAuthError as exc:
                 # Only fixed internal reason strings and stage are logged. Never log
                 # callback query, authorization code, cookies, tokens or secrets.
                 LOGGER.error("Meta OAuth callback rejected at stage=%s: %s",
                              callback_stage, str(exc))
                 return self.respond(400, {"error": "OAuth refused or expired"})
+            except instagram_connection.ConnectionError as exc:
+                LOGGER.error("Meta OAuth callback failed at stage=%s: %s",
+                             callback_stage, str(exc))
+                return self.respond(502, {"error": "OAuth unavailable"})
             except Exception as exc:
                 LOGGER.error("Meta OAuth callback failed at stage=%s (%s)",
                              callback_stage, type(exc).__name__)
@@ -926,7 +932,9 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     when = instagram_connection.subscribe_messages(cfg, credential)
                     credential["subscribed_at"] = when
-                oauth_meta.store_token(DATA_DIR, credential)
+                root = account_registry.credential_root(
+                    DATA_DIR, cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
+                oauth_meta.store_token(root, credential)
             except (instagram_connection.ConnectionError, oauth_meta.OAuthError,
                     OSError, ValueError):
                 return self.respond(422, {"error": "Meta access or subscription not verified"})
