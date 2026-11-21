@@ -1,6 +1,6 @@
 # Central Instagram Umdoislab — candidata 0.1.14 (probe do cookie OAuth)
 
-**Estado:** versão 0.1.13 publicada na `main` do catálogo pelo PR #65, mas a atualização relatada no HA continuou falhando em `parse_callback`. Candidata privada 0.1.14 em preparação para corrigir a lacuna do teste de cookie: o probe anterior usava um cookie diferente do cookie state do OAuth. A instalação e homologação da 0.1.14 ainda não ocorreram. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
+**Estado:** 0.1.14 publicada na `main` do catálogo pelo PR #67, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`. O workflow geral `Validar add-ons` passou (manifestos, cadastro, scripts e verificação de arquivos sensíveis), mas não executou a suíte da Central nem o build ARM64. A instalação/atualização e a homologação no Home Assistant ainda não foram confirmadas. A consulta somente leitura ao Supervisor via n8n falhou com HTTP 401 usando a credencial HA existente; não houve alteração no add-on instalado. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
 
 - Repositório privado de origem: `mmcromero/instagram-automacoes`.
 - Candidata de origem: [PR #9](https://github.com/mmcromero/instagram-automacoes/pull/9), branch `fix/instagram-oauth-state-cookie-binding-001`, HEAD `723b423069c18a19c1053aecaf3bcef399b0efbb` (base técnica: candidata 0.1.12 do PR #8).
