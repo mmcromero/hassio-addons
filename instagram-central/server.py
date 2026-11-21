@@ -29,7 +29,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.14"
+APP_VERSION = "0.1.15"
 
 
 def settings():
@@ -740,6 +740,33 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
 </div></body></html>""")
 
 
+def render_probe_failure(diagnostic, host_ok, https_ok):
+    if not host_ok or not https_ok:
+        explanation = "O host ou o encaminhamento HTTPS recebido não corresponde ao esperado."
+    elif not diagnostic["query_state_valid"]:
+        explanation = "O retorno deste teste está inválido. Abra um novo teste sem Meta pelo painel."
+    elif diagnostic["expected_cookie_count"] > 1:
+        explanation = "Mais de um cookie desta tentativa chegou à Central."
+    elif not diagnostic["cookie_header_present"]:
+        explanation = "Nenhum cabeçalho Cookie chegou à Central neste retorno."
+    elif not diagnostic["expected_cookie_present"]:
+        explanation = "Cookies chegaram à Central, mas o cookie desta tentativa não foi encontrado."
+    else:
+        explanation = "O cookie desta tentativa chegou, mas a verificação não foi aprovada."
+    facts = (("Cabeçalho Cookie recebido", diagnostic["cookie_header_present"]),
+             ("Cookie desta tentativa recebido", diagnostic["expected_cookie_present"]),
+             ("Cookie de teste antigo recebido", diagnostic["legacy_cookie_present"]),
+             ("Host esperado no retorno", host_ok), ("HTTPS informado pelo proxy", https_ok))
+    rows = "".join("<li>" + label + ": <strong>" + ("Sim" if value else "Não") + "</strong></li>"
+                   for label, value in facts)
+    return ("<!doctype html><html lang='pt-BR'><meta charset='utf-8'><title>Teste de navegador</title>"
+            "<body><h1>Cookie não confirmado</h1><p>" + explanation + "</p><ul>" + rows +
+            "</ul><p>Versão " + APP_VERSION + ". Nenhuma autorização foi enviada à Meta.</p>"
+            "<p>Este resultado não identifica sozinho em qual salto o cookie deixou de chegar. "
+            "Compartilhe somente esta tela e as linhas de diagnóstico do aplicativo, sem cookies ou URLs de retorno.</p>"
+            "</body></html>")
+
+
 class Handler(BaseHTTPRequestHandler):
     def respond(self, status, body, content_type="application/json", *, csp=None):
         raw = body if isinstance(body, bytes) else body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
@@ -808,6 +835,7 @@ class Handler(BaseHTTPRequestHandler):
                         url, cookie = oauth_meta.start(conn, cfg)
             except oauth_meta.OAuthError:
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            expected = urlsplit(cfg["meta_oauth_redirect_uri"]).netloc.lower()
             self.send_response(302)
             self.send_header("Location", url)
             self.send_header("Set-Cookie", cookie)
@@ -815,6 +843,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Referrer-Policy", "no-referrer")
             self.send_header("Content-Length", "0")
             self.end_headers()
+            LOGGER.info("OAuth cookie emitted: mode=%s version=%s start_authority_match=%s forwarded_https=%s "
+                        "secure=True httponly=True samesite_lax=True callback_path=True max_age=%s",
+                        "probe" if route.query == "probe=1" else "oauth", APP_VERSION,
+                        self.headers.get("Host", "").strip().lower() == expected,
+                        self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https",
+                        60 if route.query == "probe=1" else 600)
             return
         if route.path == "/oauth/meta/callback":
             try:
@@ -827,22 +861,20 @@ class Handler(BaseHTTPRequestHandler):
                 expected = urlsplit(cfg["meta_oauth_redirect_uri"]).netloc.lower()
                 host_ok = bool(expected and self.headers.get("Host", "").strip().lower() == expected)
                 https_ok = self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
+                diagnostic = oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", ""), probe=True)
                 try:
                     oauth_meta.check_cookie_probe(route.query, self.headers.get("Cookie", ""))
                 except oauth_meta.OAuthError as exc:
-                    LOGGER.error("OAuth cookie probe failed: %s (host_ok=%s, https_ok=%s)",
-                                 str(exc), host_ok, https_ok)
-                    return self.respond(400,
-                        "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
-                        "<title>Teste de conexão</title><body>Cookie não retornou corretamente. "
-                        "Verifique navegador e proxy antes da autorização Meta.</body></html>",
-                        "text/html")
+                    LOGGER.error("OAuth cookie probe failed: %s (host_ok=%s, https_ok=%s) version=%s transport=%s",
+                                 str(exc), host_ok, https_ok, APP_VERSION, diagnostic)
+                    return self.respond(400, render_probe_failure(diagnostic, host_ok, https_ok), "text/html")
                 if not host_ok or not https_ok:
-                    LOGGER.error("OAuth cookie probe failed: proxy authority or HTTPS mismatch")
-                    return self.respond(400,
-                        "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
-                        "<title>Teste de conexão</title><body>O proxy não preservou "
-                        "a origem HTTPS esperada.</body></html>", "text/html")
+                    LOGGER.error("OAuth cookie probe failed: proxy authority or HTTPS mismatch "
+                                 "version=%s host_ok=%s https_ok=%s transport=%s",
+                                 APP_VERSION, host_ok, https_ok, diagnostic)
+                    return self.respond(400, render_probe_failure(diagnostic, host_ok, https_ok), "text/html")
+                LOGGER.info("OAuth cookie probe passed: version=%s host_ok=True https_ok=True transport=%s",
+                            APP_VERSION, diagnostic)
                 return self.respond(200,
                     "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
                     "<title>Teste de conexão</title><body>Teste aprovado: cookie de estado OAuth, "
@@ -878,8 +910,12 @@ class Handler(BaseHTTPRequestHandler):
                         self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https")
                     LOGGER.error(
                         "Meta OAuth callback rejected at stage=%s: %s "
-                        "(redirect_authority_match=%s, forwarded_https=%s)",
-                        callback_stage, str(exc), authority_match, forwarded_https)
+                        "(redirect_authority_match=%s, forwarded_https=%s) transport=%s",
+                        callback_stage, str(exc), authority_match, forwarded_https,
+                        oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", "")))
+                elif isinstance(exc, oauth_meta.OAuthExchangeError):
+                    LOGGER.error("Meta OAuth callback rejected at stage=%s: %s %s",
+                                 callback_stage, str(exc), exc.safe_details())
                 else:
                     LOGGER.error("Meta OAuth callback rejected at stage=%s: %s",
                                  callback_stage, str(exc))
@@ -1127,6 +1163,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     with database():
         pass
     ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler).serve_forever()

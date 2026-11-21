@@ -192,16 +192,16 @@ class OAuthTests(unittest.TestCase):
             url, cookie = oauth.start(self.db, CONFIG)
         state = parse_qs(urlsplit(url).query)["state"][0]
         self.db.commit()
-        oauth.consume_state(self.db, state, now=100001)
+        oauth.consume_state(self.db, state, now=100001, cfg=CONFIG)
         self.db.commit()
         with self.assertRaises(oauth.OAuthError):
-            oauth.consume_state(self.db, state, now=100002)
+            oauth.consume_state(self.db, state, now=100002, cfg=CONFIG)
         with patch.object(oauth.time, "time", return_value=100000):
             new_url, cookie = oauth.start(self.db, CONFIG)
         state2 = parse_qs(urlsplit(new_url).query)["state"][0]
         self.db.commit()
         with self.assertRaises(oauth.OAuthError):
-            oauth.consume_state(self.db, state2, now=100700)
+            oauth.consume_state(self.db, state2, now=100700, cfg=CONFIG)
 
     def test_cancel_rejected_without_exchange(self):
         url, cookie = oauth.start(self.db, CONFIG)

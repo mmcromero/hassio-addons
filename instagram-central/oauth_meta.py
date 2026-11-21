@@ -9,10 +9,13 @@ import json
 import os
 import re
 import secrets
+import socket
+import ssl
 import time
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit, parse_qs
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 from cryptography.fernet import Fernet
 
@@ -25,6 +28,43 @@ TOKEN_FILENAME = "meta-oauth-token.enc"
 
 class OAuthError(Exception):
     """Safe user-facing error; never include provider data, code or token."""
+
+
+class OAuthExchangeError(OAuthError):
+    """Only enum reasons and bounded integers may cross the logging boundary."""
+    def __init__(self, kind, *, http_status=None, provider_code=None, provider_subcode=None):
+        super().__init__("Meta authorization exchange failed")
+        allowed = {"http", "tls", "timeout", "dns", "network", "invalid_json", "provider", "response"}
+        self.kind = kind if kind in allowed else "network"
+        self.http_status = http_status if type(http_status) is int and 100 <= http_status <= 599 else None
+        self.provider_code = _safe_number(provider_code)
+        self.provider_subcode = _safe_number(provider_subcode)
+
+    def safe_details(self):
+        return (f"kind={self.kind} http_status={self.http_status} "
+                f"provider_code={self.provider_code} provider_subcode={self.provider_subcode}")
+
+
+def _safe_number(value):
+    return value if type(value) is int and 0 <= value <= 2**31 - 1 else None
+
+
+def _provider_numbers(obj):
+    error = obj.get("error") if isinstance(obj, dict) else None
+    if not isinstance(error, dict):
+        return {}
+    return {"provider_code": _safe_number(error.get("code")),
+            "provider_subcode": _safe_number(error.get("error_subcode"))}
+
+
+def _transport_kind(reason):
+    if isinstance(reason, ssl.SSLError):
+        return "tls"
+    if isinstance(reason, (TimeoutError, socket.timeout)):
+        return "timeout"
+    if isinstance(reason, socket.gaierror):
+        return "dns"
+    return "network"
 
 
 def is_ready(cfg):
@@ -57,14 +97,35 @@ def is_ready(cfg):
 
 
 def prepare_schema(conn):
-    conn.execute("""CREATE TABLE IF NOT EXISTS meta_oauth_states (
-        digest TEXT PRIMARY KEY, expires_at INTEGER NOT NULL,
-        consumed_at INTEGER)""")
-    columns = {row[1] for row in conn.execute("PRAGMA table_info(meta_oauth_states)")}
-    for column, definition in (("business_id", "TEXT NOT NULL DEFAULT 'umdoislab'"),
-                               ("instagram_account_id", "TEXT NOT NULL DEFAULT ''")):
-        if column not in columns:
-            conn.execute("ALTER TABLE meta_oauth_states ADD COLUMN " + column + " " + definition)
+    # Serialize additive upgrades when two tabs start immediately after update.
+    owns_transaction = not conn.in_transaction
+    if owns_transaction:
+        conn.execute("BEGIN IMMEDIATE")
+    try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS meta_oauth_states (
+            digest TEXT PRIMARY KEY, expires_at INTEGER NOT NULL,
+            consumed_at INTEGER)""")
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(meta_oauth_states)")}
+        for column, definition in (("business_id", "TEXT NOT NULL DEFAULT 'umdoislab'"),
+                                   ("instagram_account_id", "TEXT NOT NULL DEFAULT ''"),
+                                   ("authorization_context", "TEXT NOT NULL DEFAULT ''")):
+            if column not in columns:
+                conn.execute("ALTER TABLE meta_oauth_states ADD COLUMN " + column + " " + definition)
+        if owns_transaction:
+            conn.commit()
+    except BaseException:
+        if owns_transaction:
+            conn.rollback()
+        raise
+
+def _authorization_context(cfg):
+    # No secrets in this fingerprint. Config changes cannot silently redirect an
+    # already-issued authorization to another app, account, callback or version.
+    fields = ("meta_app_id", "meta_login_config_id", "meta_oauth_redirect_uri",
+              "meta_graph_version", "business_id", "instagram_account_id",
+              "instagram_expected_username")
+    public = {key: cfg.get(key) for key in fields}
+    return hashlib.sha256(json.dumps(public, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def start(conn, cfg, now=None):
@@ -76,9 +137,9 @@ def start(conn, cfg, now=None):
     prepare_schema(conn)
     conn.execute("DELETE FROM meta_oauth_states WHERE expires_at < ?", (now - 3600,))
     conn.execute("""INSERT INTO meta_oauth_states
-        (digest,expires_at,business_id,instagram_account_id) VALUES (?,?,?,?)""",
+        (digest,expires_at,business_id,instagram_account_id,authorization_context) VALUES (?,?,?,?,?)""",
         (digest, now + STATE_TTL, cfg.get("business_id", "umdoislab"),
-         cfg.get("instagram_account_id") or ""))
+         cfg.get("instagram_account_id") or "", _authorization_context(cfg)))
     query = urlencode({
         "client_id": cfg["meta_app_id"],
         "config_id": cfg["meta_login_config_id"],
@@ -137,6 +198,31 @@ def _state_cookie_values(state, cookie_header):
             if item.strip().startswith(cookie_prefix) and "=" in item]
 
 
+def cookie_diagnostics(query, cookie_header, *, probe=False):
+    """Static keys, booleans and capped counts only; never return cookie values/names."""
+    header = cookie_header if isinstance(cookie_header, str) else ""
+    pairs = [item.strip().partition("=")[0] for item in header.split(";") if "=" in item]
+    expected_count = 0
+    query_valid = False
+    try:
+        if isinstance(query, str) and len(query) <= 8192:
+            values = parse_qs(query, keep_blank_values=True, max_num_fields=10)
+            key = "probe" if probe else "state"
+            candidates = values.get(key, [])
+            pattern = r"[A-Za-z0-9_-]{43}" if probe else r"[A-Za-z0-9_-]{40,100}"
+            if len(candidates) == 1 and re.fullmatch(pattern, candidates[0]):
+                query_valid = True
+                expected_count = min(3, len(_state_cookie_values(candidates[0], header)))
+    except ValueError:
+        pass
+    return {"cookie_header_present": bool(header.strip()),
+            "state_cookie_present": any(name.startswith("ig_oauth_state_") for name in pairs),
+            "legacy_cookie_present": any(name in ("ig_oauth_state", "ig_oauth_probe") for name in pairs),
+            "expected_cookie_present": expected_count > 0,
+            "expected_cookie_count": expected_count,
+            "query_state_valid": query_valid}
+
+
 def start_cookie_probe(cfg):
     """Exercise the exact per-state cookie format without contacting Meta."""
     if not is_ready(cfg):
@@ -180,10 +266,11 @@ def consume_state(conn, state, now=None, *, cfg=None):
     conn.execute("BEGIN IMMEDIATE")
     found = conn.execute("""UPDATE meta_oauth_states SET consumed_at=?
       WHERE digest=? AND consumed_at IS NULL AND expires_at>=?
-        AND business_id=? AND instagram_account_id=?""",
-      (now, digest, now, cfg.get("business_id", "umdoislab"), cfg.get("instagram_account_id") or ""))
+        AND business_id=? AND instagram_account_id=? AND authorization_context=?""",
+      (now, digest, now, cfg.get("business_id", "umdoislab"), cfg.get("instagram_account_id") or "",
+       _authorization_context(cfg)))
     if found.rowcount != 1:
-        raise OAuthError("OAuth state expired or already used")
+        raise OAuthError("OAuth state expired, already used or configuration changed")
 
 
 def exchange_code(code, cfg, opener=None):
@@ -206,12 +293,29 @@ def exchange_code(code, cfg, opener=None):
         with opener(req, timeout=12) as response:
             raw = response.read(MAX_TOKEN_BYTES + 1)
             if len(raw) > MAX_TOKEN_BYTES:
-                raise OAuthError("Meta response too large")
+                raise OAuthExchangeError("response")
             obj = json.loads(raw)
+    except HTTPError as error:
+        numbers = {}
+        try:
+            raw = error.read(MAX_TOKEN_BYTES + 1)
+            if len(raw) <= MAX_TOKEN_BYTES:
+                numbers = _provider_numbers(json.loads(raw))
+        except Exception:
+            pass  # Never include the body, URL, message, headers or exception text.
+        finally:
+            error.close()
+        raise OAuthExchangeError("http", http_status=error.code, **numbers) from None
     except OAuthError:
         raise
-    except Exception:
-        raise OAuthError("Meta authorization exchange failed") from None
+    except URLError as error:
+        raise OAuthExchangeError(_transport_kind(error.reason)) from None
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise OAuthExchangeError("invalid_json") from None
+    except Exception as error:
+        raise OAuthExchangeError(_transport_kind(error)) from None
+    if isinstance(obj, dict) and "error" in obj:
+        raise OAuthExchangeError("provider", **_provider_numbers(obj))
     token = obj.get("access_token") if isinstance(obj, dict) else None
     if not isinstance(token, str) or not 20 <= len(token) <= 8192:
         raise OAuthError("Invalid Meta token response")

@@ -1,13 +1,33 @@
-# Central Instagram Umdoislab — 0.1.14 (probe do cookie OAuth)
+# Central Instagram Umdoislab — 0.1.15 (diagnóstico seguro do OAuth)
 
-**Estado:** 0.1.14 publicada na `main` do catálogo pelo PR #67, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`, e confirmada na tela de informações do Home Assistant como versão atual **0.1.14 — Em execução**. O add-on usa build local pelo Supervisor (sem `image` no manifesto); o Dockerfile executa `py_compile` e a suíte `unittest` antes de iniciar o serviço. O build concluído e o serviço em execução confirmam que essas etapas bloquearam a inicialização caso falhassem; o log detalhado de cada teste não foi capturado nesta verificação. A homologação real do navegador/proxy foi executada e **falhou**: o callback de probe retornou `Cookie não retornou corretamente`. O log do add-on é necessário para distinguir cookie ausente, duplicado ou divergente e registrar `host_ok`/`https_ok`. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
+**Estado:** pacote para teste autorizado no Home Assistant, sem homologação declarada. O proprietário autorizou correção e publicação pela esteira rápida em 21/11/2026. A instalação/atualização será feita pelo operador no Supervisor, preservando opções e `/data`. A autorização não ativa Meta, webhook ou envio.
+
+A 0.1.14 estava em execução no HA e o teste sem Meta falhou com cookie esperado ausente; uma callback separada falhou em `exchange_code`. A análise do PR #10 mostrou que os logs antigos não localizavam o salto nem distinguiam erro HTTP, TLS, DNS, timeout ou JSON. A 0.1.15 corrige essa lacuna e bloqueia alteração de configuração entre início e consumo da autorização. **Não afirma que a causa do transporte real já foi removida.**
 
 - Repositório privado de origem: `mmcromero/instagram-automacoes`.
-- Candidata de origem: [PR #9](https://github.com/mmcromero/instagram-automacoes/pull/9), branch `fix/instagram-oauth-state-cookie-binding-001`, HEAD `723b423069c18a19c1053aecaf3bcef399b0efbb` (base técnica: candidata 0.1.12 do PR #8).
-- Branch base: `feat/instagram-editorial-ux-patch-001`; branch atual da candidata: `fix/instagram-oauth-state-diagnostics-001`.
+- Fonte desta versão: branch privada `fix/instagram-oauth-safe-diagnostics-001`, baseada no PR #9 (`723b423069c18a19c1053aecaf3bcef399b0efbb`) e sincronizada com o diagnóstico público 0.1.14. SHAs de fonte e publicação são registrados na Issue #1.
 - Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
 - Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
 - Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
+
+
+## Teste desta atualização no HA
+
+1. Atualize a loja/repositório e a Central para **0.1.15**, preservando opções, bancos e mídias. O Supervisor fará o build local e executará os testes do Dockerfile. Nenhum build ARM64/HA desta versão foi executado pelo Codex.
+2. Confirme a versão em execução e abra **Testar navegador e proxy (sem Meta)** pelo painel, em nova aba. Não use uma URL de retorno antiga.
+3. A tela agora distingue ausência total de cabeçalho Cookie, cookies presentes sem o nome desta tentativa, cookie duplicado, valor divergente e host/HTTPS inesperados. Mostra a versão sem refletir nonce/cookie/URL.
+4. Se houver erro, compartilhe a tela e somente as linhas `OAuth cookie emitted`, `OAuth cookie probe failed` ou `OAuth cookie probe passed`. Não compartilhe URL de callback, cookies, state, códigos ou credenciais. Não iniciar novo consentimento Meta para testar este lote.
+
+## Mudanças 0.1.15
+
+- Logs de emissão indicam somente modo/versão e atributos fixos; logs de retorno usam flags e contagem limitada, nunca nomes/valores de cookies.
+- Falhas de troca são classificadas como HTTP, TLS, DNS, timeout, rede ou JSON; status HTTP e códigos/subcódigos numéricos seguros podem aparecer no log, sem corpo, mensagem remota, URL ou cabeçalhos. A resposta pública permanece genérica.
+- `meta_oauth_states.authorization_context` é uma coluna aditiva com fingerprint de campos públicos da configuração. Mudança de app/configuração/redirect/versão/conta entre start e callback é recusada antes da troca. Estados em voo emitidos antes desta atualização não são reutilizados; credenciais existentes não são alteradas.
+- Mantém cookies individuais por tentativa, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/oauth/meta/callback`, TTL e consumo único, contas/tokens isolados, mesma aplicação Meta, mesmo login, Mensagens e Editorial.
+- Evidência local: **185 testes Python PASS**, **8 cenários Chromium de probe PASS**, duas abas com autorizações sintéticas independentes e rejeição de mudança de configuração antes do exchange. Rede de testes limitada a loopback/stubs; nenhuma chamada Meta ou operação HA real.
+- Esteira rápida P0: teste do diff, inspeção de sintaxe/configuração/segredos, exportação auditada uma vez e publicação somente da pasta autorizada com `[skip ci]`. Sem Actions ou exigência genérica de build ARM64 externo. Build/instalação/homologação no HA são etapas distintas.
+
+## Histórico anterior
 
 
 ## Candidata 0.1.14 — probe do mesmo cookie state usado pelo OAuth

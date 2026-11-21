@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.14")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.15")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.14", body)
+        self.assertIn(b"0.1.15", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,6 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
+            self.assertIn(b"0.1.15", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -501,6 +502,48 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(status, 503)
         with server.database() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM drafts").fetchone()[0], 0)
+
+    def configure_oauth(self):
+        self.config.update(meta_oauth_enabled=True, meta_app_id='12345678', meta_login_config_id='87654321',
+                           meta_app_secret='SYNTHETIC_UNUSED_APP_SECRET', meta_graph_version='v27.0',
+                           meta_oauth_redirect_uri='https://example.org/oauth/meta/callback')
+
+    def test_probe_screen_distinguishes_no_header_from_unrelated_cookie_safely(self):
+        self.configure_oauth()
+        with self.assertLogs(server.LOGGER, level='INFO') as emitted:
+            _, headers, _ = self.request('/oauth/meta/start?probe=1', headers=self.admin_header())
+        self.assertIn('OAuth cookie emitted:', '\n'.join(emitted.output))
+        query = urlsplit(headers['Location']).query
+        nonce = parse_qs(query)['probe'][0]
+        for cookie, expected in (('', 'Nenhum cabeçalho Cookie'), ('unrelated=SYNTHETIC_PRIVATE_VALUE', 'Cookies chegaram')):
+            with self.assertLogs(server.LOGGER, level='ERROR') as captured:
+                status, _, body = self.request('/oauth/meta/callback?' + query,
+                    headers={'Host': 'example.org', 'X-Forwarded-Proto': 'https', 'Cookie': cookie})
+            self.assertEqual(status, 400)
+            self.assertIn(expected.encode(), body)
+            combined = '\n'.join(captured.output + emitted.output) + body.decode()
+            for forbidden in (nonce, 'SYNTHETIC_PRIVATE_VALUE', self.config['meta_app_secret']):
+                self.assertNotIn(forbidden, combined)
+            self.assertIn('expected_cookie_present', combined)
+
+    def test_exchange_http_details_only_in_logs_not_public_response(self):
+        from urllib.error import HTTPError
+        import io
+        self.configure_oauth()
+        _, headers, _ = self.request('/oauth/meta/start', headers=self.admin_header())
+        state = parse_qs(urlsplit(headers['Location']).query)['state'][0]
+        cookie = headers['Set-Cookie'].split(';', 1)[0]
+        def fake(*_a, **_k):
+            raise HTTPError('https://example.invalid/?code=PRIVATE_ERROR_BODY', 400, 'PRIVATE_ERROR_BODY', {},
+                io.BytesIO(b'{"error":{"message":"PRIVATE_ERROR_BODY","code":100,"error_subcode":36008}}'))
+        with patch.object(server.oauth_meta, 'urlopen', fake), self.assertLogs(server.LOGGER, level='ERROR') as captured:
+            status, _, body = self.request('/oauth/meta/callback?'+urlencode({'state':state,'code':'PRIVATE_AUTH_CODE'}), headers={'Cookie':cookie})
+        self.assertEqual(status, 400)
+        log = '\n'.join(captured.output)
+        self.assertIn('kind=http http_status=400 provider_code=100 provider_subcode=36008', log)
+        self.assertNotIn('provider_code', body.decode())
+        for forbidden in ('PRIVATE_ERROR_BODY', 'PRIVATE_AUTH_CODE', state, self.config['meta_app_secret']):
+            self.assertNotIn(forbidden, log + body.decode())
 
 
 if __name__ == "__main__":

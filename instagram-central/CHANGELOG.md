@@ -1,3 +1,13 @@
+## 0.1.15 — diagnóstico seguro e vínculo da configuração OAuth — 21/11/2026
+
+- Sincroniza na fonte privada o probe e os testes da distribuição 0.1.14, preservando cookies por tentativa e identificação de versão.
+- Diferencia ausência de cabeçalho Cookie de nome esperado ausente; mostra resultado e versão na tela do probe. Logs de emissão/retorno contêm somente flags, atributos fixos e contagem limitada, sem cookies, nonce, state, códigos OAuth, tokens, URLs ou segredos.
+- Separa falhas HTTP, TLS, DNS, timeout, rede e JSON em `exchange_code`; registra apenas status e códigos/subcódigos inteiros saneados, descartando mensagens/corpos/cabeçalhos remotos. Preserva `redirect_uri` idêntico e resposta pública genérica.
+- Adiciona fingerprint de configuração pública em `meta_oauth_states.authorization_context`, migração aditiva. Tentativa emitida com outro app/redirect/versão/negócio/conta é recusada antes do exchange; estados antigos em voo são invalidados, sem alteração de tokens, contas ou dados existentes.
+- Testes locais: 185 Python PASS; Chromium com 8 cenários de cookie, duas abas concorrentes e config drift PASS. Sem Meta real, Actions ou build/instalação no HA nesta execução.
+- Publicação autorizada pelo proprietário pela esteira rápida P0, somente `instagram-central/`, preservando slug, opções, arquitetura, Ingress, ícones oficiais e demais add-ons. O Supervisor executará o build durante a atualização do operador.
+- Não declara a causa do transporte no HA corrigida nem OAuth homologado. Primeiro teste do operador: **Testar navegador e proxy (sem Meta)** na versão 0.1.15; nenhuma ativação de Meta/webhook/DM/posts integra esta entrega.
+
 ## Evidência de homologação — probe 0.1.14 falhou no navegador — 21/11/2026
 
 - O Home Assistant mostra a versão `0.1.14` em execução.
