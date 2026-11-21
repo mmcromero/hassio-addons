@@ -2,23 +2,23 @@
   "schema_version": 1,
   "product": "Fábrica de Softwares - WhatsApp Umdoislab",
   "source_repository": "mmcromero/whatsapp-automacoes",
-  "source_commit": "e0b0194cf497fdf18bb1d5a3bd010d1d2968ccc8",
-  "code_test_commit": "33ea55f67f94c21b5b61ed80abbfdc72bd39f3bd",
+  "source_commit": "c5c490d7469924f18fa136bfdd21c6eba3bdf909",
+  "code_test_commit": null,
   "source_pull_request": 10,
   "source_issue": 7,
-  "release_version": "0.5.0-rc.2",
+  "release_version": "0.5.0-rc.3",
   "target_slug": "umdoislab_central",
   "target_folder": "umdoislab-central/",
-  "test_receipt": "docs/WA-MULTI-001-RC2-RELATORIO.md",
+  "test_receipt": "docs/WA-MULTI-001-RC3-RELATORIO.md",
   "test_result_reported": {
-    "previous_baseline_commit": "33ea55f67f94c21b5b61ed80abbfdc72bd39f3bd",
-    "previous_baseline_central_pass": 225,
-    "previous_baseline_tools_pass": 5,
-    "directed_rc2_isolated_pass": 16,
-    "directed_rc2_fail": 0,
-    "directed_rc2_error": 0,
-    "rc2_full_suite_executed": false,
-    "rc2_ha_arm64_tested": false
+    "previous_rc1_m002_pass": 230,
+    "previous_rc2_isolated_pass": 16,
+    "rc3_isolated_sql_state_pass": 7,
+    "rc3_isolated_fail": 0,
+    "rc3_isolated_error": 0,
+    "rc3_source_tests_added": 7,
+    "rc3_full_private_suite_executed": false,
+    "rc3_ha_arm64_tested": false
   },
   "files": [
     {
@@ -28,13 +28,13 @@
     },
     {
       "path": "umdoislab-central/config.yaml",
-      "git_blob_sha": "409d0442881e027f6701a36efdf030875aba5902",
+      "git_blob_sha": "eed70aeb82600ab5023bc04ade5f166fbb420177",
       "bytes": 787
     },
     {
       "path": "umdoislab-central/server.py",
-      "git_blob_sha": "6345ad2c1ef49f419c79687f6c2e51a7469a16a5",
-      "bytes": 59825
+      "git_blob_sha": "b115ca399ed564055ad5a3b1b03f55ac45fe27e3",
+      "bytes": 60854
     },
     {
       "path": "umdoislab-central/accounts.py",
@@ -88,10 +88,12 @@
     }
   ],
   "notes": [
-    "RC2 real runtime diff: server.py changed in evolution_outbound_id() to recognize an exact PN alternate linked to numeric LID, while preserving strict proof and fail-closed behavior.",
-    "Git blob hashes of the remaining eleven runtime files and icon/logo are unchanged from RC1; no secrets or Home Assistant data exported.",
-    "Sixteen isolated Python function tests executed on the literal modified helper; new end-to-end mocked regressions are present in private source, but full private suite not rerun for RC2 SHA.",
-    "Previously reported 230 PASS refer to an earlier tested SHA only, not this RC2.",
-    "Publication in GitHub, installation in Home Assistant and live H08 homologation remain distinct."
-  ]
+    "RC3 runtime fix: unknown outgoing preserves classification=uncertain, quarantines as pending/origin_review without false manual human takeover; denies auto send until reviewed.",
+    "Confirmed manual human status and existing last_message/last_message_id preserved. No migration; old human records must be resolved explicitly in the existing authorized Ingress UI.",
+    "Seven isolated SQLite state regression cases executed PASS; seven integrated tests authored in private source but full private suite not rerun. Older 230/16 PASS not attributed to RC3.",
+    "Only these five text files in the WhatsApp Central original package are in the intended release; other runtime and icon hashes unchanged. No credentials or Home Assistant data exported.",
+    "GitHub publication, operator HA update, and runtime H08 homologation are distinct."
+  ],
+  "source_runtime_commit": "841ba3b72714e107de17ef6a243cfddaae35ea57",
+  "source_regression_commit": "b9665712e525d513cba463add5a1803abb7ce17e"
 }

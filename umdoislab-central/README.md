@@ -8,7 +8,7 @@ A fonte de desenvolvimento e testes permanece privada em `mmcromero/whatsapp-aut
 | Campo | Valor |
 |---|---|
 | Nome na loja | Fábrica de Softwares - WhatsApp Umdoislab |
-| Versão candidata | `0.5.0-rc.2` |
+| Versão candidata | `0.5.0-rc.3` |
 | Pasta | `umdoislab-central/` |
 | Slug original preservado | `umdoislab_central` |
 | Arquitetura | `aarch64` |
@@ -18,9 +18,11 @@ A fonte de desenvolvimento e testes permanece privada em `mmcromero/whatsapp-aut
 
 **Atenção:** a presença do pacote na loja não comprova instalação ou homologação. A instalação correta é **Atualizar** a Central existente, nunca criar uma nova.
 
-## O que foi corrigido na RC2
+## O que foi corrigido na RC3
 
-A resposta de `message/sendText` pode identificar o destinatário por um LID e informar o PN exato em `key.remoteJidAlt`. A Central agora registra o ID somente quando esse vínculo é explícito, `fromMe` é `true` e o ID é válido. Quando não há vínculo, a saída permanece não comprovada e não autoriza recuperação automática. O Gateway n8n já publica a observação de ecos, sem alterar o webhook nem o envio comercial nesta atualização.
+A RC2 já corrigiu o ID de `sendText` com vínculo PN/LID. A RC3 corrige **outra falha real**: uma saída com ID verificado na Evolution, mas sem vínculo com o robô, era marcada `uncertain` e transformava a conversa em atendimento `human` sem prova de intervenção. Agora essa situação entra em `pending / origin_review`: a automação fica bloqueada até revisão, sem falsificar atendimento humano. Mensagem do robô com ID confirmado continua classificada `bot` e não bloqueia a conversa. O histórico e os dados continuam preservados.
+
+**Após atualizar a mesma instalação original:** se a conversa de teste já estava em `human` por causa da classificação antiga, abra-a no painel e use **Marcar como resolvido**. A RC3 não converte automaticamente históricos `human`, pois alguns podem representar atendimento real. A ação libera o estado após revisão, sem apagar dados. O Gateway n8n permanece na versão aprovada, sem modificar o Comercial.
 
 ## O que foi incluído
 
@@ -36,7 +38,7 @@ O pacote usa `/data` do **mesmo slug original**, mantendo o banco legado. Não m
 
 ## Testes e processo
 
-Baseline anterior: o Codex registrou **230 PASS** na RC1/M002. Para RC2, foi executado **teste dirigido isolado 16/16 PASS** do helper PN/LID. Testes de integração adicionais foram versionados na fonte privada, mas a suíte completa no novo SHA ainda não foi executada. Nenhum teste real ARM64/Ingress da RC2 foi declarado aprovado.
+Evidência histórica: **230 PASS** na RC1/M002 e **16 PASS isolados** no helper PN/LID da RC2 (outros SHAs). Na RC3, **7 PASS isolados** de SQL/estados e **7 regressões versionadas** para a fonte; a suíte completa da branch ainda não foi executada. A compilação, boot e homologação real no ARM64 após a atualização RC3 dependem do operador do Home Assistant. Não atribuir os PASS históricos ao código RC3.
 
 A rotina oficial é [`../CONTRIBUTING.md`](../CONTRIBUTING.md) (P0). O Supervisor poderá compilar o Dockerfile no Raspberry durante a **atualização autorizada**. O plano de homologação H01–H11 está no repositório privado, em `docs/WA-MULTI-001-HOMOLOGACAO-P0-PLANO.md`.
 

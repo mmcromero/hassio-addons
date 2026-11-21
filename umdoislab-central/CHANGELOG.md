@@ -1,5 +1,14 @@
 # Histórico da distribuição — Central WhatsApp Umdoislab
 
+## 0.5.0-rc.3 — saída incerta não assume atendimento humano (20/11/2026)
+
+- A observação de saída `fromMe=true` sem vínculo em `bot_outbound_ids` continua `classification=uncertain`, mas **não grava `status=human`** sem evidência de intervenção humana.
+- A Central mantém proteção contra envio indevido: `status=pending` e `choice_state=origin_review`; mensagens novas seguem `silent`, a consulta de autorização devolve `origin_unverified`, o outbox é cancelado e o envio automático permanece negado até revisão.
+- Intervenções manuais confirmadas continuam em `human` sem alteração. Conversas existentes preservam histórico, últimas mensagens e IDs. A ação Ingress existente **Marcar como resolvido** permite liberar a conversa de teste antiga após revisão; não ocorre migração automática dos estados antigos.
+- Código alterado somente em `server.py`; `config.yaml` recebe a nova versão. Sem mudança de schema, UI, DNS, Evolution, Gateway, Comercial, worker, secrets, slug, imagens ou outros apps.
+- Teste dirigido isolado de SQLite/estado: **7 PASS, 0 FAIL/ERROR**, Python 3.13.5. Sete novos testes de regressão foram versionados na fonte privada, mas não executados como suíte integral. Os PASS de versões anteriores não são atribuídos à RC3.
+- Publicação no GitHub não é instalação nem homologação no Raspberry. Atualizar o app original e revisar a conversa de teste; nenhum envio automático ou worker foi ativado pelo corte.
+
 ## 0.5.0-rc.2 — retorno sendText com PN/LID comprovados (20/11/2026)
 
 - **Correção real de runtime:** a Central agora aceita `key.remoteJid=@lid` apenas se o LID for numérico (5–25 dígitos) e `key.remoteJidAlt` corresponder exatamente ao PN destinatário do envio. Mantido o caminho PN direto.

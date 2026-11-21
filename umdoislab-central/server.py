@@ -383,6 +383,10 @@ def process_inbound(ev, enqueue=False, account=None):
                 action = "auto"
             elif status == "human":
                 action = "silent"
+            elif choice == "origin_review":
+                # Origem nao comprovada nao equivale a atendimento humano.
+                # Quarentena: sem responder, oferecer escolha ou reativar bot.
+                action = "silent"
             elif handoff:
                 # Already pending: don't repeat transfer notification.
                 action = "silent"
@@ -483,13 +487,23 @@ def observe_outgoing(ev, account=None):
             # Não inferir que é manual só porque fromMe=true.
             # Em resultado incerto da Evolution, o eco pode ser do próprio robô.
             classification = "uncertain"
+            # fromMe=true prova apenas que a conta enviou, nao que um humano assumiu.
+            # Quarentena bloqueia o bot sem inventar um atendimento humano.
+            # Preservar human quando ja foi assumido de forma confirmada.
             db.execute("""INSERT INTO conversations(sender_id,sender_name,subject,summary,
-                last_message,last_message_id,status,updated_at,created_at,choice_state)
-                VALUES(?,?,?,?,?,?,?,?,?,?)
-                ON CONFLICT(sender_id) DO UPDATE SET status='human',updated_at=excluded.updated_at""",
-                (sender, "Contato", "Revisão de origem",
-                 "Saída não reconhecida; verificar se operador assumiu",
-                 "", mid, "human", now(), now(), "idle"))
+                last_message,last_message_id,status,updated_at,created_at,
+                choice_state,choice_message_id)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?)
+                ON CONFLICT(sender_id) DO UPDATE SET
+                  status=CASE WHEN conversations.status='human' THEN 'human' ELSE 'pending' END,
+                  choice_state=CASE WHEN conversations.status='human'
+                    THEN conversations.choice_state ELSE 'origin_review' END,
+                  choice_message_id=CASE WHEN conversations.status='human'
+                    THEN conversations.choice_message_id ELSE excluded.choice_message_id END,
+                  updated_at=excluded.updated_at""",
+                (sender, "Contato", "Revisao de origem",
+                 "Saida sem autoria confirmada; requer revisao",
+                 "", mid, "pending", now(), now(), "origin_review", mid))
             cancel_for_manual(db, sender)
         db.execute("""INSERT INTO outgoing_observations
             (sender_id,message_id,classification,created_at) VALUES(?,?,?,?)""",
@@ -580,7 +594,9 @@ def routing_decision(instance, sender, account=None):
     choice = row["choice_state"] if row else "idle"
     permission = eligibility["allowed"] and (status in ("none", "done") or (status == "pending" and choice == "opted_in"))
     return {"allowAutoReply": permission, "state": status, "choiceState": choice,
-            "reason": "allowed" if permission else eligibility["reason"] if not eligibility["allowed"] else "human_active" if status == "human" else "human_pending",
+            "reason": ("allowed" if permission else eligibility["reason"] if not eligibility["allowed"]
+                       else "human_active" if status == "human"
+                       else "origin_unverified" if choice == "origin_review" else "human_pending"),
             "needsCustomerChoice": status == "pending" and choice == "idle"}
 
 
