@@ -29,6 +29,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
+APP_VERSION = "0.1.14"
 
 
 def settings():
@@ -844,8 +845,8 @@ class Handler(BaseHTTPRequestHandler):
                         "a origem HTTPS esperada.</body></html>", "text/html")
                 return self.respond(200,
                     "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
-                    "<title>Teste de conexão</title><body>Teste aprovado: cookie, "
-                    "domínio público e encaminhamento HTTPS. Nenhuma autorização "
+                    "<title>Teste de conexão</title><body>Teste aprovado: cookie de estado OAuth, "
+                    "domínio público e encaminhamento HTTPS. Versão " + APP_VERSION + ". Nenhuma autorização "
                     "foi enviada à Meta.</body></html>", "text/html")
             callback_stage = "parse_callback"
             try:
@@ -920,7 +921,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(403, {"error": "access denied"})
             return self.respond(200, {"messages": list_pending(account_id=primary_meta_id(cfg))})
         if self.path == "/health":
-            return self.respond(200, {"ok": True, "service": "instagram-central", "mode": "isolated"})
+            return self.respond(200, {"ok": True, "service": "instagram-central", "mode": "isolated", "version": APP_VERSION})
         if self.path.startswith("/webhook/instagram?"):
             cfg = settings()
             if cfg.get("ingress_enabled") is not True:
