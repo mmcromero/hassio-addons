@@ -6,7 +6,7 @@
 - **Identificação da versão:** `/health` passa a retornar `version: 0.1.14`; a página de probe informa a versão em execução, para confirmar que o Supervisor carregou a candidata.
 - **Testes:** acrescentada cobertura unitária e HTTP para nome/valor derivados do state, cookie de outra tentativa, valor divergente, atributos e marcador de versão.
 - **Segurança e escopo:** mantém `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/oauth/meta/callback`; sem mudança de NGINX, Ingress, opções, credenciais, banco, webhook, Direct, respostas automáticas ou publicações.
-- **Estado:** candidata privada 0.1.14 em preparação; testes ainda não executados nesta alteração. Sem merge, publicação ou instalação. Não repetir OAuth real.
+- **Publicação:** PR #67 mesclado em `main` em 21/11/2026, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`. O workflow geral `Validar add-ons` passou nos checks de catálogo, mas os jobs ARM64 foram ignorados. A suíte da Central e o build ARM64 não foram executados. Instalação/atualização e homologação no HA continuam pendentes; a consulta de estado via credencial HA no n8n retornou HTTP 401. Não repetir OAuth real.
 
 ## 0.1.13 — isolamento do cookie de estado OAuth por tentativa — 20/11/2026
 
