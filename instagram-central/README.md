@@ -1,25 +1,25 @@
 # Central Instagram Umdoislab — candidata 0.1.13 (isolamento do cookie OAuth)
 
-**Estado:** candidata 0.1.13 preparada para publicação de teste; ainda não publicada no catálogo, instalada ou homologada no Home Assistant. A distribuição pública atual permanece em 0.1.12. A correção isola o cookie `state` por tentativa OAuth. O callback real anterior falhou em `parse_callback` com cookie divergente; a causa histórica exata não foi comprovada. A homologação no HA deverá verificar build do Supervisor, inicialização e teste de navegador/proxy sem Meta. Não repetir OAuth real sem autorização específica. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
+**Estado:** versão 0.1.13 publicada no catálogo público `mmcromero/hassio-addons:main/instagram-central/` em 21/11/2026 (merge commit `46203dbf6f206e8aa074d14adb719ab12f459669`). A instalação/atualização e homologação no Home Assistant ainda não foram verificadas. A correção isola o cookie `state` por tentativa OAuth. O callback real anterior falhou em `parse_callback` com cookie divergente; a causa histórica exata não foi comprovada. A homologação no HA deverá verificar build do Supervisor, inicialização e teste de navegador/proxy sem Meta. Não repetir OAuth real sem autorização específica. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
 
 - Repositório privado de origem: `mmcromero/instagram-automacoes`.
 - Candidata de origem: [PR #9](https://github.com/mmcromero/instagram-automacoes/pull/9), branch `fix/instagram-oauth-state-cookie-binding-001`, HEAD `723b423069c18a19c1053aecaf3bcef399b0efbb` (base técnica: candidata 0.1.12 do PR #8).
-- Branch base: `feat/instagram-editorial-ux-patch-001`; branch atual da candidata: `fix/instagram-oauth-state-diagnostics-001`.
+- Branch de origem desta versão: `fix/instagram-oauth-state-cookie-binding-001`; a publicação pública ocorreu pelo PR #65.
 - Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
 - Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
 - Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
 
 
-## Candidata 0.1.13 — isolamento do cookie de estado OAuth por tentativa
+## Versão 0.1.13 — isolamento do cookie de estado OAuth por tentativa (PUBLICADA; HA PENDENTE)
 
 - Cada autorização usa um nome de cookie próprio, derivado do SHA-256 do `state`; o callback valida somente o cookie correspondente ao `state` recebido.
 - Evita colisão/sobrescrita entre tentativas simultâneas no mesmo navegador. A evidência anterior confirma cookie presente e divergente, mas não prova que concorrência foi a causa original.
 - Preserva `state` aleatório de 256 bits, expiração de 10 minutos, consumo único no SQLite e atributos `Secure`, `HttpOnly`, `SameSite=Lax` e `Path=/oauth/meta/callback`.
 - Não altera NGINX, Ingress, rotas, banco, dados, credenciais, opções do HA, webhook, Direct ou publicação de posts/stories.
 - Testes offline do módulo OAuth: 18/18 passaram em harness isolado com o arquivo `oauth_meta.py` e `test_oauth_meta.py` do SHA de origem. Isso não substitui o build do Supervisor nem a homologação no HA.
-- Estado desta candidata: proposta em PR de distribuição; não instalada nem homologada. A única tentativa real anterior de OAuth foi consumida e não deve ser repetida sem autorização específica.
+- Distribuição: publicada na `main` pelo PR #65. Instalação/atualização e homologação no HA ainda pendentes. A única tentativa real anterior de OAuth foi consumida e não deve ser repetida sem autorização específica.
 
-## Versão 0.1.12 — diagnóstico de cookie, origem e proxy
+## Versão 0.1.12 — diagnóstico de cookie, origem e proxy (versão anterior)
 
 - Reúne as alterações funcionais de 0.1.11 já publicadas: `redirect_uri` idêntico na troca de código e gravação de credenciais no diretório correto por negócio.
 - Separa falhas de cookie ausente, duplicado e divergente. O log não imprime cookie, `state`, código OAuth ou segredo.
