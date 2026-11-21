@@ -82,7 +82,9 @@ class HTTPContractTests(unittest.TestCase):
 
     def test_get_routes_do_not_shadow_urlsplit(self):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
-        self.assertEqual(self.request("/health")[0], 200)
+        health_status, _, health_body = self.request("/health")
+        self.assertEqual(health_status, 200)
+        self.assertEqual(json.loads(health_body)["version"], "0.1.14")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -253,6 +255,9 @@ class HTTPContractTests(unittest.TestCase):
         probe_query = urlsplit(headers["Location"]).query
         nonce = parse_qs(probe_query)["probe"][0]
         cookie = headers["Set-Cookie"].split(";", 1)[0]
+        cookie_name, cookie_value = cookie.split("=", 1)
+        self.assertEqual(cookie_name, server.oauth_meta._state_cookie_name(nonce))
+        self.assertEqual(cookie_value, nonce)
         public_headers = {"Host": "example.org", "X-Forwarded-Proto": "https",
                           "Cookie": cookie}
         with patch.object(server.oauth_meta, "exchange_code",
