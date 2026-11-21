@@ -1,3 +1,11 @@
+## Evidência de homologação — probe 0.1.14 falhou no navegador — 21/11/2026
+
+- O Home Assistant mostra a versão `0.1.14` em execução.
+- O proprietário executou **Testar navegador e proxy (sem Meta)**. O navegador chegou a `/oauth/meta/callback?probe=...`, mas recebeu `Cookie não retornou corretamente. Verifique navegador e proxy antes da autorização Meta.`
+- No código, essa resposta é emitida quando `check_cookie_probe()` lança `OAuthError`; ainda não distingue, na tela, cookie ausente, duplicado, divergente ou nonce inválido.
+- O log registra a causa fixa (`OAuth cookie probe failed: ...`) e `host_ok`/`https_ok`, sem registrar nonce ou valor do cookie. A linha do log ainda não foi coletada.
+- A falha mostra que o teste automatizado anterior não reproduziu o transporte real do navegador: o teste HTTP injeta manualmente o cabeçalho `Cookie`, em vez de validar que o navegador armazenou e devolveu o `Set-Cookie` após o redirecionamento 302.
+- **Próxima ação:** coletar a linha `OAuth cookie probe failed` nos logs do add-on e corrigir o ponto comprovado. Não alterar NGINX/Ingress nem opções por tentativa. Não repetir OAuth real. Mensagens e Editorial permanecem preservados.
 ## 0.1.14 — probe usa o mesmo cookie de estado do OAuth — 21/11/2026
 
 - **Incidente:** após a atualização relatada para 0.1.13, o callback real continuou falhando em `parse_callback` com `OAuth browser state mismatch`, embora `redirect_authority_match=True` e `forwarded_https=True`.
