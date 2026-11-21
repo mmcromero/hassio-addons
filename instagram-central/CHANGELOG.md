@@ -1,3 +1,12 @@
+## 0.1.13 — isolamento do cookie de estado OAuth por tentativa — 20/11/2026
+
+- Cada início OAuth gera um cookie com nome próprio derivado do SHA-256 do `state`; a callback valida somente o cookie correspondente ao estado recebido.
+- Evita que duas tentativas/abas simultâneas sobrescrevam o mesmo cookie global. O log real anterior comprova um cookie presente e divergente, mas não comprova que concorrência foi a causa.
+- Mantém o `state` aleatório de 256 bits, expiração de 10 minutos, consumo único no SQLite, comparação constante e atributos `Secure`, `HttpOnly`, `SameSite=Lax` e `Path=/oauth/meta/callback`.
+- Sem alteração de NGINX, Ingress, opções, banco, credenciais, slug, porta, interface Mensagens/Editorial ou outros add-ons.
+- Testes do módulo OAuth: 18/18 passaram em execução offline isolada com os arquivos do SHA de origem. Build do Dockerfile pelo Supervisor e teste real no HA ainda pendentes.
+- Não repetir autorização Meta nem habilitar webhook, assinatura, envio de Direct, respostas automáticas ou publicações nesta etapa.
+
 ## 0.1.12 — diagnóstico de cookie OAuth e contexto do proxy — 20/11/2026
 
 - **Distribuição:** versão 0.1.12 publicada em `mmcromero/hassio-addons:main/instagram-central/` em 20/11/2026. O build do Supervisor, a suíte integral do Dockerfile, a instalação e a homologação real continuam pendentes. A publicação não altera o Raspberry, NGINX ativo, opções ou credenciais.
