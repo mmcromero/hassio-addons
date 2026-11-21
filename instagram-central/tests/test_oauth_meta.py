@@ -90,6 +90,9 @@ class OAuthTests(unittest.TestCase):
         self.assertNotIn(CONFIG["meta_app_secret"], url)
         self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
         self.assertIn("Path=/oauth/meta/callback", cookie)
+        cookie_name, cookie_value = cookie.split(";", 1)[0].split("=", 1)
+        self.assertEqual(cookie_name, oauth._state_cookie_name(params["state"][0]))
+        self.assertEqual(cookie_value, params["state"][0])
 
     def test_callback_requires_browser_cookie_and_no_duplicates(self):
         url, cookie = oauth.start(self.db, CONFIG)
@@ -116,9 +119,34 @@ class OAuthTests(unittest.TestCase):
         state = parse_qs(urlsplit(url).query)["state"][0]
         query = "code=test-code&state=" + state
         wrong_value = ("A" if state[0] != "A" else "B") + state[1:]
-        wrong_cookie = "ig_oauth_state=" + wrong_value
+        wrong_cookie = oauth._state_cookie_name(state) + "=" + wrong_value
         with self.assertRaisesRegex(oauth.OAuthError, "OAuth browser state mismatch"):
             oauth.parse_callback(query, wrong_cookie)
+
+    def test_concurrent_oauth_starts_keep_independent_browser_cookies(self):
+        url1, cookie1 = oauth.start(self.db, CONFIG)
+        url2, cookie2 = oauth.start(self.db, CONFIG)
+        state1 = parse_qs(urlsplit(url1).query)["state"][0]
+        state2 = parse_qs(urlsplit(url2).query)["state"][0]
+        pair1 = cookie1.split(";", 1)[0]
+        pair2 = cookie2.split(";", 1)[0]
+        self.assertNotEqual(pair1.split("=", 1)[0], pair2.split("=", 1)[0])
+        browser_cookies = pair1 + "; " + pair2
+        self.assertEqual(
+            oauth.parse_callback("code=first&state=" + state1, browser_cookies),
+            (state1, "first"))
+        self.assertEqual(
+            oauth.parse_callback("code=second&state=" + state2, browser_cookies),
+            (state2, "second"))
+        with self.assertRaisesRegex(oauth.OAuthError, "OAuth state cookie missing"):
+            oauth.parse_callback("code=first&state=" + state1, pair2)
+
+    def test_legacy_shared_state_cookie_is_not_accepted(self):
+        url, _ = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        with self.assertRaisesRegex(oauth.OAuthError, "OAuth state cookie missing"):
+            oauth.parse_callback(
+                "code=test-code&state=" + state, "ig_oauth_state=" + state)
 
     def test_cookie_probe_validates_browser_roundtrip_without_meta(self):
         url, cookie = oauth.start_cookie_probe(CONFIG)
