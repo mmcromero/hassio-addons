@@ -1,3 +1,48 @@
+# Atualização para multicontas 0.1.19
+
+O certificado e a primeira conexão `@umdoislab` foram confirmados pelo proprietário na 0.1.18. **Não repetir emissão de certificado nem reconectar a principal por causa desta atualização.**
+
+1. Faça backup privado dos dados/opções do aplicativo e atualize a Central para 0.1.19, preservando tudo em `/data`. O botão Abrir interface web passa a abrir o HTTPS externo diretamente; Ingress fica desativado. A porta interna 8099 continua para o proxy, sem exposição no host.
+2. Compare [instagram.conf](instagram.conf) com o arquivo atual `/share/nginx_proxy/instagram.conf`. A atualização acrescenta somente rotas explícitas de Contas e timeout maior do callback. Não substitua os fragmentos dos outros aplicativos ou as opções gerais do proxy.
+3. Mantenha acesso local ao HA. Salve uma cópia do arquivo atual com nome fora do padrão `*.conf`, por exemplo `instagram.conf.rollback-<data>`. Baixe a candidata publicada em arquivo temporário na mesma pasta, confira o SHA-256 registrado na Issue #1/relatório e substitua **somente** `instagram.conf` por movimento atômico. Não mantenha duas cópias terminadas em `.conf`, pois isso duplicaria servidor/zona de limite.
+4. Confirme os includes já usados: `customize.active=true`, `customize.servers=nginx_proxy/*.conf`, `real_ip_from=[]`. O arquivo é incluído em contexto HTTP por customize.servers; não por customize.default. Se a configuração real divergir, compare antes de aplicar. A candidata passou em nginx -t local; a configuração viva ainda depende do operador.
+5. Reinicie somente NGINX Home Assistant SSL proxy. O HTTPS compartilhado pode interromper brevemente; preserve a sessão local de recuperação. Confirme início do proxy e acesso antigo HA/Avisaqui/Artesão.
+6. Abra a URL externa da Central e confirme Umdoislab conectada. Abra Contas. Se apenas Contas der 404, confira a substituição/include do arquivo, sem modificar DNS/certificado/roteador.
+7. Adicione outra conta pelo nome e @usuário e faça a autorização Meta somente para o ativo pretendido, quando autorizado pelo proprietário. Callback permanece único: `https://instagram.romeropi.duckdns.org:8443/oauth/meta/callback`. Nenhuma nova URI por conta. Requisitos de tester/App Review/Advanced Access da Meta continuam aplicáveis.
+8. Não assine mensagens nem habilite webhook/bridge/envios como parte desta atualização. O receptor legado continua limitado à principal; contas secundárias não recebem eventos apenas por serem cadastradas/conectadas. Não compartilhe opções completas, segredos ou URLs de retorno.
+
+## Comando de atualização do arquivo
+
+Execute no Terminal & SSH **depois de atualizar a Central**, mantendo acesso local ao HA. O comando recusa destino ausente/simbólico, confere o conteúdo antes de substituir e guarda a cópia anterior. Se qualquer etapa falhar, pare e guarde somente a mensagem de erro.
+
+```sh
+(
+  set -eu
+  IG_TARGET=/share/nginx_proxy/instagram.conf
+  test -f "$IG_TARGET" && test ! -L "$IG_TARGET"
+  IG_STAGE=$(mktemp /share/nginx_proxy/instagram.stage.XXXXXX)
+  trap 'rm -f "$IG_STAGE"' EXIT
+  curl -fsSL 'https://raw.githubusercontent.com/mmcromero/hassio-addons/main/instagram-central/proxy/instagram.conf' -o "$IG_STAGE"
+  echo "7ebcc0c23ae81c1c02a50dd9cdfd6ba0daa805d7ca27567907cb23f3baaf6f5b  $IG_STAGE" | sha256sum -c -
+  IG_BACKUP="$IG_TARGET.rollback-$(date +%Y%m%d-%H%M%S)"
+  test ! -e "$IG_BACKUP"
+  cp -p "$IG_TARGET" "$IG_BACKUP"
+  chmod 644 "$IG_STAGE"
+  mv "$IG_STAGE" "$IG_TARGET"
+  echo "Arquivo atualizado. Backup: $IG_BACKUP"
+)
+```
+
+O download usa a main pública, mas o SHA-256 fixo impede instalar outra candidata. Se uma versão futura mudar o arquivo, o comando desta versão recusará a troca. Após sucesso, reinicie **somente o NGINX SSL proxy** pela interface do HA e confira o log. O comando não reinicia serviços nem altera outros arquivos.
+
+**Rollback do proxy:** restaure somente a cópia anterior para `instagram.conf` e reinicie apenas o proxy pelo HA local. O painel principal 0.1.19 continua compatível com as rotas antigas; Contas não fica disponível no proxy antigo. Preserve o arquivo novo e os dados para diagnóstico.
+
+**Rollback de pacote:** restaurar a candidata/backup 0.1.18 pelo Supervisor, preservando chave/token/bancos, retorna a interface anterior. A coluna adicional do registro e diretórios das novas contas não devem ser apagados: a 0.1.18 os ignora e continua usando a principal. Não abrir 9443 ou alterar o roteador para recuperar acesso.
+
+O procedimento histórico abaixo foi usado para a transição inicial 0.1.18. Não repetir etapas de emissão já concluídas.
+
+---
+
 # Operação da Central 0.1.18 — mesma porta pública, hostname exclusivo
 
 Destino proposto: **https://instagram.romeropi.duckdns.org:8443/panel**.

@@ -24,8 +24,8 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self';
        "object-src 'none'; frame-ancestors 'self'")
 
 
-def csrf_action(action):
-    return "editorial:umdoislab:" + action
+def csrf_action(action, business_id="umdoislab"):
+    return "editorial:" + business_id + ":" + action
 
 
 def _boxes(raw):
@@ -119,7 +119,7 @@ def _schedule_time(value):
     return first
 
 
-def handle(handler, method, route, cfg, authorized, store_factory):
+def handle(handler, method, route, cfg, authorized, store_factory, *, business_id="umdoislab"):
     if route.path != "/editorial" and not route.path.startswith("/editorial/"):
         return False
     def reply(status, body, mime="application/json"):
@@ -130,9 +130,9 @@ def handle(handler, method, route, cfg, authorized, store_factory):
     if route.query:
         return reply(404, {"error": "Rota indisponível"})
     try:
-        # No client-controlled business context. Existing admin session is scoped
-        # to Umdoislab; a future tenant selector must implement its own grants.
-        store = store_factory("umdoislab")
+        # Handler authenticates the installation owner and resolves an explicit
+        # enabled account path; query/body fields never choose the store.
+        store = store_factory(business_id)
         if method == "GET":
             if route.path == "/editorial":
                 handler.send_response(303)
@@ -146,12 +146,18 @@ def handle(handler, method, route, cfg, authorized, store_factory):
                       "/editorial/editorial.css": ("editorial.css", "text/css")}
             if route.path in static:
                 filename, mime = static[route.path]
-                return reply(200, (ASSETS / filename).read_bytes(), mime)
+                raw = (ASSETS / filename).read_bytes()
+                if mime == 'text/html':
+                    import html
+                    username = html.escape(str(cfg.get('instagram_expected_username') or 'umdoislab'))
+                    display = html.escape(str(cfg.get('account_display_name') or 'Umdoislab'))
+                    raw = raw.decode().replace('@umdoislab', '@' + username).replace('<div class="crumb">Umdoislab ', '<div class="crumb">' + display + ' ').encode()
+                return reply(200, raw, mime)
             if route.path == "/editorial/api/csrf":
                 return reply(200, {a: panel_login.admin_csrf_token(handler.headers.get("Cookie", ""),
-                    cfg.get("panel_password"), csrf_action(a)) for a in ACTIONS})
+                    cfg.get("panel_password"), csrf_action(a, business_id)) for a in ACTIONS})
             if route.path == "/editorial/api/state":
-                return reply(200, {**store.snapshot(), "businessId": "umdoislab", "publishingEnabled": False})
+                return reply(200, {**store.snapshot(), "businessId": business_id, "publishingEnabled": False})
             if re.fullmatch("/editorial/media/" + _ID, route.path):
                 raw, mime = store.read_media(route.path.rsplit("/", 1)[1])
                 return reply(200, raw, mime)
@@ -171,7 +177,7 @@ def handle(handler, method, route, cfg, authorized, store_factory):
         if action is None:
             return reply(404, {"error": "Rota indisponível"})
         if not panel_login.admin_csrf_valid(handler.headers.get("Cookie", ""), cfg.get("panel_password"),
-                                           csrf_action(action), handler.headers.get("X-CSRF-Token")):
+                                           csrf_action(action, business_id), handler.headers.get("X-CSRF-Token")):
             return reply(403, {"error": "Sessão ou proteção CSRF inválida"})
         if action == "upload":
             if not _UPLOAD_SLOTS.acquire(blocking=False):

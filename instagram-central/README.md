@@ -1,36 +1,50 @@
-# Central Instagram Umdoislab — 0.1.18 (HTTPS no proxy existente)
+# Central Instagram — 0.1.19 (multicontas operacional)
 
-**Estado:** pacote para teste autorizado; sem instalação ou homologação presumida. A 0.1.18 substitui a proposta 0.1.17 de expor diretamente 9443. Não abrir nova porta no roteador. O HTTPS continua no NGINX existente, com hostname exclusivo para isolar o service worker do HA.
+**Primeira conta real:** o proprietário confirmou `@umdoislab` verificada e autorizada na 0.1.18. A 0.1.19 preserva essa credencial, chave, mensagens e Editorial. As contas adicionais deste lote foram testadas com dados/provedor sintéticos; não representam autorizações reais de outras contas.
 
-- Origem privada: `mmcromero/instagram-automacoes`, branch `fix/instagram-oauth-safe-diagnostics-001`, [PR #11](https://github.com/mmcromero/instagram-automacoes/pull/11). Commits, evidências e revisão independente na [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1).
-- Identidade preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, `aarch64`, Ingress na porta interna 8099, `backup: cold`, ícones oficiais. O catálogo não publica portas nem monta `/ssl` na Central.
-- Mesmos login/senha, banco, tokens e mídias em `/data`; nenhuma exclusão/migração de dados nesta mudança. `certfile`/`keyfile` antigos são aceitos mas ignorados para compatibilidade com opções já salvas.
-- Base histórica: PR #7 `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, PR #9 `723b423069c18a19c1053aecaf3bcef399b0efbb`. Fonte main privada e demais aplicativos preservados.
+Esta versão adiciona **Contas**, com cadastro, seleção, conexão Meta e painéis por conta, e faz **Abrir interface web** apontar diretamente para o HTTPS externo, como solicitado. O Ingress foi desativado no manifesto; a aplicação continua somente na porta HTTP interna 8099, atrás do proxy existente. **Nenhuma nova porta no roteador, volume SSL ou chave privada na Central.**
 
-## Configuração atual
+Fonte privada: `mmcromero/instagram-automacoes`, branch `feat/instagram-multicontas-operacional-001`, baseada no PR #11. Commits, PR, relatório e publicação auditada na [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1). Nome/slug `umdoislab_instagram`, arquitetura declarada `aarch64`, backup cold e ícones oficiais preservados. Fonte main privada e outros aplicativos não são alterados.
 
-Acesso proposto: **https://instagram.romeropi.duckdns.org:8443/panel**. O hostname resolve em DNS, mas a ativação depende de certificado e proxy do operador. O certificado confirmado pelo proprietário cobre somente `romeropi.duckdns.org`; precisa incluir o novo hostname/wildcard antes de ativá-lo. Não ignorar aviso de certificado.
+## Atualização da 0.1.18
 
-**[Siga o guia do operador: certificado, arquivo adicional, teste e rollback](proxy/GUIA-OPERADOR.md).** O arquivo revisável é [proxy/instagram.conf](proxy/instagram.conf), incluído por `customize.servers`, na mesma porta interna 443 já usada pelo proxy (externa 8443). Não substitui o servidor HA ou fragmentos dos outros aplicativos.
+1. Faça backup do aplicativo com seus dados e preserve todas as opções, especialmente senha, App ID e App Secret já corrigidos. Não desinstale nem apague `/data`.
+2. Atualize a Central para **0.1.19**. Não é necessário reconectar `@umdoislab` nem copiar token. As duas URLs públicas permanecem as mesmas:
+   ```yaml
+   public_base_url: "https://instagram.romeropi.duckdns.org:8443"
+   meta_oauth_redirect_uri: "https://instagram.romeropi.duckdns.org:8443/oauth/meta/callback"
+   ```
+3. Atualize **somente** `/share/nginx_proxy/instagram.conf` com [a candidata desta versão](proxy/instagram.conf), mantendo cópia anterior fora do padrão `*.conf`. As rotas novas `/accounts` precisam deste arquivo; o proxy 0.1.18 ainda atende o painel principal, mas retorna 404 para Contas.
+4. Reinicie somente o NGINX SSL proxy pelo HA, com acesso local disponível para recuperação. Não altere certificado, roteador, domínio principal, fragmentos Avisaqui/Artesão ou o webhook antigo. [Guia e rollback](proxy/GUIA-OPERADOR.md).
+5. Abra **https://instagram.romeropi.duckdns.org:8443/panel**. A opção **Abrir interface web** do aplicativo agora usa essa URL externa. A conta Umdoislab deve continuar conectada. Se aparecer pendente, preserve os dados e diagnostique antes de iniciar outro consentimento.
 
-Após atualizar para 0.1.18, preserve todas as opções e ajuste somente:
+`certfile`/`keyfile` antigos permanecem aceitos, mas são ignorados pela aplicação. O NGINX continua lendo `/ssl`. O certificado wildcard já foi emitido pelo operador para esta instalação; não emitir outro por causa da 0.1.19.
 
-```yaml
-public_base_url: "https://instagram.romeropi.duckdns.org:8443"
-meta_oauth_redirect_uri: "https://instagram.romeropi.duckdns.org:8443/oauth/meta/callback"
-```
+## Como adicionar e usar outra conta
 
-Os links **Abrir Central em janela própria** aparecem no login e painel do Ingress. Na URL nova, use o mesmo `admin`/senha da Central. O hostname separado isola o worker raiz do HA e os cookies host-only. A origem antiga é recusada no OAuth quando a nova origem está configurada; callback divergente é bloqueado antes de state/exchange.
+1. Faça login com o mesmo administrador da Central e abra **Contas**.
+2. Informe um nome de exibição e o **usuário exato do Instagram**, por exemplo `@minhaconta`. Clique em **Adicionar conta**. Isso cria somente um cadastro pendente; não chama a Meta ou ativa mensagens.
+3. No painel dessa conta, clique em **Conectar Instagram pela Meta**. Confira os ativos/permissões e selecione a conta pretendida. A Central descobre o ID oficial pelo usuário informado; não é preciso colar ID/token ou outro segredo no cadastro.
+4. Após autorização, use **Voltar ao painel da conta**. Em Contas, abra o painel correspondente. Mensagens, handoff, credencial e Editorial ficam no contexto escolhido. Abas de contas diferentes podem permanecer abertas sem trocar a seleção uma da outra.
+5. Contas de teste precisam estar aptas no mesmo app Meta (conta profissional, portfólio/convite/função aplicáveis). Clientes externos podem exigir Advanced Access/App Review da Meta; isso não é contornado pela Central.
 
-## Controles e validação
+O mesmo administrador tem acesso a todas as contas cadastradas. Não há login individual por cliente nem RBAC neste lote. Uma conta/ID já vinculada não é remapeada silenciosamente; duplicatas de usuário/ID são recusadas. Até 100 registros por instalação. Contas internas antigas não se tornam operacionais automaticamente.
 
-O proxy contém lista explícita de rotas e métodos para login, painel, Editorial e OAuth. Rotas bridge, health, Supervisor, scripts do worker e caminhos desconhecidos não são publicados nesse host. Login limitado por IP no NGINX, corpo limitado por rota, upload máximo 25 MiB, Host/SNI conferidos, sem cache nem logs de URLs OAuth. Sessão, CSRF e cookies seguros continuam na aplicação. A Central não recebe a chave privada do certificado.
+## Isolamento e limites
 
-Teste primeiro **Testar navegador e proxy (sem Meta)**, sem bypass. Esse teste exige a configuração OAuth já preparada, mas não chama a Meta. Antes de qualquer consentimento real futuro, revisar o novo callback na lista permitida do mesmo app Meta. Webhook, Meta, Direct e postagens não são ativados por esta atualização.
+- A conta principal conserva `/data/meta-oauth-token.enc`, sua chave e `/data/editorial/`. Novas contas usam diretórios próprios em `/data/accounts/{id-interno}/` e `/data/editorial/accounts/{id-interno}/`. Migração aditiva acrescenta somente o marcador de cadastro operacional ao registro de contas.
+- Um único app Meta é reutilizado por cadastros explicitamente feitos pelo administrador. Campos necessários do app/login são compartilhados por uma lista explícita; segredo da bridge, verify token e ativação de webhook da principal não são herdados pelas secundárias.
+- OAuth mantém callback único no mesmo hostname. State/cookie vinculam o retorno à conta que iniciou a autorização, sem depender de qual painel está aberto. Cookie por tentativa, expiração, consumo único, vínculo de configuração e validação de ID/usuário continuam obrigatórios. A descoberta usa paginação limitada e não segue URLs arbitrárias devolvidas pelo provedor.
+- Cadastro e mutações exigem sessão/CSRF. Tokens CSRF de Editorial/ações Meta são vinculados à conta; IDs de mídia e destinatário não selecionam implicitamente outro armazenamento. Credenciais não fazem fallback para a principal.
+- O token emitido pela Meta pode abranger mais de um ativo do portfólio compartilhado; a aplicação restringe suas rotas ao contexto validado. Separação local não altera a granularidade da autorização concedida na Meta.
+- **Não há nova assinatura de webhook, envio de Direct, resposta automática ou postagem ativada por esta atualização.** A bridge e o receptor legado continuam restritos à principal. A entrada de mensagens nas contas adicionais requer uma etapa futura de roteamento/ativação de webhook explicitamente autorizada. Agenda Editorial continua local, sem executor de postagem.
+- O indicador de conexão usa a última identidade verificada/credencial armazenada; não comprova entrega de mensagens nem validade eterna do token. **Verificar acesso Meta** faz a leitura de verificação no contexto correto quando acionado pelo administrador.
 
-Evidência local: **201 testes Python PASS**, Chromium com nove cenários de probe, concorrência/config drift e worker ativo na origem antiga versus hostname separado na mesma porta; **build Docker linux/amd64 com 198 testes PASS**; **NGINX real local: nginx -t, TLS verificado, autenticação/CSRF, probe, 404 de rotas privadas, limites 413/429 e preservação de vhost representativo PASS**. Sem Meta/HA real. ARM64/Supervisor, certificado wildcard, instalação do arquivo e aceite externo permanecem pendentes do operador.
+## Validação e distribuição
 
-O proxy reduz a exposição direta e aplica controles; isso não torna o painel público livre de risco nem substitui revisão independente. Publicado não significa instalado ou homologado. Se foi criada regra 9443 exclusivamente para 0.1.17, desabilite essa regra; a atualização não altera o roteador.
+Testes locais incluem preservação byte a byte da credencial/chave principal, migração de registro antigo, cadastro concorrente sem duplicação, recusa de caminhos/identidades inválidos, OAuth de contas diferentes com callbacks em ordem inversa, mídia/CSRF/handoff isolados e descoberta paginada. Chromium cobre cadastro, OAuth simulado, bibliotecas separadas e regressão Editorial completa; NGINX real local verifica as novas rotas, autenticação, TLS, probe e limites.
+
+Resultados/SHAs finais e evidências estão na Issue #1 e no relatório privado do lote. Build local não é homologação ARM64/Supervisor. Nenhuma conta real adicional foi autorizada pelo executor, nem instalação/reinício de HA ou proxy foi executado por ele. Publicação do pacote e teste real pelo operador são etapas distintas.
 
 ## Histórico das correções anteriores
 

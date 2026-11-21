@@ -1,3 +1,13 @@
+## 0.1.19 — multicontas operacional e abertura externa direta — 21/11/2026
+
+- Adiciona tela Contas com cadastro por nome/usuário, seleção e painéis isolados, usando o mesmo administrador. ID oficial é confirmado no OAuth, sem copiar token ou segredo por conta.
+- OAuth resolve o contexto do retorno pelo state armazenado, valida a conta pretendida e guarda credenciais em diretório próprio. Abas de contas diferentes não compartilham seleção; descoberta de ativos paginada e limitada.
+- Isola mensagens/handoff, mídia/rascunhos/agenda e CSRF por conta; credenciais não usam fallback. Preserva conta/token/chave/dados da principal, conectada pelo operador na 0.1.18. Registro recebe marcador operacional aditivo; cadastros internos antigos não são ativados.
+- Compartilha somente campos necessários do mesmo app Meta nos cadastros explícitos do administrador; bridge/verify token/webhook da principal não são herdados pelas secundárias.
+- Desativa Ingress e define webui HTTPS externa direta para a instalação Romeropi, sem nova porta. Adiciona rotas explícitas de Contas ao proxy e retorno correto de Verificar acesso Meta ao painel correspondente.
+- Não ativa webhook, bridge secundária, envios, postagem ou automações. Atualização exige substituir somente o arquivo adicional Instagram do NGINX; callback/certificado/credenciais globais permanecem.
+- Testes novos cobrem concorrência, identidade errada, callbacks paralelos, isolamento e preservação da principal; evidências completas no relatório/Issue #1. Casos de teste usam contas sintéticas, sem autorização real adicional.
+
 ## 0.1.18 — hostname exclusivo no proxy existente — 21/11/2026
 
 - Substitui a recomendação 0.1.17 de abrir 9443: remove listener TLS da aplicação, mapeamento de porta pública, webui 9443 e montagem `/ssl`. A Central atende somente HTTP interno 8099 com Ingress preservado.

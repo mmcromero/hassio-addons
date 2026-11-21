@@ -27,14 +27,15 @@ async function stop(){
   browser=await chromium.launch({executablePath:process.env.CHROMIUM || '/usr/bin/chromium',headless:true,args:['--no-sandbox']});
   const context=await browser.newContext({viewport:{width:1440,height:1000},timezoneId:'America/Sao_Paulo'});
   const errors=[], blocked=[];
+  let injectedScheduleUrl=null;
   await context.route('**/*',route=>{
     const requested=new URL(route.request().url());
     if(requested.origin!==url){blocked.push(requested.origin);return route.abort();}
     return route.continue();
   });
   const page=await context.newPage();
-  page.on('pageerror',error=>errors.push(error.message));
-  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());});
+  page.on('pageerror',error=>errors.push({message:error.message,url:'pageerror'}));
+  page.on('console',message=>{if(message.type()==='error')errors.push({message:message.text(),url:message.location().url});});
   await page.goto(url+'/');
   await page.getByLabel('Senha').fill('browser_fixture_password_only_123');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
@@ -65,6 +66,7 @@ async function stop(){
   await page.locator('#picker-grid button').click();
   await page.locator('#apply-media-selection').click();
   await page.getByRole('button',{name:'Salvar e revisar',exact:true}).click();
+  await page.locator('#view-approval').waitFor({state:'visible'});
   await page.getByRole('button',{name:'Aprovar',exact:true}).waitFor();
   await page.getByRole('button',{name:'Aprovar',exact:true}).click();
   await page.getByRole('button',{name:'Agendar',exact:true}).click();
@@ -91,9 +93,9 @@ async function stop(){
   await page.locator('#schedule-at').fill(future);
   // A reverse proxy may return an HTML error rather than JSON; do not display parser text.
   const schedulePattern='**/editorial/api/posts/*/schedule';
-  await page.route(schedulePattern,route=>route.fulfill({
+  await page.route(schedulePattern,route=>{injectedScheduleUrl=route.request().url();return route.fulfill({
     status:502,contentType:'text/html',body:'502 Bad Gateway'
-  }));
+  });});
   await page.getByRole('button',{name:'Confirmar agenda',exact:true}).click();
   await dateError.waitFor({state:'visible'});
   assert.match(await dateError.innerText(),/servidor respondeu de forma inesperada/);
@@ -113,6 +115,7 @@ async function stop(){
   await page.getByRole('button',{name:'Editar',exact:true}).click();
   await page.locator('#post-caption').fill('Conteúdo sintético editado');
   await page.getByRole('button',{name:'Salvar e revisar',exact:true}).click();
+  await page.locator('#view-approval').waitFor({state:'visible'});
   await page.getByRole('button',{name:'Aprovar',exact:true}).waitFor();
   await page.setViewportSize({width:390,height:844});
   await page.screenshot({path:path.join(evidence,'ig-editorial-mobile.png'),fullPage:true});
@@ -158,6 +161,7 @@ async function stop(){
   assert.match(await page.locator('#preview-caption').innerText(),/Segunda legenda individual/);
   assert.match(await page.locator('#phone-media').innerText(),/2 \/ 2/);
   await page.getByRole('button',{name:'Salvar e revisar',exact:true}).click();
+  await page.locator('#view-approval').waitFor({state:'visible'});
   const targetRow=page.locator('#approval-list .item').filter({hasText:'Primeira legenda individual'});
   await targetRow.waitFor();
   assert.equal(await targetRow.locator('.post-preview-thumb').count(),1);
@@ -186,6 +190,7 @@ async function stop(){
     .getByRole('button',{name:'Editar',exact:true}).click();
   await page.locator('.slide-caption-input').nth(1).fill('Segunda legenda revisada');
   await page.getByRole('button',{name:'Salvar e revisar',exact:true}).click();
+  await page.locator('#view-approval').waitFor({state:'visible'});
   await page.locator('[data-view="calendar"]').click();
   const pendingCalendar=page.locator('#calendar-list .item.pending-review');
   await pendingCalendar.waitFor();
@@ -198,14 +203,19 @@ async function stop(){
   assert.equal(awaiting.status,'draft');
   assert.equal(awaiting.scheduledAt,null);
   assert.equal(awaiting.pendingScheduledAt,beforeEdit.scheduledAt);
+  const reapproved=page.waitForResponse(r=>r.url().includes('/api/posts/') && r.url().endsWith('/approve') && r.request().method()==='POST');
   await pendingCalendar.getByRole('button',{name:'Aprovar',exact:true}).click();
+  assert.equal((await reapproved).status(),200);
+  await pendingCalendar.waitFor({state:'hidden'});
   const restored=await page.evaluate(async()=> (await(await fetch('./api/state')).json()).posts.find(p=>p.captionMode==='per_slide'));
   assert.equal(restored.status,'scheduled');
   assert.equal(restored.scheduledAt,beforeEdit.scheduledAt);
   assert.equal(restored.pendingScheduledAt,null);
   assert.equal(await page.locator('#calendar-list .item.pending-review').count(),0);
+  const cancelling=page.waitForResponse(r=>r.url().includes('/api/posts/') && r.url().endsWith('/cancel') && r.request().method()==='POST');
   await page.locator('#calendar-list .item').filter({hasText:'Primeira legenda individual'})
     .getByRole('button',{name:'Cancelar agenda',exact:true}).click();
+  assert.equal((await cancelling).status(),200);
   const cancelled=await page.evaluate(async()=> (await(await fetch('./api/state')).json()).posts.find(p=>p.captionMode==='per_slide'));
   assert.equal(cancelled.status,'approved');
   assert.equal(cancelled.scheduledAt,null);
@@ -234,7 +244,9 @@ async function stop(){
   await page.locator('#approval-list .item').filter({hasText:'Primeira legenda individual'})
     .getByRole('button',{name:'Editar',exact:true}).click();
   await page.locator('.slide-caption-input').nth(1).fill('H09 - alteração A');
+  const savedA=page.waitForResponse(r=>r.url().endsWith('/api/drafts') && r.request().method()==='POST');
   await page.getByRole('button',{name:'Salvar rascunho',exact:true}).click();
+  assert.equal((await savedA).status(),200);
   await tabB.locator('.slide-caption-input').nth(1).fill('H09 - alteração B');
   const response409=tabB.waitForResponse(r=>r.url().endsWith('/api/drafts') && r.request().method()==='POST');
   await tabB.getByRole('button',{name:'Salvar rascunho',exact:true}).click();
@@ -259,7 +271,8 @@ async function stop(){
   await page.getByRole('button',{name:'Sair',exact:true}).click();
   await page.getByRole('button',{name:'Entrar',exact:true}).waitFor();
   assert.equal((await context.request.get(restarted+'/editorial/api/state')).status(),403);
-  assert.deepEqual(errors,[],'Browser console/page errors');
+  const unexpectedErrors=errors.filter(error=>!(error.url===injectedScheduleUrl && error.message==='Failed to load resource: the server responded with a status of 502 (Bad Gateway)'));
+  assert.deepEqual(unexpectedErrors,[],'Unexpected browser console/page errors');
   assert.deepEqual(blocked,[],'Unexpected non-loopback requests');
   console.log('PASS Chromium: shared login/logout, H10 schedule summary and inline errors, malformed server response recovery, calendar reapproval, H09 stale save, mobile. No external requests.');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{

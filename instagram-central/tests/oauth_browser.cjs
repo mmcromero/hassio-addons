@@ -32,7 +32,7 @@ async function start(){
   const expected='ig_oauth_state_'+crypto.createHash('sha256').update(nonce).digest('hex').slice(0,32);
   obs.expectedStored=(await ctx.cookies(base+'/oauth/meta/callback')).some(c=>c.name===expected);
   assert.equal(obs.status,['same_https','same_host_other_port','split_cookie_header'].includes(kind)?200:400,kind);
-  const text=await page.locator('body').innerText();assert(text.includes('0.1.18'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
+  const text=await page.locator('body').innerText();assert(text.includes('0.1.19'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
   if(kind==='strip_request_cookie'||kind==='insecure_start'||kind==='strip_set_cookie'||kind==='different_start_host')assert(text.includes('Nenhum cabeçalho Cookie'),kind+' classification');
   if(kind==='rewrite_nonce')assert(text.includes('Cookies chegaram'),kind+' wrong-name classification');
   console.log('PASS probe '+JSON.stringify(obs));await ctx.close();
@@ -80,6 +80,44 @@ async function start(){
  assert.equal(new URL(probe.url()).origin,isolated);
  assert.equal((await control('/observe')).exchanges,proxyBefore+1);
  console.log('PASS proxy HTTPS OAuth: synthetic provider round trip returns to dedicated hostname and existing account store');
+
+ const primaryDigest=(await control('/observe')).primaryDigest;
+ await own.goto(isolated+'/accounts');
+ const contexts=[];
+ for(const [name,user] of [['Second account','second_review'],['Third account','third_review']]){
+  await own.getByLabel('Nome da conta',{exact:true}).fill(name);
+  await own.getByLabel('Usuário do Instagram',{exact:true}).fill('@'+user);
+  await own.getByRole('button',{name:'Adicionar conta',exact:true}).click();
+  await own.waitForURL('**/accounts/*/panel');
+  const accountPage=await workerContext.newPage();await accountPage.goto(own.url());
+  const accountBase=own.url().replace(/\/panel$/,'');
+  const popupPromise=workerContext.waitForEvent('page');
+  await accountPage.getByRole('link',{name:'Conectar Instagram pela Meta',exact:true}).click();
+  const popup=await popupPromise;await popup.getByRole('link',{name:'Voltar à Central'}).waitFor();
+  contexts.push({page:accountPage,popup,base:accountBase,user});
+  await own.goto(isolated+'/accounts');
+ }
+ for(const item of [...contexts].reverse()){
+  await item.popup.getByRole('link',{name:'Voltar à Central'}).click();
+  assert((await item.popup.locator('body').innerText()).includes('Conta @'+item.user+' verificada e autorizada'));
+  assert.equal(await item.popup.getByRole('link',{name:'Voltar ao painel da conta',exact:true}).getAttribute('href'),new URL(item.base).pathname+'/panel');
+  await item.page.reload();assert.equal(await item.page.locator('.account').innerText(),'@'+item.user);
+ }
+ assert.equal((await control('/observe')).primaryDigest,primaryDigest,'primary encrypted credential preserved byte-for-byte');
+ const left=contexts[0].page,right=contexts[1].page;
+ await left.getByRole('link',{name:'Editorial',exact:true}).click();
+ await right.getByRole('link',{name:'Editorial',exact:true}).click();
+ await left.locator('#count-all').filter({hasText:'0'}).waitFor();
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAHUlEQVR4nGNMaljDQC5gIlvnqOZRzaOaRzVTRTMAyc8BtjG4iWEAAAAASUVORK5CYII=','base64');
+ await left.locator('[data-view="library"]').click();
+ await left.locator('#media-input').setInputFiles({name:'synthetic.png',mimeType:'image/png',buffer:image});
+ await left.locator('#media-grid img').waitFor();
+ await right.locator('[data-view="library"]').click();
+ assert.equal(await right.locator('#media-grid img').count(),0,'other account library remains empty');
+ await own.goto(isolated+'/accounts');
+ assert.equal(await own.getByText('Conectada à Meta',{exact:false}).count(),3,'three independently stored account contexts');
+ if(process.env.IG_EVIDENCE_DIR){fs.mkdirSync(process.env.IG_EVIDENCE_DIR,{recursive:true});await own.screenshot({path:path.join(process.env.IG_EVIDENCE_DIR,'accounts.png'),fullPage:true});await left.screenshot({path:path.join(process.env.IG_EVIDENCE_DIR,'account-editorial.png'),fullPage:true});}
+ console.log('PASS multi-account Chromium: registration, two concurrent OAuth contexts, reverse callbacks, isolated Editorial media and preserved primary token');
  await workerContext.close();
  console.log('PASS OAuth Chromium: 9 probe cases, concurrent tabs, config binding. Local HTTPS only; no real Meta/HA.');
 })().catch(error=>{console.error('FAIL OAuth Chromium '+error.name+' '+String(error.message).replace(/https?:\/\/[^\s]+/g,'[local-test-url]').replace(/[A-Za-z0-9_-]{40,}/g,'[synthetic-value]'));process.exitCode=1;}).finally(async()=>{

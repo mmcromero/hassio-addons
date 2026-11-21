@@ -23,6 +23,11 @@ _ADMIN_ACTIONS = frozenset(("check", "subscribe")) | frozenset(
     "editorial:umdoislab:" + action for action in ("upload", "draft", "approve", "schedule", "cancel"))
 
 
+def _valid_action(action):
+    return (isinstance(action, str) and (action in _ADMIN_ACTIONS or action == 'accounts:create' or
+            re.fullmatch(r'(?:editorial:[a-z][a-z0-9_-]{1,39}:(?:upload|draft|approve|schedule|cancel)|meta:[a-z][a-z0-9_-]{1,39}:(?:check|subscribe))', action) is not None))
+
+
 def _valid_password(password):
     return isinstance(password, str) and len(password) >= 16
 
@@ -131,7 +136,7 @@ def admin_csrf_token(cookie_header, password, action, bucket=None):
     """Action-scoped 5-minute CSRF token bound to a browser session and panel key."""
     token = cookie_token(cookie_header)
     if (token is None or not _valid_password(password)
-            or action not in _ADMIN_ACTIONS):
+            or not _valid_action(action)):
         return ""
     bucket = int(time.time() // 300) if bucket is None else int(bucket)
     raw = ("instagram-meta-v1:" + action + ":" + token + ":" + str(bucket)).encode("ascii")

@@ -65,8 +65,10 @@ class OriginConfiguration(unittest.TestCase):
 
     def test_no_listener_key_mount_or_host_port_in_distribution(self):
         cfg=(ROOT/'config.yaml').read_text()
-        for forbidden in ('ports:', 'webui:', 'type: ssl'):
+        for forbidden in ('ports:', 'type: ssl'):
             self.assertNotIn(forbidden,cfg)
+        self.assertIn('ingress: false',cfg)
+        self.assertIn('webui: "https://instagram.romeropi.duckdns.org:8443/panel"',cfg)
         code=(ROOT/'server.py').read_text()
         self.assertNotIn('create_server(',code)
         self.assertNotIn('9443',code)

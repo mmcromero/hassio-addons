@@ -41,9 +41,13 @@ def exchange(code, cfg):
 
 
 server.oauth_meta.exchange_code = exchange
-server.instagram_connection.verify_access = lambda cfg, token: {
-    'business_id': cfg['business_id'], 'account_id': cfg['instagram_account_id'],
-    'username': 'umdoislab', 'verified_at': 1, 'client_business_id': '33333333'}
+def graph(version, path, token, **kwargs):
+    if path == '/me/assigned_instagram_accounts':
+        return {'data':[{'id':'11111111','username':'umdoislab'}, {'id':'22222222','username':'second_review'}, {'id':'33333333','username':'third_review'}]}
+    if path == '/me': return {'client_business_id':'44444444'}
+    raise AssertionError('Unexpected provider operation')
+
+server.instagram_connection.request_graph = graph
 original_connect = socket.socket.connect
 original_dns = socket.getaddrinfo
 
@@ -94,7 +98,7 @@ class Proxy(BaseHTTPRequestHandler):
             raw = ('<!doctype html><title>Provider stub</title><a href="' + html.escape(callback, quote=True) + '">Voltar à Central</a>').encode()
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(raw))); self.end_headers(); self.wfile.write(raw); return
-        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback', '/panel', '/editorial/', '/panel/account-context'):
+        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback', '/panel', '/panel/account-context', '/accounts') and not route.path.startswith(('/accounts/', '/editorial/')):
             self.send_response(404); self.end_headers(); return
         cookie = self.headers.get('Cookie', '')
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https'}
@@ -134,12 +138,12 @@ class Proxy(BaseHTTPRequestHandler):
         self.end_headers(); self.wfile.write(raw)
 
     def do_POST(self):
-        if self.path not in ('/auth/login', '/auth/logout'):
+        if self.path not in ('/auth/login', '/auth/logout', '/accounts') and not self.path.startswith(('/accounts/', '/editorial/')):
             self.send_response(404); self.end_headers(); return
         raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',
                    'Content-Type': self.headers.get('Content-Type', '')}
-        for key in ('Cookie', 'Origin'):
+        for key in ('Cookie', 'Origin', 'X-CSRF-Token'):
             if self.headers.get(key): headers[key] = self.headers[key]
         client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
         try:
@@ -165,7 +169,10 @@ class Control(BaseHTTPRequestHandler):
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
         elif self.path == '/drift': CONFIG['meta_login_config_id'] = '98765432'; data = {}
-        else: data = {**state['obs'], 'exchanges': state['exchanges']}
+        else:
+            primary = server.DATA_DIR / server.oauth_meta.TOKEN_FILENAME
+            data = {**state['obs'], 'exchanges': state['exchanges'],
+                    'primaryDigest': hashlib.sha256(primary.read_bytes()).hexdigest() if primary.exists() else None}
         raw = json.dumps(data).encode(); self.send_response(200); self.send_header('Content-Length', str(len(raw)))
         self.end_headers(); self.wfile.write(raw)
 

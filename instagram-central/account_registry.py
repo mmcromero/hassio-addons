@@ -1,12 +1,13 @@
 """Multi-account identity registry for one Instagram Central installation.
 
 No network, tokens or Meta calls. The existing @umdoislab identity is bootstrapped
-without changing existing message keys or SQLite records. Future account creation
-is an internal operation only; there is deliberately no HTTP registration route.
+without changing existing message keys or SQLite records. Owner-initiated provisioning is explicit; legacy internal entries are not
+exposed or activated by the administrative interface automatically.
 """
 from pathlib import Path
 import re
 import sqlite3
+import secrets
 
 PRIMARY_BUSINESS = "umdoislab"
 _BUSINESS_ID = re.compile(r"[a-z][a-z0-9_-]{1,39}\Z")
@@ -27,16 +28,31 @@ def valid_meta_id(value):
 
 
 def prepare(conn):
-    conn.execute("""CREATE TABLE IF NOT EXISTS instagram_accounts (
-        business_id TEXT PRIMARY KEY,
-        instagram_account_id TEXT UNIQUE,
-        username TEXT NOT NULL,
-        display_name TEXT NOT NULL,
-        enabled INTEGER NOT NULL CHECK(enabled IN (0, 1)),
-        connection_state TEXT NOT NULL DEFAULT 'pending',
-        permissions_json TEXT NOT NULL DEFAULT '[]',
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )""")
+    owns_transaction = not conn.in_transaction
+    if owns_transaction:
+        conn.execute('BEGIN IMMEDIATE')
+    try:
+        conn.execute("""CREATE TABLE IF NOT EXISTS instagram_accounts (
+            business_id TEXT PRIMARY KEY,
+            instagram_account_id TEXT UNIQUE,
+            username TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            enabled INTEGER NOT NULL CHECK(enabled IN (0, 1)),
+            connection_state TEXT NOT NULL DEFAULT 'pending',
+            permissions_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )""")
+        # Additive provisioning marker: old internal/synthetic entries do not become
+        # operational merely because this version introduces account administration.
+        columns = {row[1] for row in conn.execute('PRAGMA table_info(instagram_accounts)')}
+        if 'operational' not in columns:
+            conn.execute('ALTER TABLE instagram_accounts ADD COLUMN operational INTEGER NOT NULL DEFAULT 0')
+        if owns_transaction:
+            conn.commit()
+    except BaseException:
+        if owns_transaction:
+            conn.rollback()
+        raise
 
 
 def register(conn, business_id, instagram_account_id, username, display_name,
@@ -137,3 +153,56 @@ def credential_root(data_root, business_id):
         raise RegistryError("Invalid business identifier")
     base = Path(data_root)
     return base if business_id == PRIMARY_BUSINESS else base / "accounts" / business_id
+
+
+def provision(conn, username, display_name):
+    """Admin-initiated pending identity, bound to an official ID only by OAuth."""
+    if not isinstance(username, str) or not re.fullmatch(r'[A-Za-z0-9._]{1,30}', username.lstrip('@')):
+        raise RegistryError('Invalid Instagram username')
+    username = username.lstrip('@').lower()
+    if not isinstance(display_name, str) or not 1 <= len(display_name.strip()) <= 120:
+        raise RegistryError('Invalid account name')
+    prepare(conn)
+    # Serialize the duplicate check and INSERT; legacy rows are preserved.
+    if not conn.in_transaction:
+        conn.execute('BEGIN IMMEDIATE')
+    if conn.execute('SELECT 1 FROM instagram_accounts WHERE lower(username)=?', (username,)).fetchone():
+        raise RegistryError('Account already registered')
+    if conn.execute('SELECT COUNT(*) FROM instagram_accounts').fetchone()[0] >= 100:
+        raise RegistryError('Account limit reached')
+    business_id = 'ig_' + secrets.token_hex(8)
+    conn.execute('''INSERT INTO instagram_accounts
+      (business_id,instagram_account_id,username,display_name,enabled,operational)
+      VALUES (?,NULL,?,?,1,1)''', (business_id, username, display_name.strip()))
+    return business_id
+
+
+def operational_account(conn, business_id):
+    account = require_business(conn, business_id)
+    row = conn.execute('SELECT operational,display_name FROM instagram_accounts WHERE business_id=?',
+                       (business_id,)).fetchone()
+    if business_id != PRIMARY_BUSINESS and row[0] != 1:
+        raise RegistryError('Account not provisioned for administration')
+    return {**account, 'display_name': row[1]}
+
+
+def administrative_accounts(conn):
+    prepare(conn)
+    rows = conn.execute('''SELECT business_id FROM instagram_accounts WHERE enabled=1
+      AND (business_id=? OR operational=1) ORDER BY business_id<>?, created_at, business_id''',
+                        (PRIMARY_BUSINESS, PRIMARY_BUSINESS)).fetchall()
+    return [operational_account(conn, row[0]) for row in rows]
+
+
+def bind_verified(conn, business_id, account_id, username):
+    account = operational_account(conn, business_id)
+    if (not isinstance(account_id, str) or not re.fullmatch(r'[0-9]{8,30}', account_id)
+            or not isinstance(username, str) or username.lower().lstrip('@') != account['username'].lower()):
+        raise RegistryError('Verified identity does not match the intended account')
+    if account['instagram_account_id'] not in (None, account_id):
+        raise RegistryError('Account remapping refused')
+    try:
+        conn.execute('UPDATE instagram_accounts SET instagram_account_id=? WHERE business_id=?',
+                     (account_id, business_id))
+    except sqlite3.IntegrityError:
+        raise RegistryError('Instagram identity already belongs to another account') from None

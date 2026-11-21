@@ -66,20 +66,54 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
 def verify_access(cfg, token, opener=urlopen):
     """Check exact IG asset assigned to a Unified Login system-user token."""
     expected_id = cfg.get("instagram_account_id")
-    if not isinstance(expected_id, str) or not IG_ACCOUNT.fullmatch(expected_id):
+    discover = cfg.get('allow_account_discovery') is True and expected_id is None
+    if not discover and (not isinstance(expected_id, str) or not IG_ACCOUNT.fullmatch(expected_id)):
         raise ConnectionError("Instagram account not configured")
-    version = cfg.get("meta_graph_version")
-    accounts = request_graph(version, "/me/assigned_instagram_accounts", token,
-        fields={"fields": "id,username", "limit": "100"}, opener=opener)
-    entries = accounts.get("data")
-    if not isinstance(entries, list) or len(entries) > 100:
-        raise ConnectionError("Invalid Meta account list")
-    matches = [item for item in entries if isinstance(item, dict)
-               and item.get("id") == expected_id]
-    if len(matches) != 1:
-        raise ConnectionError("Expected Instagram account was not granted")
-    username = matches[0].get("username")
     expected_username = str(cfg.get("instagram_expected_username") or "umdoislab").lower().lstrip("@")
+    if not re.fullmatch(r'[a-z0-9._]{1,30}', expected_username):
+        raise ConnectionError('Instagram account name not configured')
+    version = cfg.get("meta_graph_version")
+    candidates = {}
+    after = None
+    seen = set()
+    complete = False
+    for _ in range(20):
+        fields = {"fields": "id,username", "limit": "100"}
+        if after is not None:
+            fields['after'] = after
+        accounts = request_graph(version, "/me/assigned_instagram_accounts", token, fields=fields, opener=opener)
+        entries = accounts.get("data")
+        if not isinstance(entries, list) or len(entries) > 100:
+            raise ConnectionError("Invalid Meta account list")
+        for item in entries:
+            if not isinstance(item, dict):
+                continue
+            item_id, username = item.get('id'), item.get('username')
+            match = (isinstance(username, str) and username.lower().lstrip('@') == expected_username) if discover else item_id == expected_id
+            if match:
+                if not isinstance(item_id, str) or not IG_ACCOUNT.fullmatch(item_id):
+                    raise ConnectionError('Invalid Instagram identity')
+                candidates[item_id] = item
+        paging = accounts.get('paging') or {}
+        if not isinstance(paging, dict):
+            raise ConnectionError('Invalid account pagination')
+        cursors = paging.get('cursors') or {}
+        if not isinstance(cursors, dict):
+            raise ConnectionError('Invalid account pagination')
+        cursor = cursors.get('after')
+        if not entries or (not cursor and not paging.get('next')):
+            complete = True
+            break
+        if not isinstance(cursor, str) or not 1 <= len(cursor) <= 2048 or cursor in seen:
+            raise ConnectionError('Invalid or repeated account cursor')
+        seen.add(cursor)
+        after = cursor
+    if not complete:
+        raise ConnectionError('Account discovery exceeded safety limit')
+    if len(candidates) != 1:
+        raise ConnectionError("Expected Instagram account was not granted")
+    match = next(iter(candidates.values()))
+    expected_id, username = match['id'], match.get('username')
     if not isinstance(username, str) or username.lower().lstrip("@") != expected_username:
         raise ConnectionError("Instagram account name mismatch")
     business = request_graph(version, "/me", token,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Instagram Central isolated ingress. No Meta send API, n8n calls or WhatsApp access."""
+"""Instagram Central internal service behind the existing HTTPS reverse proxy. No Meta send API, n8n calls or WhatsApp access."""
 import base64
 import hashlib
 import html
@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import secrets
+import re
 from contextlib import contextmanager
 from datetime import timedelta
 import sqlite3
@@ -19,6 +20,7 @@ from policy import prepare_decision
 import oauth_meta
 import instagram_connection
 import account_registry
+import account_management
 import editorial_core
 import editorial_http
 import panel_login
@@ -30,7 +32,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.18"
+APP_VERSION = "0.1.19"
 
 
 def settings():
@@ -481,15 +483,30 @@ def editorial_store_for_business(business_id=account_registry.PRIMARY_BUSINESS):
 
 
 def meta_configuration_for_business(business_id=account_registry.PRIMARY_BUSINESS):
-    """Return scoped settings; future tenants inherit no active integration switches."""
+    """Return scoped settings; only owner-provisioned accounts share the Meta app."""
     with database() as conn:
         account_registry.ensure_primary(conn, settings().get("instagram_account_id"))
         account = account_registry.require_business(conn, business_id)
+        row = conn.execute('SELECT operational,display_name FROM instagram_accounts WHERE business_id=?', (business_id,)).fetchone()
     cfg = dict(settings())
     cfg["business_id"] = business_id
     cfg["instagram_account_id"] = account["instagram_account_id"]
     cfg["instagram_expected_username"] = account["username"]
-    if business_id != account_registry.PRIMARY_BUSINESS:
+    cfg['account_display_name'] = row[1]
+    cfg['account_path'] = account_management.prefix(business_id)
+    if business_id != account_registry.PRIMARY_BUSINESS and row[0] == 1:
+        # Deliberate same-app onboarding by the installation owner, not inheritance
+        # by legacy/internal records. Never share bridge or webhook activation.
+        cfg = {key: cfg[key] for key in ('meta_app_id', 'meta_login_config_id', 'meta_app_secret',
+               'meta_graph_version', 'meta_oauth_redirect_uri', 'public_base_url', 'meta_oauth_enabled',
+               'panel_password', 'business_id', 'instagram_account_id', 'instagram_expected_username',
+               'account_display_name', 'account_path') if key in cfg}
+        cfg['bridge_secret'] = ''
+        cfg['meta_verify_token'] = ''
+        cfg['ingress_enabled'] = False
+        cfg['drafts_enabled'] = False
+        cfg['allow_account_discovery'] = account['instagram_account_id'] is None
+    elif business_id != account_registry.PRIMARY_BUSINESS:
         # Never reuse Umdoislab's legacy bridge secret or active switches.
         # Secondary OAuth and webhooks require explicit per-tenant configuration.
         cfg = {key: cfg[key] for key in ("meta_app_id", "meta_login_config_id", "meta_graph_version",
@@ -551,14 +568,14 @@ def render_connection_section(cfg, summary):
     except ValueError:
         origin, origin_matches = "", False
     if origin:
-        actions.append('<a href="' + html.escape(origin + "/panel", quote=True)
+        actions.append('<a href="' + html.escape(origin + cfg.get("account_path", "") + "/panel", quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a>')
     if not origin_matches:
         actions.append('<p>Configure o retorno OAuth na mesma URL pública HTTPS da Central antes de conectar.</p>')
     if summary["oauthReady"] and not summary["accountVerified"] and origin_matches:
         # A browser session established via the same HTTPS hostname is required
         # for the public proxy route to recognize the session cookie.
-        start_url = url[:-len("/oauth/meta/callback")] + "/oauth/meta/start"
+        start_url = url[:-len("/oauth/meta/callback")] + cfg.get("account_path", "") + "/oauth/meta/start"
         actions.append('<a href="' + html.escape(start_url + "?probe=1", quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Testar navegador e proxy (sem Meta)</a>')
         actions.append('<a href="' + html.escape(start_url, quote=True)
@@ -576,7 +593,7 @@ def render_connection_section(cfg, summary):
     checklist = "".join("<li>" + label + ": " + ("configurado" if ready else "pendente")
                         + "</li>" for label, ready in setup)
     return ("""<section class="panel connection-panel" aria-label="Conexão com Instagram">
-       <h2>Conexão com o Instagram</h2><p>Conta: <strong>@umdoislab</strong>
+       <h2>Conexão com o Instagram</h2><p>Conta: <strong>@""" + html.escape(str(cfg.get("instagram_expected_username") or "umdoislab")) + """</strong>
        · ID: <code>""" + name + """</code></p>
        <ul>""" + flags + """</ul>
        <details><summary>Configuração necessária</summary><ul>""" + checklist + """</ul>
@@ -605,8 +622,9 @@ def _meta_action_body(raw):
 def render_panel(cfg=None):
     """Escaped local-only panel, with no Meta send or browser scripts."""
     cfg = cfg or {}
-    account_id = primary_meta_id(cfg)
     with database() as conn:
+        account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
+        account_id = account_registry.require_business(conn, cfg.get('business_id', account_registry.PRIMARY_BUSINESS))['instagram_account_id']
         rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
           i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
           COALESCE(d.draft_text, ''), COALESCE(d.status, '')
@@ -728,15 +746,16 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
  <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
  <div class="section-label">CENTRAL INSTAGRAM</div>
  <nav class="nav" aria-label="Módulos">
-  <a class="nav-link active" aria-current="page" href="./"><span>◉</span> Mensagens</a>
-  <a class="nav-link" href="editorial/"><span>✎</span> Editorial</a>
+  <a class="nav-link active" aria-current="page" href="./"><span aria-hidden="true">◉</span> Mensagens</a>
+  <a class="nav-link" href="editorial/"><span aria-hidden="true">✎</span> Editorial</a>
+  <a class="nav-link" href="/accounts"><span aria-hidden="true">◎</span> Contas</a>
  </nav>
  <div class="sidebar-foot"><span class="status-led"></span><div><strong>Atendimento local</strong><small>Sem envio automático</small></div></div>
 </aside>
 <main id="principal" class="main">
  <header class="topbar">
-  <div class="crumb">Umdoislab <span>/</span> <strong>Mensagens</strong></div>
-  <div class="top-actions"><span class="account">@umdoislab</span>
+  <div class="crumb">""" + html.escape(str(cfg.get("account_display_name") or "Umdoislab")) + """ <span>/</span> <strong>Mensagens</strong></div>
+  <div class="top-actions"><span class="account">@""" + html.escape(str(cfg.get("instagram_expected_username") or "umdoislab")) + """</span>
   <form class="logout-form" method="post" action="auth/logout"><button type="submit" class="btn quiet">Sair</button></form>
   </div>
  </header>
@@ -839,18 +858,108 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(raw)
 
-    def do_GET(self):
+    def request_business(self):
+        return getattr(self, 'route_business', account_registry.PRIMARY_BUSINESS)
+
+    def request_configuration(self):
+        return meta_configuration_for_business(self.request_business())
+
+    def meta_csrf_action(self, action):
+        business = self.request_business()
+        return action if business == account_registry.PRIMARY_BUSINESS else 'meta:' + business + ':' + action
+
+    def account_route(self, method):
+        """Authenticate explicit account paths before dispatch; no global selection."""
+        self.route_business = account_registry.PRIMARY_BUSINESS
+        self.account_prefix = ''
         route = urlsplit(self.path)
-        if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, settings(),
-                panel_session_authorized(self.headers, settings()), editorial_store_for_business):
-            return
-        if route.path == "/panel/account-context" and not route.query:
+        if route.path == '/accounts' and not route.query:
             cfg = settings()
             if not panel_session_authorized(self.headers, cfg):
+                self.respond(403, {'error': 'authentication required'})
+                return False
+            with database() as conn:
+                account_registry.ensure_primary(conn, cfg.get('instagram_account_id'))
+            invalid = False
+            if method == 'POST':
+                try:
+                    lengths = self.headers.get_all('Content-Length', [])
+                    if self.headers.get('Transfer-Encoding') or len(lengths) != 1:
+                        raise ValueError()
+                    size = int(lengths[0])
+                    if not 0 < size <= 4096 or self.headers.get('Content-Type', '').split(';')[0] != 'application/x-www-form-urlencoded':
+                        raise ValueError()
+                    fields = account_management.parse_registration(self.rfile.read(size))
+                    if fields is None or not panel_login.admin_csrf_valid(self.headers.get('Cookie', ''), cfg.get('panel_password'), 'accounts:create', fields['csrf']):
+                        self.respond(403, {'error': 'invalid account action or CSRF'})
+                        return False
+                    with database() as conn:
+                        business = account_registry.provision(conn, fields['username'], fields['display_name'])
+                    self.send_response(303)
+                    self.send_header('Location', account_management.prefix(business) + '/panel')
+                    self.send_header('Cache-Control', 'no-store')
+                    self.send_header('Content-Length', '0')
+                    self.end_headers()
+                    return False
+                except account_registry.RegistryError:
+                    invalid = True
+                except (ValueError, OSError):
+                    self.respond(400, {'error': 'invalid account form'})
+                    return False
+            with database() as conn:
+                accounts = account_registry.administrative_accounts(conn)
+            page = account_management.render(accounts, cfg, self.headers.get('Cookie', ''),
+                    lambda business: connection_summary(meta_configuration_for_business(business)), error=invalid)
+            self.respond(409 if invalid else 200, page, 'text/html')
+            return False
+        if not route.path.startswith('/accounts/'):
+            return True
+        if not panel_session_authorized(self.headers, settings()):
+            self.respond(403, {'error': 'authentication required'})
+            return False
+        match = re.fullmatch(r'/accounts/([a-z][a-z0-9_-]{1,39})(/.*)?', route.path)
+        if not match:
+            self.respond(404, {'error': 'account route not found'})
+            return False
+        business, suffix = match.groups()
+        try:
+            with database() as conn:
+                account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
+                account_registry.operational_account(conn, business)
+        except account_registry.RegistryError:
+            self.respond(404, {'error': 'account unavailable'})
+            return False
+        if suffix is None:
+            self.send_response(303)
+            self.send_header('Location', account_management.prefix(business) + '/panel')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return False
+        allowed = ({'/', '/panel', '/panel/account-context', '/oauth/meta/status', '/oauth/meta/start'} if method == 'GET'
+                   else {'/panel/handoff', '/panel/meta/check', '/panel/meta/subscribe', '/auth/logout'})
+        if suffix not in allowed and suffix != '/editorial' and not suffix.startswith('/editorial/'):
+            self.respond(404, {'error': 'account route not found'})
+            return False
+        self.route_business = business
+        self.account_prefix = account_management.prefix(business)
+        self.path = suffix + ('?' + route.query if route.query else '')
+        return True
+
+    def do_GET(self):
+        if not self.account_route('GET'):
+            return
+        route = urlsplit(self.path)
+        if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, self.request_configuration(),
+                panel_session_authorized(self.headers, settings()), editorial_store_for_business,
+                business_id=self.request_business()):
+            return
+        if route.path == "/panel/account-context" and not route.query:
+            cfg = self.request_configuration()
+            if not panel_session_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
-            account_id = primary_meta_id(cfg)
+            account_id = cfg.get('instagram_account_id')
             return self.respond(200, {
-                "businessId": account_registry.PRIMARY_BUSINESS,
+                "businessId": self.request_business(),
                 "instagramAccountId": account_id,
                 "editorialCorePrepared": True,
                 "editorialUIIntegrated": True,
@@ -859,7 +968,7 @@ class Handler(BaseHTTPRequestHandler):
             })
         if route.path == "/oauth/meta/status" and not route.query:
             try:
-                cfg = meta_configuration_for_business()
+                cfg = self.request_configuration()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
             if not panel_authorized(self.headers, cfg):
@@ -873,7 +982,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(200, summary)
         if route.path == "/oauth/meta/start" and route.query in ("", "probe=1"):
             try:
-                cfg = meta_configuration_for_business()
+                cfg = self.request_configuration()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
             if not self.oauth_origin_allowed(cfg):
@@ -905,7 +1014,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if route.path == "/oauth/meta/callback":
             try:
-                cfg = meta_configuration_for_business()
+                cfg = self.request_configuration()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
             if not self.oauth_origin_allowed(cfg):
@@ -942,12 +1051,18 @@ class Handler(BaseHTTPRequestHandler):
                     route.query, self.headers.get("Cookie", ""))
                 callback_stage = "consume_state"
                 with database() as conn:
+                    business = oauth_meta.business_for_state(conn, state)
+                cfg = meta_configuration_for_business(business)
+                with database() as conn:
                     oauth_meta.consume_state(conn, state, cfg=cfg)
                 callback_stage = "exchange_code"
                 credential = oauth_meta.exchange_code(code, cfg)
                 callback_stage = "verify_instagram_account"
                 identity = instagram_connection.verify_access(
                     cfg, credential["access_token"])
+                if cfg['business_id'] != account_registry.PRIMARY_BUSINESS:
+                    with database() as conn:
+                        account_registry.bind_verified(conn, cfg['business_id'], identity['account_id'], identity['username'])
                 credential.update(identity)
                 credential["business_id"] = cfg["business_id"]
                 callback_stage = "store_credential"
@@ -985,18 +1100,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error": "OAuth unavailable"})
             # No token, authorization code, client ID, or secret is reflected to the client.
             return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
-                "<title>Instagram</title><body>Conta @umdoislab verificada e autorizada. "
+                "<title>Instagram</title><body>Conta @" + html.escape(cfg['instagram_expected_username']) + " verificada e autorizada. "
                 "Volte ao painel para configurar a assinatura de mensagens. "
-                "Nenhuma mensagem foi enviada.</body></html>", "text/html")
+                "Nenhuma mensagem foi enviada.<p><a href='" + account_management.prefix(cfg['business_id']) +
+                "/panel'>Voltar ao painel da conta</a></p></body></html>", "text/html")
         if self.path in ("/", "/panel"):
-            cfg = settings()
+            cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")
             page = render_panel(cfg)
             csrf_check = panel_login.admin_csrf_token(
-                self.headers.get("Cookie", ""), cfg.get("panel_password"), "check")
+                self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("check"))
             csrf_subscribe = panel_login.admin_csrf_token(
-                self.headers.get("Cookie", ""), cfg.get("panel_password"), "subscribe")
+                self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("subscribe"))
             if csrf_check:
                 controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button>Verificar acesso Meta</button></form>'
                 if (connection_summary(cfg)["accountVerified"] and
@@ -1028,13 +1144,16 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "not found"})
 
     def do_POST(self):
+        if not self.account_route('POST'):
+            return
         route = urlsplit(self.path)
-        if route.path.startswith("/editorial") and editorial_http.handle(self, "POST", route, settings(),
-                panel_session_authorized(self.headers, settings()), editorial_store_for_business):
+        if route.path.startswith("/editorial") and editorial_http.handle(self, "POST", route, self.request_configuration(),
+                panel_session_authorized(self.headers, settings()), editorial_store_for_business,
+                business_id=self.request_business()):
             return
         if self.path in ("/panel/meta/check", "/panel/meta/subscribe"):
             try:
-                cfg = meta_configuration_for_business()
+                cfg = self.request_configuration()
             except account_registry.RegistryError:
                 return self.respond(503, {"error": "account context unavailable"})
             if not panel_session_authorized(self.headers, cfg):
@@ -1051,12 +1170,12 @@ class Handler(BaseHTTPRequestHandler):
             candidate = _meta_action_body(self.rfile.read(size))
             if not panel_login.admin_csrf_valid(
                     self.headers.get("Cookie", ""), cfg.get("panel_password"),
-                    action, candidate):
+                    self.meta_csrf_action(action), candidate):
                 return self.respond(403, {"error": "invalid CSRF"})
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
             try:
-                credential = _meta_credential()
+                credential = _meta_credential(self.request_business())
                 if credential is None or credential.get("business_id", "umdoislab") != cfg["business_id"]:
                     raise instagram_connection.ConnectionError("No token available")
                 if action == "check":
@@ -1073,7 +1192,7 @@ class Handler(BaseHTTPRequestHandler):
                     OSError, ValueError):
                 return self.respond(422, {"error": "Meta access or subscription not verified"})
             self.send_response(303)
-            self.send_header("Location", "../panel")
+            self.send_header("Location", account_management.prefix(self.request_business()) + "/panel")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
@@ -1122,7 +1241,7 @@ class Handler(BaseHTTPRequestHandler):
             except (OSError, sqlite3.Error, ValueError):
                 pass  # Still clear the browser cookie.
             self.send_response(303)
-            self.send_header("Location", "../panel")
+            self.send_header("Location", "/panel" if self.account_prefix else "../panel")
             self.send_header("Set-Cookie", panel_login.clear_cookie_header(
                 secure=_external_https(self.headers)))
             self.send_header("Cache-Control", "no-store")
@@ -1130,7 +1249,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if self.path == "/panel/handoff":
-            cfg = settings()
+            cfg = self.request_configuration()
             if not panel_authorized(self.headers, cfg):
                 return self.respond(401, {"error": "authentication required"})
             if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
@@ -1142,7 +1261,7 @@ class Handler(BaseHTTPRequestHandler):
             if size <= 0 or size > 4096:
                 return self.respond(413, {"error": "size not allowed"})
             data = parse_action(self.rfile.read(size), cfg.get("panel_password", ""))
-            if not data or not set_handoff(data):
+            if not data or data["accountId"] != cfg.get("instagram_account_id") or not set_handoff(data):
                 return self.respond(403, {"error": "invalid action or CSRF"})
             self.send_response(303)
             self.send_header("Location", "../panel")

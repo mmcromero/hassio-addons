@@ -83,9 +83,19 @@ server {{
                      '        limit_req zone=ig_central_login burst=5 nodelay;\n'
                      '        limit_req_status 429;\n')
         if path == '/editorial/api/media': extra = '        client_max_body_size 25m;\n'
+        if path == '/oauth/meta/callback': extra = '        proxy_read_timeout 60s;\n'
         result += location('= '+path, methods, extra)
-    result += location('~ "^/editorial/media/[0-9a-f]{32}$"', 'GET')
-    result += location('~ "^/editorial/api/posts/[0-9a-f]{32}/(approve|schedule|cancel)$"', 'POST')
+    result += location('= /accounts', 'GET POST', '        client_max_body_size 4k;\n')
+    account_id = r'[a-z][a-z0-9_-]{1,39}'
+    result += location('~ "^/accounts/' + account_id + '$"', 'GET')
+    for path, methods in routes:
+        if path in ('/auth/login', '/oauth/meta/callback'):
+            continue
+        extra = '        client_max_body_size 25m;\n' if path == '/editorial/api/media' else ''
+        result += location('~ "^/accounts/' + account_id + re.escape(path) + '$"', methods, extra)
+    for stem in ('', '/accounts/' + account_id):
+        result += location('~ "^' + stem + '/editorial/media/[0-9a-f]{32}$"', 'GET')
+        result += location('~ "^' + stem + '/editorial/api/posts/[0-9a-f]{32}/(approve|schedule|cancel)$"', 'POST')
     return result + '    location / { return 404; }\n}\n'
 
 

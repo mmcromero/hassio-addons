@@ -273,6 +273,18 @@ def consume_state(conn, state, now=None, *, cfg=None):
         raise OAuthError("OAuth state expired, already used or configuration changed")
 
 
+
+def business_for_state(conn, state, now=None):
+    """Resolve callback context from a validated browser-bound state, not UI selection."""
+    now = int(time.time()) if now is None else int(now)
+    prepare_schema(conn)
+    digest = hashlib.sha256(state.encode('ascii')).hexdigest()
+    row = conn.execute('''SELECT business_id FROM meta_oauth_states WHERE digest=?
+      AND consumed_at IS NULL AND expires_at>=?''', (digest, now)).fetchone()
+    if row is None:
+        raise OAuthError('OAuth state expired or already used')
+    return row[0]
+
 def exchange_code(code, cfg, opener=None):
     """Only one fixed official Graph endpoint; no arbitrary callback URLs."""
     if not is_ready(cfg):
