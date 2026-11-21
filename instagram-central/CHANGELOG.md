@@ -1,11 +1,12 @@
-## Evidência de homologação — probe 0.1.14 falhou no navegador — 21/11/2026
+## Incidente de homologação — cookie probe 0.1.14 ausente — 20/11/2026
 
-- O Home Assistant mostra a versão `0.1.14` em execução.
-- O proprietário executou **Testar navegador e proxy (sem Meta)**. O navegador chegou a `/oauth/meta/callback?probe=...`, mas recebeu `Cookie não retornou corretamente. Verifique navegador e proxy antes da autorização Meta.`
-- No código, essa resposta é emitida quando `check_cookie_probe()` lança `OAuthError`; ainda não distingue, na tela, cookie ausente, duplicado, divergente ou nonce inválido.
-- O log registra a causa fixa (`OAuth cookie probe failed: ...`) e `host_ok`/`https_ok`, sem registrar nonce ou valor do cookie. A linha do log ainda não foi coletada.
-- A falha mostra que o teste automatizado anterior não reproduziu o transporte real do navegador: o teste HTTP injeta manualmente o cabeçalho `Cookie`, em vez de validar que o navegador armazenou e devolveu o `Set-Cookie` após o redirecionamento 302.
-- **Próxima ação:** coletar a linha `OAuth cookie probe failed` nos logs do add-on e corrigir o ponto comprovado. Não alterar NGINX/Ingress nem opções por tentativa. Não repetir OAuth real. Mensagens e Editorial permanecem preservados.
+- **Evidência do proprietário:** `OAuth cookie probe failed: OAuth cookie probe missing (host_ok=True, https_ok=True)`.
+- Host público e encaminhamento HTTPS foram reconhecidos pelo handler. O parser não encontrou o cookie com o nome derivado do nonce. Isso não prova se o navegador não armazenou, não enviou, se um intermediário removeu ou se o nome recebido divergiu.
+- **Lacuna dos testes:** `tests/test_http.py` extrai `Set-Cookie` e injeta manualmente `Cookie` na callback. Não reproduz o armazenamento e o envio automático do cookie por um navegador real após o 302.
+- **Evento separado:** `Meta OAuth callback rejected at stage=exchange_code: Meta authorization exchange failed`. Como o caminho do probe retorna antes da troca, essa mensagem pertence a outra callback. Ela passou por parse/consumo do state e falhou depois, na troca do código. Não há timestamp/correlation ID para ordenar os eventos nem detalhe da resposta original da Meta.
+- **Ação:** análise controlada do Codex, somente leitura e testes offline sintéticos; sem mudança em HA, NGINX, Ingress, credenciais ou opções; sem chamada Graph real, novo OAuth, webhook, Direct, respostas automáticas ou publicação.
+- Relatório detalhado: [INCIDENTE-OAUTH-COOKIE-PROBE-20261120.md](../docs/instagram-central/INCIDENTE-OAUTH-COOKIE-PROBE-20261120.md).
+
 ## 0.1.14 — probe usa o mesmo cookie de estado do OAuth — 21/11/2026
 
 - **Incidente:** após a atualização relatada para 0.1.13, o callback real continuou falhando em `parse_callback` com `OAuth browser state mismatch`, embora `redirect_authority_match=True` e `forwarded_https=True`.
