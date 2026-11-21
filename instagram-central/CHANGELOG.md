@@ -6,7 +6,10 @@
 - **Identificação da versão:** `/health` passa a retornar `version: 0.1.14`; a página de probe informa a versão em execução, para confirmar que o Supervisor carregou a candidata.
 - **Testes:** acrescentada cobertura unitária e HTTP para nome/valor derivados do state, cookie de outra tentativa, valor divergente, atributos e marcador de versão.
 - **Segurança e escopo:** mantém `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/oauth/meta/callback`; sem mudança de NGINX, Ingress, opções, credenciais, banco, webhook, Direct, respostas automáticas ou publicações.
-- **Publicação:** PR #67 mesclado em `main` em 21/11/2026, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`. O workflow geral `Validar add-ons` passou nos checks de catálogo, mas os jobs ARM64 foram ignorados. A suíte da Central e o build ARM64 não foram executados. Instalação/atualização e homologação no HA continuam pendentes; a consulta de estado via credencial HA no n8n retornou HTTP 401. Não repetir OAuth real.
+- **Publicação:** PR #67 mesclado em `main` em 21/11/2026, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`.
+- **Instalação:** tela de informações do Home Assistant consultada em 21/11/2026 mostra `Versão atual: 0.1.14` e estado `Em execução`. O manifesto não declara imagem pré-compilada; o Supervisor constrói pelo Dockerfile, que executa `py_compile` e `unittest` antes do runtime. O serviço em execução confirma que o gate de build foi ultrapassado; os logs individuais dos testes não foram capturados nesta consulta.
+- **Homologação restante:** executar no navegador autenticado **Testar navegador e proxy (sem Meta)**. Não repetir OAuth real.
+- **Consulta Supervisor via n8n:** workflow de leitura recebeu HTTP 401 com as credenciais disponíveis; não foi usado para confirmar a instalação. A confirmação foi feita pela tela Info do add-on no Home Assistant.
 
 ## 0.1.13 — isolamento do cookie de estado OAuth por tentativa — 20/11/2026
 
