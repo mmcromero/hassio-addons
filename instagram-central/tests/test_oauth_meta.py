@@ -141,8 +141,23 @@ class OAuthTests(unittest.TestCase):
         self.assertEqual(params["code"], ["dummy-test-code"])
         self.assertEqual(params["client_id"], [CONFIG["meta_app_id"]])
         self.assertEqual(params["client_secret"], [CONFIG["meta_app_secret"]])
+        self.assertEqual(params["redirect_uri"], [CONFIG["meta_oauth_redirect_uri"]])
         self.assertNotIn("config_id", params)
         self.assertIsNone(sent["req"].data)
+
+    def test_graph_exchange_requires_and_includes_redirect_uri(self):
+        """Regression test: Meta Graph /oauth/access_token requires redirect_uri identical to dialog."""
+        captured = {}
+        def opener(req, timeout):
+            captured["url"] = req.full_url
+            return FakeResponse(json.dumps({"access_token": "T" * 40, "expires_in": 3600}).encode())
+        res = oauth.exchange_code("code-123", CONFIG, opener=opener)
+        self.assertEqual(res["access_token"], "T" * 40)
+        query = parse_qs(urlsplit(captured["url"]).query)
+        self.assertEqual(query.get("redirect_uri"), [CONFIG["meta_oauth_redirect_uri"]])
+        self.assertEqual(query.get("client_id"), [CONFIG["meta_app_id"]])
+        self.assertEqual(query.get("client_secret"), [CONFIG["meta_app_secret"]])
+        self.assertEqual(query.get("code"), ["code-123"])
 
     def test_graph_error_and_oversized_response(self):
         def bad(*args, **kwargs):

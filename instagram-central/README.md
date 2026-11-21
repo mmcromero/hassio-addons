@@ -1,15 +1,15 @@
-# Central Instagram Umdoislab — candidata 0.1.10 (diagnóstico OAuth)
+# Central Instagram Umdoislab — versão 0.1.11 (troca OAuth Meta)
 
-**Estado:** candidata 0.1.10 preparada na fonte privada para distribuição e homologação. A versão 0.1.9 já foi utilizada no Home Assistant para testar o fluxo real de Meta; a URL de webhook foi verificada, mas o callback OAuth retornou erro genérico `OAuth refused or expired` e não concluiu a verificação da conta. A 0.1.10 abre o login Meta em nova aba e acrescenta diagnóstico seguro por etapa. **Não declarar OAuth, mensagens, stories ou posts homologados.** Mensagens e Editorial preservam o mesmo login e Ingress.
+**Estado:** versão 0.1.11 preparada para distribuição e homologação. Corrige a omissão de `redirect_uri` na requisição à Graph API (`/oauth/access_token`), necessária para concluir a troca de código por token e verificação da conta Meta.
 
-- Repositório privado: `mmcromero/instagram-automacoes`.
-- Branch do patch: `feat/instagram-editorial-ux-patch-001` (deriva da candidata privada 0.1.7).
-- Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
-- Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
-- Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
+## Correção 0.1.11 — inclusão de redirect_uri na troca OAuth
 
+- Inclusão do parâmetro obrigatório `redirect_uri` na troca do código de autorização Meta (`oauth_meta.exchange_code`).
+- Preservação da gravação criptografada multi-contas via `account_registry.credential_root`.
+- Registro seguro do motivo de rejeição em `verify_instagram_account` para diagnóstico aprofundado sem vazamento de segredos.
+- Testes automatizados de regressão cobrindo o envio e conformidade de `redirect_uri`.
 
-## Candidata 0.1.10 — retorno OAuth e nova aba
+## Histórico 0.1.10 — retorno OAuth e nova aba
 
 - Link externo da Meta usa nova aba e `rel="noopener noreferrer"` para não abrir login dentro do iframe do Home Assistant.
 - Logs locais do callback identificam a **etapa** da falha sem exibir URL com `code`, `state`, cookies, credenciais ou dados retornados pela Meta.
