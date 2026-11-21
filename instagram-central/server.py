@@ -8,8 +8,6 @@ import json
 import logging
 import os
 import secrets
-import ssl
-import threading
 from contextlib import contextmanager
 from datetime import timedelta
 import sqlite3
@@ -24,7 +22,7 @@ import account_registry
 import editorial_core
 import editorial_http
 import panel_login
-import standalone_https
+import origin_configuration
 from urllib.parse import parse_qs, urlsplit
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
@@ -32,7 +30,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.17"
+APP_VERSION = "0.1.18"
 
 
 def settings():
@@ -361,7 +359,7 @@ def render_login(cfg=None, invalid=False, locked=False):
     """Own HTML form. Chrome can offer to save its standard username/password."""
     cfg = cfg or {}
     try:
-        origin = standalone_https.public_origin(cfg)
+        origin = origin_configuration.public_origin(cfg)
     except ValueError:
         origin = ""
     standalone_link = ('<p><a href="' + html.escape(origin + '/panel', quote=True) +
@@ -425,12 +423,10 @@ def _login_form_fields(raw):
     return fields["username"][0], fields["password"][0]
 
 
-def _external_https(headers, native_tls=False):
+def _external_https(headers):
     # Browsers send their external Origin on form POST; TLS proxies may set
     # X-Forwarded-Proto. These signals affect only the cookie Secure attribute.
     # For HTTP LAN access a Secure cookie cannot be used; prefer HTTPS HA.
-    if native_tls:
-        return True
     origin = headers.get("Origin", "")
     if isinstance(origin, str) and origin.startswith("https://"):
         return True
@@ -550,8 +546,8 @@ def render_connection_section(cfg, summary):
     url = cfg.get("meta_oauth_redirect_uri", "")
     actions = []
     try:
-        origin = standalone_https.public_origin(cfg)
-        origin_matches = standalone_https.oauth_origin_matches(cfg)
+        origin = origin_configuration.public_origin(cfg)
+        origin_matches = origin_configuration.oauth_origin_matches(cfg)
     except ValueError:
         origin, origin_matches = "", False
     if origin:
@@ -794,15 +790,6 @@ class Handler(BaseHTTPRequestHandler):
     def parse_request(self):
         if not super().parse_request():
             return False
-        if isinstance(self.connection, ssl.SSLSocket):
-            try:
-                origin = standalone_https.public_origin(settings())
-            except ValueError:
-                self.respond(503, {"error": "public HTTPS origin unavailable"})
-                return False
-            if not origin or self.headers.get("Host", "").lower() != urlsplit(origin).netloc:
-                self.respond(421, {"error": "use configured public HTTPS origin"})
-                return False
         # HTTP/2 intermediaries may forward split Cookie fields. HTTPMessage.get
         # returns only the first field; coalesce before ALL auth/CSRF/OAuth paths.
         # Keep every pair, so duplicated state cookies still fail closed.
@@ -814,13 +801,12 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def transport_https(self):
-        return (isinstance(self.connection, ssl.SSLSocket) or
-                self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https")
+        return self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
 
     def oauth_origin_allowed(self, cfg):
         try:
-            origin = standalone_https.public_origin(cfg)
-            matches = standalone_https.oauth_origin_matches(cfg)
+            origin = origin_configuration.public_origin(cfg)
+            matches = origin_configuration.oauth_origin_matches(cfg)
         except ValueError:
             origin, matches = "", False
         if not matches:
@@ -1122,7 +1108,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(303)
             self.send_header("Location", "../panel")
             self.send_header("Set-Cookie", panel_login.set_cookie_header(
-                token, secure=_external_https(self.headers, isinstance(self.connection, ssl.SSLSocket))))
+                token, secure=_external_https(self.headers)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
@@ -1138,7 +1124,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(303)
             self.send_header("Location", "../panel")
             self.send_header("Set-Cookie", panel_login.clear_cookie_header(
-                secure=_external_https(self.headers, isinstance(self.connection, ssl.SSLSocket))))
+                secure=_external_https(self.headers)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()
@@ -1235,18 +1221,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     with database():
         pass
-    try:
-        https_server = standalone_https.create_server(settings(), Handler)
-    except (OSError, ValueError):
-        https_server = None
-        LOGGER.error("Standalone HTTPS unavailable: check public_base_url, panel_password and /ssl certificates; internal HTTP retained")
-    if https_server:
-        threading.Thread(target=https_server.serve_forever, daemon=True).start()
-        LOGGER.info("Standalone HTTPS ready: port=9443 version=%s", APP_VERSION)
-    try:
-        with ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler) as internal:
-            internal.serve_forever()
-    finally:
-        if https_server:
-            https_server.shutdown()
-            https_server.server_close()
+    LOGGER.info("Central internal HTTP ready: port=8099 version=%s; public TLS belongs to reverse proxy", APP_VERSION)
+    with ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler) as internal:
+        internal.serve_forever()

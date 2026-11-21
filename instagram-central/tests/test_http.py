@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.17")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.18")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.17", body)
+        self.assertIn(b"0.1.18", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.17", body)
+            self.assertIn(b"0.1.18", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -520,6 +520,37 @@ class HTTPContractTests(unittest.TestCase):
                 self.assertEqual(status, 421)
                 self.assertNotIn('Location', response_headers)
                 self.assertNotIn('Set-Cookie', response_headers)
+            start.assert_not_called(); consume.assert_not_called()
+
+    def test_dedicated_proxy_probe_uses_same_external_port_and_new_host(self):
+        self.configure_oauth()
+        self.config.update(public_base_url='https://central.test:8443',
+                           meta_oauth_redirect_uri='https://central.test:8443/oauth/meta/callback')
+        request_headers={**self.admin_header(),'Host':'central.test:8443','X-Forwarded-Proto':'https'}
+        status, headers, _=self.request('/oauth/meta/start?probe=1',headers=request_headers)
+        self.assertEqual(status,302)
+        self.assertTrue(headers['Location'].startswith(self.config['public_base_url']+'/oauth/meta/callback?'))
+        callback='/oauth/meta/callback?'+urlsplit(headers['Location']).query
+        status, _, body=self.request(callback,headers={**request_headers,'Cookie':headers['Set-Cookie'].split(';')[0]})
+        self.assertEqual(status,200)
+        self.assertIn(b'Teste aprovado',body)
+
+    def test_proxy_origin_requires_forwarded_https(self):
+        self.configure_oauth()
+        self.config.update(public_base_url='https://central.test:8443',
+                           meta_oauth_redirect_uri='https://central.test:8443/oauth/meta/callback')
+        for proto in ('','http'):
+            status, headers, _=self.request('/oauth/meta/start?probe=1',headers={
+                **self.admin_header(),'Host':'central.test:8443','X-Forwarded-Proto':proto})
+            self.assertEqual(status,421)
+            self.assertNotIn('Set-Cookie',headers)
+
+    def test_proxy_old_config_refused_before_state_or_exchange(self):
+        self.configure_oauth()
+        self.config['public_base_url']='https://central.test:8443'
+        with patch.object(server.oauth_meta,'start') as start, patch.object(server.oauth_meta,'consume_state') as consume:
+            for route in ('/oauth/meta/start','/oauth/meta/callback?state=old&code=old'):
+                self.assertEqual(self.request(route,headers=self.admin_header())[0],503)
             start.assert_not_called(); consume.assert_not_called()
 
     def test_probe_screen_distinguishes_no_header_from_unrelated_cookie_safely(self):

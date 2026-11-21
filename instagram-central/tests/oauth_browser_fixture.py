@@ -94,7 +94,7 @@ class Proxy(BaseHTTPRequestHandler):
             raw = ('<!doctype html><title>Provider stub</title><a href="' + html.escape(callback, quote=True) + '">Voltar à Central</a>').encode()
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(raw))); self.end_headers(); self.wfile.write(raw); return
-        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback'):
+        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback', '/panel', '/editorial/', '/panel/account-context'):
             self.send_response(404); self.end_headers(); return
         cookie = self.headers.get('Cookie', '')
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https'}
@@ -133,6 +133,24 @@ class Proxy(BaseHTTPRequestHandler):
             self.send_header(key, value)
         self.end_headers(); self.wfile.write(raw)
 
+    def do_POST(self):
+        if self.path not in ('/auth/login', '/auth/logout'):
+            self.send_response(404); self.end_headers(); return
+        raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+        headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',
+                   'Content-Type': self.headers.get('Content-Type', '')}
+        for key in ('Cookie', 'Origin'):
+            if self.headers.get(key): headers[key] = self.headers[key]
+        client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
+        try:
+            client.request('POST', self.path, raw, headers)
+            response = client.getresponse(); body = response.read()
+            self.send_response(response.status)
+            for key, value in response.getheaders():
+                if key.lower() not in ('server', 'date', 'connection'): self.send_header(key, value)
+            self.end_headers(); self.wfile.write(body)
+        finally: client.close()
+
 
 class Control(BaseHTTPRequestHandler):
     def log_message(self, *_): pass
@@ -141,8 +159,8 @@ class Control(BaseHTTPRequestHandler):
             state['kind'] = self.path.split('/')[-1]; state['obs'] = {}; CONFIG['meta_login_config_id'] = '87654321'
             CONFIG['public_base_url'] = ''
             CONFIG['meta_oauth_redirect_uri'] = 'https://probe-review.test:' + str(first.server_address[1]) + '/oauth/meta/callback'
-            if state['kind'] == 'native_https':
-                CONFIG['public_base_url'] = 'https://probe-review.test:' + str(native.server_address[1])
+            if state['kind'] == 'dedicated_host':
+                CONFIG['public_base_url'] = 'https://alias-review.test:' + str(first.server_address[1])
                 CONFIG['meta_oauth_redirect_uri'] = CONFIG['public_base_url'] + '/oauth/meta/callback'
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
@@ -169,12 +187,9 @@ fd = os.memfd_create('offline-oauth-fixture')
 os.write(fd, cert.public_bytes(serialization.Encoding.PEM) + key.private_bytes(serialization.Encoding.PEM,
          serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption()))
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); context.load_cert_chain('/proc/self/fd/' + str(fd))
-native = server.standalone_https.create_server(
-    {**CONFIG, 'public_base_url': 'https://probe-review.test:9443', 'certfile': str(fd), 'keyfile': str(fd)},
-    server.Handler, address=('127.0.0.1', 0), ssl_root='/proc/self/fd')
 first.socket = context.wrap_socket(first.socket, server_side=True)
 second.socket = context.wrap_socket(second.socket, server_side=True)
-for http in (backend, first, second, plain, native): threading.Thread(target=http.serve_forever, daemon=True).start()
+for http in (backend, first, second, plain): threading.Thread(target=http.serve_forever, daemon=True).start()
 print(json.dumps({'control': control.server_address[1], 'https': first.server_address[1],
-                  'other': second.server_address[1], 'http': plain.server_address[1], 'native': native.server_address[1]}), flush=True)
+                  'other': second.server_address[1], 'http': plain.server_address[1]}), flush=True)
 control.serve_forever()

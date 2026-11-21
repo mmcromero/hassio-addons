@@ -1,53 +1,36 @@
-# Central Instagram Umdoislab — 0.1.17 (acesso HTTPS independente)
+# Central Instagram Umdoislab — 0.1.18 (HTTPS no proxy existente)
 
-**Estado:** pacote para teste autorizado no Home Assistant, sem homologação declarada. O proprietário autorizou correção e publicação pela esteira rápida em 21/11/2026. A instalação/atualização será feita pelo operador no Supervisor, preservando opções e `/data`. A autorização não ativa Meta, webhook ou envio.
+**Estado:** pacote para teste autorizado; sem instalação ou homologação presumida. A 0.1.18 substitui a proposta 0.1.17 de expor diretamente 9443. Não abrir nova porta no roteador. O HTTPS continua no NGINX existente, com hostname exclusivo para isolar o service worker do HA.
 
-A 0.1.17 acrescenta HTTPS próprio em outra porta para tirar painel e OAuth da origem controlada pelo service worker do HA. O A/B/A do proprietário na 0.1.16 sustenta essa interferência; não identifica um defeito específico do Ingress. A nova configuração reutiliza login, senha, dados e o certificado existente, mantendo o Ingress como alternativa. A porta externa e o teste real ainda precisam ser conferidos pelo operador.
+- Origem privada: `mmcromero/instagram-automacoes`, branch `fix/instagram-oauth-safe-diagnostics-001`, [PR #11](https://github.com/mmcromero/instagram-automacoes/pull/11). Commits, evidências e revisão independente na [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1).
+- Identidade preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, `aarch64`, Ingress na porta interna 8099, `backup: cold`, ícones oficiais. O catálogo não publica portas nem monta `/ssl` na Central.
+- Mesmos login/senha, banco, tokens e mídias em `/data`; nenhuma exclusão/migração de dados nesta mudança. `certfile`/`keyfile` antigos são aceitos mas ignorados para compatibilidade com opções já salvas.
+- Base histórica: PR #7 `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, PR #9 `723b423069c18a19c1053aecaf3bcef399b0efbb`. Fonte main privada e demais aplicativos preservados.
 
-- Repositório privado de origem: `mmcromero/instagram-automacoes`.
-- Fonte desta versão: branch privada `fix/instagram-oauth-safe-diagnostics-001`, baseada no PR #9 (`723b423069c18a19c1053aecaf3bcef399b0efbb`) e sincronizada com o diagnóstico público 0.1.14. SHAs de fonte e publicação são registrados na Issue #1.
-- Base imutável de código: PR #7, commit `f6ad64bc55bb3d8299c1e3cd71d40f5e63897082`, árvore original `instagram-central/` = `cf92e4dc5da1f75db389024499e8b7d951a6a24c`.
-- Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
-- Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
+## Configuração atual
 
+Acesso proposto: **https://instagram.romeropi.duckdns.org:8443/panel**. O hostname resolve em DNS, mas a ativação depende de certificado e proxy do operador. O certificado confirmado pelo proprietário cobre somente `romeropi.duckdns.org`; precisa incluir o novo hostname/wildcard antes de ativá-lo. Não ignorar aviso de certificado.
 
-## Acesso independente HTTPS — 0.1.17
+**[Siga o guia do operador: certificado, arquivo adicional, teste e rollback](proxy/GUIA-OPERADOR.md).** O arquivo revisável é [proxy/instagram.conf](proxy/instagram.conf), incluído por `customize.servers`, na mesma porta interna 443 já usada pelo proxy (externa 8443). Não substitui o servidor HA ou fragmentos dos outros aplicativos.
 
-O teste A/B/A do proprietário na 0.1.16 passou com **Ignorar da rede** e voltou a falhar sem essa opção. O controlador observado foi `sw-modern.js` na raiz da origem do HA. Abrir outra aba na mesma origem não isola esse controlador. A nova porta HTTPS cria outra origem para painel, início e retorno OAuth; não altera o service worker nem o NGINX do HA.
+Após atualizar para 0.1.18, preserve todas as opções e ajuste somente:
 
-O aplicativo mantém o Ingress como alternativa, mas acrescenta links **Abrir Central em janela própria** no login e no painel. O manifesto também declara `webui` HTTPS e mapeia somente `9443/tcp`; a porta HTTP interna `8099` não é publicada. Dependendo da interface do HA, o botão do Supervisor ainda pode preferir o Ingress: use o link da Central ou a URL pública diretamente.
+```yaml
+public_base_url: "https://instagram.romeropi.duckdns.org:8443"
+meta_oauth_redirect_uri: "https://instagram.romeropi.duckdns.org:8443/oauth/meta/callback"
+```
 
-### Configuração pelo operador, após atualizar para 0.1.17
+Os links **Abrir Central em janela própria** aparecem no login e painel do Ingress. Na URL nova, use o mesmo `admin`/senha da Central. O hostname separado isola o worker raiz do HA e os cookies host-only. A origem antiga é recusada no OAuth quando a nova origem está configurada; callback divergente é bloqueado antes de state/exchange.
 
-1. Preserve todas as opções existentes, a senha e `/data`. Acrescente/ajuste somente:
-   ```yaml
-   public_base_url: "https://romeropi.duckdns.org:9443"
-   certfile: "fullchain.pem"
-   keyfile: "privkey.pem"
-   meta_oauth_redirect_uri: "https://romeropi.duckdns.org:9443/oauth/meta/callback"
-   ```
-   Não altere flags Meta, webhook ou rascunhos para executar esta atualização. O probe continua exigindo a configuração OAuth já preparada; ele não chama a Meta.
-2. Confirme a disponibilidade da porta 9443 no host. Em **Rede** do aplicativo, mantenha `9443/tcp` → `9443`. Para acesso pela internet, o roteador precisa encaminhar **TCP 9443 externo → IP do HA:9443**. Esse encaminhamento não foi executado nem verificado pelo Codex. Se usar outra porta externa, ajuste `public_base_url` e o callback de forma idêntica; o listener interno continua 9443.
-3. O Supervisor monta `/ssl` somente para leitura. O certificado deve ser válido para `romeropi.duckdns.org`; a Central lê os mesmos nomes de certificado documentados no inventário do HA. Nunca envie nem copie a chave por chat/Git. Não é necessário alterar o proxy, certificado, fragmentos ou porta 8443 dos outros aplicativos.
-4. Salve/reinicie a Central pelo Supervisor. O log esperado é `Standalone HTTPS ready: port=9443 version=0.1.17`. Com URL vazia, o listener fica desligado. Sem senha adequada, certificado/chave válidos ou porta disponível, não abre HTTP no lugar de HTTPS; o Ingress interno é mantido e o log informa indisponibilidade. Certificados renovados são relidos nas novas conexões.
-5. Abra **https://romeropi.duckdns.org:9443/panel** fora do HA. Use o mesmo usuário `admin` e a mesma senha da Central. O Chrome pode exigir login novamente; não se cria outra conta nem outro banco. Não use bypass de service worker nem ignore avisos de certificado neste teste real.
-6. Execute **Testar navegador e proxy (sem Meta)**. O retorno deve permanecer em `:9443` e mostrar versão 0.1.17 e teste aprovado. Compartilhe somente a tela e as linhas de diagnóstico seguro, sem URL de retorno/cookie/state/código.
-7. Antes de qualquer consentimento real futuro, o operador deverá cadastrar o **novo callback exato** na lista de redirecionamentos permitidos do mesmo app Meta. Isso não foi executado nesta entrega. Não tente consentimento até o probe passar e a configuração ser revisada. O webhook atual em 8443 permanece separado e não foi alterado.
+## Controles e validação
 
-Se o callback ainda apontar para a origem antiga, a Central esconde os links OAuth e recusa start/callback antes de criar/consumir state ou trocar código. URLs antigas em 8443 também são recusadas quando o modo independente está configurado. Nada é redirecionado silenciosamente de volta ao HA.
+O proxy contém lista explícita de rotas e métodos para login, painel, Editorial e OAuth. Rotas bridge, health, Supervisor, scripts do worker e caminhos desconhecidos não são publicados nesse host. Login limitado por IP no NGINX, corpo limitado por rota, upload máximo 25 MiB, Host/SNI conferidos, sem cache nem logs de URLs OAuth. Sessão, CSRF e cookies seguros continuam na aplicação. A Central não recebe a chave privada do certificado.
 
-Esta versão não migra nem apaga dados, sessões, mídia ou tokens. Os dois acessos usam o mesmo servidor, login e armazenamento. **Origens isolam service workers; cookies do mesmo hostname não são isolados por porta.** A mudança não promete isolamento de cookies entre aplicativos no mesmo domínio. Para isso seria necessário hostname dedicado.
+Teste primeiro **Testar navegador e proxy (sem Meta)**, sem bypass. Esse teste exige a configuração OAuth já preparada, mas não chama a Meta. Antes de qualquer consentimento real futuro, revisar o novo callback na lista permitida do mesmo app Meta. Webhook, Meta, Direct e postagens não são ativados por esta atualização.
 
-### Porta 9443 no roteador: passo a passo
+Evidência local: **201 testes Python PASS**, Chromium com nove cenários de probe, concorrência/config drift e worker ativo na origem antiga versus hostname separado na mesma porta; **build Docker linux/amd64 com 198 testes PASS**; **NGINX real local: nginx -t, TLS verificado, autenticação/CSRF, probe, 404 de rotas privadas, limites 413/429 e preservação de vhost representativo PASS**. Sem Meta/HA real. ARM64/Supervisor, certificado wildcard, instalação do arquivo e aceite externo permanecem pendentes do operador.
 
-1. No HA, abra **Configurações → Sistema → Rede** e anote o endereço IPv4 local da máquina do HA. Não use o endereço Docker do aplicativo. Confira também a porta 9443 na seção **Rede** da Central após a atualização.
-2. Abra o painel do seu roteador e procure **Encaminhamento de portas**, **Port Forwarding**, **NAT** ou **Servidor virtual**. Confira se já há regra para TCP 9443. Os nomes variam conforme o modelo; não apague nem substitua a regra atual da 8443.
-3. Se 9443 estiver livre, cadastre uma regra: nome **Central Instagram**, protocolo **TCP**, porta externa **9443**, IP de destino **IPv4 local do HA**, porta interna **9443**. Salve. Não crie encaminhamento da 8099.
-4. Se a 9443 já estiver reservada, não substitua o serviço existente. Pode usar, por exemplo, externa **9444 → HA:9443**, mas então configure `public_base_url` com `:9444` e o callback com o mesmo `:9444`. Use a URL pública explícita para abrir a Central.
-5. Depois de configurar/reiniciar a Central, teste `https://romeropi.duckdns.org:9443/health` e depois `/panel`, sem trocar o domínio por IP. A resposta de health deve indicar 0.1.17. Se o roteador não permitir acesso ao próprio IP público por dentro da rede, teste primeiro no celular com Wi-Fi desligado; isso diferencia alcance externo de NAT loopback.
-6. Se o log não mostrar HTTPS pronto, confira a configuração/certificados/porta no Supervisor antes de mexer no roteador. Se o HTTPS estiver pronto mas a URL externa não responder, confira a regra, IP local e eventual bloqueio de entrada. Não desabilite a verificação do certificado nem altere o NGINX/8443 como tentativa genérica.
-
-Publicação, instalação, acesso externo e homologação são etapas distintas. O pacote foi preparado para teste do operador; não declara a infraestrutura externa pronta nem OAuth real aprovado.
+O proxy reduz a exposição direta e aplica controles; isso não torna o painel público livre de risco nem substitui revisão independente. Publicado não significa instalado ou homologado. Se foi criada regra 9443 exclusivamente para 0.1.17, desabilite essa regra; a atualização não altera o roteador.
 
 ## Histórico das correções anteriores
 

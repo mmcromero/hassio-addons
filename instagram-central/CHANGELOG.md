@@ -1,3 +1,11 @@
+## 0.1.18 — hostname exclusivo no proxy existente — 21/11/2026
+
+- Substitui a recomendação 0.1.17 de abrir 9443: remove listener TLS da aplicação, mapeamento de porta pública, webui 9443 e montagem `/ssl`. A Central atende somente HTTP interno 8099 com Ingress preservado.
+- Adiciona gerador/candidata NGINX para hostname exclusivo no listener HTTPS existente: rotas/métodos explícitos, Host/SNI, limite de login por IP, limites de corpo, sem bridge/health/Supervisor/webhook ou logs de URLs OAuth nesse host.
+- Preserva login, dados, flags e vínculo de origem do OAuth; opções antigas certfile/keyfile são aceitas mas ignoradas pela aplicação. Nenhuma ativação Meta.
+- Guia detalhado de certificado wildcard DuckDNS preservando o domínio atual, instalação de somente um arquivo adicional e rollback. Certificado informado cobre apenas o HA; novo host não deve ser ativado antes da emissão/cobertura correta.
+- 201 testes Python PASS, Chromium PASS em hostname separado na mesma porta, build Docker amd64 com 198 testes PASS e validação NGINX real local PASS. Nenhuma instalação/alteração no HA ou roteador foi executada; não declara homologação.
+
 ## 0.1.17 — HTTPS independente da origem do HA — 21/11/2026
 
 - Adiciona listener TLS 1.2+ em 9443 com certificado/chave de `/ssl` montado somente para leitura; ativado ao preencher `public_base_url`. Certificados são relidos em novas conexões. Falhas não abrem HTTP público e preservam o listener interno 8099.

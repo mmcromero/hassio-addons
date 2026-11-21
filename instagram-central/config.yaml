@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.17"
+version: "0.1.18"
 slug: umdoislab_instagram
 description: "Central Instagram Umdoislab: Mensagens e Editorial local (Meta desativada)"
 arch:
@@ -10,14 +10,6 @@ init: false
 stage: experimental
 ingress: true
 ingress_port: 8099
-ports:
-  9443/tcp: 9443
-ports_description:
-  9443/tcp: "Central independente — somente HTTPS"
-webui: "https://[HOST]:[PORT:9443]/"
-map:
-  - type: ssl
-    read_only: true
 panel_icon: mdi:instagram
 panel_title: "Central Instagram"
 panel_admin: true
