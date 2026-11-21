@@ -1,6 +1,6 @@
-# Central Instagram Umdoislab — candidata 0.1.13 (isolamento do cookie OAuth)
+# Central Instagram Umdoislab — candidata 0.1.14 (probe do cookie OAuth)
 
-**Estado:** candidata 0.1.13 preparada para publicação de teste; ainda não publicada no catálogo, instalada ou homologada no Home Assistant. A distribuição pública atual permanece em 0.1.12. A correção isola o cookie `state` por tentativa OAuth. O callback real anterior falhou em `parse_callback` com cookie divergente; a causa histórica exata não foi comprovada. A homologação no HA deverá verificar build do Supervisor, inicialização e teste de navegador/proxy sem Meta. Não repetir OAuth real sem autorização específica. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
+**Estado:** versão 0.1.13 publicada na `main` do catálogo pelo PR #65, mas a atualização relatada no HA continuou falhando em `parse_callback`. Candidata privada 0.1.14 em preparação para corrigir a lacuna do teste de cookie: o probe anterior usava um cookie diferente do cookie state do OAuth. A instalação e homologação da 0.1.14 ainda não ocorreram. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
 
 - Repositório privado de origem: `mmcromero/instagram-automacoes`.
 - Candidata de origem: [PR #9](https://github.com/mmcromero/instagram-automacoes/pull/9), branch `fix/instagram-oauth-state-cookie-binding-001`, HEAD `723b423069c18a19c1053aecaf3bcef399b0efbb` (base técnica: candidata 0.1.12 do PR #8).
@@ -9,6 +9,14 @@
 - Controle e evidências: [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1), [PR #7](https://github.com/mmcromero/instagram-automacoes/pull/7), [relatório do gate](https://github.com/mmcromero/instagram-automacoes/blob/d4a885460635d5930b8c8a1e4875e94918816dae/docs/evidence/IG-PR7-GATE-001-20261120/RELATORIO.md).
 - Identidade de distribuição preservada: nome **Fábrica de Softwares - Central Instagram**, slug `umdoislab_instagram`, arquitetura declarada `aarch64`, Ingress `true` com porta interna `8099`, `backup: cold` e marca oficial. O catálogo público já contém `icon.png` e `logo.png` oficiais. **Não copiar nem recriar imagens na publicação**: manter os blobs existentes na pasta pública do Instagram.
 
+
+## Candidata 0.1.14 — probe do mesmo cookie state usado pelo OAuth
+
+- O teste anterior `probe=1` usava `ig_oauth_probe`, diferente do cookie `ig_oauth_state_<hash>` do fluxo real. O teste de transporte aprovado não cobria o cookie novo.
+- A 0.1.14 passa a emitir um nonce sintético e um cookie com o mesmo nome derivado do state e o mesmo leitor de cookie usados pelo callback OAuth. A callback de probe valida o cookie sem criar state no SQLite nem chamar a Meta.
+- `/health` informa a versão carregada; a página de probe também mostra a versão. Isso permite confirmar se o Supervisor está executando a versão publicada.
+- Testes unitários e HTTP adicionados para validar nome e valor do cookie, cookie de outra tentativa, valor divergente e versão.
+- Situação: código em branch privada; testes pendentes; sem merge/publicação/instalação. Nenhuma tentativa OAuth real necessária.
 
 ## Candidata 0.1.13 — isolamento do cookie de estado OAuth por tentativa
 
