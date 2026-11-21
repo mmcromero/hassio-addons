@@ -1,6 +1,6 @@
-# Central Instagram Umdoislab — candidata 0.1.14 (probe do cookie OAuth)
+# Central Instagram Umdoislab — 0.1.14 (probe do cookie OAuth)
 
-**Estado:** 0.1.14 publicada na `main` do catálogo pelo PR #67, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`. O workflow geral `Validar add-ons` passou (manifestos, cadastro, scripts e verificação de arquivos sensíveis), mas não executou a suíte da Central nem o build ARM64. A instalação/atualização e a homologação no Home Assistant ainda não foram confirmadas. A consulta somente leitura ao Supervisor via n8n falhou com HTTP 401 usando a credencial HA existente; não houve alteração no add-on instalado. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
+**Estado:** 0.1.14 publicada na `main` do catálogo pelo PR #67, commit `418ca163c7534273c5d4ed906c835ac424d47d8b`, e confirmada na tela de informações do Home Assistant como versão atual **0.1.14 — Em execução**. O add-on usa build local pelo Supervisor (sem `image` no manifesto); o Dockerfile executa `py_compile` e a suíte `unittest` antes de iniciar o serviço. O build concluído e o serviço em execução confirmam que essas etapas bloquearam a inicialização caso falhassem; o log detalhado de cada teste não foi capturado nesta verificação. A homologação do cookie no navegador/proxy ainda está pendente. Não repetir OAuth real. Mensagens e Editorial permanecem no mesmo add-on, painel e sessão.
 
 - Repositório privado de origem: `mmcromero/instagram-automacoes`.
 - Candidata de origem: [PR #9](https://github.com/mmcromero/instagram-automacoes/pull/9), branch `fix/instagram-oauth-state-cookie-binding-001`, HEAD `723b423069c18a19c1053aecaf3bcef399b0efbb` (base técnica: candidata 0.1.12 do PR #8).
