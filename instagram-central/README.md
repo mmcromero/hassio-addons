@@ -1,4 +1,4 @@
-# Central Instagram Umdoislab — 0.1.15 (diagnóstico seguro do OAuth)
+# Central Instagram Umdoislab — 0.1.16 (cookies fragmentados no proxy)
 
 **Estado:** pacote para teste autorizado no Home Assistant, sem homologação declarada. O proprietário autorizou correção e publicação pela esteira rápida em 21/11/2026. A instalação/atualização será feita pelo operador no Supervisor, preservando opções e `/data`. A autorização não ativa Meta, webhook ou envio.
 
@@ -13,10 +13,19 @@ A 0.1.14 estava em execução no HA e o teste sem Meta falhou com cookie esperad
 
 ## Teste desta atualização no HA
 
-1. Atualize a loja/repositório e a Central para **0.1.15**, preservando opções, bancos e mídias. O Supervisor fará o build local e executará os testes do Dockerfile. Nenhum build ARM64/HA desta versão foi executado pelo Codex.
+1. Atualize a loja/repositório e a Central para **0.1.16**, preservando opções, bancos e mídias. O Supervisor fará o build local e executará os testes do Dockerfile. Nenhum build ARM64/HA desta versão foi executado pelo Codex.
 2. Confirme a versão em execução e abra **Testar navegador e proxy (sem Meta)** pelo painel, em nova aba. Não use uma URL de retorno antiga.
 3. A tela agora distingue ausência total de cabeçalho Cookie, cookies presentes sem o nome desta tentativa, cookie duplicado, valor divergente e host/HTTPS inesperados. Mostra a versão sem refletir nonce/cookie/URL.
 4. Se houver erro, compartilhe a tela e somente as linhas `OAuth cookie emitted`, `OAuth cookie probe failed` ou `OAuth cookie probe passed`. Não compartilhe URL de callback, cookies, state, códigos ou credenciais. Não iniciar novo consentimento Meta para testar este lote.
+
+## Correção 0.1.16 — leitura de todos os cabeçalhos Cookie
+
+- Após o teste real da 0.1.15, chegaram logs com cabeçalho Cookie presente, mas nenhum cookie OAuth no trecho lido. Localmente foi comprovado que `HTTPMessage.get('Cookie')` retorna somente o primeiro campo; se um intermediário encaminha o cookie esperado em um segundo campo, a aplicação o ignora.
+- A 0.1.16 reúne todos os campos Cookie em ordem antes de sessão/CSRF/OAuth/probe. Não descarta pares nem escolhe um dos duplicados: dois cookies com o nome de state esperado continuam sendo rejeitados.
+- A tela de falha também mostra se algum cookie de estado chegou e se havia vários campos Cookie. O log registra a contagem limitada de campos recebidos, nunca seus nomes/valores.
+- Evidência: **189 testes Python PASS** e **Chromium PASS** em nove cenários, incluindo proxy que fragmenta Cookie, mais abas concorrentes/config drift. Antes da correção, cookie esperado no segundo campo retornou 400; reunido num campo ou no primeiro, 200. Após a correção, o segundo campo passa; duplicação continua 400.
+- A reprodução comprova uma falha de leitura do servidor, **não comprova que o HA encaminhou cabeçalhos separados**. Se o teste real ainda falhar, a tela/log 0.1.16 permitirá verificar essa condição sem expor dados.
+- Sem nova migração, alteração de credenciais, esquema, banco, atributos de cookie, opções ou proxy. Instalação/Meta continuam fora da execução do Codex.
 
 ## Mudanças 0.1.15
 

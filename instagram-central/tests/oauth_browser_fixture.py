@@ -94,7 +94,16 @@ class Proxy(BaseHTTPRequestHandler):
                                 upstreamAnyCookie=bool(headers.get('Cookie')), upstreamExpectedCookie=upstream['expected_cookie_present'])
         client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
         try:
-            client.request('GET', self.path, headers=headers); response = client.getresponse()
+            if state['kind'] == 'split_cookie_header' and route.path.endswith('callback'):
+                client.putrequest('GET', self.path, skip_host=True)
+                for name, value in headers.items():
+                    if name != 'Cookie': client.putheader(name, value)
+                client.putheader('Cookie', 'unrelated=synthetic')
+                if headers.get('Cookie'): client.putheader('Cookie', headers['Cookie'])
+                client.endheaders()
+            else:
+                client.request('GET', self.path, headers=headers)
+            response = client.getresponse()
             raw = response.read(); result_headers = response.getheaders(); status = response.status
         finally: client.close()
         self.send_response(status)

@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.15")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.16")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.15", body)
+        self.assertIn(b"0.1.16", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.15", body)
+            self.assertIn(b"0.1.16", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -544,6 +544,58 @@ class HTTPContractTests(unittest.TestCase):
         self.assertNotIn('provider_code', body.decode())
         for forbidden in ('PRIVATE_ERROR_BODY', 'PRIVATE_AUTH_CODE', state, self.config['meta_app_secret']):
             self.assertNotIn(forbidden, log + body.decode())
+
+    def split_cookie_request(self, path, fields):
+        client = HTTPConnection("127.0.0.1", self.http.server_address[1], timeout=3)
+        try:
+            client.putrequest("GET", path, skip_host=True)
+            client.putheader("Host", "example.org")
+            client.putheader("X-Forwarded-Proto", "https")
+            for value in fields: client.putheader("Cookie", value)
+            client.endheaders()
+            response = client.getresponse()
+            return response.status, response.read()
+        finally: client.close()
+
+    def test_probe_expected_cookie_in_second_field_is_not_lost(self):
+        self.configure_oauth()
+        _, headers, _ = self.request('/oauth/meta/start?probe=1', headers=self.admin_header())
+        query = urlsplit(headers['Location']).query
+        pair = headers['Set-Cookie'].split(';', 1)[0]
+        status, body = self.split_cookie_request('/oauth/meta/callback?' + query, ['unrelated=synthetic', pair])
+        self.assertEqual(status, 200)
+        self.assertIn(b'Teste aprovado', body)
+
+    def test_split_duplicate_expected_cookie_still_fails_closed(self):
+        self.configure_oauth()
+        _, headers, _ = self.request('/oauth/meta/start?probe=1', headers=self.admin_header())
+        query = urlsplit(headers['Location']).query
+        pair = headers['Set-Cookie'].split(';', 1)[0]
+        with self.assertLogs(server.LOGGER, level='ERROR') as captured:
+            status, body = self.split_cookie_request('/oauth/meta/callback?' + query, [pair, pair])
+        self.assertEqual(status, 400)
+        self.assertIn('duplicated', '\n'.join(captured.output))
+        self.assertIn("'cookie_header_fields': 2", '\n'.join(captured.output))
+        self.assertNotIn(parse_qs(query)['probe'][0], body.decode() + '\n'.join(captured.output))
+
+    def test_real_callback_accepts_expected_cookie_in_second_field_with_mock_provider(self):
+        self.configure_oauth()
+        _, headers, _ = self.request('/oauth/meta/start', headers=self.admin_header())
+        state = parse_qs(urlsplit(headers['Location']).query)['state'][0]
+        pair = headers['Set-Cookie'].split(';', 1)[0]
+        credential = {'access_token': 'SYNTHETIC_TOKEN_' * 3, 'expires_in': 0}
+        identity = {'account_id': self.config['instagram_account_id'], 'username': 'umdoislab', 'verified_at': 1}
+        with patch.object(server.oauth_meta, 'exchange_code', return_value=credential) as exchange, \
+             patch.object(server.instagram_connection, 'verify_access', return_value=identity):
+            status, _ = self.split_cookie_request('/oauth/meta/callback?' + urlencode({'state':state,'code':'synthetic'}), ['unrelated=synthetic', pair])
+        self.assertEqual(status, 200)
+        self.assertEqual(exchange.call_count, 1)
+
+    def test_admin_session_in_second_cookie_field_remains_authorized(self):
+        with server.database() as db:
+            token = server.panel_login.create_session(db, self.config['panel_password'])
+        status, _ = self.split_cookie_request('/panel/account-context', ['unrelated=synthetic', 'ig_panel_session='+token])
+        self.assertEqual(status, 200)
 
 
 if __name__ == "__main__":

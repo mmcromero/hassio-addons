@@ -29,7 +29,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.15"
+APP_VERSION = "0.1.16"
 
 
 def settings():
@@ -755,6 +755,8 @@ def render_probe_failure(diagnostic, host_ok, https_ok):
         explanation = "O cookie desta tentativa chegou, mas a verificação não foi aprovada."
     facts = (("Cabeçalho Cookie recebido", diagnostic["cookie_header_present"]),
              ("Cookie desta tentativa recebido", diagnostic["expected_cookie_present"]),
+             ("Algum cookie de estado OAuth recebido", diagnostic["state_cookie_present"]),
+             ("Vários cabeçalhos Cookie recebidos", diagnostic.get("cookie_header_fields", 0) > 1),
              ("Cookie de teste antigo recebido", diagnostic["legacy_cookie_present"]),
              ("Host esperado no retorno", host_ok), ("HTTPS informado pelo proxy", https_ok))
     rows = "".join("<li>" + label + ": <strong>" + ("Sim" if value else "Não") + "</strong></li>"
@@ -768,6 +770,19 @@ def render_probe_failure(diagnostic, host_ok, https_ok):
 
 
 class Handler(BaseHTTPRequestHandler):
+    def parse_request(self):
+        if not super().parse_request():
+            return False
+        # HTTP/2 intermediaries may forward split Cookie fields. HTTPMessage.get
+        # returns only the first field; coalesce before ALL auth/CSRF/OAuth paths.
+        # Keep every pair, so duplicated state cookies still fail closed.
+        fields = self.headers.get_all("Cookie", [])
+        self.cookie_header_fields = min(len(fields), 10)
+        if len(fields) > 1:
+            del self.headers["Cookie"]
+            self.headers["Cookie"] = "; ".join(fields)
+        return True
+
     def respond(self, status, body, content_type="application/json", *, csp=None):
         raw = body if isinstance(body, bytes) else body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
         self.send_response(status)
@@ -862,6 +877,7 @@ class Handler(BaseHTTPRequestHandler):
                 host_ok = bool(expected and self.headers.get("Host", "").strip().lower() == expected)
                 https_ok = self.headers.get("X-Forwarded-Proto", "").strip().lower() == "https"
                 diagnostic = oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", ""), probe=True)
+                diagnostic["cookie_header_fields"] = self.cookie_header_fields
                 try:
                     oauth_meta.check_cookie_probe(route.query, self.headers.get("Cookie", ""))
                 except oauth_meta.OAuthError as exc:

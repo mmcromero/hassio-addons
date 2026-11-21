@@ -1,3 +1,11 @@
+## 0.1.16 — não perder cookies em campos HTTP separados — 21/11/2026
+
+- Corrige perda comprovada de cookies quando um intermediário envia múltiplos cabeçalhos Cookie: o servidor lia só o primeiro. Agora reúne todos os pares antes de sessão, CSRF, probe e callback OAuth.
+- Rejeição de cookie de state duplicado é mantida, inclusive entre campos separados; não escolhe arbitrariamente primeiro/último valor do state.
+- Acrescenta à tela flags de cookie OAuth presente e múltiplos campos; log inclui somente contagem limitada, sem valores/nomes/nonce/state/códigos.
+- Testes: 189 Python PASS; Chromium com nove cenários de probe, incluindo fragmentação no proxy, e regressões de abas concorrentes/configuração PASS. Provedor e infraestrutura simulados, sem Meta/HA real.
+- Sem mudança em dados, esquema, tokens, atributos/path/TTL do cookie, Ingress/NGINX, opções ou demais add-ons. O teste real da 0.1.15 não provou fragmentação no HA; esta versão corrige a falha de parser reproduzida e permite verificar se ela explica o caso do operador.
+
 ## 0.1.15 — diagnóstico seguro e vínculo da configuração OAuth — 21/11/2026
 
 - Sincroniza na fonte privada o probe e os testes da distribuição 0.1.14, preservando cookies por tentativa e identificação de versão.

@@ -23,7 +23,7 @@ async function start(){
   await ctx.route('**/*',route=>['probe-review.test','alias-review.test','meta-review.test'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
   return ctx;
  }
- for(const kind of ['same_https','same_host_other_port','different_start_host','insecure_start','strip_set_cookie','strip_request_cookie','rewrite_nonce','wrong_forwarded_https']){
+ for(const kind of ['same_https','same_host_other_port','different_start_host','insecure_start','strip_set_cookie','strip_request_cookie','rewrite_nonce','wrong_forwarded_https','split_cookie_header']){
   await control('/set/'+kind);const ctx=await context();const page=await ctx.newPage();
   const origin=kind==='different_start_host'?'https://alias-review.test:'+data.https:kind==='insecure_start'?'http://probe-review.test:'+data.http:kind==='same_host_other_port'?'https://probe-review.test:'+data.other:base;
   const response=await page.goto(origin+'/oauth/meta/start?probe=1',{timeout:15000});
@@ -31,8 +31,8 @@ async function start(){
   const query=new URL(page.url()).searchParams;const nonce=query.get('probe');
   const expected='ig_oauth_state_'+crypto.createHash('sha256').update(nonce).digest('hex').slice(0,32);
   obs.expectedStored=(await ctx.cookies(base+'/oauth/meta/callback')).some(c=>c.name===expected);
-  assert.equal(obs.status,['same_https','same_host_other_port'].includes(kind)?200:400,kind);
-  const text=await page.locator('body').innerText();assert(text.includes('0.1.15'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
+  assert.equal(obs.status,['same_https','same_host_other_port','split_cookie_header'].includes(kind)?200:400,kind);
+  const text=await page.locator('body').innerText();assert(text.includes('0.1.16'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
   if(kind==='strip_request_cookie'||kind==='insecure_start'||kind==='strip_set_cookie'||kind==='different_start_host')assert(text.includes('Nenhum cabeçalho Cookie'),kind+' classification');
   if(kind==='rewrite_nonce')assert(text.includes('Cookies chegaram'),kind+' wrong-name classification');
   console.log('PASS probe '+JSON.stringify(obs));await ctx.close();
@@ -50,7 +50,7 @@ async function start(){
  const result=drift.waitForResponse(r=>new URL(r.url()).pathname==='/oauth/meta/callback');await drift.getByRole('link',{name:'Voltar à Central'}).click();
  assert.equal((await result).status(),400);assert.equal((await control('/observe')).exchanges,before);
  console.log('PASS configuration drift rejected before exchange');await ctx.close();
- console.log('PASS OAuth Chromium: 8 probe cases, concurrent tabs, config binding. Local HTTPS only; no real Meta/HA.');
+ console.log('PASS OAuth Chromium: 9 probe cases, concurrent tabs, config binding. Local HTTPS only; no real Meta/HA.');
 })().catch(error=>{console.error('FAIL OAuth Chromium '+error.name);process.exitCode=1;}).finally(async()=>{
  if(browser)await browser.close();
  if(child&&child.exitCode===null){const done=new Promise(r=>child.once('exit',r));child.kill('SIGTERM');await done;}
