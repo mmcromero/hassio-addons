@@ -1,24 +1,26 @@
-# Central Instagram — 0.1.19 (multicontas operacional)
+# Central Instagram — 0.1.20 (correção do catálogo e multicontas)
 
 **Primeira conta real:** o proprietário confirmou `@umdoislab` verificada e autorizada na 0.1.18. A 0.1.19 preserva essa credencial, chave, mensagens e Editorial. As contas adicionais deste lote foram testadas com dados/provedor sintéticos; não representam autorizações reais de outras contas.
 
-Esta versão adiciona **Contas**, com cadastro, seleção, conexão Meta e painéis por conta, e faz **Abrir interface web** apontar diretamente para o HTTPS externo, como solicitado. O Ingress foi desativado no manifesto; a aplicação continua somente na porta HTTP interna 8099, atrás do proxy existente. **Nenhuma nova porta no roteador, volume SSL ou chave privada na Central.**
+A 0.1.20 corrige o manifesto inválido da 0.1.19: o campo `webui` não aceita uma URL com hostname/porta fixos. O Supervisor exige os marcadores `[HOST]:[PORT:...]`; a URL fixa fazia a Central deixar de ser listada na loja. Removido esse campo e restaurados o Ingress interno 8099 e o ícone de painel da 0.1.18. Os arquivos oficiais icon.png/logo.png continuam preservados. O cadastro/conexão de contas e os painéis isolados da 0.1.19 permanecem. **Nenhuma nova porta no roteador, volume SSL ou chave privada na Central.**
+
+**Abertura da interface:** o botão do HA continua entrando pelo Ingress. Para operar ou conectar contas, abra o endereço HTTPS dedicado indicado abaixo em uma aba própria. Não foi implementada abertura externa automática pelo botão do Supervisor; a promessa correspondente da 0.1.19 estava incorreta.
 
 Fonte privada: `mmcromero/instagram-automacoes`, branch `feat/instagram-multicontas-operacional-001`, baseada no PR #11. Commits, PR, relatório e publicação auditada na [Issue #1](https://github.com/mmcromero/instagram-automacoes/issues/1). Nome/slug `umdoislab_instagram`, arquitetura declarada `aarch64`, backup cold e ícones oficiais preservados. Fonte main privada e outros aplicativos não são alterados.
 
 ## Atualização da 0.1.18
 
 1. Faça backup do aplicativo com seus dados e preserve todas as opções, especialmente senha, App ID e App Secret já corrigidos. Não desinstale nem apague `/data`.
-2. Atualize a Central para **0.1.19**. Não é necessário reconectar `@umdoislab` nem copiar token. As duas URLs públicas permanecem as mesmas:
+2. Atualize a Central para **0.1.20**. Não é necessário reconectar `@umdoislab` nem copiar token. As duas URLs públicas permanecem as mesmas:
    ```yaml
    public_base_url: "https://instagram.romeropi.duckdns.org:8443"
    meta_oauth_redirect_uri: "https://instagram.romeropi.duckdns.org:8443/oauth/meta/callback"
    ```
 3. Atualize **somente** `/share/nginx_proxy/instagram.conf` com [a candidata desta versão](proxy/instagram.conf), mantendo cópia anterior fora do padrão `*.conf`. As rotas novas `/accounts` precisam deste arquivo; o proxy 0.1.18 ainda atende o painel principal, mas retorna 404 para Contas.
 4. Reinicie somente o NGINX SSL proxy pelo HA, com acesso local disponível para recuperação. Não altere certificado, roteador, domínio principal, fragmentos Avisaqui/Artesão ou o webhook antigo. [Guia e rollback](proxy/GUIA-OPERADOR.md).
-5. Abra **https://instagram.romeropi.duckdns.org:8443/panel**. A opção **Abrir interface web** do aplicativo agora usa essa URL externa. A conta Umdoislab deve continuar conectada. Se aparecer pendente, preserve os dados e diagnostique antes de iniciar outro consentimento.
+5. Abra **https://instagram.romeropi.duckdns.org:8443/panel**. Use essa URL externa para os testes. O botão do aplicativo continua usando Ingress; não inicie OAuth dentro dele. A conta Umdoislab deve continuar conectada. Se aparecer pendente, preserve os dados e diagnostique antes de iniciar outro consentimento.
 
-`certfile`/`keyfile` antigos permanecem aceitos, mas são ignorados pela aplicação. O NGINX continua lendo `/ssl`. O certificado wildcard já foi emitido pelo operador para esta instalação; não emitir outro por causa da 0.1.19.
+`certfile`/`keyfile` antigos permanecem aceitos, mas são ignorados pela aplicação. O NGINX continua lendo `/ssl`. O certificado wildcard já foi emitido pelo operador para esta instalação; não emitir outro por causa desta atualização.
 
 ## Como adicionar e usar outra conta
 

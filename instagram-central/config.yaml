@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.19"
+version: "0.1.20"
 slug: umdoislab_instagram
 description: "Central Instagram: múltiplas contas, Mensagens e Editorial (envio automático desativado)"
 arch:
@@ -8,8 +8,11 @@ startup: application
 boot: manual
 init: false
 stage: experimental
-ingress: false
-webui: "https://instagram.romeropi.duckdns.org:8443/panel"
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:instagram
+panel_title: "Central Instagram"
+panel_admin: true
 backup: cold
 options:
   public_base_url: ""

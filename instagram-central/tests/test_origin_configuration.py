@@ -1,6 +1,7 @@
 """Configuration for a dedicated hostname behind the existing HTTPS proxy."""
 import importlib.util
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -67,12 +68,26 @@ class OriginConfiguration(unittest.TestCase):
         cfg=(ROOT/'config.yaml').read_text()
         for forbidden in ('ports:', 'type: ssl'):
             self.assertNotIn(forbidden,cfg)
-        self.assertIn('ingress: false',cfg)
-        self.assertIn('webui: "https://instagram.romeropi.duckdns.org:8443/panel"',cfg)
+        self.assertIn('ingress: true',cfg)
+        self.assertIn('ingress_port: 8099',cfg)
+        self.assertIn('panel_icon: mdi:instagram',cfg)
+        self.assertNotIn('\nwebui:',cfg)
         code=(ROOT/'server.py').read_text()
         self.assertNotIn('create_server(',code)
         self.assertNotIn('9443',code)
         self.assertFalse((ROOT/'standalone_https.py').exists())
+
+    def test_supervisor_webui_template_contract(self):
+        # Official Supervisor apps/validate.py, revision
+        # fe91b8db1318b3f5182c385e7acea54c87871a8d: ATTR_WEBUI.
+        # Fixed origins are valid application URLs, but invalid HA webui values.
+        pattern = re.compile(r'^(?:https?|\[PROTO:\w+\]):\/\/\[HOST\]:\[PORT:\d+\].*$')
+        self.assertIsNone(pattern.match('https://instagram.romeropi.duckdns.org:8443/panel'))
+        self.assertIsNotNone(pattern.match('https://[HOST]:[PORT:8099]/panel'))
+        config = (ROOT/'config.yaml').read_text()
+        for line in config.splitlines():
+            if line.startswith('webui:'):
+                self.assertIsNotNone(pattern.match(line.split(':',1)[1].strip().strip('"\'')))
 
     def test_generator_never_overwrites(self):
         with tempfile.TemporaryDirectory() as tmp:

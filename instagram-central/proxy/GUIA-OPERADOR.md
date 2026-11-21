@@ -1,8 +1,10 @@
-# Atualização para multicontas 0.1.19
+# Atualização para 0.1.20 — catálogo e multicontas
 
 O certificado e a primeira conexão `@umdoislab` foram confirmados pelo proprietário na 0.1.18. **Não repetir emissão de certificado nem reconectar a principal por causa desta atualização.**
 
-1. Faça backup privado dos dados/opções do aplicativo e atualize a Central para 0.1.19, preservando tudo em `/data`. O botão Abrir interface web passa a abrir o HTTPS externo diretamente; Ingress fica desativado. A porta interna 8099 continua para o proxy, sem exposição no host.
+1. Faça backup privado dos dados/opções do aplicativo e atualize a Central para 0.1.20, preservando tudo em `/data`. O manifesto volta a usar Ingress, pois a URL fixa em `webui` da 0.1.19 era rejeitada pelo Supervisor. Para operar/conectar contas, abra diretamente `https://instagram.romeropi.duckdns.org:8443/panel` em uma aba própria. A porta interna 8099 continua para o proxy, sem exposição no host.
+
+   Se a Central sumiu da loja na 0.1.19, a correção já está no catálogo: recarregue a loja (`ha store reload`) para obter a 0.1.20. Não remova o repositório nem desinstale a Central. O arquivo de proxy é idêntico ao da 0.1.19; se já aplicou o hash abaixo, não substitua/reinicie novamente por causa deste hotfix.
 2. Compare [instagram.conf](instagram.conf) com o arquivo atual `/share/nginx_proxy/instagram.conf`. A atualização acrescenta somente rotas explícitas de Contas e timeout maior do callback. Não substitua os fragmentos dos outros aplicativos ou as opções gerais do proxy.
 3. Mantenha acesso local ao HA. Salve uma cópia do arquivo atual com nome fora do padrão `*.conf`, por exemplo `instagram.conf.rollback-<data>`. Baixe a candidata publicada em arquivo temporário na mesma pasta, confira o SHA-256 registrado na Issue #1/relatório e substitua **somente** `instagram.conf` por movimento atômico. Não mantenha duas cópias terminadas em `.conf`, pois isso duplicaria servidor/zona de limite.
 4. Confirme os includes já usados: `customize.active=true`, `customize.servers=nginx_proxy/*.conf`, `real_ip_from=[]`. O arquivo é incluído em contexto HTTP por customize.servers; não por customize.default. Se a configuração real divergir, compare antes de aplicar. A candidata passou em nginx -t local; a configuração viva ainda depende do operador.
@@ -35,7 +37,7 @@ Execute no Terminal & SSH **depois de atualizar a Central**, mantendo acesso loc
 
 O download usa a main pública, mas o SHA-256 fixo impede instalar outra candidata. Se uma versão futura mudar o arquivo, o comando desta versão recusará a troca. Após sucesso, reinicie **somente o NGINX SSL proxy** pela interface do HA e confira o log. O comando não reinicia serviços nem altera outros arquivos.
 
-**Rollback do proxy:** restaure somente a cópia anterior para `instagram.conf` e reinicie apenas o proxy pelo HA local. O painel principal 0.1.19 continua compatível com as rotas antigas; Contas não fica disponível no proxy antigo. Preserve o arquivo novo e os dados para diagnóstico.
+**Rollback do proxy:** restaure somente a cópia anterior para `instagram.conf` e reinicie apenas o proxy pelo HA local. O painel principal 0.1.20 continua compatível com as rotas antigas; Contas não fica disponível no proxy antigo. Preserve o arquivo novo e os dados para diagnóstico.
 
 **Rollback de pacote:** restaurar a candidata/backup 0.1.18 pelo Supervisor, preservando chave/token/bancos, retorna a interface anterior. A coluna adicional do registro e diretórios das novas contas não devem ser apagados: a 0.1.18 os ignora e continua usando a principal. Não abrir 9443 ou alterar o roteador para recuperar acesso.
 

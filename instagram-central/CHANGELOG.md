@@ -1,3 +1,10 @@
+## 0.1.20
+
+- Corrige a exclusão da Central da loja pelo Supervisor: removido `webui` com hostname/porta fixos, que viola o formato exigido `[HOST]:[PORT:...]`.
+- Restaura a configuração Ingress e o ícone de painel da 0.1.18; mantém slug, opções, dados, credenciais, multicontas e ícones oficiais.
+- Acrescenta regressão do contrato `webui` do Supervisor. Acesso externo dedicado continua pela URL própria; abertura externa automática pelo botão do HA não está disponível nesta correção.
+- Nenhuma mudança no proxy, certificado, rede, OAuth, webhook ou recebimento/envio de mensagens.
+
 ## 0.1.19 — multicontas operacional e abertura externa direta — 21/11/2026
 
 - Adiciona tela Contas com cadastro por nome/usuário, seleção e painéis isolados, usando o mesmo administrador. ID oficial é confirmado no OAuth, sem copiar token ou segredo por conta.
