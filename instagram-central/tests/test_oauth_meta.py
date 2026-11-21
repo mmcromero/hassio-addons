@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import os
+import secrets
 import sqlite3
 import tempfile
 import unittest
@@ -157,7 +158,19 @@ class OAuthTests(unittest.TestCase):
         self.assertEqual(len(nonce), 43)
         self.assertIn("Path=/oauth/meta/callback", cookie)
         self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
+        cookie_name, cookie_value = cookie.split(";", 1)[0].split("=", 1)
+        self.assertEqual(cookie_name, oauth._state_cookie_name(nonce))
+        self.assertEqual(cookie_value, nonce)
         self.assertTrue(oauth.check_cookie_probe(callback.query, cookie))
+        # The probe uses the same cookie parser and state-derived name as OAuth.
+        wrong_value = ("A" if nonce[0] != "A" else "B") + nonce[1:]
+        wrong_cookie = oauth._state_cookie_name(nonce) + "=" + wrong_value
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe mismatch"):
+            oauth.check_cookie_probe(callback.query, wrong_cookie)
+        other_nonce = secrets.token_urlsafe(32)
+        other_cookie = oauth._state_cookie_name(other_nonce) + "=" + other_nonce
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe missing"):
+            oauth.check_cookie_probe(callback.query, other_cookie)
         # A probe does not create OAuth states or start a Meta authorization.
         self.assertIsNone(self.db.execute(
             "SELECT name FROM sqlite_master WHERE name='meta_oauth_states'").fetchone())
@@ -167,7 +180,7 @@ class OAuthTests(unittest.TestCase):
             oauth.check_cookie_probe(callback.query, cookie + "; " +
                                      cookie.split(";", 1)[0])
         other = ("A" if nonce[0] != "A" else "B") + nonce[1:]
-        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe mismatch"):
+        with self.assertRaisesRegex(oauth.OAuthError, "cookie probe missing"):
             oauth.check_cookie_probe(callback.query, "ig_oauth_probe=" + other)
         for bad in ("probe=short", "probe=" + nonce + "&probe=" + nonce,
                     "code=ignored&probe=" + nonce, "probe=" + nonce + "&state=other"):

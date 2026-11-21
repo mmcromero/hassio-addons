@@ -1,3 +1,13 @@
+## 0.1.14 — probe usa o mesmo cookie de estado do OAuth — 21/11/2026
+
+- **Incidente:** após a atualização relatada para 0.1.13, o callback real continuou falhando em `parse_callback` com `OAuth browser state mismatch`, embora `redirect_authority_match=True` e `forwarded_https=True`.
+- **Falha de cobertura identificada:** o teste `probe=1` ainda usava cookie fixo `ig_oauth_probe`, diferente do cookie derivado de `state` usado pelo OAuth 0.1.13. Portanto, o PASS anterior validava host/HTTPS/escopo genérico, mas não validava o mecanismo de cookie que falhava no callback.
+- **Correção de diagnóstico:** o probe passa a emitir e validar `ig_oauth_state_<hash>` com valor sintético de 256 bits, usando exatamente `_state_cookie_name` e o mesmo leitor de cookie do callback. Não grava estado OAuth no SQLite e não acessa a Meta.
+- **Identificação da versão:** `/health` passa a retornar `version: 0.1.14`; a página de probe informa a versão em execução, para confirmar que o Supervisor carregou a candidata.
+- **Testes:** acrescentada cobertura unitária e HTTP para nome/valor derivados do state, cookie de outra tentativa, valor divergente, atributos e marcador de versão.
+- **Segurança e escopo:** mantém `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/oauth/meta/callback`; sem mudança de NGINX, Ingress, opções, credenciais, banco, webhook, Direct, respostas automáticas ou publicações.
+- **Estado:** candidata privada 0.1.14 em preparação; testes ainda não executados nesta alteração. Sem merge, publicação ou instalação. Não repetir OAuth real.
+
 ## 0.1.13 — isolamento do cookie de estado OAuth por tentativa — 20/11/2026
 
 - Cada início OAuth gera um cookie com nome próprio derivado do SHA-256 do `state`; a callback valida somente o cookie correspondente ao estado recebido.

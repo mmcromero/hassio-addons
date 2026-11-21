@@ -118,9 +118,7 @@ def parse_callback(query, cookie_header):
     if not isinstance(code, str) or not 1 <= len(code) <= 2048:
         raise OAuthError("Invalid authorization code")
     # Never use user-provided redirect_uri, app IDs or account IDs from callback.
-    cookie_prefix = _state_cookie_name(state) + "="
-    cookie_values = [c.strip().split("=", 1)[1] for c in (cookie_header or "").split(";")
-                     if c.strip().startswith(cookie_prefix) and "=" in c]
+    cookie_values = _state_cookie_values(state, cookie_header)
     if not cookie_values:
         raise OAuthError("OAuth state cookie missing")
     if len(cookie_values) > 1:
@@ -131,19 +129,28 @@ def parse_callback(query, cookie_header):
 
 
 
+def _state_cookie_values(state, cookie_header):
+    """Read only the cookie bound to this state; shared by OAuth and safe probe."""
+    cookie_prefix = _state_cookie_name(state) + "="
+    return [item.strip().split("=", 1)[1]
+            for item in (cookie_header or "").split(";")
+            if item.strip().startswith(cookie_prefix) and "=" in item]
+
+
 def start_cookie_probe(cfg):
-    """Verify HTTPS browser/proxy cookie roundtrip without contacting Meta."""
+    """Exercise the exact per-state cookie format without contacting Meta."""
     if not is_ready(cfg):
         raise OAuthError("OAuth disabled or incomplete")
     nonce = secrets.token_urlsafe(32)
     callback = cfg["meta_oauth_redirect_uri"] + "?probe=" + nonce
-    cookie = ("ig_oauth_probe=" + nonce +
+    cookie_name = _state_cookie_name(nonce)
+    cookie = (cookie_name + "=" + nonce +
               "; Max-Age=60; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax")
     return callback, cookie
 
 
 def check_cookie_probe(query, cookie_header):
-    """Check the same cookie scope used by OAuth without consuming OAuth state."""
+    """Check the same state-derived cookie name/value used by the OAuth callback."""
     if not isinstance(query, str) or len(query) > 128:
         raise OAuthError("OAuth cookie probe invalid")
     try:
@@ -155,9 +162,7 @@ def check_cookie_probe(query, cookie_header):
     nonce = qs["probe"][0]
     if not re.fullmatch(r"[A-Za-z0-9_-]{43}", nonce):
         raise OAuthError("OAuth cookie probe invalid")
-    cookies = [item.strip().split("=", 1)[1]
-               for item in (cookie_header or "").split(";")
-               if item.strip().startswith("ig_oauth_probe=") and "=" in item]
+    cookies = _state_cookie_values(nonce, cookie_header)
     if not cookies:
         raise OAuthError("OAuth cookie probe missing")
     if len(cookies) > 1:
