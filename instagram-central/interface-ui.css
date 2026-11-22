@@ -176,3 +176,12 @@ body[data-ui-page]{margin:0;background:var(--bg);color:var(--text);font-size:14p
 @media(min-width:640px){.inbox-message{padding:18px}.inbox-message-actions form{flex:0 1 auto}.inbox-message-actions button{min-width:110px}.inbox-message-details dl{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.panel-title:has(#refresh-inbox){flex-wrap:wrap;align-items:flex-start}#refresh-inbox{min-height:44px}}
 .inbox-message-actions .primary{background:var(--orange,#ff8e40);border-color:var(--orange,#ff8e40);color:#161b23}
+
+/* Sender identity: optional photo, primary name, technical ID in details. */
+.inbox-message-head .inbox-sender{display:flex;align-items:center;gap:10px;flex:1 1 160px;min-width:0}
+.inbox-sender-avatar{position:relative;display:grid;place-items:center;flex:0 0 48px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--surface,#152231);border:1px solid var(--edge,#2b4051);font-size:24px}
+.inbox-sender-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.inbox-sender-avatar img[hidden],.inbox-sender-label small[hidden]{display:none}
+.inbox-sender-label{min-width:0;overflow-wrap:anywhere}
+.inbox-sender-label strong,.inbox-sender-label small{display:block}
+.inbox-sender-label small{font-size:12px;color:var(--muted,#a3b5c5);margin-top:3px}

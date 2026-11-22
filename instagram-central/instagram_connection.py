@@ -73,7 +73,7 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
         if method != "GET":
             raise ConnectionError("Graph method not permitted")
     elif re.fullmatch(r"/[0-9]{8,30}", path) and method == 'GET':
-        if fields != {'fields': 'id,username,profile_picture_url'}:
+        if fields not in ({'fields': 'id,username,profile_picture_url'}, {'fields': 'name,username,profile_pic'}):
             raise ConnectionError('Invalid profile request')
     elif re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method in ('GET', 'POST'):
         pass

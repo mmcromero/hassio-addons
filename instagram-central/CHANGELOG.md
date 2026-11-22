@@ -1,3 +1,10 @@
+## 0.1.38 (candidata)
+
+- Identificação visual dos remetentes: foto circular de 48 px, nome e @username quando disponibilizados pela Meta. ID técnico preservado nos detalhes e como fallback.
+- Consultas opcionais somente para remetentes das últimas 50 mensagens da conta selecionada, ao exibir os cartões. Cache com limite por conta, expiração e intervalo de nova tentativa. Foto normalizada localmente; nenhum URL da Meta ou token chega ao navegador. Sem consulta adicional no receptor de webhook.
+- Mantém ingestão, deduplicação, fila, ações, importação manual, Editorial e conexão existentes. Não habilita respostas nem altera autorizações. O endpoint de perfil é documentado com token de Página; compatibilidade com o token Unified salvo e identidade real ainda precisam ser homologadas.
+- Testes dirigidos de cache, isolamento e fallback incluídos. Estado de testes e publicação será registrado separadamente.
+
 ## 0.1.37
 
 - Corrige o acesso por links do ChatGPT que acrescentam `?utm_source=chatgpt.com`: ignora parâmetros UTM conhecidos na navegação da interface, preservando login, sessão e configurações da conta. Não altera webhook, OAuth, fila, dados, layout ou publicação editorial.

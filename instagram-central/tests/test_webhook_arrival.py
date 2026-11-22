@@ -13,7 +13,7 @@ class WebhookArrival(unittest.TestCase):
     def test_signed_request_records_arrival_before_acceptance(self):
         with self.assertLogs(self.server.LOGGER,level='INFO') as logged:
             self.assertEqual(self.fixture.post_event()[0],200)
-        self.assertIn('Meta webhook request: version=0.1.37 exact_path=True length=in_range signature_present=True',logged.output[0])
+        self.assertIn('Meta webhook request: version=0.1.38 exact_path=True length=in_range signature_present=True',logged.output[0])
         self.assertIn('Meta webhook accepted:',logged.output[1])
         text=' '.join(logged.output)
         for private in ('customer-1','business-1','"oi"','test-meta-app-secret','sha256='):

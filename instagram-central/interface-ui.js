@@ -190,6 +190,57 @@
       }finally{done();operation.end();}
     });
   }
+  function initSenderProfiles(root=document){
+    const groups=new Map(), scheduled=new Set(), queue=[];
+    let running=false, observer;
+    root.querySelectorAll('[data-sender-profile]').forEach(node=>{
+      const url=node.dataset.senderProfile;
+      if(!groups.has(url))groups.set(url,[]);
+      groups.get(url).push(node);
+    });
+    const schedule=url=>{
+      if(scheduled.has(url))return;
+      scheduled.add(url);
+      groups.get(url).forEach(node=>observer?.unobserve(node));
+      queue.push(url);void drain();
+    };
+    async function drain(){
+      if(running)return;
+      running=true;
+      try{
+        while(queue.length){
+          const url=queue.shift(), nodes=groups.get(url).filter(node=>node.isConnected);
+          if(!nodes.length)continue;
+          try{
+            const response=await fetch(url,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(18000)});
+            if(!response.ok)continue;
+            const result=await response.json();
+            if(!result || typeof result.name!=='string' || typeof result.username!=='string' ||
+              typeof result.has_photo!=='boolean' || result.status!=='confirmed')continue;
+            nodes.forEach(node=>{
+              if(!node.isConnected)return;
+              const name=node.querySelector('[data-sender-name]'), username=node.querySelector('[data-sender-username]');
+              if(result.name)name.textContent=result.name;
+              else if(result.username)name.textContent='@'+result.username;
+              if(result.name && result.username){username.textContent='@'+result.username;username.hidden=false;}
+              if(result.has_photo){
+                const image=node.querySelector('img');
+                image.addEventListener('load',()=>{image.hidden=false;},{once:true});
+                image.addEventListener('error',()=>{image.hidden=true;},{once:true});
+                image.src=url.replace('view=sender-profile','view=sender-image');
+              }
+            });
+          }catch(_){/* Optional identity: preserve the original ID and message. */}
+        }
+      }finally{running=false;}
+    }
+    if('IntersectionObserver' in window){
+      observer=new IntersectionObserver(entries=>entries.forEach(entry=>{
+        if(entry.isIntersecting)schedule(entry.target.dataset.senderProfile);
+      }),{rootMargin:'120px'});
+      groups.forEach(nodes=>nodes.forEach(node=>observer.observe(node)));
+    }else groups.forEach((_,url)=>schedule(url));
+  }
   function initInboxRefresh(){
     const button=document.getElementById('refresh-inbox');if(!button)return;
     const area=document.getElementById('inbox-messages'),feedback=document.getElementById('inbox-feedback');
@@ -243,6 +294,7 @@
         const refreshed=new DOMParser().parseFromString(await page.text(),'text/html').getElementById('inbox-messages');
         if(!refreshed)throw new Error();
         area.replaceChildren(...refreshed.childNodes);
+        initSenderProfiles(area);
         if(!instant())area.animate([{opacity:0},{opacity:1}],{duration:160,easing:'ease-out'});
         const time=Number.isInteger(report.checked_at)?' às '+new Intl.DateTimeFormat('pt-BR',{
           timeStyle:'medium',timeZone:'America/Sao_Paulo'}).format(new Date(report.checked_at*1000))+' (Brasília)':'';
@@ -498,7 +550,7 @@
       start(label);document.body.classList.add('ui-page-leaving');
     });
     addEventListener('pageshow',event=>{if(event.persisted)restore();});
-    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initInboxRefresh();initRoutingSettings();initIntegrationSettings();
+    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initSenderProfiles();initInboxRefresh();initRoutingSettings();initIntegrationSettings();
     if(!instant()){
       document.body.classList.add('ui-page-enter');
       requestAnimationFrame(()=>{document.body.classList.remove('ui-page-enter');document.body.classList.add('ui-page-ready');});

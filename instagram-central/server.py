@@ -23,6 +23,7 @@ from policy import prepare_decision
 import oauth_meta
 import instagram_connection
 import account_avatar
+import sender_profiles
 import account_registry
 import account_management
 import editorial_core
@@ -42,7 +43,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.37"
+APP_VERSION = "0.1.38"
 _INBOX_LOCK = threading.Lock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
@@ -986,14 +987,15 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
                                '<button class="btn ' + ('primary' if primary else 'quiet') + '" type="submit">' + label + '</button></form>')
         draft_box = ('<section class="inbox-draft" aria-label="Rascunho sem envio"><h3>Rascunho (sem envio)</h3><p>' +
                      html.escape(draft) + '</p></section>') if draft else ''
-        entries.append('<li><article class="inbox-message"><header class="inbox-message-head"><div>'
-            '<span class="inbox-label">Remetente</span><strong>' + html.escape(sender) + '</strong></div>' +
+        entries.append('<li><article class="inbox-message"><header class="inbox-message-head">' +
+            sender_profiles.identity_html(account_management.prefix(cfg.get('business_id', 'umdoislab')), sender) +
             '<time' + date_attr + ' title="Horário de Brasília">' + html.escape(date) + '</time></header>' +
             '<p class="inbox-message-text">' + html.escape(message) + '</p>' +
             '<div class="inbox-message-status"><span>Controle: ' + control + '</span><span>' + origin + '</span></div>' +
             draft_box + '<details class="inbox-message-details"><summary>Fila e rascunho</summary><dl><div><dt>Fila</dt><dd>' +
             queue + '</dd></div><div><dt>Rascunho</dt><dd>' +
             ({'pending':'Aguardando revisão, sem envio', 'discarded':'Descartado'}.get(draft_status,'Sem rascunho salvo')) +
+            '</dd></div><div><dt>ID técnico do remetente</dt><dd>' + html.escape(sender) +
             '</dd></div></dl></details><div class="inbox-message-actions" role="group" aria-label="Ações da conversa com ' +
             html.escape(sender, quote=True) + '">' + ''.join(actions) + '</div></article></li>')
     body = ('<ul class="inbox-message-list" aria-label="Mensagens desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>'
@@ -1317,6 +1319,17 @@ class Handler(BaseHTTPRequestHandler):
         if not self.account_route('GET'):
             return
         route = urlsplit(self.path)
+        sender_route = re.fullmatch(r'view=(sender-profile|sender-image)&sender=([0-9]{8,30})', route.query)
+        if route.path == '/panel' and sender_route:
+            if not panel_session_authorized(self.headers, settings()):
+                return self.respond(403, {'error': 'authentication required'})
+            cfg = self.request_configuration()
+            image_only = sender_route[1] == 'sender-image'
+            result = sender_profiles.get(database, cfg, _meta_credential(self.request_business()),
+                                         sender_route[2], image_only=image_only)
+            if image_only:
+                return self.respond(200 if result else 404, result or b'', 'image/jpeg', csp="default-src 'none'")
+            return self.respond(200, result) if result is not None else self.respond(404, {'error': 'profile unavailable'})
         if route.path == '/panel' and route.query == 'view=profile-image':
             if not panel_session_authorized(self.headers, settings()):
                 return self.respond(403, {'error': 'authentication required'})
