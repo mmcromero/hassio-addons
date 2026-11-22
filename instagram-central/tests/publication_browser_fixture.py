@@ -29,6 +29,19 @@ def credentials(business='umdoislab'):
             'username': cfg['instagram_expected_username'], 'verified_at': 1,
             'access_token': 'synthetic-browser-token-'+business}
 server._meta_credential = credentials
+if '--inbox-layout' in sys.argv:
+    # Synthetic text only: reproduce long links, empty/long drafts and actions.
+    now=datetime.now(timezone.utc).isoformat()
+    with server.database() as db:
+        for account,sender,mid,text,source in (
+            ('17841400000000001','17559000000000001','layout-long','Olá! Mensagem sintética para conferir leitura.\nhttps://www.instagram.com/perfil_sintetico/?teste='+('x'*120)+'\nConteúdo com acentos e emoji 😺.','manual'),
+            ('17841400000000001','17559000000000002','layout-short','Oi','webhook'),
+            ('17841400000000002','17559000000000003','layout-second','Somente a segunda conta','manual')):
+            db.execute('INSERT INTO inbound(recipient_id,sender_id,message_id,message_text,received_at,source,processed_at) VALUES(?,?,?,?,?,?,?)',
+                (account,sender,mid,text,now,source,now if source=='manual' else None))
+        db.execute('INSERT INTO drafts(recipient_id,sender_id,message_id,draft_text,created_at) VALUES(?,?,?,?,?)',
+            ('17841400000000001','17559000000000001','layout-long',
+             'Rascunho sintético sem envio. <script>not_script()</script> '+('Texto para revisão. '*12),now))
 # Profile thumbnails are synthetic, even when saved credentials are simulated.
 from io import BytesIO
 from PIL import Image

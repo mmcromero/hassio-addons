@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.35 (busca manual, Mobile First e editorial)
+# Central Instagram — 0.1.36 (mensagens legíveis, Mobile First e editorial)
 
 A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor; sem foto, aparecem as iniciais.
 
@@ -7,6 +7,12 @@ Há proteção contra perda de alterações e **Continuar composição** para re
 **Atualização:** preserve as opções e `/data` e atualize somente a Central. Não exige alterar NGINX, webhook, portas ou login. A nova exclusão no Instagram pode exigir uma permissão adicional, conforme abaixo. Testes locais incluem toque emulado, criação/revisão/agendamento, larguras 320/360/390, teclado e movimento reduzido. Uso em aparelho real e operações Meta reais precisam ser confirmados após instalar.
 
 No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para publicações com ID remoto confirmado, **Da Central Editorial e do Instagram**. A opção remota pede confirmação da conta indicada e só remove o registro local após a Meta confirmar a exclusão. Pode exigir incluir `instagram_manage_contents` no aplicativo e na configuração do Login do Facebook para Empresas e usar **Conexão Meta → Atualizar permissões da conta → Renovar autorização da conta**. A permissão e o suporte da conexão são conferidos antes de enviar a exclusão; uma recusa preserva registro e arquivos. Carrosséis são excluídos inteiros, não uma imagem isolada. Em caso de resultado incerto, confira o Instagram antes de autorizar nova tentativa; a Central não repete a exclusão automaticamente. As mídias usadas por outras publicações continuam preservadas.
+
+## Mensagens recebidas
+
+A caixa mostra cartões com remetente, data/hora de Brasília, texto completo, controle e origem. Os botões **Assumir, Aguardar, Concluir e Voltar ao bot** mantêm as ações locais de atendimento, com rótulos legíveis e espaço próprio. Rascunhos existentes aparecem no cartão; **Fila e rascunho** reúne os detalhes adicionais. Os controles não enviam respostas ao Instagram.
+
+O operador confirmou leitura/gravação/exibição de mensagens reais pela busca manual na 0.1.35. Isso não comprova entrega por webhook. Para testar uma DM nova, envie-a e recarregue somente a página (F5): esse GET lê o banco local. **Atualizar mensagens** consulta a Meta e não deve ser usado como prova de webhook.
 
 ## Busca manual de mensagens
 

@@ -42,7 +42,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.35"
+APP_VERSION = "0.1.36"
 _INBOX_LOCK = threading.Lock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
@@ -926,6 +926,17 @@ def render_routing_settings(cfg):
             '<p id="routing-feedback" role="status" aria-live="polite">Nenhuma consulta realizada nesta página.</p></section>')
 
 
+def inbox_received_label(value):
+    """Display local time without changing the stored timestamp."""
+    try:
+        date = datetime.fromisoformat(value.replace('Z', '+00:00'))
+        if date.utcoffset() is None:
+            raise ValueError()
+        return date.isoformat(), date.astimezone(ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y às %H:%M')
+    except (ValueError, TypeError, AttributeError, OverflowError):
+        return '', 'Horário não informado'
+
+
 def render_panel(cfg=None, *, settings_page=False, meta_result=''):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
@@ -948,8 +959,10 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
     cfg = cfg or {}
     for account, sender, message, received, processed, state, draft, draft_status, source in rows:
         queue = 'Fora da fila automática' if source == 'manual' else 'Processada' if processed else 'Pendente'
-        cells = (sender, message, state, received, queue,
-                 'Consulta manual à Meta' if source == 'manual' else 'Webhook', draft or '—')
+        origin = 'Consulta manual à Meta' if source == 'manual' else 'Webhook'
+        control = {'bot':'Automação', 'human':'Atendimento humano', 'pending':'Aguardando', 'done':'Concluída'}.get(state,'Não informado')
+        iso, date = inbox_received_label(received)
+        date_attr = ' datetime="' + html.escape(iso, quote=True) + '"' if iso else ''
         actions = []
         pwd = cfg.get("panel_password", "")
         if isinstance(pwd, str) and len(pwd) >= 16:
@@ -960,11 +973,22 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
                           ("state", target), ("csrf", token_for(account, sender, target, pwd)))
                 inputs = "".join('<input type="hidden" name="' + key + '" value="' +
                                  html.escape(value, quote=True) + '">' for key, value in values)
+                primary = target == ('done' if state == 'human' else 'human')
                 actions.append('<form method="post" action="panel/handoff">' + inputs +
-                               '<button type="submit">' + label + '</button></form>')
-        entries.append("<tr>" + "".join("<td>" + html.escape(str(v), quote=True) +
-                       "</td>" for v in cells) + '<td><div class="item-actions">' + "".join(actions) + "</div></td></tr>")
-    body = "".join(entries) if entries else '<tr><td colspan="8">Nenhuma mensagem recebida.</td></tr>'
+                               '<button class="btn ' + ('primary' if primary else 'quiet') + '" type="submit">' + label + '</button></form>')
+        draft_box = ('<section class="inbox-draft" aria-label="Rascunho sem envio"><h3>Rascunho (sem envio)</h3><p>' +
+                     html.escape(draft) + '</p></section>') if draft else ''
+        entries.append('<li><article class="inbox-message"><header class="inbox-message-head"><div>'
+            '<span class="inbox-label">Remetente</span><strong>' + html.escape(sender) + '</strong></div>' +
+            '<time' + date_attr + ' title="Horário de Brasília">' + html.escape(date) + '</time></header>' +
+            '<p class="inbox-message-text">' + html.escape(message) + '</p>' +
+            '<div class="inbox-message-status"><span>Controle: ' + control + '</span><span>' + origin + '</span></div>' +
+            draft_box + '<details class="inbox-message-details"><summary>Fila e rascunho</summary><dl><div><dt>Fila</dt><dd>' +
+            queue + '</dd></div><div><dt>Rascunho</dt><dd>' +
+            ({'pending':'Aguardando revisão, sem envio', 'discarded':'Descartado'}.get(draft_status,'Sem rascunho salvo')) +
+            '</dd></div></dl></details><div class="inbox-message-actions" role="group" aria-label="Ações da conversa com ' +
+            html.escape(sender, quote=True) + '">' + ''.join(actions) + '</div></article></li>')
+    body = ('<ul class="inbox-message-list" aria-label="Mensagens desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>'
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
     content = ('''<div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
       <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p></div>
@@ -976,9 +1000,8 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
       <p id="inbox-feedback" role="status" aria-live="polite"></p>
       <div id="inbox-messages">
       <p><strong>Mensagens armazenadas: ''' + str(message_count) + '''</strong></p>
-      <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
-      <div class="table-wrap"><table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Origem</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead>
-      <tbody>''' + body + '</tbody></table></div></div></section>')
+      <p><small>Últimas 50 mensagens · horários de Brasília. Nenhuma resposta é enviada ao Instagram.</small></p>
+      ''' + body + '</div></section>')
     if settings_page:
         summary = connection_summary(cfg)
         if meta_result == 'token_invalid':
@@ -1062,17 +1085,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 #meta-action-progress{width:100%;margin:0;color:var(--text)}
 .panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 #refresh-inbox{min-height:44px}
-.table-wrap{width:100%;overflow-x:auto;border:1px solid var(--edge);border-radius:11px}
-table{border-collapse:collapse;min-width:870px;width:100%;table-layout:fixed}
-#inbox-messages table{min-width:1100px}
-th,td{padding:14px 12px;border-bottom:1px solid var(--edge);text-align:left;overflow-wrap:anywhere;vertical-align:top;line-height:1.45}
-th{background:var(--surface2);color:#c7d8e6;font-size:12px;letter-spacing:.1px}
-tr:last-child td{border-bottom:0}
-tbody tr:hover{background:#1a2c3b}
-.item-actions{display:flex;flex-wrap:wrap;gap:7px}
-.item-actions form{margin:0;display:inline-flex}
-th:nth-child(1){width:12%}th:nth-child(2){width:20%}th:nth-child(3){width:9%}th:nth-child(4){width:13%}
-th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
 .note{border:1px solid #465538;background:#222c23;border-radius:12px;padding:15px 18px;color:#c5d5bf;line-height:1.6}
 @media(max-width:760px){
 .shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}

@@ -1,3 +1,9 @@
+## 0.1.36
+
+- Corrige o layout das mensagens preenchidas: a tabela tinha oito colunas, mas as larguras de sete já consumiam 100%, comprimindo a coluna de ações e quebrando os rótulos letra por letra. Substitui a tabela por cartões responsivos com texto, estado/origem e ações em áreas próprias.
+- Ações legíveis e contidas no cartão, com alvos de toque de pelo menos 44 px; links longos, quebras de linha, emojis e rascunhos não provocam rolagem horizontal. Mantém rascunhos existentes visíveis e fila/metadados sob demanda.
+- Exibe a data/hora recebida em Brasília, preservando o timestamp armazenado. Mantém formulários, destinos, CSRF, regras de atendimento, dados, busca manual e webhook. Este pacote altera apresentação; não confirma nem altera a entrega real de DMs por webhook.
+
 ## 0.1.35
 
 - Corrige a interrupção de Atualizar mensagens quando uma conversa não inclui a lista de mensagens na resposta expandida. Usa a leitura direta /CONVERSATION_ID/messages somente para IDs retornados pela consulta da conta verificada. Até seis GETs por clique, espaçados e com orçamento de tempo, sem paginação ou consulta periódica.
