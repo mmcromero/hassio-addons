@@ -5,6 +5,12 @@
 > **AMBIENTE COMPARTILHADO — FONTE CENTRAL (19/11/2026):** antes de perguntar sobre Raspberry Pi, Home Assistant, apps instalados, repositórios da loja, ARM64 ou homologação, consulte o [inventário operacional central](https://github.com/mmcromero/hassio-addons/blob/main/docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não copie a lista de apps para outros projetos; confirme no Supervisor apenas dados voláteis ou decisões críticas. Essa referência não autoriza remover, reiniciar, atualizar ou instalar apps.
 
 
+## Túneis compartilhados ChatGPT ↔ HA-MCP / n8n (22/11/2026)
+
+Antes de diagnosticar, configurar ou usar os túneis compartilhados, ler o [manual operacional HA-MCP e n8n](docs/HA-MCP-ACESSO-SOMENTE-LEITURA.md) e o [inventário do Raspberry](docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). A integração OpenAI Tunnel for HA-MCP está instalada uma vez e mantém duas entradas independentes: HA-MCP e n8n. Não reinstalar, duplicar entradas, recriar Tunnel IDs ou gerar chaves por tentativa. O túnel n8n já foi migrado do CMD Windows para o Raspberry e teve chamadas reais HTTP 200 após interromper o processo Windows.
+
+**WhatsApp:** o webhook Evolution → n8n, o fluxo de atendimento e a Central WhatsApp são componentes de negócio separados dos túneis MCP. Não alterar Evolution, webhook, Gateway, worker ou credenciais comerciais para recuperar os túneis. O add-on distribuído em umdoislab-central/ tem fonte privada em mmcromero/whatsapp-automacoes. O manual dos túneis não altera o procedimento de atualização da Central nem autoriza instalação/reinício.
+
 ## P0 — Procedimento único para qualquer publicação no Home Assistant (19/11/2026)
 
 **Aplica-se a todas as pessoas e agentes, independentemente do cargo, experiência ou projeto.** Ao receber ordem para criar, fechar, testar, empacotar ou publicar **qualquer add-on** por `mmcromero/hassio-addons`, consulte **antes de agir** a [rotina canônica do catálogo](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md) e o manual vigente do add-on. O procedimento cobre fechamento do lote, validações proporcionais, publicação isolada em `hassio-addons:main/<pasta-do-add-on>/` mediante autorização, verificação remota e homologação real no Home Assistant. O manual do produto define sua fonte, branch e exportação; **não aplicar nomes de branch exclusivos do Avisaqui aos demais add-ons**.
