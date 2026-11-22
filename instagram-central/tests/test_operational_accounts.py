@@ -180,11 +180,14 @@ class OperationalAccounts(unittest.TestCase):
         root=account_registry.credential_root(server.DATA_DIR,business)
         credential={'business_id':business,'account_id':'22222222','username':'first_review','verified_at':1,'access_token':'SYNTHETIC_SCOPED_TOKEN_'*3}
         server.oauth_meta.store_token(root,credential)
-        with patch.object(server.instagram_connection,'verify_access',return_value={'account_id':'22222222','username':'first_review','verified_at':2}) as verify:
+        with patch.object(server.instagram_connection,'verify_access',return_value={'account_id':'22222222','username':'first_review','verified_at':2}) as verify, patch.object(server.instagram_connection,'diagnose_receiving',return_value={'checked_at':1}) as diagnose:
             status,headers,_=self.form(path+'/panel/meta/check',{'csrf':secondary_csrf})
             self.assertEqual(status,303)
             self.assertEqual(headers['Location'],path+'/panel')
             self.assertEqual(verify.call_args.args[0]['business_id'],business)
+            self.assertEqual(diagnose.call_args.args[0]['business_id'],business)
+            self.assertEqual(diagnose.call_args.args[1]['access_token'],credential['access_token'])
+        self.assertEqual(server._meta_credential(business)['last_meta_action'],{'kind':'check','identity_verified':True})
 
     def test_callback_cannot_be_retargeted_by_query_and_disabled_account_is_refused(self):
         path,business=self.create('first_review')

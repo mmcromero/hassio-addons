@@ -10,6 +10,7 @@ import os
 import secrets
 import re
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 import sqlite3
 from datetime import datetime, timezone
@@ -26,13 +27,14 @@ import editorial_http
 import panel_login
 import origin_configuration
 from urllib.parse import parse_qs, urlsplit
+from zoneinfo import ZoneInfo
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
 DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.21"
+APP_VERSION = "0.1.22"
 
 
 def settings():
@@ -572,7 +574,61 @@ def connection_summary(cfg, credential=None):
         "messagesStored": int(row[0]),
         "lastMessageReceived": row[1],
         "verifiedAt": credential.get("verified_at") if state["account_verified"] else None,
+        "receivingDiagnostics": instagram_connection.safe_diagnostics(
+            credential.get('receiving_diagnostics')) if state['account_verified'] else None,
+        "lastMetaAction": credential.get('last_meta_action') if state['account_verified'] else None,
     }
+
+
+def render_meta_diagnostics(summary):
+    """Visible result from stored, account-bound evidence, never provider text."""
+    action = summary.get('lastMetaAction')
+    feedback = ''
+    if isinstance(action, dict) and action.get('kind') in ('check', 'subscribe'):
+        text = (('Não foi possível confirmar novamente a identidade na Meta. Confira o diagnóstico abaixo; a verificação anterior não foi renovada.'
+                 if action.get('identity_verified') is False else
+                 'Verificação de identidade concluída. Confira o diagnóstico de recebimento abaixo.')
+                if action['kind'] == 'check' else
+                'A Meta aceitou o pedido de assinatura. O recebimento de uma mensagem real ainda precisa ser confirmado.')
+        feedback = '<p role="status"><strong>' + text + '</strong></p>'
+    report = instagram_connection.safe_diagnostics(summary.get('receivingDiagnostics'))
+    if report is None:
+        return feedback
+    labels = {
+        'message_access_disabled': 'A Meta informa que o acesso externo às mensagens está desativado.',
+        'permission_denied': 'A Meta recusou a permissão desta consulta.',
+        'token_invalid': 'A Meta recusou o token salvo.',
+        'unsupported_request': 'A Meta não aceitou esta consulta com o token atual.',
+        'configuration_incomplete': 'Configuração ou identidade verificada incompleta.',
+        'invalid_response': 'A resposta da consulta não permitiu uma confirmação.',
+        'transport_error': 'Não foi possível concluir a comunicação com a Meta.',
+        'provider_error': 'A Meta recusou esta consulta.',
+        'request_unavailable': 'A consulta não pôde ser concluída.'}
+    parts = []
+    for key, title in (('subscription', 'Assinatura consultada na Meta'),
+                       ('conversations', 'Acesso às conversas')):
+        value = report[key]
+        if value['status'] == 'confirmed' and key == 'subscription':
+            text = ('Aplicativo encontrado, campo messages presente.' if value.get('messages') is True else
+                    'Aplicativo encontrado, campo messages ausente.' if value.get('messages') is False else
+                    'Aplicativo encontrado; campo messages não confirmado.')
+        elif value['status'] == 'confirmed':
+            text = ('Acesso aceito; há conversa visível, sem consultar seu conteúdo.' if value.get('conversation_found') else
+                    'Acesso aceito; a amostra retornou vazia.')
+        elif value['status'] == 'absent':
+            text = 'O aplicativo não consta na assinatura desta conta.'
+        else:
+            text = labels.get(value.get('reason'), 'Não foi possível confirmar.')
+        codes = ['%s=%s' % (label, value[key]) for key, label in
+                 (('http_status', 'HTTP'), ('provider_code', 'código Meta'),
+                  ('provider_subcode', 'subcódigo')) if key in value]
+        parts.append('<li><strong>' + title + ':</strong> ' + text +
+                     (' <small>(' + ', '.join(codes) + ')</small>' if codes else '') + '</li>')
+    checked = datetime.fromtimestamp(report['checked_at'], timezone.utc).astimezone(
+        ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S')
+    return (feedback + '<div aria-label="Diagnóstico de recebimento"><h3>Diagnóstico de recebimento</h3>'
+            '<p>Última consulta: ' + checked + ' (Brasília).</p><ul>' + ''.join(parts) + '</ul>'
+            '<p>Estas consultas não enviam mensagens nem comprovam a entrega de eventos reais.</p></div>')
 
 
 def render_connection_section(cfg, summary):
@@ -631,7 +687,7 @@ def render_connection_section(cfg, summary):
        """</strong> · Última entrada: """ + html.escape(str(last)) + """</p>
        <p><small>Uma assinatura aceita pela Meta não comprova que mensagens já chegam.
        O primeiro recebimento assinado é a confirmação.</small></p>""" +
-       " ".join(actions) +
+        " ".join(actions) + render_meta_diagnostics(summary) +
        """<div id="meta-actions"></div></section>""")
 
 
@@ -1207,15 +1263,30 @@ class Handler(BaseHTTPRequestHandler):
                 if credential is None or credential.get("business_id", "umdoislab") != cfg["business_id"]:
                     raise instagram_connection.ConnectionError("No token available")
                 if action == "check":
-                    identity = instagram_connection.verify_access(
-                        cfg, credential["access_token"])
-                    credential.update(identity)
+                    # Run the bounded read-only diagnosis alongside identity
+                    # verification rather than extending the proxy's wait in series.
+                    with ThreadPoolExecutor(max_workers=1) as pool:
+                        receiving = pool.submit(instagram_connection.diagnose_receiving, cfg, credential)
+                        try:
+                            identity = instagram_connection.verify_access(cfg, credential["access_token"])
+                        except instagram_connection.ConnectionError:
+                            identity = None
+                        diagnostics = instagram_connection.safe_diagnostics(receiving.result())
+                    if identity is not None:
+                        credential.update(identity)
+                    credential['receiving_diagnostics'] = diagnostics
+                    credential['last_meta_action'] = {'kind': 'check', 'identity_verified': identity is not None}
+                    LOGGER.info('Meta receiving diagnosis: version=%s summary=%s', APP_VERSION, diagnostics)
                 else:
                     when = instagram_connection.subscribe_messages(cfg, credential)
                     credential["subscribed_at"] = when
+                    credential['last_meta_action'] = {'kind': 'subscribe'}
+                    # A previous read cannot certify the state after this write.
+                    credential.pop('receiving_diagnostics', None)
                 root = account_registry.credential_root(
                     DATA_DIR, cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
                 oauth_meta.store_token(root, credential)
+                LOGGER.info('Meta action completed: version=%s action=%s', APP_VERSION, action)
             except (instagram_connection.ConnectionError, oauth_meta.OAuthError,
                     OSError, ValueError):
                 return self.respond(422, {"error": "Meta access or subscription not verified"})

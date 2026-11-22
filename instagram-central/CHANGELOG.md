@@ -1,3 +1,10 @@
+## 0.1.22
+
+- Verificar acesso Meta consulta a assinatura efetiva do app/conta e acesso às conversas, usando o token cifrado já salvo e apenas GETs com campos limitados.
+- Exibe diagnóstico com horário, estados independentes e erros fixos/códigos numéricos; não consulta conteúdo nem armazena IDs de conversas/respostas privadas.
+- Mostra confirmação das ações; falha de identidade não renova a verificação anterior. Assinar mensagens não é confundido com entrega real e invalida diagnóstico anterior.
+- Preserva isolamento, sessão/CSRF, opções, dados, manifesto, proxy e URLs. Não ativa envios, automações ou publicação nem altera ManyChat/roteamento.
+
 ## 0.1.21
 
 - Reconhece eventos de texto em entry[].changes[] / field=messages do login unificado; preserva entry[].messaging[] e deduplicação entre formatos.

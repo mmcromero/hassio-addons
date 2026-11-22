@@ -45,6 +45,11 @@ def graph(version, path, token, **kwargs):
     if path == '/me/assigned_instagram_accounts':
         return {'data':[{'id':'11111111','username':'umdoislab'}, {'id':'22222222','username':'second_review'}, {'id':'33333333','username':'third_review'}]}
     if path == '/me': return {'client_business_id':'44444444'}
+    if path == '/11111111/subscribed_apps' and kwargs.get('method', 'GET') == 'GET':
+        return {'data':[{'app_id':CONFIG['meta_app_id'],'subscribed_fields':['messages']}]}
+    if path == '/11111111/conversations' and kwargs.get('method', 'GET') == 'GET':
+        assert kwargs.get('fields') == {'platform':'instagram','fields':'id','limit':'1'}
+        return {'data':[{'id':'SYNTHETIC_CONVERSATION_ID_NEVER_RENDERED'}]}
     raise AssertionError('Unexpected provider operation')
 
 server.instagram_connection.request_graph = graph
@@ -138,7 +143,7 @@ class Proxy(BaseHTTPRequestHandler):
         self.end_headers(); self.wfile.write(raw)
 
     def do_POST(self):
-        if self.path not in ('/auth/login', '/auth/logout', '/accounts') and not self.path.startswith(('/accounts/', '/editorial/')):
+        if self.path not in ('/auth/login', '/auth/logout', '/accounts', '/panel/meta/check') and not self.path.startswith(('/accounts/', '/editorial/')):
             self.send_response(404); self.end_headers(); return
         raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',

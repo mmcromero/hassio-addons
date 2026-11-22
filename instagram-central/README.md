@@ -1,4 +1,24 @@
-# Central Instagram — 0.1.21 (recebimento no login unificado)
+# Central Instagram — 0.1.22 (conferência do recebimento)
+
+A **0.1.22** mostra o resultado de **Verificar acesso Meta** no próprio painel. Além de verificar a identidade, consulta, sem alterar a Meta, se o aplicativo configurado consta na assinatura da conta com o campo `messages` e se o token salvo permite consultar uma amostra de conversas. A amostra pede somente um ID, que é descartado; não consulta textos, participantes ou histórico. Falha de identidade não renova a verificação anterior e aparece explicitamente. Falhas de consulta aparecem separadas, com categorias fixas e códigos numéricos, sem a resposta privada da Meta.
+
+**Atualização da 0.1.21:** faça backup e atualize somente a Central, preservando opções e `/data`. Não substitua o proxy nem refaça OAuth por rotina. Abra **https://instagram.romeropi.duckdns.org:8443/panel**, clique uma vez em **Verificar acesso Meta** e leia **Diagnóstico de recebimento**. É possível compartilhar somente as linhas **Assinatura consultada na Meta** e **Acesso às conversas**. Nenhum token precisa ser copiado. Recarregar a página apenas exibe o último diagnóstico, com horário; não consulta novamente a Meta. Um acesso aceito com amostra vazia não comprova recebimento de DM.
+
+O botão **Assinar mensagens na Meta** também passa a mostrar confirmação quando a Meta aceita o pedido; isso ainda não comprova a chegada de eventos reais. Uma nova assinatura invalida o diagnóstico anterior; use Verificar acesso Meta para uma nova leitura quando necessário. Não há assinatura automática, envio, mudança no ManyChat ou roteamento de conversas nesta atualização.
+
+### Credenciais: funções diferentes
+
+| Campo | Origem e finalidade |
+|---|---|
+| `meta_app_id` | ID do aplicativo `auto_reply` nas configurações básicas da Meta; identifica o app. |
+| `meta_app_secret` | Chave secreta desse mesmo app; usada no OAuth e na validação de assinatura dos eventos. Não é um token de acesso. |
+| `meta_verify_token` | Segredo de verificação escolhido na instalação; deve coincidir com **Verificar token** do webhook na Meta. Não é emitido pelo login. |
+| Token de acesso OAuth | Emitido pela Meta após autorização e guardado cifrado pela Central, por conta. Não deve ser colado no App Secret ou no verify token. |
+| `bridge_secret` e senha do painel | Segredos locais com finalidades próprias; não são credenciais a cadastrar no webhook da Meta. |
+
+O valor antigo encontrado por engano em App Secret tem origem desconhecida. Não o mover para outro campo por suposição. OAuth autorizado e evento de teste com assinatura aceita são evidências desses passos nas respectivas tentativas; não comprovam toda a configuração de mensagens ou todas as funcionalidades futuras. A primeira DM real segue pendente. As consultas desta versão ajudam a localizar a falha sem presumir que todo o código/configuração já esteja correto.
+
+## Correção anterior 0.1.21
 
 A **0.1.21** corrige o reconhecimento de mensagens recebidas no envelope `entry[].changes[]` com `field=messages`, usado no login unificado, além de preservar `entry[].messaging[]`. Antes, um evento unificado válido podia receber HTTP 200 sem que sua mensagem fosse gravada. Assinatura HMAC, conta destinatária, deduplicação e isolamento permanecem obrigatórios. Outros campos, como comments, continuam sem processamento/resposta automática.
 

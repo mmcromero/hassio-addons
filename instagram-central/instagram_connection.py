@@ -7,6 +7,7 @@ never logged or reflected to the browser.
 import json
 import re
 import time
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -19,7 +20,30 @@ class ConnectionError(Exception):
     """Sanitized provider error, without credentials or response content."""
 
 
-def request_graph(version, path, token, method="GET", fields=None, opener=urlopen):
+class GraphError(ConnectionError):
+    """Only fixed categories and numeric provider codes may leave this module."""
+    def __init__(self, reason, http_status=None, provider_code=None, provider_subcode=None):
+        super().__init__('Meta diagnostic request failed')
+        self.details = {'reason': reason, 'http_status': http_status,
+                        'provider_code': provider_code, 'provider_subcode': provider_subcode}
+
+
+def _graph_error(obj, http_status=None):
+    error = obj.get('error') if isinstance(obj, dict) else None
+    error = error if isinstance(error, dict) else {}
+    number = lambda value: value if type(value) is int and 0 <= value <= 2**31-1 else None
+    code, subcode = number(error.get('code')), number(error.get('error_subcode'))
+    message = error.get('message')
+    # Match a documented error only to produce a fixed label; never retain text.
+    disabled = (isinstance(message, str) and 'disabled access' in message.lower()
+                and 'messag' in message.lower() and 'instagram' in message.lower())
+    reason = ('message_access_disabled' if disabled else 'token_invalid' if code == 190
+              else 'permission_denied' if code in (10, 200)
+              else 'unsupported_request' if code == 100 else 'provider_error')
+    return GraphError(reason, http_status, code, subcode)
+
+
+def request_graph(version, path, token, method="GET", fields=None, opener=urlopen, timeout=12):
     if not GRAPH_VERSION.fullmatch(str(version or "")):
         raise ConnectionError("Invalid Meta Graph version")
     if not isinstance(token, str) or not 20 <= len(token) <= 8192:
@@ -28,7 +52,12 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if path in ("/me/assigned_instagram_accounts", "/me"):
         if method != "GET":
             raise ConnectionError("Graph method not permitted")
-    elif not (re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method == "POST"):
+    elif re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method in ('GET', 'POST'):
+        pass
+    elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
+        if fields != {'platform': 'instagram', 'fields': 'id', 'limit': '1'}:
+            raise ConnectionError('Conversation diagnostic must not read message content')
+    else:
         raise ConnectionError("Graph request not permitted")
     if method not in ("GET", "POST"):
         raise ConnectionError("Graph method not permitted")
@@ -49,18 +78,111 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded"})
     try:
-        with opener(req, timeout=12) as response:
+        with opener(req, timeout=timeout) as response:
             raw = response.read(MAX_GRAPH_RESPONSE + 1)
         if len(raw) > MAX_GRAPH_RESPONSE:
-            raise ConnectionError("Meta response too large")
+            raise GraphError('invalid_response')
         obj = json.loads(raw)
     except ConnectionError:
         raise
+    except (ValueError, UnicodeError):
+        raise GraphError('invalid_response') from None
+    except HTTPError as exc:
+        try:
+            raw = exc.read(MAX_GRAPH_RESPONSE + 1)
+            obj = json.loads(raw) if len(raw) <= MAX_GRAPH_RESPONSE else None
+        except Exception:
+            obj = None
+        finally:
+            exc.close()
+        raise _graph_error(obj, exc.code) from None
     except Exception:
-        raise ConnectionError("Meta request failed") from None
+        raise GraphError('transport_error') from None
     if not isinstance(obj, dict) or "error" in obj:
-        raise ConnectionError("Meta declined the request")
+        raise _graph_error(obj)
     return obj
+
+
+def diagnose_receiving(cfg, credential):
+    """Read only this verified account's subscription and one conversation ID.
+
+    Provider results, conversation IDs and unrelated apps are never returned.
+    No sends, subscription writes, routing changes, or provider URL pagination.
+    """
+    account_id = cfg.get('instagram_account_id')
+    app_id = cfg.get('meta_app_id')
+    report = {'checked_at': int(time.time()), 'subscription': {'status': 'unknown'},
+              'conversations': {'status': 'unknown'}}
+    if (not credential_status(credential, cfg)['account_verified']
+            or not IG_ACCOUNT.fullmatch(str(account_id or ''))
+            or not IG_ACCOUNT.fullmatch(str(app_id or ''))):
+        report['subscription']['reason'] = 'configuration_incomplete'
+        report['conversations']['reason'] = 'configuration_incomplete'
+        return report
+    token, version = credential.get('access_token'), cfg.get('meta_graph_version')
+    for key, path, fields in (
+            ('subscription', '/' + account_id + '/subscribed_apps',
+             {'fields': 'app_id,subscribed_fields', 'limit': '100'}),
+            ('conversations', '/' + account_id + '/conversations',
+             {'platform': 'instagram', 'fields': 'id', 'limit': '1'})):
+        try:
+            data = request_graph(version, path, token, fields=fields, timeout=5)
+            entries = data.get('data')
+            if not isinstance(entries, list) or len(entries) > (100 if key == 'subscription' else 1):
+                raise GraphError('invalid_response')
+            if key == 'conversations':
+                if any(not isinstance(item, dict) or not isinstance(item.get('id'), str)
+                       or not 1 <= len(item['id']) <= 256 for item in entries):
+                    raise GraphError('invalid_response')
+                report[key] = {'status': 'confirmed', 'conversation_found': bool(entries)}
+                continue
+            matches = [item for item in entries if isinstance(item, dict) and item.get('app_id') == app_id]
+            if len(matches) > 1:
+                raise GraphError('invalid_response')
+            if not matches:
+                # No match in an incomplete page is not proof of absence.
+                paging = data.get('paging')
+                incomplete = (paging is not None and (not isinstance(paging, dict) or bool(paging.get('next'))))
+                malformed = any(not isinstance(item, dict) or not isinstance(item.get('app_id'), str)
+                                for item in entries)
+                report[key] = {'status': 'unknown' if incomplete or malformed else 'absent'}
+                continue
+            subscribed = matches[0].get('subscribed_fields')
+            if (not isinstance(subscribed, list) or len(subscribed) > 100
+                    or any(not isinstance(field, str) or len(field) > 100 for field in subscribed)):
+                raise GraphError('invalid_response')
+            report[key] = {'status': 'confirmed', 'messages': 'messages' in subscribed}
+        except GraphError as exc:
+            report[key] = {'status': 'error', **exc.details}
+        except ConnectionError:
+            report[key] = {'status': 'error', 'reason': 'request_unavailable'}
+    return report
+
+
+def safe_diagnostics(report):
+    """Strict output allowlist, including reports read back from local storage."""
+    if (not isinstance(report, dict) or type(report.get('checked_at')) is not int
+            or not 1 <= report['checked_at'] <= 4102444800):
+        return None
+    clean = {'checked_at': report['checked_at']}
+    reasons = {'configuration_incomplete', 'invalid_response', 'message_access_disabled',
+               'permission_denied', 'token_invalid', 'unsupported_request',
+               'provider_error', 'transport_error', 'request_unavailable'}
+    for key in ('subscription', 'conversations'):
+        part = report.get(key)
+        part = part if isinstance(part, dict) else {}
+        status = part.get('status')
+        value = {'status': status if status in ('confirmed', 'absent', 'unknown', 'error') else 'unknown'}
+        if isinstance(part.get('reason'), str) and part['reason'] in reasons:
+            value['reason'] = part['reason']
+        for code in ('http_status', 'provider_code', 'provider_subcode'):
+            if type(part.get(code)) is int and 0 <= part[code] <= 2**31-1:
+                value[code] = part[code]
+        for flag in ('messages', 'conversation_found'):
+            if type(part.get(flag)) is bool:
+                value[flag] = part[flag]
+        clean[key] = value
+    return clean
 
 
 def verify_access(cfg, token, opener=urlopen):
