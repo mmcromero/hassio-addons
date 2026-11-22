@@ -32,7 +32,7 @@ CONFIG = {'instagram_account_id': '11111111', 'panel_password': 'oauth_fixture_p
           'ingress_enabled': False, 'drafts_enabled': False, 'meta_oauth_redirect_uri': ''}
 server.settings = lambda: dict(CONFIG)
 server.LOGGER.addHandler(logging.NullHandler()); server.LOGGER.propagate = False
-state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0, 'routing_reads': 0}
+state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0, 'routing_reads': 0, 'inbox_reads': 0}
 
 
 def exchange(code, cfg):
@@ -43,6 +43,18 @@ def exchange(code, cfg):
 
 server.oauth_meta.exchange_code = exchange
 def graph(version, path, token, **kwargs):
+    if '--inbox' in sys.argv and state.get('reject_token'):
+        raise server.instagram_connection.GraphError('token_invalid', 400, 190)
+    if ('--inbox' in sys.argv and path in ('/11111111/conversations', '/22222222/conversations')
+            and kwargs.get('fields') == server.instagram_connection.INBOX_FIELDS):
+        state['inbox_reads'] += 1
+        account = path.split('/')[1]
+        return {'data': [{'id': 'PRIVATE_CONVERSATION', 'messages': {'data': [
+            {'id': 'SYNTHETIC_SHARED_MID', 'message': 'SYNTHETIC ' + account + ' <script>not_script()</script>',
+             'created_time': '2026-11-21T23:00:00-03:00', 'from': {'id': '99999999'}, 'to': {'data': [{'id': account}]}},
+            {'id': 'SYNTHETIC_OUT', 'message': 'OUTGOING_NEVER_IMPORTED',
+             'created_time': '2026-11-21T23:01:00-03:00', 'from': {'id': account}, 'to': {'data': [{'id': '99999999'}]}}
+        ]}}]}
     if path == '/me/assigned_instagram_accounts':
         return {'data':[{'id':'11111111','username':'umdoislab'}, {'id':'22222222','username':'second_review'}, {'id':'33333333','username':'third_review'}]}
     if path == '/me': return {'client_business_id':'44444444'}
@@ -172,7 +184,7 @@ class Proxy(BaseHTTPRequestHandler):
         raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',
                    'Content-Type': self.headers.get('Content-Type', '')}
-        for key in ('Cookie', 'Origin', 'Authorization', 'X-CSRF-Token', 'X-Editorial-Action', 'X-Import-Id', 'X-Media-Index', 'X-Meta-Diagnostic'):
+        for key in ('Cookie', 'Origin', 'Authorization', 'X-CSRF-Token', 'X-Editorial-Action', 'X-Import-Id', 'X-Media-Index', 'X-Meta-Diagnostic', 'X-Meta-Inbox'):
             if self.headers.get(key): headers[key] = self.headers[key]
         client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
         try:
@@ -200,6 +212,14 @@ class Control(BaseHTTPRequestHandler):
         elif self.path == '/drift': CONFIG['meta_login_config_id'] = '98765432'; data = {}
         elif self.path == '/routing-observe' and '--routing' in sys.argv:
             data = {'routingReads': state['routing_reads']}
+        elif self.path == '/inbox-reject-token' and '--inbox' in sys.argv:
+            state['reject_token'] = True
+            data = {}
+        elif self.path == '/inbox-observe' and '--inbox' in sys.argv:
+            with server.database() as conn:
+                data = {'inboxReads': state['inbox_reads'],
+                        'stored': conn.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],
+                        'queued': len(server.list_pending(account_id='11111111'))}
         elif self.path == '/integration-observe' and '--integration' in sys.argv:
             for business in server.publication_businesses():
                 for _ in range(8):

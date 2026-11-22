@@ -187,6 +187,60 @@
       }finally{done();operation.end();}
     });
   }
+  function initInboxRefresh(){
+    const button=document.getElementById('refresh-inbox');if(!button)return;
+    const area=document.getElementById('inbox-messages'),feedback=document.getElementById('inbox-feedback');
+    button.addEventListener('click',async()=>{
+      if(button.disabled)return;
+      const done=hold(button,'Buscando na Meta…'),progress=start('Buscando mensagens recentes na Meta…');
+      area.setAttribute('aria-busy','true');area.classList.add('ui-skeleton');
+      feedback.textContent='Consultando a conta selecionada. Aguarde…';
+      let saved=false;
+      try{
+        const response=await fetch(button.dataset.inboxUrl,{method:'POST',credentials:'same-origin',cache:'no-store',
+          signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded','X-Meta-Inbox':'refresh'},
+          body:new URLSearchParams({csrf:button.dataset.inboxCsrf})});
+        const raw=await response.text();let report;
+        try{if(raw.length<=16384)report=JSON.parse(raw);}catch(_){}
+        if(response.status===403)throw new Error('A sessão expirou ou a busca não foi autorizada. Entre novamente.');
+        if(!response.ok || !report || !['confirmed','error'].includes(report.status))
+          throw new Error('Não foi possível concluir a busca na Meta. As mensagens já armazenadas foram preservadas.');
+        if(report.status==='error'){
+          const reasons={busy:'Já há uma busca manual em andamento. Aguarde a conclusão.',
+            configuration_incomplete:'Conecte e verifique esta conta em Configurações Meta antes de buscar mensagens.',
+            permission_denied:'A Meta recusou o acesso ao conteúdo das mensagens.',token_invalid:'A Meta recusou o token salvo.',
+            unsupported_request:'A Meta não disponibilizou esta consulta de mensagens para este acesso.',
+            message_access_disabled:'O acesso externo às mensagens está desativado no Instagram.',
+            message_identity_unavailable:'A Meta retornou mensagens sem identificar remetente e destinatário suficientes para importá-las com segurança.',
+            transport_error:'Não foi possível concluir a comunicação com a Meta.',
+            invalid_response:'A Meta retornou mensagens em formato inesperado.',storage_error:'Não foi possível gravar a busca na caixa de entrada.'};
+          const codes=[['HTTP',report.http_status],['código Meta',report.provider_code],['subcódigo',report.provider_subcode]]
+            .filter(item=>Number.isInteger(item[1])).map(item=>item[0]+' '+item[1]).join(', ');
+          throw new Error((reasons[report.reason] || 'A busca não foi concluída.')+(codes?' ('+codes+')':''));
+        }
+        if(![report.imported,report.existing,report.scanned,report.skipped].every(n=>Number.isInteger(n)&&n>=0&&n<=50)
+          || !Number.isInteger(report.conversations) || report.conversations<0 || report.conversations>5
+          || typeof report.limited!=='boolean')throw new Error('Não foi possível confirmar o resumo da busca. Recarregue a caixa.');
+        saved=true;
+        const page=await fetch(location.pathname,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
+        if(!page.ok)throw new Error();
+        const refreshed=new DOMParser().parseFromString(await page.text(),'text/html').getElementById('inbox-messages');
+        if(!refreshed)throw new Error();
+        area.replaceChildren(...refreshed.childNodes);
+        if(!instant())area.animate([{opacity:0},{opacity:1}],{duration:160,easing:'ease-out'});
+        const time=Number.isInteger(report.checked_at)?' às '+new Intl.DateTimeFormat('pt-BR',{
+          timeStyle:'medium',timeZone:'America/Sao_Paulo'}).format(new Date(report.checked_at*1000))+' (Brasília)':'';
+        feedback.textContent='Busca concluída'+time+': '+report.imported+' mensagem(ns) adicionada(s), '+report.existing+
+          ' já armazenada(s), '+report.skipped+' item(ns) ignorado(s) (saídas, outros destinatários ou sem texto compatível). '+
+          'Consultadas '+report.conversations+' conversa(s). '+(report.limited?'Há mais itens fora desta amostra. ':'')+
+          'As mensagens da busca manual ficam fora da fila automática. Isso não confirma entrega de webhook.';
+      }catch(error){
+        feedback.textContent=saved?'Busca concluída, mas a tela não pôde ser recarregada. Recarregue a página para ver as mensagens armazenadas.':
+          ['TimeoutError','AbortError'].includes(error.name) || error instanceof TypeError
+            ?'A busca foi interrompida. Recarregue a caixa para conferir o resultado antes de repetir.':error.message;
+      }finally{area.removeAttribute('aria-busy');area.classList.remove('ui-skeleton');done();progress.end();announce(feedback.textContent);}
+    });
+  }
   function initRoutingSettings(){
     const button=document.getElementById('check-routing');if(!button)return;
     const result=document.getElementById('routing-result'),feedback=document.getElementById('routing-feedback');
@@ -345,7 +399,7 @@
       start(label);document.body.classList.add('ui-page-leaving');
     });
     addEventListener('pageshow',event=>{if(event.persisted)restore();});
-    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initRoutingSettings();initIntegrationSettings();
+    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initInboxRefresh();initRoutingSettings();initIntegrationSettings();
     if(!instant()){
       document.body.classList.add('ui-page-enter');
       requestAnimationFrame(()=>{document.body.classList.remove('ui-page-enter');document.body.classList.add('ui-page-ready');});

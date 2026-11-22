@@ -1,3 +1,11 @@
+## 0.1.33
+
+- Atualizar mensagens passa a buscar textos recentes na Meta por conta e gravar/exibir na caixa: até 5 conversas × 10 mensagens, em um GET explícito. Sem polling ou resposta automática. Espera, trava de duplicação, resultado/erro acessível e preservação da caixa.
+- Identifica origem manual/webhook e deduplica pelos IDs existentes. Importação manual não entra na fila automática nem comprova recepção de webhook; webhook válido posterior promove o mesmo registro uma vez. Migração aditiva preserva dados existentes.
+- Corrige a primeira conexão de contas novas: destaca Conectar Instagram pela Meta, explica cadastro/autorização, desabilita Verificar acesso Meta sem credencial e mantém consulta para credencial salva. Erros de autorização, token, consulta ou assinatura retornam à configuração da mesma conta com feedback fixo, sem JSON genérico ou nova autorização automática.
+- Separa autorização da conta dos indicadores/configuração de webhook. Preserva credenciais por conta, sessões, CSRF e fluxo de publicação/integração genérica.
+- Torna explícita a exclusão somente local no botão, modal e confirmação do Editorial. Exclusão remota não habilitada: o suporte ao BISU/Unified Login e a permissão específica ainda não foram confirmados. Nenhuma postagem real apagada.
+
 ## 0.1.32
 
 - Consulta manual de controle e atividade em Configurações Meta, por conta, com uma única leitura de até cinco conversas usando `id,is_owner,updated_time`. Descarta IDs e não pede conteúdo nem participantes.

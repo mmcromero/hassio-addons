@@ -351,7 +351,7 @@
       }
     }
     if(options.approval){
-      const remove=el('button','btn quiet danger','Excluir');remove.type='button';
+      const remove=el('button','btn quiet danger','Excluir da Central');remove.type='button';
       remove.disabled=!['draft','approved','scheduled','failed','published'].includes(post.status) ||
         (post.publicationAttempted && post.status!=='published') || (post.source==='instagram' && historyActive());
       if(remove.disabled)remove.title='Confira o resultado do envio antes de excluir.';
@@ -782,14 +782,15 @@
   function requestDeletion(kind,item){
     if(state.busy || state.actionPending)return UI.announce('Aguarde a conclusão da operação atual.');
     state.pendingDelete={kind,id:item.id,version:item.version};
-    $('delete-title').textContent=kind==='post'?'Excluir publicação local':'Excluir mídia da biblioteca';
+    $('delete-title').textContent=kind==='post'?'Excluir somente da Central':'Excluir mídia da biblioteca';
+    $('confirm-delete').textContent=kind==='post'?'Excluir somente da Central':'Excluir arquivo da Central';
     $('delete-description').textContent=kind==='post'
       ? 'Conta @'+state.accountUsername+' · '+(postText(item).slice(0,120) || 'Publicação sem legenda')
       : 'Conta @'+state.accountUsername+' · '+item.name+' · '+bytesLabel(item.size);
     $('delete-consequence').textContent=kind==='media'
       ? 'O arquivo será apagado do armazenamento da Central. Esta ação não pode ser desfeita.'
       : (item.status==='scheduled'?'O agendamento será cancelado. ':'')+
-        'O registro será apagado da Central. Conteúdo já publicado no Instagram permanece lá. Esta ação não pode ser desfeita.'+
+        'O registro será apagado somente da Central. Conteúdo já publicado continuará no Instagram; nesta conexão, a remoção de lá deve ser feita no próprio Instagram. Esta ação local não pode ser desfeita.'+
         (item.source==='instagram'?' Uma nova sincronização poderá importar o registro novamente.':'');
     $('delete-media-option').hidden=kind!=='post';$('delete-unused-media').checked=true;
     $('delete-feedback').textContent='';UI.dialog.open($('delete-dialog'));
@@ -798,7 +799,7 @@
     if(state.busy || state.actionPending || !state.pendingDelete)return;
     const pending=state.pendingDelete;state.busy=true;
     const release=UI.hold($('confirm-delete'),'Excluindo…');
-    $('delete-feedback').textContent='Excluindo da conta selecionada…';
+    $('delete-feedback').textContent='Excluindo somente da Central, na conta selecionada…';
     try{
       const action=pending.kind==='post'?'delete_post':'delete_media';
       const data=pending.kind==='post'?{version:pending.version,deleteUnusedMedia:$('delete-unused-media').checked}:{mediaId:pending.id};
@@ -806,7 +807,7 @@
       if(pending.kind==='post' && state.currentPostId===pending.id){state.currentPostId=null;state.currentPostVersion=null;}
       await refresh();state.currentMediaIds=state.currentMediaIds.filter(id=>state.media.some(m=>m.id===id));state.editorPreviewKey=null;
       UI.dialog.close($('delete-dialog'));state.pendingDelete=null;
-      toast('Exclusão concluída. '+(result.deletedMedia || 0)+' mídia(s) removida(s); '+bytesLabel(result.freedBytes || 0)+' liberados.'+
+      toast('Exclusão da Central concluída. '+(result.deletedMedia || 0)+' mídia(s) removida(s); '+bytesLabel(result.freedBytes || 0)+' liberados.'+
         (result.keptMedia?' '+result.keptMedia+' mídia(s) preservada(s) por uso em outra publicação.':'')+
         (result.pendingBytes?' Limpeza de '+bytesLabel(result.pendingBytes)+' pendente; será retomada ao abrir a conta.':''));
     }catch(error){$('delete-feedback').textContent=error.message || 'Não foi possível confirmar a exclusão. Atualize e confira os dados.';}

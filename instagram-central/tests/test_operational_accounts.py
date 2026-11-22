@@ -173,7 +173,7 @@ class OperationalAccounts(unittest.TestCase):
         secondary_csrf=panel_login.admin_csrf_token(self.session,self.fixture.config['panel_password'],'meta:'+business+':check')
         with patch.object(server.instagram_connection,'verify_access') as verify:
             self.assertEqual(self.form(path+'/panel/meta/check',{'csrf':primary_csrf})[0],403)
-            self.assertEqual(self.form(path+'/panel/meta/check',{'csrf':secondary_csrf})[0],422)
+            self.assertEqual(self.form(path+'/panel/meta/check',{'csrf':secondary_csrf})[0],303)
             verify.assert_not_called()
         self.assertIsNone(server._meta_credential(business))
         with server.database() as conn:account_registry.bind_verified(conn,business,'22222222','first_review')
@@ -183,7 +183,7 @@ class OperationalAccounts(unittest.TestCase):
         with patch.object(server.instagram_connection,'verify_access',return_value={'account_id':'22222222','username':'first_review','verified_at':2}) as verify, patch.object(server.instagram_connection,'diagnose_receiving',return_value={'checked_at':1}) as diagnose:
             status,headers,_=self.form(path+'/panel/meta/check',{'csrf':secondary_csrf})
             self.assertEqual(status,303)
-            self.assertEqual(headers['Location'],path+'/panel?view=settings')
+            self.assertEqual(headers['Location'],path+'/panel?view=settings&meta_result=check_completed')
             self.assertEqual(verify.call_args.args[0]['business_id'],business)
             self.assertEqual(diagnose.call_args.args[0]['business_id'],business)
             self.assertEqual(diagnose.call_args.args[1]['access_token'],credential['access_token'])

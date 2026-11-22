@@ -425,6 +425,7 @@ class MigrationAndContextTests(unittest.TestCase):
                 self.assertEqual(server.primary_meta_id(), "synthetic-1")
                 with server.database() as db:
                     self.assertEqual(db.execute("SELECT message_text FROM inbound").fetchone()[0], "legacy")
+                    self.assertEqual(db.execute("SELECT source FROM inbound").fetchone()[0], 'webhook')
                     self.assertIn("processed_at", {r[1] for r in db.execute("PRAGMA table_info(inbound)")})
                     self.assertEqual(db.execute("SELECT COUNT(*) FROM instagram_accounts").fetchone()[0], 1)
             finally:

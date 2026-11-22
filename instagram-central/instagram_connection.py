@@ -1,13 +1,14 @@
 """Meta Unified Login Graph calls for an Instagram professional account.
 
 Only the fixed graph.facebook.com host is used. No Direct send, n8n or
-WhatsApp API exists here. Provider responses and authorization tokens are
-never logged or reflected to the browser.
+WhatsApp API exists here. Authorization tokens and raw provider responses are
+never logged or reflected to the browser. An explicit manual inbox read returns
+validated incoming texts to local storage; diagnostics remain content-free.
 """
 import json
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
@@ -16,6 +17,8 @@ MAX_GRAPH_RESPONSE = 64 * 1024
 GRAPH_VERSION = re.compile(r"v[0-9]{1,2}\.0\Z")
 IG_ACCOUNT = re.compile(r"[0-9]{8,30}\Z")
 ROUTING_FIELDS = {'platform': 'instagram', 'fields': 'id,is_owner,updated_time', 'limit': '5'}
+INBOX_FIELDS = {'platform': 'instagram', 'fields':
+    'id,messages.limit(10){id,message,created_time,from{id},to{id}}', 'limit': '5'}
 
 
 class _NoGraphRedirect(HTTPRedirectHandler):
@@ -65,8 +68,8 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     elif re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method in ('GET', 'POST'):
         pass
     elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
-        if fields not in ({'platform': 'instagram', 'fields': 'id', 'limit': '1'}, ROUTING_FIELDS):
-            raise ConnectionError('Conversation diagnostic must not read message content')
+        if fields not in ({'platform': 'instagram', 'fields': 'id', 'limit': '1'}, ROUTING_FIELDS, INBOX_FIELDS):
+            raise ConnectionError('Conversation fields not permitted')
     elif path == '/debug_token' and method == 'GET':
         if (not isinstance(fields, dict) or set(fields) != {'input_token'}
                 or not isinstance(fields['input_token'], str)
@@ -95,12 +98,13 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
         "Authorization": "Bearer " + token,
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded"})
+    response_limit = 512 * 1024 if fields == INBOX_FIELDS else MAX_GRAPH_RESPONSE
     try:
         # Never forward a token/app secret to a redirect destination.
         open_request = _GRAPH_OPEN if opener is urlopen else opener
         with open_request(req, timeout=timeout) as response:
-            raw = response.read(MAX_GRAPH_RESPONSE + 1)
-        if len(raw) > MAX_GRAPH_RESPONSE:
+            raw = response.read(response_limit + 1)
+        if len(raw) > response_limit:
             raise GraphError('invalid_response')
         obj = json.loads(raw)
     except ConnectionError:
@@ -121,6 +125,65 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if not isinstance(obj, dict) or "error" in obj:
         raise _graph_error(obj)
     return obj
+
+
+def read_recent_inbox(cfg, credential):
+    """Manual, bounded content read for this verified account; no paging or sending."""
+    if (not credential_status(credential, cfg)['account_verified']
+            or not IG_ACCOUNT.fullmatch(str(cfg.get('instagram_account_id') or ''))):
+        raise GraphError('configuration_incomplete')
+    account = cfg['instagram_account_id']
+    result = request_graph(cfg.get('meta_graph_version'), '/' + account + '/conversations',
+        credential.get('access_token'), fields=dict(INBOX_FIELDS), timeout=8)
+    conversations = result.get('data')
+    if not isinstance(conversations, list) or len(conversations) > 5:
+        raise GraphError('invalid_response')
+    found, seen = [], set()
+    scanned = skipped = 0
+    limited = bool(result.get('paging', {}).get('next')) if isinstance(result.get('paging'), dict) else False
+    for conversation in conversations:
+        if not isinstance(conversation, dict) or not isinstance(conversation.get('id'), str):
+            raise GraphError('invalid_response')
+        messages = conversation.get('messages')
+        if not isinstance(messages, dict) or not isinstance(messages.get('data'), list) or len(messages['data']) > 10:
+            raise GraphError('invalid_response')
+        limited |= bool(messages.get('paging', {}).get('next')) if isinstance(messages.get('paging'), dict) else False
+        for message in messages['data']:
+            scanned += 1
+            if not isinstance(message, dict):
+                raise GraphError('invalid_response')
+            mid, text = message.get('id'), message.get('message')
+            sender, recipients = message.get('from'), message.get('to')
+            if (not isinstance(sender, dict) or 'id' not in sender
+                    or not isinstance(recipients, dict) or 'data' not in recipients):
+                raise GraphError('message_identity_unavailable')
+            if (not isinstance(sender, dict) or not isinstance(sender.get('id'), str)
+                    or not IG_ACCOUNT.fullmatch(sender['id']) or not isinstance(recipients, dict)
+                    or not isinstance(recipients.get('data'), list) or len(recipients['data']) > 10):
+                raise GraphError('invalid_response')
+            targets = recipients['data']
+            if any(not isinstance(target, dict) or not isinstance(target.get('id'), str) for target in targets):
+                raise GraphError('invalid_response')
+            if (sender['id'] == account or len(targets) != 1 or targets[0]['id'] != account
+                    or not isinstance(text, str) or not 1 <= len(text.strip()) <= 2000):
+                skipped += 1
+                continue
+            if not isinstance(mid, str) or not 1 <= len(mid) <= 160:
+                raise GraphError('invalid_response')
+            try:
+                raw_time = message['created_time']
+                if not isinstance(raw_time, str) or len(raw_time) > 64:
+                    raise ValueError()
+                stamp = datetime.fromisoformat(raw_time.replace('Z', '+00:00'))
+                if stamp.utcoffset() is None or not 0 <= stamp.timestamp() <= time.time() + 300:
+                    raise ValueError()
+            except (KeyError, ValueError, OverflowError, OSError):
+                raise GraphError('invalid_response') from None
+            if (sender['id'], mid) not in seen:
+                seen.add((sender['id'], mid))
+                found.append((account, sender['id'], mid, text.strip(), stamp.astimezone(timezone.utc).isoformat()))
+    return found, {'conversations': len(conversations), 'scanned': scanned, 'skipped': skipped,
+                   'limited': limited, 'checked_at': int(time.time())}
 
 
 def diagnose_conversation_routing(cfg, credential):

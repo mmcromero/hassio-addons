@@ -120,7 +120,7 @@ class InstagramIngressTests(unittest.TestCase):
         """Regression: INSERT must name columns after adding lease/ACK fields."""
         with server.database() as conn:
             names = {row[1] for row in conn.execute("PRAGMA table_info(inbound)")}
-            self.assertTrue({"processed_at", "claim_token", "claim_until"}.issubset(names))
+            self.assertTrue({"processed_at", "claim_token", "claim_until", "source"}.issubset(names))
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         with server.database() as conn:
             row = conn.execute("""SELECT message_text, processed_at, claim_token, claim_until

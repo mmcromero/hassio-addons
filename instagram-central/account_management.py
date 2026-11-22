@@ -14,7 +14,8 @@ def render(accounts, cfg, cookie_header, summary_for, *, error=False):
     cards = []
     for account in accounts:
         summary = summary_for(account['business_id'])
-        status = 'Conectada à Meta' if summary['accountVerified'] else 'Conexão pendente'
+        status = ('Reconexão Meta necessária' if summary.get('reauthRequired') else
+                  'Conectada à Meta' if summary['accountVerified'] else 'Autorização Meta pendente')
         path = prefix(account['business_id']) + '/panel?view=settings'
         cards.append('<li><h2>' + html.escape(account['display_name']) + '</h2><p>@' +
                      html.escape(account['username']) + ' · ' + status + '</p><a href="' + path +

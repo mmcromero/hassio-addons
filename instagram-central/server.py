@@ -41,7 +41,19 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.32"
+APP_VERSION = "0.1.33"
+_INBOX_LOCK = threading.Lock()
+META_RESULTS = {
+    'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
+    'oauth_incomplete': 'A conexão inicial ainda não está preparada. Confira a configuração de autorização abaixo.',
+    'token_invalid': 'A Meta recusou a credencial salva ou informou que ela não é mais válida. Reconecte esta conta pela Meta.',
+    'permission_denied': 'A Meta recusou o acesso solicitado. Confira as permissões desta conta; nenhuma autorização ou assinatura foi feita automaticamente.',
+    'query_failed': 'Não foi possível concluir a consulta à Meta. A autorização anterior foi preservada. Confira o diagnóstico antes de tentar novamente.',
+    'subscription_failed': 'Não foi possível confirmar a assinatura de mensagens nesta conta. A conexão existente foi preservada.',
+    'storage_error': 'Não foi possível salvar o resultado da consulta. A autorização existente foi preservada.',
+    'check_completed': 'Verificação concluída. Confira os resultados desta conta abaixo.',
+    'subscription_completed': 'Solicitação de assinatura concluída. Isso ainda não comprova entrega de mensagens reais.',
+}
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -107,6 +119,8 @@ def _open_database():
     for column in ("claim_token", "claim_until"):
         if column not in columns:
             conn.execute("ALTER TABLE inbound ADD COLUMN " + column + " TEXT")
+    if 'source' not in columns:
+        conn.execute("ALTER TABLE inbound ADD COLUMN source TEXT NOT NULL DEFAULT 'webhook' CHECK(source IN ('webhook','manual'))")
     conn.execute("""CREATE TABLE IF NOT EXISTS handoff (
       recipient_id TEXT NOT NULL, sender_id TEXT NOT NULL,
       state TEXT NOT NULL DEFAULT 'bot' CHECK(state IN ('bot','pending','human','done')),
@@ -169,7 +183,7 @@ def list_pending(limit=50, *, account_id=None):
             COALESCE(h.state, 'bot') AS handoff_state
             FROM inbound i LEFT JOIN handoff h
               ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
-            WHERE i.processed_at IS NULL AND i.recipient_id=?
+            WHERE i.processed_at IS NULL AND i.source='webhook' AND i.recipient_id=?
             ORDER BY i.received_at, i.rowid LIMIT ?""",
             (account_id, min(max(int(limit), 1), 50))).fetchall()
     return [{"channel": "instagram", "accountId": r[0],
@@ -191,7 +205,7 @@ def claim_message(lease_seconds=120, *, account_id=None):
           i.message_text, i.received_at, COALESCE(h.state, 'bot')
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
-          WHERE i.processed_at IS NULL AND i.recipient_id=?
+          WHERE i.processed_at IS NULL AND i.source='webhook' AND i.recipient_id=?
             AND COALESCE(h.state, 'bot') = 'bot'
             AND (i.claim_until IS NULL OR i.claim_until <= ?)
           ORDER BY i.received_at, i.rowid LIMIT 1""",
@@ -219,7 +233,7 @@ def acknowledge_message(data):
     with database() as conn:
         cur = conn.execute("""UPDATE inbound SET processed_at=?, claim_token=NULL, claim_until=NULL
           WHERE recipient_id=? AND sender_id=? AND message_id=?
-            AND processed_at IS NULL AND claim_token=? AND claim_until > ?""",
+            AND source='webhook' AND processed_at IS NULL AND claim_token=? AND claim_until > ?""",
           (_utc_now().isoformat(), account, sender, mid, token, _utc_now().isoformat()))
         return cur.rowcount == 1
 
@@ -239,7 +253,7 @@ def evaluate_claim(data):
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
           WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
-            AND i.claim_token=? AND i.claim_until>? AND i.processed_at IS NULL""",
+            AND i.source='webhook' AND i.claim_token=? AND i.claim_until>? AND i.processed_at IS NULL""",
           (*values, _utc_now().isoformat())).fetchone()
     if row is None:
         return None
@@ -268,7 +282,7 @@ def save_draft(data):
           LEFT JOIN handoff h ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
           WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
             AND i.claim_token=? AND i.claim_until>?
-            AND i.processed_at IS NULL AND COALESCE(h.state, 'bot')='bot'""",
+            AND i.source='webhook' AND i.processed_at IS NULL AND COALESCE(h.state, 'bot')='bot'""",
           (reference["accountId"], reference["senderId"], reference["messageId"],
            reference["claimToken"], now)).fetchone()
         if eligible is None:
@@ -415,10 +429,44 @@ def persist(body, account_id=None):
             if account_registry.resolve_meta(conn, rid) is None:
                 continue
             cursor = conn.execute(
-                "INSERT OR IGNORE INTO inbound (recipient_id,sender_id,message_id,message_text,received_at) VALUES(?,?,?,?,?)",
+                """INSERT INTO inbound (recipient_id,sender_id,message_id,message_text,received_at)
+                VALUES(?,?,?,?,?) ON CONFLICT(recipient_id,sender_id,message_id) DO UPDATE SET
+                source='webhook',message_text=excluded.message_text,received_at=excluded.received_at,
+                processed_at=NULL,claim_token=NULL,claim_until=NULL
+                WHERE inbound.source='manual'""",
                 (rid, sid, mid, msg, datetime.now(timezone.utc).isoformat()))
             inserted += cursor.rowcount
     return inserted
+
+
+def refresh_inbox(cfg, credential):
+    """Explicit owner request only. Imports cannot enter the automatic bridge queue."""
+    if not _INBOX_LOCK.acquire(blocking=False):
+        return {'status': 'error', 'reason': 'busy'}
+    try:
+        messages, report = instagram_connection.read_recent_inbox(cfg, credential)
+        inserted = 0
+        with database() as conn:
+            conn.execute('BEGIN IMMEDIATE')
+            business = account_registry.require_business(conn, cfg.get('business_id', account_registry.PRIMARY_BUSINESS))
+            if business['instagram_account_id'] != cfg['instagram_account_id']:
+                raise instagram_connection.GraphError('configuration_incomplete')
+            manual_hold = _utc_now().isoformat()
+            for row in messages:
+                cursor = conn.execute('''INSERT OR IGNORE INTO inbound
+                    (recipient_id,sender_id,message_id,message_text,received_at,source,processed_at)
+                    VALUES(?,?,?,?,?,'manual',?)''', (*row, manual_hold))
+                inserted += cursor.rowcount
+        return {**report, 'status': 'confirmed', 'imported': inserted,
+                'existing': len(messages) - inserted}
+    except instagram_connection.GraphError as exc:
+        return {'status': 'error', **{k:v for k,v in exc.details.items() if v is not None}}
+    except (instagram_connection.ConnectionError, account_registry.RegistryError):
+        return {'status': 'error', 'reason': 'configuration_incomplete'}
+    except (sqlite3.Error, OSError):
+        return {'status': 'error', 'reason': 'storage_error'}
+    finally:
+        _INBOX_LOCK.release()
 
 
 def panel_session_authorized(headers, cfg):
@@ -604,10 +652,16 @@ def connection_summary(cfg, credential=None):
     with database() as conn:
         if isinstance(account_id, str) and account_id:
             row = conn.execute(
-                "SELECT COUNT(*), MAX(received_at) FROM inbound WHERE recipient_id=?",
+                "SELECT COUNT(*), MAX(received_at) FROM inbound WHERE recipient_id=? AND source='webhook'",
                 (account_id,)).fetchone()
         else:
             row = (0, None)
+    diagnostics = instagram_connection.safe_diagnostics(credential.get('receiving_diagnostics')) if state['account_verified'] else None
+    last_action = credential.get('last_meta_action') if isinstance(credential, dict) else None
+    reauth = (isinstance(last_action, dict) and last_action.get('reason') == 'token_invalid') or (
+        isinstance(diagnostics, dict) and any(
+            isinstance(part, dict) and (part.get('reason') == 'token_invalid' or part.get('token_is_valid') is False)
+            for part in diagnostics.values()))
     return {
         "oauthReady": oauth_meta.is_ready(cfg),
         "tokenStored": bool(credential),
@@ -621,9 +675,9 @@ def connection_summary(cfg, credential=None):
         "messagesStored": int(row[0]),
         "lastMessageReceived": row[1],
         "verifiedAt": credential.get("verified_at") if state["account_verified"] else None,
-        "receivingDiagnostics": instagram_connection.safe_diagnostics(
-            credential.get('receiving_diagnostics')) if state['account_verified'] else None,
-        "lastMetaAction": credential.get('last_meta_action') if state['account_verified'] else None,
+        "receivingDiagnostics": diagnostics,
+        "lastMetaAction": last_action if state['account_verified'] else None,
+        "reauthRequired": bool(reauth),
     }
 
 
@@ -705,12 +759,19 @@ def render_connection_section(cfg, summary):
         ("Webhook habilitado", summary["webhookEnabled"]),
         ("Assinatura solicitada", summary["subscriptionRequested"]),
     )
-    flags = "".join("<li>" + html.escape(label) + ": <strong>" +
-                    ("Sim" if value else "Não") + "</strong></li>"
-                    for label, value in items)
+    def flags(values):
+        return ''.join('<li>' + html.escape(label) + ': <strong>' + ('Sim' if value else 'Não') + '</strong></li>'
+                       for label, value in values)
     last = summary["lastMessageReceived"] or "Nenhuma"
     url = cfg.get("meta_oauth_redirect_uri", "")
     actions = []
+    if not summary.get('tokenStored'):
+        actions.append('<p><strong>Próximo passo: autorizar esta conta na Meta.</strong> Cadastrar nome e @ cria o cadastro local; '
+                       'a autorização só acontece em Conectar Instagram pela Meta.</p>')
+    elif summary.get('reauthRequired'):
+        actions.append('<p role="alert">A credencial salva foi recusada pela Meta. Reconecte esta conta para renovar a autorização.</p>')
+    elif not summary['accountVerified']:
+        actions.append('<p>Há uma credencial salva. Use Verificar acesso Meta para confirmar a identidade desta conta.</p>')
     try:
         origin = origin_configuration.public_origin(cfg)
         origin_matches = origin_configuration.oauth_origin_matches(cfg)
@@ -721,14 +782,15 @@ def render_connection_section(cfg, summary):
                        + '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a>')
     if not origin_matches:
         actions.append('<p>Configure o retorno OAuth na mesma URL pública HTTPS da Central antes de conectar.</p>')
-    if summary["oauthReady"] and not summary["accountVerified"] and origin_matches:
+    if summary['oauthReady'] and (not summary['accountVerified'] or summary.get('reauthRequired')) and origin_matches:
         # A browser session established via the same HTTPS hostname is required
         # for the public proxy route to recognize the session cookie.
         start_url = url[:-len("/oauth/meta/callback")] + cfg.get("account_path", "") + "/oauth/meta/start"
         actions.append('<a href="' + html.escape(start_url + "?probe=1", quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Testar navegador e proxy (sem Meta)</a>')
-        actions.append('<a href="' + html.escape(start_url, quote=True)
-                       + '" target="_blank" rel="noopener noreferrer">Conectar Instagram pela Meta</a>')
+        actions.insert(1, '<p><a class="btn primary" href="' + html.escape(start_url, quote=True)
+                       + '" target="_blank" rel="noopener noreferrer">' +
+                       ('Reconectar Instagram pela Meta' if summary.get('reauthRequired') else 'Conectar Instagram pela Meta') + '</a></p>')
     setup = (
         ("App Meta", bool(str(cfg.get("meta_app_id") or "").isdigit())),
         ("Login unificado", bool(str(cfg.get("meta_login_config_id") or "").isdigit())),
@@ -736,23 +798,27 @@ def render_connection_section(cfg, summary):
         ("Retorno HTTPS", oauth_meta.is_ready(cfg)),
         ("Segredo Meta", isinstance(cfg.get("meta_app_secret"), str)
           and len(cfg.get("meta_app_secret", "")) >= 16),
-        ("Token de verificação", isinstance(cfg.get("meta_verify_token"), str)
-          and len(cfg.get("meta_verify_token", "")) >= 24),
     )
     checklist = "".join("<li>" + label + ": " + ("configurado" if ready else "pendente")
                         + "</li>" for label, ready in setup)
+    webhook_setup = '<li>Token de verificação: ' + ('configurado' if
+        isinstance(cfg.get('meta_verify_token'), str) and len(cfg['meta_verify_token']) >= 24 else 'pendente') + '</li>'
     return ("""<section class="panel connection-panel" aria-label="Conexão com Instagram">
        <h2>Conexão com o Instagram</h2><p>Conta: <strong>@""" + html.escape(str(cfg.get("instagram_expected_username") or "umdoislab")) + """</strong>
        · ID: <code>""" + name + """</code></p>
-       <ul>""" + flags + """</ul>
+       <h3>Autorização da conta</h3><ul>""" + flags(items[:2]) + """</ul>""" + ' '.join(actions) + """
        <details><summary>Configuração necessária</summary><ul>""" + checklist + """</ul>
+       <p>Em contas novas, a Meta preenche o ID do Instagram depois da autorização.</p>
        <p>As credenciais são configuradas nas opções do aplicativo no Home Assistant.
        Não compartilhe segredos por mensagem.</p></details>
-       <p><strong>Mensagens armazenadas: """ + str(summary["messagesStored"]) +
-       """</strong> · Última entrada: """ + html.escape(str(last)) + """</p>
+       <h3>Recebimento por webhook</h3><ul>""" + flags(items[2:]) + """</ul>
+       <p>Autorizar a conta e receber eventos são etapas distintas. A configuração do webhook não é pré-requisito para iniciar a autorização da conta.</p>
+       <details><summary>Configuração do webhook</summary><ul>""" + webhook_setup + """</ul></details>
+       <p><strong>Mensagens recebidas por webhook: """ + str(summary["messagesStored"]) +
+       """</strong> · Última entrada por webhook: """ + html.escape(str(last)) + """</p>
        <p><small>Uma assinatura aceita pela Meta não comprova que mensagens já chegam.
        O primeiro recebimento assinado é a confirmação.</small></p>""" +
-        " ".join(actions) + render_meta_diagnostics(summary) +
+        render_meta_diagnostics(summary) +
        """<div id="meta-actions"></div></section>""")
 
 
@@ -766,6 +832,19 @@ def _meta_action_body(raw):
     if set(values) != {"csrf"} or len(values["csrf"]) != 1:
         return None
     return values["csrf"][0]
+
+
+def settings_result(query):
+    if query == 'view=settings':
+        return ''
+    try:
+        fields = parse_qs(query, keep_blank_values=True, max_num_fields=2)
+    except ValueError:
+        return None
+    if (set(fields) == {'view', 'meta_result'} and fields['view'] == ['settings']
+            and len(fields['meta_result']) == 1 and fields['meta_result'][0] in META_RESULTS):
+        return fields['meta_result'][0]
+    return None
 
 
 def navigation_configuration(cfg):
@@ -820,7 +899,7 @@ def render_routing_settings(cfg):
             '<p id="routing-feedback" role="status" aria-live="polite">Nenhuma consulta realizada nesta página.</p></section>')
 
 
-def render_panel(cfg=None, *, settings_page=False):
+def render_panel(cfg=None, *, settings_page=False, meta_result=''):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
     rows, message_count = [], 0
@@ -831,7 +910,7 @@ def render_panel(cfg=None, *, settings_page=False):
             message_count = conn.execute('SELECT COUNT(*) FROM inbound WHERE recipient_id=?', (account_id,)).fetchone()[0]
             rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
               i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
-              COALESCE(d.draft_text, ''), COALESCE(d.status, '')
+              COALESCE(d.draft_text, ''), COALESCE(d.status, ''), i.source
               FROM inbound i LEFT JOIN handoff h
                 ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
               LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
@@ -840,8 +919,10 @@ def render_panel(cfg=None, *, settings_page=False):
               ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""", (account_id,)).fetchall()
     entries = []
     cfg = cfg or {}
-    for account, sender, message, received, processed, state, draft, draft_status in rows:
-        cells = (sender, message, state, received, "Processada" if processed else "Pendente", draft or "—")
+    for account, sender, message, received, processed, state, draft, draft_status, source in rows:
+        queue = 'Fora da fila automática' if source == 'manual' else 'Processada' if processed else 'Pendente'
+        cells = (sender, message, state, received, queue,
+                 'Consulta manual à Meta' if source == 'manual' else 'Webhook', draft or '—')
         actions = []
         pwd = cfg.get("panel_password", "")
         if isinstance(pwd, str) and len(pwd) >= 16:
@@ -856,20 +937,30 @@ def render_panel(cfg=None, *, settings_page=False):
                                '<button type="submit">' + label + '</button></form>')
         entries.append("<tr>" + "".join("<td>" + html.escape(str(v), quote=True) +
                        "</td>" for v in cells) + '<td><div class="item-actions">' + "".join(actions) + "</div></td></tr>")
-    body = "".join(entries) if entries else '<tr><td colspan="7">Nenhuma mensagem recebida.</td></tr>'
+    body = "".join(entries) if entries else '<tr><td colspan="8">Nenhuma mensagem recebida.</td></tr>'
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
     content = ('''<div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
       <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p></div>
       <section class="panel" aria-label="Últimas mensagens"><div class="panel-title"><h2>Mensagens recebidas</h2>
-      <a class="btn quiet" href="panel">Atualizar mensagens</a></div>
+      <button type="button" class="btn quiet" id="refresh-inbox" data-inbox-url="''' +
+      html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/panel/meta/check', quote=True) +
+      '''" data-inbox-csrf="">Atualizar mensagens</button></div>
+      <p>Busca manual na Meta: até 5 conversas recentes e 10 mensagens de cada. Somente textos recebidos; sem consulta periódica.</p>
+      <p id="inbox-feedback" role="status" aria-live="polite"></p>
+      <div id="inbox-messages">
       <p><strong>Mensagens armazenadas: ''' + str(message_count) + '''</strong></p>
       <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
-      <div class="table-wrap"><table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead>
-      <tbody>''' + body + '</tbody></table></div></section>')
+      <div class="table-wrap"><table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Origem</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead>
+      <tbody>''' + body + '</tbody></table></div></div></section>')
     if settings_page:
+        summary = connection_summary(cfg)
+        if meta_result == 'token_invalid':
+            summary['reauthRequired'] = True
+        feedback = ('<p id="meta-feedback" role="' + ('status' if meta_result.endswith('_completed') else 'alert') + '">' +
+                    META_RESULTS[meta_result] + '</p>') if meta_result in META_RESULTS else ''
         content = ('<div class="heading"><span class="eyebrow">CONFIGURAÇÃO DA CONTA</span>'
-                   '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' +
-                   render_connection_section(cfg, connection_summary(cfg)) + render_routing_settings(cfg) + render_publication_settings(cfg) +
+                   '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' + feedback +
+                   render_connection_section(cfg, summary) + render_routing_settings(cfg) + render_publication_settings(cfg) +
                    render_integration_settings(cfg))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -931,17 +1022,20 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 .connection-panel details{background:var(--surface2);border:1px solid var(--edge);border-radius:10px;padding:12px 15px;margin:15px 0}
 .connection-panel summary{cursor:pointer;font-weight:700}
 .connection-panel a{color:var(--orange)}
+.connection-panel a.btn.primary{display:inline-block;min-height:44px;background:var(--orange);border-color:var(--orange);color:#161b23;text-decoration:none}
 .connection-panel code{color:#d0e4ff;overflow-wrap:anywhere}
 .connection-panel small{color:var(--muted)}
 #meta-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 #meta-actions form{margin:0}
-#meta-actions button{border:1px solid var(--orange);background:var(--orange);color:#161b23;border-radius:10px;padding:10px 15px;font-weight:700}
+#meta-actions button{min-height:44px;border:1px solid var(--orange);background:var(--orange);color:#161b23;border-radius:10px;padding:10px 15px;font-weight:700}
 #meta-actions button:hover{filter:brightness(1.09)}
 #meta-actions button:disabled{opacity:.65;cursor:progress}
 #meta-action-progress{width:100%;margin:0;color:var(--text)}
 .panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+#refresh-inbox{min-height:44px}
 .table-wrap{width:100%;overflow-x:auto;border:1px solid var(--edge);border-radius:11px}
 table{border-collapse:collapse;min-width:870px;width:100%;table-layout:fixed}
+#inbox-messages table{min-width:1100px}
 th,td{padding:14px 12px;border-bottom:1px solid var(--edge);text-align:left;overflow-wrap:anywhere;vertical-align:top;line-height:1.45}
 th{background:var(--surface2);color:#c7d8e6;font-size:12px;letter-spacing:.1px}
 tr:last-child td{border-bottom:0}
@@ -1070,6 +1164,14 @@ class Handler(BaseHTTPRequestHandler):
     def meta_csrf_action(self, action):
         business = self.request_business()
         return action if business == account_registry.PRIMARY_BUSINESS else 'meta:' + business + ':' + action
+
+    def meta_redirect(self, result):
+        assert result in META_RESULTS
+        self.send_response(303)
+        self.send_header('Location', account_management.prefix(self.request_business()) + '/panel?view=settings&meta_result=' + result)
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', '0')
+        self.end_headers()
 
     def account_route(self, method):
         """Authenticate explicit account paths before dispatch; no global selection."""
@@ -1340,12 +1442,17 @@ class Handler(BaseHTTPRequestHandler):
                 "Nenhum conteúdo foi enviado.<p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/editorial/'>Abrir Editorial desta conta</a></p><p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/panel?view=settings'>Abrir Configurações Meta desta conta</a></p></body></html>", "text/html")
-        settings_page = route.path in ('/', '/panel') and route.query == 'view=settings'
+        meta_result = settings_result(route.query)
+        settings_page = route.path in ('/', '/panel') and meta_result is not None
         if self.path in ("/", "/panel") or settings_page:
             cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")
-            page = render_panel(cfg, settings_page=settings_page)
+            page = render_panel(cfg, settings_page=settings_page, meta_result=meta_result or '')
+            if not settings_page:
+                csrf_inbox = panel_login.admin_csrf_token(
+                    self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('inbox_refresh'))
+                page = page.replace('data-inbox-csrf=""', 'data-inbox-csrf="' + csrf_inbox + '"')
             csrf_check = panel_login.admin_csrf_token(
                 self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("check"))
             csrf_subscribe = panel_login.admin_csrf_token(
@@ -1354,7 +1461,10 @@ class Handler(BaseHTTPRequestHandler):
                 csrf_routing = panel_login.admin_csrf_token(
                     self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('routing'))
                 page = page.replace('data-routing-csrf=""', 'data-routing-csrf="' + csrf_routing + '"')
-                controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button>Verificar acesso Meta</button></form>'
+                saved = connection_summary(cfg)['tokenStored']
+                controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button' + ('' if saved else ' disabled') + '>Verificar acesso Meta</button></form>'
+                if not saved:
+                    controls += '<p>Verificar acesso Meta fica disponível depois de autorizar esta conta em Conectar Instagram pela Meta.</p>'
                 if (connection_summary(cfg)["accountVerified"] and
                         connection_summary(cfg)["webhookEnabled"] and
                         connection_summary(cfg)["webhookConfigReady"]):
@@ -1433,6 +1543,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(413, {"error": "size not allowed"})
             action = "check" if self.path.endswith("/check") else "subscribe"
             diagnostics = self.headers.get_all('X-Meta-Diagnostic', [])
+            inbox = self.headers.get_all('X-Meta-Inbox', [])
+            if inbox:
+                if inbox != ['refresh'] or diagnostics or action != 'check':
+                    return self.respond(400, {'error': 'invalid inbox action'})
+                if self.headers.get('Transfer-Encoding') or len(self.headers.get_all('Content-Length', [])) != 1:
+                    return self.respond(400, {'error': 'invalid inbox length'})
+                action = 'inbox_refresh'
             if diagnostics:
                 if diagnostics != ['routing'] or action != 'check':
                     return self.respond(400, {'error': 'invalid diagnostic'})
@@ -1445,7 +1562,11 @@ class Handler(BaseHTTPRequestHandler):
                     self.meta_csrf_action(action), candidate):
                 return self.respond(403, {"error": "invalid CSRF"})
             if not oauth_meta.is_ready(cfg):
-                return self.respond(503, {"error": "OAuth disabled or incomplete"})
+                if action in ('routing', 'inbox_refresh'):
+                    return self.respond(503, {"error": "OAuth disabled or incomplete"})
+                return self.meta_redirect('oauth_incomplete')
+            if action == 'inbox_refresh':
+                return self.respond(200, refresh_inbox(cfg, _meta_credential(self.request_business())))
             if action == 'routing':
                 # Read only; never replace/refresh credentials or run the other diagnostics.
                 return self.respond(200, instagram_connection.diagnose_conversation_routing(
@@ -1453,14 +1574,19 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 credential = _meta_credential(self.request_business())
                 if credential is None or credential.get("business_id", "umdoislab") != cfg["business_id"]:
-                    raise instagram_connection.ConnectionError("No token available")
+                    return self.meta_redirect('authorization_missing')
+                result = 'check_completed' if action == 'check' else 'subscription_completed'
                 if action == "check":
                     # Run the bounded read-only diagnosis alongside identity
                     # verification rather than extending the proxy's wait in series.
                     with ThreadPoolExecutor(max_workers=1) as pool:
                         receiving = pool.submit(instagram_connection.diagnose_receiving, cfg, credential)
+                        identity_reason = None
                         try:
-                            identity = instagram_connection.verify_access(cfg, credential["access_token"])
+                            identity = instagram_connection.verify_access(cfg, credential.get('access_token'))
+                        except instagram_connection.GraphError as exc:
+                            identity = None
+                            identity_reason = exc.details.get('reason')
                         except instagram_connection.ConnectionError:
                             identity = None
                         diagnostics = instagram_connection.safe_diagnostics(receiving.result())
@@ -1468,6 +1594,12 @@ class Handler(BaseHTTPRequestHandler):
                         credential.update(identity)
                     credential['receiving_diagnostics'] = diagnostics
                     credential['last_meta_action'] = {'kind': 'check', 'identity_verified': identity is not None}
+                    if identity is None:
+                        if identity_reason in ('token_invalid', 'permission_denied'):
+                            result = identity_reason
+                            credential['last_meta_action']['reason'] = identity_reason
+                        else:
+                            result = 'query_failed'
                     LOGGER.info('Meta receiving diagnosis: version=%s summary=%s', APP_VERSION, diagnostics)
                 else:
                     when = instagram_connection.subscribe_messages(cfg, credential)
@@ -1479,15 +1611,15 @@ class Handler(BaseHTTPRequestHandler):
                     DATA_DIR, cfg.get("business_id", account_registry.PRIMARY_BUSINESS))
                 oauth_meta.store_token(root, credential)
                 LOGGER.info('Meta action completed: version=%s action=%s', APP_VERSION, action)
-            except (instagram_connection.ConnectionError, oauth_meta.OAuthError,
-                    OSError, ValueError):
-                return self.respond(422, {"error": "Meta access or subscription not verified"})
-            self.send_response(303)
-            self.send_header("Location", account_management.prefix(self.request_business()) + "/panel?view=settings")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-            return
+            except instagram_connection.GraphError as exc:
+                reason = exc.details.get('reason')
+                return self.meta_redirect(reason if reason in ('token_invalid', 'permission_denied') else
+                                          'subscription_failed' if action == 'subscribe' else 'query_failed')
+            except instagram_connection.ConnectionError:
+                return self.meta_redirect('subscription_failed' if action == 'subscribe' else 'query_failed')
+            except (oauth_meta.OAuthError, OSError, ValueError):
+                return self.meta_redirect('storage_error')
+            return self.meta_redirect(result)
         if self.path == "/auth/login":
             cfg = settings()
             password = cfg.get("panel_password")
