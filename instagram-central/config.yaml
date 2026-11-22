@@ -1,7 +1,7 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.25"
+version: "0.1.26"
 slug: umdoislab_instagram
-description: "Central Instagram: múltiplas contas, Mensagens e Editorial (envio automático desativado)"
+description: "Central Instagram: múltiplas contas e publicação editorial (respostas automáticas desativadas)"
 arch:
   - aarch64
 startup: application

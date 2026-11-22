@@ -17,7 +17,8 @@ def render(accounts, cfg, cookie_header, summary_for, *, error=False):
         path = prefix(account['business_id']) + '/panel'
         cards.append('<li><h2>' + html.escape(account['display_name']) + '</h2><p>@' +
                      html.escape(account['username']) + ' · ' + status + '</p><a href="' + path +
-                     '">Abrir conta @' + html.escape(account['username']) + '</a></li>')
+                     '">Abrir conta @' + html.escape(account['username']) + '</a><p><a href="' +
+                     prefix(account['business_id']) + '/editorial/">Abrir Editorial desta conta</a></p></li>')
     csrf = panel_login.admin_csrf_token(cookie_header, cfg.get('panel_password'), 'accounts:create')
     notice = '<p role="alert">Não foi possível adicionar. Confira o usuário, o nome e se a conta já existe.</p>' if error else ''
     return '''<!doctype html><html lang="pt-BR"><meta charset="utf-8">

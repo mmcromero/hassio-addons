@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Instagram Central internal service behind the existing HTTPS reverse proxy. No Meta send API, n8n calls or WhatsApp access."""
+"""Instagram Central behind HTTPS: scoped Editorial publishing, no Direct send, n8n or WhatsApp."""
 import base64
 import hashlib
 import html
@@ -10,6 +10,7 @@ import os
 import secrets
 import re
 import socket
+import threading
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -25,6 +26,8 @@ import account_registry
 import account_management
 import editorial_core
 import editorial_http
+import editorial_delivery
+import editorial_publishing
 import panel_login
 import origin_configuration
 from urllib.parse import parse_qs, urlsplit
@@ -35,7 +38,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.25"
+APP_VERSION = "0.1.26"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -116,6 +119,9 @@ def _open_database():
       created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending'
         CHECK(status IN ('pending','discarded')),
       PRIMARY KEY(recipient_id,sender_id,message_id))""")
+    conn.execute('''CREATE TABLE IF NOT EXISTS publication_downloads (
+      token_hash TEXT PRIMARY KEY,business_id TEXT NOT NULL,post_id TEXT NOT NULL,
+      media_id TEXT NOT NULL,expires_at INTEGER NOT NULL,revision INTEGER NOT NULL,run_id TEXT NOT NULL)''')
     return conn
 
 
@@ -1091,9 +1097,11 @@ class Handler(BaseHTTPRequestHandler):
         if not self.account_route('GET'):
             return
         route = urlsplit(self.path)
+        if editorial_delivery.serve(self, route, PUBLICATION_DELIVERY):
+            return
         if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, self.request_configuration(),
                 panel_session_authorized(self.headers, settings()), editorial_store_for_business,
-                business_id=self.request_business()):
+                business_id=self.request_business(), publisher=PUBLICATIONS):
             return
         if route.path == "/panel/account-context" and not route.query:
             cfg = self.request_configuration()
@@ -1106,7 +1114,7 @@ class Handler(BaseHTTPRequestHandler):
                 "editorialCorePrepared": True,
                 "editorialUIIntegrated": True,
                 "sendingEnabled": False,
-                "publishingEnabled": False
+                "publishingEnabled": PUBLICATIONS.public_state(self.request_business())['ready']
             })
         if route.path == "/oauth/meta/status" and not route.query:
             try:
@@ -1243,8 +1251,9 @@ class Handler(BaseHTTPRequestHandler):
             # No token, authorization code, client ID, or secret is reflected to the client.
             return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
                 "<title>Instagram</title><body>Conta @" + html.escape(cfg['instagram_expected_username']) + " verificada e autorizada. "
-                "Volte ao painel para configurar a assinatura de mensagens. "
-                "Nenhuma mensagem foi enviada.<p><a href='" + account_management.prefix(cfg['business_id']) +
+                "Confira o acesso de publicação no Editorial ou volte ao painel da conta. "
+                "Nenhum conteúdo foi enviado.<p><a href='" + account_management.prefix(cfg['business_id']) +
+                "/editorial/'>Abrir Editorial desta conta</a></p><p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/panel'>Voltar ao painel da conta</a></p></body></html>", "text/html")
         if self.path in ("/", "/panel"):
             cfg = self.request_configuration()
@@ -1287,6 +1296,13 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(403, {"error": "verification refused"})
         return self.respond(404, {"error": "not found"})
 
+    def do_HEAD(self):
+        if editorial_delivery.serve(self, urlsplit(self.path), PUBLICATION_DELIVERY, head=True):
+            return
+        self.send_response(404)
+        self.send_header('Content-Length', '0')
+        self.end_headers()
+
     def do_POST(self):
         if self.path.partition('?')[0] == '/webhook/instagram':
             raw_length = self.headers.get('Content-Length')
@@ -1307,7 +1323,7 @@ class Handler(BaseHTTPRequestHandler):
         route = urlsplit(self.path)
         if route.path.startswith("/editorial") and editorial_http.handle(self, "POST", route, self.request_configuration(),
                 panel_session_authorized(self.headers, settings()), editorial_store_for_business,
-                business_id=self.request_business()):
+                business_id=self.request_business(), publisher=PUBLICATIONS):
             return
         if self.path in ("/panel/meta/check", "/panel/meta/subscribe"):
             try:
@@ -1532,6 +1548,18 @@ def create_internal_http_server(port):
     return ThreadingHTTPServer(("0.0.0.0", port), Handler)
 
 
+def publication_businesses():
+    with database() as conn:
+        account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
+        return [item['business_id'] for item in account_registry.administrative_accounts(conn)]
+
+
+PUBLICATION_DELIVERY = editorial_delivery.MediaDelivery(database, editorial_store_for_business)
+PUBLICATIONS = editorial_publishing.PublisherHub(
+    meta_configuration_for_business, _meta_credential, editorial_store_for_business,
+    publication_businesses, PUBLICATION_DELIVERY)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     with database():
@@ -1540,4 +1568,11 @@ if __name__ == "__main__":
         transport = "ipv4_ipv6" if internal.address_family == socket.AF_INET6 else "ipv4"
         LOGGER.info("Central internal HTTP ready: port=%s version=%s transport=%s; public TLS belongs to reverse proxy",
                     internal.server_address[1], APP_VERSION, transport)
-        internal.serve_forever()
+        worker = threading.Thread(target=PUBLICATIONS.run, name='editorial-publisher', daemon=True)
+        worker.start()
+        try:
+            internal.serve_forever()
+        finally:
+            PUBLICATIONS.stop.set()
+            PUBLICATIONS.wake.set()
+            worker.join(timeout=3)

@@ -84,3 +84,6 @@
 .media-card-visual,.phone-media{position:relative}
 .media-load-failed{position:absolute;inset:auto 6px 6px;z-index:4;display:block;max-width:calc(100% - 12px);border:1px solid #d68e79;background:#442b28eF;color:#ffe8e1;font-size:11px;font-weight:650;line-height:1.5;border-radius:8px;padding:8px;text-align:center;pointer-events:none}
 .library-feedback[role="alert"]{border:1px solid #d68e79;background:#462a27;color:#ffe2d9;border-radius:10px;padding:12px 14px;margin:0 0 16px;line-height:1.5}
+.publication-access{margin:20px clamp(16px,3vw,40px);align-items:center;justify-content:space-between;flex-wrap:wrap}
+.publication-access p{margin:6px 0}.publication-error{display:block;color:#ffd1b9;max-width:560px;line-height:1.5}
+.chip.published{background:#183c35;color:#a3e4c5}.chip.publishing{background:#273952;color:#bddbff}.chip.failed{background:#462a27;color:#ffe2d9}

@@ -1,6 +1,31 @@
-# Central Instagram — 0.1.25 (conexão interna IPv4 e IPv6)
+# Central Instagram — 0.1.26 (publicação editorial em múltiplas contas)
 
 [Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
+
+A **0.1.26** implementa o envio do Editorial ao Instagram para a conta selecionada: imagem no feed, carrossel de 2–20 imagens, Reel e Story. O mesmo executor atende as contas, com token, mídias, posts e agenda separados. Publicar não depende de receber DMs. Mensagens recebidas continuam em investigação; esta entrega não habilita o receptor das contas secundárias.
+
+**Atualização:** faça backup e atualize somente a Central, preservando opções e `/data`. Não substitua o proxy, certificados ou tokens por rotina. O build do HA continua limitado à sintaxe. Os testes de publicação usam Meta simulada; a primeira publicação real e a execução no seu HA precisam ser confirmadas pelo operador.
+
+### Usar o Editorial
+
+1. Abra **https://instagram.romeropi.duckdns.org:8443/accounts** e escolha a conta. Para adicionar outra, informe seu nome/usuário e conclua **Conectar com a Meta** no painel correspondente. A conta precisa ser profissional e estar disponível na autorização Meta; estar na mesma Central de Contas não substitui essa autorização. A principal não é desconectada.
+2. Entre em **Editorial** da conta e clique em **Verificar publicação**. A Central lê validade/app/permissões do token, identidade e configuração de entrega de mídia. Se faltar `instagram_content_publish`, inclua essa permissão na configuração de login do app Meta e reconecte somente a conta afetada. Não substitua App Secret ou verify token por um token de acesso. A confirmação de pré-requisitos não equivale a App Review aprovado nem à publicação real concluída.
+3. Na **Biblioteca**, carregue a mídia; em **Criar publicação**, prepare conteúdo e legenda. Em **Aprovações**, revise e aprove. Escolha **Publicar agora** e confira a conta exibida antes de confirmar, ou **Agendar** e confirme um horário futuro de São Paulo.
+4. Acompanhe **Publicando**, **Publicada** ou o motivo da interrupção em Aprovações. O resultado atualiza enquanto a página está visível. **Ver no Instagram** abre o post quando a Meta fornece o link; caso contrário, abre o perfil da conta. A Central deve permanecer ligada para executar a agenda; envios autorizados vencidos são retomados quando ela volta.
+
+Agendamentos de versões anteriores ficam aguardando **Confirmar envio agendado**. Aprovar/editar conteúdo não libera silenciosamente uma agenda antiga; edição e cancelamento revogam a autorização. Um envio possivelmente aceito sem resposta entra em verificação, sem novo POST automático. Use **Verificar resultado**; somente libere nova tentativa após conferir que não foi publicado. A tentativa usa o mesmo contêiner da Meta. Falhas anteriores ao envio podem voltar ao rascunho para correção.
+
+### Mídias e permissões
+
+- Imagens são enviadas em JPEG, até 8 MB. PNG recebe fundo branco nas áreas transparentes. Feed/carrossel exigem proporção entre 4:5 e 1,91:1; a Central recusa proporções incompatíveis sem cortar a imagem silenciosamente.
+- Carrosséis usam uma legenda geral. Anotações por imagem são preservadas localmente, mas precisam ser convertidas para legenda geral para publicar, conforme a capacidade da API.
+- Reels aceitam MP4; Stories aceitam uma imagem ou MP4 e exigem conta Empresa. O texto de um Story precisa fazer parte da própria mídia. A API valida codecs/duração; referência atual: Reel de 3 segundos a 15 minutos, Story em vídeo de 3 a 60 segundos. A Central mantém upload máximo de 25 MiB e não faz transcodificação de vídeo.
+- O acesso à biblioteca continua autenticado. Somente mídias de um post autorizado recebem links temporários de uma hora, restritos à conta/revisão/execução. Cancelamento, edição, falha ou conclusão interrompem seu acesso; links antigos não voltam a funcionar numa nova execução. Não compartilhe esses links.
+- A Meta precisa conseguir buscar a mídia pela URL HTTPS do callback cadastrado. A Central reutiliza essa rota existente para entrega temporária, sem depender da chegada de eventos de mensagens e sem alteração dos arquivos NGINX. Tokens OAuth não são enviados nessa URL.
+
+As seções seguintes registram versões e etapas anteriores. O funcionamento da 0.1.26 descrito acima prevalece sobre limitações históricas de publicação local.
+
+## Histórico 0.1.25 — conexão interna
 
 A **0.1.25** corrige a incompatibilidade identificada nos logs reais: o NGINX tentou alcançar a porta 8099 por IPv6, enquanto o receptor aceitava somente IPv4. A Central usa uma única porta com IPv4/IPv6 quando o sistema permite dual stack; mantém IPv4 em sistemas sem esse suporte. O comportamento HTTP, assinatura e armazenamento são os mesmos nos dois protocolos.
 
@@ -97,7 +122,7 @@ O mesmo administrador tem acesso a todas as contas cadastradas. Não há login i
 - OAuth mantém callback único no mesmo hostname. State/cookie vinculam o retorno à conta que iniciou a autorização, sem depender de qual painel está aberto. Cookie por tentativa, expiração, consumo único, vínculo de configuração e validação de ID/usuário continuam obrigatórios. A descoberta usa paginação limitada e não segue URLs arbitrárias devolvidas pelo provedor.
 - Cadastro e mutações exigem sessão/CSRF. Tokens CSRF de Editorial/ações Meta são vinculados à conta; IDs de mídia e destinatário não selecionam implicitamente outro armazenamento. Credenciais não fazem fallback para a principal.
 - O token emitido pela Meta pode abranger mais de um ativo do portfólio compartilhado; a aplicação restringe suas rotas ao contexto validado. Separação local não altera a granularidade da autorização concedida na Meta.
-- **Não há nova assinatura de webhook, envio de Direct, resposta automática ou postagem ativada por esta atualização.** A bridge e o receptor legado continuam restritos à principal. A entrada de mensagens nas contas adicionais requer uma etapa futura de roteamento/ativação de webhook explicitamente autorizada. Agenda Editorial continua local, sem executor de postagem.
+- **Histórico 0.1.19:** não havia nova assinatura, envio de Direct ou executor de postagem naquele lote. Desde 0.1.26, a publicação editorial por conta depende da confirmação descrita no início deste manual. A bridge e o receptor de DMs continuam restritos à principal; a recepção nas secundárias segue pendente.
 - O indicador de conexão usa a última identidade verificada/credencial armazenada; não comprova entrega de mensagens nem validade eterna do token. **Verificar acesso Meta** faz a leitura de verificação no contexto correto quando acionado pelo administrador.
 
 ## Validação e distribuição
@@ -203,7 +228,7 @@ Resultados/SHAs finais e evidências estão na Issue #1 e no relatório privado 
 
 `ingress_enabled: false`, `drafts_enabled: false`, `meta_oauth_enabled: false`. São opções de integração específicas, **não** o campo `ingress: true` que apresenta o painel pelo Home Assistant. Senhas/segredos começam vazios no manifesto e nunca devem aparecer no Git.
 
-A Central **não** publica posts, não envia Direct, não liga robô Gemini, não chama WooCommerce/n8n ou WhatsApp, não configura NGINX e não expõe a porta 8099 diretamente. Meta real, webhooks e primeira DM pertencem a homologação futura com autorização específica. `publishingEnabled:false` nas APIs editoriais.
+A Central publica somente posts aprovados e explicitamente autorizados na conta selecionada. Agendamentos antigos permanecem sem autorização até sua confirmação; atualizações não criam envios. Não envia Direct, não liga robô Gemini, não chama WooCommerce/n8n ou WhatsApp, não configura NGINX nem expõe a porta 8099 diretamente. O estado de publicação da API reflete os pré-requisitos conferidos para cada conta, sem comprovar uma publicação real antes de executá-la.
 
 Acesso administrativo deve ser por HA Ingress e HTTPS confiável quando usado com credenciais reais. A sessão do painel e as rotas Editorial exigem autenticação; mutações exigem CSRF por ação, e a mídia é privada. MP4 passa por verificação **estrutural**; não há transcodificação nem antivírus. Limites atuais: 25 MiB por upload, 20 MP para imagens, biblioteca até 500 arquivos/1 GiB e até 1000 publicações locais. Não há rotina automática de limpeza.
 

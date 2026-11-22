@@ -1,4 +1,4 @@
-"""Session-only Editorial routes for the existing Central. No external requests."""
+"""Account-scoped Editorial routes, with explicit publishing authorization."""
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -12,10 +12,12 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image, UnidentifiedImageError
 import editorial_core
+import editorial_graph
+import editorial_publishing
 import panel_login
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel")
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry")
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -119,7 +121,7 @@ def _schedule_time(value):
     return first
 
 
-def handle(handler, method, route, cfg, authorized, store_factory, *, business_id="umdoislab"):
+def handle(handler, method, route, cfg, authorized, store_factory, *, business_id="umdoislab", publisher=None):
     if route.path != "/editorial" and not route.path.startswith("/editorial/"):
         return False
     def reply(status, body, mime="application/json"):
@@ -151,13 +153,19 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                     import html
                     username = html.escape(str(cfg.get('instagram_expected_username') or 'umdoislab'))
                     display = html.escape(str(cfg.get('account_display_name') or 'Umdoislab'))
-                    raw = raw.decode().replace('@umdoislab', '@' + username).replace('<div class="crumb">Umdoislab ', '<div class="crumb">' + display + ' ').encode()
+                    raw = (raw.decode().replace('@umdoislab', '@' + username)
+                           .replace('<strong>umdoislab</strong>', '<strong>' + username + '</strong>')
+                           .replace('<strong>UMDOISLAB</strong>', '<strong>' + display + '</strong>')
+                           .replace('<div class="crumb">Umdoislab ', '<div class="crumb">' + display + ' ').encode())
                 return reply(200, raw, mime)
             if route.path == "/editorial/api/csrf":
                 return reply(200, {a: panel_login.admin_csrf_token(handler.headers.get("Cookie", ""),
                     cfg.get("panel_password"), csrf_action(a, business_id)) for a in ACTIONS})
             if route.path == "/editorial/api/state":
-                return reply(200, {**store.snapshot(), "businessId": business_id, "publishingEnabled": False})
+                publication = publisher.public_state(business_id) if publisher else {'ready': False, 'message': 'Publicação não configurada.'}
+                return reply(200, {**store.snapshot(), "businessId": business_id,
+                    'accountUsername': cfg.get('instagram_expected_username'),
+                    "publishingEnabled": publication['ready'], 'publication': publication})
             if re.fullmatch("/editorial/media/" + _ID, route.path):
                 raw, mime = store.read_media(route.path.rsplit("/", 1)[1])
                 return reply(200, raw, mime)
@@ -170,12 +178,24 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
             action = "upload"
         elif route.path == "/editorial/api/drafts":
             action = "draft"
+        elif route.path == '/editorial/api/publication/check':
+            action = 'check'
         else:
-            match = re.fullmatch("/editorial/api/posts/(" + _ID + ")/(approve|schedule|cancel)", route.path)
+            match = re.fullmatch("/editorial/api/posts/(" + _ID + ")/(approve|schedule|cancel|publish|activate|reset|reconcile|retry)", route.path)
             if match:
                 post_id, action = match.groups()
         if action is None:
             return reply(404, {"error": "Rota indisponível"})
+        # Preserve the deployed proxy's exact route allowlist. New operations
+        # use existing POST paths and remain bound to their own account CSRF.
+        requested_action = handler.headers.get('X-Editorial-Action')
+        if requested_action:
+            if route.path == '/editorial/api/drafts' and requested_action == 'check':
+                action = 'check'
+            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry'):
+                action = requested_action
+            else:
+                return reply(422, {'error': 'Ação indisponível nesta rota.'})
         if not panel_login.admin_csrf_valid(handler.headers.get("Cookie", ""), cfg.get("panel_password"),
                                            csrf_action(action, business_id), handler.headers.get("X-CSRF-Token")):
             return reply(403, {"error": "Sessão ou proteção CSRF inválida"})
@@ -194,6 +214,11 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         data = json.loads(_read(handler, 256 * 1024 if action == "draft" else 16 * 1024))
         if not isinstance(data, dict):
             raise editorial_core.EditorialError("Objeto JSON obrigatório")
+        if action == 'check':
+            if data or publisher is None:
+                raise editorial_core.EditorialError('Pedido inválido.')
+            publisher.check(business_id)
+            return reply(200, publisher.public_state(business_id))
         if action == "draft":
             required = {"format", "caption", "mediaIds"}
             if "id" in data:
@@ -210,15 +235,30 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                 slide_captions=data.get("slideCaptions"))
         else:
             required = {"version", "localTime"} if action == "schedule" else {"version"}
+            if action == 'retry':
+                required.add('confirmNotPublished')
             if set(data) != required or type(data.get("version")) is not int:
                 raise editorial_core.EditorialError("Campos ou versão inválidos")
             if action == "approve":
                 store.approve(post_id, expected_version=data["version"])
             elif action == "schedule":
-                store.schedule(post_id, _schedule_time(data["localTime"]), expected_version=data["version"])
-            else:
+                if publisher is None:
+                    raise editorial_core.EditorialError('Publicação não configurada.')
+                publisher.queue(business_id, post_id, data['version'], when=_schedule_time(data['localTime']))
+            elif action == 'cancel':
                 store.cancel_schedule(post_id, expected_version=data["version"])
+            elif action in ('publish', 'activate'):
+                if publisher is None:
+                    raise editorial_core.EditorialError('Publicação não configurada.')
+                publisher.queue(business_id, post_id, data['version'], activate=action == 'activate')
+            else:
+                if publisher is None:
+                    raise editorial_core.EditorialError('Publicação não configurada.')
+                publisher.recover(business_id, post_id, data['version'], action,
+                                  confirmed=data.get('confirmNotPublished') is True)
         return reply(200, {"id": post_id, "saved": True, "published": False})
+    except editorial_graph.PublishingError as error:
+        return reply(422, {'error': editorial_publishing.message(error)})
     except editorial_core.EditorialConflict as error:
         return reply(409, {"error": str(error)})
     except (editorial_core.EditorialError, ValueError, TypeError, OverflowError, RecursionError) as error:

@@ -1,3 +1,12 @@
+## 0.1.26
+
+- Implementa publicação editorial por conta: imagem no feed, carrossel de imagens, Reel e Story, com confirmação imediata ou agendamento persistente no horário de São Paulo.
+- Usa credencial e armazenamento da conta selecionada, confere instagram_content_publish e mantém sessão/CSRF por ação e conta. Cadastro e retorno OAuth incluem acesso direto ao Editorial correto.
+- Acrescenta executor com reserva transacional, contêiner/progresso persistidos e consulta de resultado após perda de resposta. Uma tentativa ambígua não é repetida automaticamente; o painel permite verificar, corrigir ou autorizar nova tentativa com o mesmo contêiner.
+- Entrega somente a mídia do post autorizado por link temporário de uma hora, vinculado a conta, revisão e execução. Reutiliza o GET público do callback existente; não abre a biblioteca nem requer nova rota no proxy. Converte imagens para JPEG, com fundo branco na transparência; suporta HEAD e faixas de bytes.
+- Preserva rascunhos/mídias/agendas anteriores. Agendamentos criados sem executor não passam a publicar após atualizar: exigem confirmação. Edição/cancelamento revogam autorização. Falha de conexão de uma conta não publica pela credencial de outra.
+- Exibe acesso de publicação, andamento, sucesso/link quando disponível e erros saneados com códigos numéricos. Mantém os limites de upload/biblioteca, o build de sintaxe no HA e o receptor IPv4/IPv6. DMs reais e recebimento de secundárias continuam pendentes; não foram alterados nesta entrega.
+
 ## 0.1.25
 
 - Corrige incompatibilidade entre o proxy interno com destino IPv6 e o receptor que aceitava somente IPv4: uma única porta interna passa a aceitar IPv4/IPv6 quando o sistema oferece dual stack, mantendo IPv4 em sistemas sem esse suporte.

@@ -16,6 +16,7 @@
       <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
       <div class="section-label">CENTRAL INSTAGRAM</div>
       <a class="nav-link" href="../">← Mensagens e conexão</a>
+      <a class="nav-link" href="/accounts">Trocar conta</a>
       <div class="section-label">EDITORIAL</div>
       <nav class="nav" aria-label="Seções">
         <button class="nav-link active" data-view="overview" aria-current="page"><span>◫</span> Visão geral</button>
@@ -24,13 +25,14 @@
         <button class="nav-link" data-view="approval"><span>✓</span> Aprovações</button>
         <button class="nav-link" data-view="calendar"><span>▦</span> Calendário</button>
       </nav>
-      <div class="sidebar-foot"><span class="status-led"></span><div><strong>Modo editorial</strong><small>Sem envio automático</small></div></div>
+      <div class="sidebar-foot"><span class="status-led"></span><div><strong>Publicação por conta</strong><small>Envio após sua confirmação</small></div></div>
     </aside>
     <main id="principal" class="main">
       <header class="topbar">
         <div class="crumb">Umdoislab <span>/</span> <strong id="current-section">Visão geral</strong></div>
         <div class="top-actions"><span class="account">@umdoislab</span><button id="new-post" class="btn primary">+ Nova publicação</button><form id="editorial-logout" class="logout-form" action="../auth/logout" method="post"><button class="btn quiet" type="submit">Sair</button></form></div>
       </header>
+      <section class="note publication-access" aria-label="Acesso de publicação"><div><strong>Publicação no Instagram</strong><p id="publication-status" role="status">Verifique o acesso desta conta antes de publicar.</p><small>Imagens PNG são convertidas para JPEG, com fundo branco nas áreas transparentes.</small></div><button class="btn quiet" id="check-publication" type="button">Verificar publicação</button></section>
       <section class="content" id="view-overview" data-panel="overview">
         <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Bom conteúdo começa aqui.</h1><p>Planeje, revise e organize suas próximas publicações em um só lugar.</p></div></div>
         <div class="metrics">
@@ -49,7 +51,7 @@
             </div>
           </section>
         </div>
-        <section class="note"><span>ⓘ</span><div><strong>Publicação sob seu controle</strong><p>Todo conteúdo precisa de aprovação. Nenhum material sai para o Instagram a partir deste ambiente de desenvolvimento.</p></div></section>
+        <section class="note"><span>ⓘ</span><div><strong>Publicação sob seu controle</strong><p>Aprove o conteúdo e confirme Publicar agora ou um agendamento para esta conta. Agendamentos antigos exigem confirmação antes do primeiro envio. A Central precisa permanecer ligada para executar a agenda.</p></div></section>
       </section>
 
       <section class="content hidden" id="view-library" data-panel="library">
@@ -68,7 +70,7 @@
             <fieldset id="carousel-caption-options" class="caption-options hidden"><legend>Legendas do carrossel</legend>
               <label><input type="radio" name="caption-mode" value="general" checked> Uma legenda para todas as imagens</label>
               <label><input type="radio" name="caption-mode" value="per_slide"> Legenda individual por imagem</label>
-              <p class="caption-api-note">As legendas por imagem ficam salvas neste Editorial. O envio automático dessas legendas pela API Meta ainda não é suportado nesta versão.</p>
+              <p class="caption-api-note">A API do Instagram publica uma legenda geral por carrossel. Legendas individuais ficam como anotações locais; escolha a legenda geral para liberar a publicação.</p>
             </fieldset>
             <div id="slide-caption-fields" class="slide-caption-fields hidden" aria-live="polite"></div>
             <div class="field"><div class="field-head"><label>Mídias selecionadas</label><button class="text-button" id="open-library-picker" type="button">Selecionar na biblioteca</button></div><div id="selected-media" class="selected-media">Nenhuma mídia selecionada.</div><small id="selection-hint">Selecione uma imagem.</small></div>
@@ -113,6 +115,13 @@
       <div id="schedule-feedback" class="feedback schedule-feedback" role="status" aria-live="polite"></div>
       <div class="dialog-actions"><button class="btn primary" type="submit">Confirmar agenda</button></div>
     </form>
+  </dialog>
+  <dialog id="publish-dialog" class="dialog small-dialog" aria-labelledby="publish-dialog-title">
+    <div class="dialog-head"><h2 id="publish-dialog-title">Confirmar publicação</h2><button class="icon-button" id="close-publish-dialog" aria-label="Fechar confirmação" type="button">×</button></div>
+    <div id="publish-post-preview" class="schedule-post-preview"></div>
+    <p id="publish-account"></p><p id="publish-explanation"></p>
+    <div id="publish-feedback" class="feedback" role="status" aria-live="polite"></div>
+    <div class="dialog-actions"><button class="btn primary" id="confirm-publish" type="button">Confirmar publicação</button></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>

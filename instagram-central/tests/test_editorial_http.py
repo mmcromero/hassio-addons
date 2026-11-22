@@ -134,7 +134,8 @@ class EditorialHTTPTests(unittest.TestCase):
         status, headers, body = self.request("/")
         self.assertEqual(status, 200)
         self.assertIn(b'href="editorial/"', body)
-        self.assertNotIn("script-src", headers["Content-Security-Policy"])
+        self.assertIn("script-src 'sha256-", headers["Content-Security-Policy"])
+        self.assertNotIn("script-src 'unsafe-inline'", headers["Content-Security-Policy"])
         self.assertTrue(json.loads(self.request("/panel/account-context")[2])["editorialUIIntegrated"])
 
     def test_editorial_logout_revokes_shared_session_without_changing_content(self):
@@ -194,6 +195,11 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertEqual(self.state()["posts"], [])
 
     def test_persist_approve_schedule_edit_invalidation_and_stale_writes(self):
+        # Publishing now requires a verified account; keep this storage contract
+        # offline and model only the already-checked connection prerequisites.
+        for name, value in (('_ready', {'stories': True}), ('_identity', (self.cfg, {}, 'synthetic'))):
+            patcher = patch.object(server.PUBLICATIONS, name, return_value=value)
+            patcher.start(); self.addCleanup(patcher.stop)
         post_id, mid = self.draft()
         post = self.state()["posts"][0]
         self.assertEqual(self.post("posts/" + post_id + "/approve", {"version": post["version"]}, "approve")[0], 200)

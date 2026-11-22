@@ -6,6 +6,7 @@ Dados pertencem a um volume persistente separado: /data/editorial.
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 import secrets
@@ -94,6 +95,20 @@ class EditorialStore:
                 db.execute("ALTER TABLE posts ADD COLUMN caption_mode TEXT NOT NULL DEFAULT 'general'")
             if "pending_schedule_at" not in columns:
                 db.execute("ALTER TABLE posts ADD COLUMN pending_schedule_at INTEGER")
+            # Old schedules were explicitly non-executable. Only a new publishing
+            # action can authorize them; an upgrade never publishes old material.
+            publication_columns = {
+                'publish_authorized': 'INTEGER NOT NULL DEFAULT 0',
+                'publication_account_id': 'TEXT',
+                'publication_phase': "TEXT NOT NULL DEFAULT ''",
+                'publication_data': "TEXT NOT NULL DEFAULT '{}'",
+                'publication_next': 'INTEGER',
+                'publication_started': 'INTEGER',
+                'publication_error': "TEXT NOT NULL DEFAULT ''",
+            }
+            for name, declaration in publication_columns.items():
+                if name not in columns:
+                    db.execute('ALTER TABLE posts ADD COLUMN ' + name + ' ' + declaration)
             attachment_columns = {r[1] for r in db.execute("PRAGMA table_info(attachments)")}
             if "slide_caption" not in attachment_columns:
                 db.execute("ALTER TABLE attachments ADD COLUMN slide_caption TEXT NOT NULL DEFAULT ''")
@@ -175,7 +190,7 @@ class EditorialStore:
     def _invalidate(db, post_id, revision):
         # Editing a scheduled publication preserves its time as a non-executable
         # reservation. The scheduler only claims state='scheduled'.
-        db.execute("""UPDATE posts SET state='draft', revision=?, approved_revision=NULL,
+        db.execute("""UPDATE posts SET state='draft', revision=?, approved_revision=NULL,publish_authorized=0,
                       pending_schedule_at=CASE WHEN state='scheduled'
                           THEN scheduled_at ELSE pending_schedule_at END,
                       scheduled_at=NULL WHERE id=?""", (revision + 1, post_id))
@@ -250,7 +265,7 @@ class EditorialStore:
     def cancel_schedule(self, post_id, *, expected_version=None):
         with self._tx() as db:
             self._check_version(db, post_id, expected_version)
-            cur = db.execute("""UPDATE posts SET state='approved', scheduled_at=NULL,
+            cur = db.execute("""UPDATE posts SET state='approved', scheduled_at=NULL,publish_authorized=0,
                                 pending_schedule_at=NULL
                                 WHERE id=? AND state='scheduled'""", (post_id,))
             if cur.rowcount != 1:
@@ -367,6 +382,12 @@ class EditorialStore:
                               "slideCaptions": [r["slide_caption"] for r in attachment_rows],
                               "revision": row["revision"], "approvedRevision": row["approved_revision"],
                               "version": row["version"], "status": row["state"], "mediaIds": mids,
+                              "publishAuthorized": bool(row['publish_authorized']),
+                              "publicationMessage": row['publication_error'],
+                              "publicationPhase": row['publication_phase'],
+                              "publicationAttempted": bool(json.loads(row['publication_data']).get('issued')),
+                              "permalink": json.loads(row['publication_data']).get('permalink'),
+                              "remoteId": row['remote_id'],
                               "scheduledAt": row["scheduled_at"] * 1000 if row["scheduled_at"] else None,
                               "pendingScheduledAt": row["pending_schedule_at"] * 1000
                                   if row["pending_schedule_at"] else None,

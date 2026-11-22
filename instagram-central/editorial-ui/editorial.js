@@ -3,11 +3,12 @@
   'use strict';
   const MAX_UPLOAD = 25 * 1024 * 1024;
   const FORMATS = {feed:'Publicação',carousel:'Carrossel',story:'Story',reel:'Reel'};
-  const STATUS = {draft:'Aguardando aprovação',approved:'Aprovada',scheduled:'Agendada',leased:'Em processamento',needs_review:'Revisão necessária'};
+  const STATUS = {draft:'Aguardando aprovação',approved:'Aprovada',scheduled:'Agendada',leased:'Em processamento',publishing:'Publicando',published:'Publicada',failed:'Envio interrompido',needs_review:'Verificar resultado'};
   const state = {
     view:'overview', posts:[], media:[], currentPostId:null, currentPostVersion:null, currentMediaIds:[],
     pickerIds:[], month:new Date(), pendingSchedule:null, toastTimer:null,
-    currentSlideCaptions:{}, currentPreviewIndex:0, modalPostId:null, modalPreviewIndex:0
+    currentSlideCaptions:{}, currentPreviewIndex:0, modalPostId:null, modalPreviewIndex:0,
+    publication:{}, accountUsername:'', pendingPublish:null, busy:false
   };
   const $ = id => document.getElementById(id);
   const all = selector => [...document.querySelectorAll(selector)];
@@ -26,15 +27,24 @@
 
   async function api(path, {action, data, file}={}) {
     const headers = {};
+    let endpoint=path;
+    if(action==='check'){
+      endpoint='drafts';headers['X-Editorial-Action']='check';
+    }else if(['publish','activate','reset','reconcile','retry'].includes(action)){
+      endpoint=path.replace(/\/[^/]+$/,'/approve');headers['X-Editorial-Action']=action;
+    }
     if(action){
       const tokens = await api('csrf');
       headers['X-CSRF-Token'] = tokens[action];
       headers['Content-Type'] = file ? file.type : 'application/json';
     }
-    const response = await fetch('api/'+path, {
-      method:action ? 'POST' : 'GET', credentials:'same-origin', cache:'no-store',
-      headers, body:action ? (file || JSON.stringify(data)) : undefined
-    });
+    let response;
+    try{
+      response = await fetch('api/'+endpoint, {
+        method:action ? 'POST' : 'GET', credentials:'same-origin', cache:'no-store',
+        headers, body:action ? (file || JSON.stringify(data)) : undefined
+      });
+    }catch(_){throw new Error('A conexão foi interrompida. Recarregue e confira o resultado antes de repetir o envio.');}
     // A proxy may return plain text/HTML instead of JSON. Never show parser internals.
     const raw=await response.text();
     let result;
@@ -55,6 +65,8 @@
   async function refresh() {
     const result = await api('state');
     state.posts=result.posts;state.media=result.media;
+    state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';
+    $('publication-status').textContent=state.publication.message || 'Verifique o acesso de publicação.';
     render();
   }
   function toast(message, kind='success') {
@@ -117,8 +129,9 @@
   function formatHint() {
     const fmt = $('post-format').value;
     $('selection-hint').textContent=({
-      feed:'De 1 a 20 imagens JPG ou PNG; 2 ou mais formam um carrossel automaticamente.',
-      story:'Uma imagem ou um vídeo.',reel:'Um vídeo MP4.'
+      feed:'De 1 a 20 imagens JPG ou PNG, entre 4:5 e 1,91:1; 2 ou mais formam um carrossel. A imagem para envio deve ter até 8 MB.',
+      story:'Uma imagem ou MP4 de 3 a 60 segundos. Inclua o texto na própria mídia; deixe a legenda vazia. Requer conta Empresa.',
+      reel:'Um MP4 de 3 segundos a 15 minutos. Limite de upload da Central: 25 MiB.'
     })[fmt] || 'Selecione uma mídia.';
   }
   function selectedMedia() {
@@ -217,8 +230,10 @@
     }else if(expiredReservation(post)){
       content.append(el('span','chip expired-review','Horário expirado · Reagende'));
     }else{
-      content.append(badge(post.status));
+      content.append(post.status==='scheduled' && !post.publishAuthorized
+        ? el('span','chip awaiting-review','Confirme o envio deste agendamento') : badge(post.status));
     }
+    if(post.publicationMessage)content.append(el('small','publication-error',post.publicationMessage));
     preview.append(thumb,content);
     row.append(preview);
     const actions=el('div','item-actions');
@@ -230,10 +245,31 @@
     if(options.approval && post.status==='approved'){
       const schedule=el('button','btn primary','Agendar');schedule.type='button';
       schedule.addEventListener('click',()=>schedulePost(post.id));actions.append(schedule);
+      const publish=el('button','btn primary','Publicar agora');publish.type='button';
+      publish.addEventListener('click',()=>confirmPublication(post,'publish'));actions.append(publish);
     }
     if(options.approval && post.status==='scheduled'){
       const cancel=el('button','btn quiet','Cancelar agenda');cancel.type='button';
       cancel.addEventListener('click',()=>guard(()=>cancelSchedule(post.id)));actions.append(cancel);
+    }
+    if(post.status==='scheduled' && !post.publishAuthorized){
+      const activate=el('button','btn primary','Confirmar envio agendado');activate.type='button';
+      activate.addEventListener('click',()=>confirmPublication(post,'activate'));actions.append(activate);
+    }
+    if(['failed','needs_review'].includes(post.status)){
+      const recover=el('button','btn quiet',post.publicationAttempted?'Verificar resultado':'Voltar ao rascunho');recover.type='button';
+      recover.addEventListener('click',()=>guard(()=>recoverPost(post,post.publicationAttempted?'reconcile':'reset')));actions.append(recover);
+      if(post.publicationAttempted){
+        const retry=el('button','btn quiet','Liberar nova tentativa');retry.type='button';
+        retry.addEventListener('click',()=>guard(()=>recoverPost(post,'retry')));actions.append(retry);
+      }
+    }
+    if(post.status==='published'){
+      const link=el('a','btn quiet','Ver no Instagram');
+      const remote=post.permalink;
+      link.href=typeof remote==='string' && /^https:\/\/(www\.)?instagram\.com\/(p|reel|stories)\/[A-Za-z0-9_/-]+$/.test(remote)
+        ? remote : 'https://www.instagram.com/'+encodeURIComponent(state.accountUsername)+'/';
+      link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
     }
     row.append(actions);
     return row;
@@ -246,7 +282,7 @@
   }
   function renderApprovals() {
     const target=$('approval-list');
-    const items=state.posts.filter(p=>['draft','approved','scheduled','leased','needs_review'].includes(p.status));
+    const items=state.posts;
     if(!items.length)return empty(target,'Nenhuma publicação criada. Use “Nova publicação” para começar.');
     clear(target);items.forEach(p=>target.append(postRow(p,{approval:true})));
   }
@@ -457,8 +493,8 @@
     else if(updated?.pendingScheduledAt)toast('Aprovada. A data anterior já passou; escolha novo horário.');
     else toast('Publicação aprovada. Nenhum envio foi realizado.');
   }
-  function renderScheduleSummary(post) {
-    const target=$('schedule-post-preview');clear(target);
+  function renderScheduleSummary(post, targetId='schedule-post-preview') {
+    const target=$(targetId);clear(target);
     const thumb=el('span','schedule-post-thumb');
     const first=state.media.find(media=>media.id===post.mediaIds?.[0]);
     if(first){
@@ -519,7 +555,10 @@
       scheduleFeedback('A data e o horário escolhidos já passaram. Selecione um horário futuro para agendar.');
       return;
     }
-    scheduleFeedback('');
+    if(state.busy)return;
+    state.busy=true;
+    const submit=$('schedule-form').querySelector('button[type="submit"]');submit.disabled=true;
+    scheduleFeedback('Conferindo o acesso e confirmando o agendamento…','info');
     try{
       await api('posts/'+post.id+'/schedule',{action:'schedule',data:{version:post.version,localTime:val}});
     }catch(error){
@@ -535,10 +574,48 @@
         scheduleFeedback('Não foi possível agendar. '+(error.message || 'Verifique a data e tente novamente.'));
       }
       return; // Keep the modal, selected post and entered date visible on errors.
+    }finally{
+      state.busy=false;submit.disabled=false;
     }
     $('schedule-dialog').close();state.pendingSchedule=null;
-    await refresh();toast('Agendamento registrado. Publicação automática permanece desativada.');
+    await refresh();toast('Envio agendado para @'+state.accountUsername+'. Mantenha a Central ligada.');
     show('calendar');
+  }
+  function confirmPublication(post,action) {
+    state.pendingPublish={id:post.id,version:post.version,action};
+    renderScheduleSummary(post,'publish-post-preview');
+    $('publish-account').textContent='Conta de destino: @'+state.accountUsername;
+    $('publish-explanation').textContent=action==='activate'
+      ? 'Este conteúdo será enviado no horário agendado após sua confirmação.'
+      : 'Este conteúdo será enviado agora ao Instagram após sua confirmação.';
+    $('publish-feedback').textContent='';$('confirm-publish').disabled=false;
+    $('publish-dialog').showModal();
+  }
+  async function submitPublication() {
+    if(state.busy || !state.pendingPublish)return;
+    state.busy=true;$('confirm-publish').disabled=true;
+    $('publish-feedback').textContent='Conferindo o acesso e preparando o envio…';
+    const pending=state.pendingPublish;
+    try{
+      await api('posts/'+pending.id+'/'+pending.action,{action:pending.action,data:{version:pending.version}});
+      $('publish-dialog').close();state.pendingPublish=null;
+      await refresh();toast(pending.action==='activate'?'Envio agendado confirmado.':'Publicação recebida para envio. Acompanhe o resultado nesta tela.');
+    }catch(error){$('publish-feedback').textContent=error.message || 'Não foi possível preparar o envio.';}
+    finally{state.busy=false;$('confirm-publish').disabled=false;}
+  }
+  async function recoverPost(post,action) {
+    const data={version:post.version};
+    if(action==='retry'){
+      if(!window.confirm('Confira o perfil @'+state.accountUsername+' no Instagram. Você confirma que este conteúdo NÃO foi publicado e quer liberar outra tentativa com o mesmo contêiner?'))return;
+      data.confirmNotPublished=true;
+    }
+    await api('posts/'+post.id+'/'+action,{action,data});await refresh();
+    toast(action==='reset'?'Conteúdo liberado para edição.':'Verificação solicitada. Acompanhe o resultado.');
+  }
+  async function checkPublication() {
+    const button=$('check-publication');button.disabled=true;button.textContent='Verificando…';
+    try{await api('publication/check',{action:'check',data:{}});await refresh();}
+    finally{button.disabled=false;button.textContent='Verificar publicação';}
   }
   async function cancelSchedule(id) {
     const post=state.posts.find(p=>p.id===id);
@@ -593,6 +670,9 @@
     });
   }
   function wireEvents() {
+    $('check-publication').addEventListener('click',()=>guard(checkPublication));
+    $('confirm-publish').addEventListener('click',submitPublication);
+    $('close-publish-dialog').addEventListener('click',()=>$('publish-dialog').close());
     all('[data-view]').forEach(node=>node.addEventListener('click',()=>show(node.dataset.view)));
     all('[data-goto]').forEach(node=>node.addEventListener('click',()=>show(node.dataset.goto)));
     all('[data-new-format]').forEach(node=>node.addEventListener('click',()=>newDraft(node.dataset.newFormat)));
@@ -633,7 +713,15 @@
   }
   async function init() {
     wireEvents();
-    try{await refresh();formatHint();}
+    try{
+      await refresh();formatHint();
+      setInterval(()=>{
+        if(document.visibilityState==='visible' && !state.busy &&
+           state.posts.some(post=>post.status==='publishing' || (post.status==='scheduled' && post.publishAuthorized))){
+          refresh().catch(()=>{ $('publication-status').textContent='Não foi possível atualizar o resultado. Recarregue para conferir antes de tentar outro envio.'; });
+        }
+      },10000);
+    }
     catch(err){
       console.error('Armazenamento editorial indisponível:',err?.name || 'Error');
       toast('Editorial indisponível. Entre novamente na Central e recarregue.');
