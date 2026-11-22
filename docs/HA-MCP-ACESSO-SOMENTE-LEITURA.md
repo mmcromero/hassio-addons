@@ -43,6 +43,9 @@ A integração aceita múltiplas entradas porque o código usa o Tunnel ID como 
 
 **Configuração n8n já realizada:** adicionar uma segunda entrada da mesma integração; preservar o Tunnel ID original do n8n; usar Runtime API key com Tunnels Read e Tunnels Use; apontar para o host local do add-on na porta 5678 e caminho /mcp-server/http; preencher o campo Home Assistant access token com o Bearer token aceito pelo servidor MCP do n8n; manter control-plane base URL/path vazios e atualização automática ativada. O hostname e as credenciais reais são privados e não entram no Git.
 
+**Configuração do conector ChatGPT n8n:** preservar o conector existente **n8n — Home Assistant V2**, tipo de conexão **Tunnel**, associado ao Tunnel ID original do n8n, com autenticação do conector em **Sem autenticação (No Auth)**. Isso não deixa o endpoint MCP aberto: o tunnel-client encaminha ao n8n o cabeçalho Bearer armazenado na entrada da integração. Não criar novo conector nem novo túnel para resolver falhas de autenticação.
+
+
 O campo Home Assistant access token corresponde internamente a ha_mcp_bearer_token e é encaminhado como Authorization: Bearer ao MCP configurado. Na entrada n8n, não é a Runtime API key OpenAI nem deve ser confundido com token HA. O valor está mascarado e foi aceito nos testes; preservar, não tentar recuperar da máscara e não rotacionar por tentativa.
 
 Com Bearer token e tunnel-client v0.0.21+, a integração define MCP_OAUTH_DISCOVERY=disabled. A Runtime API key vai por variável de ambiente CONTROL_PLANE_API_KEY; o Bearer token vai por HA_MCP_AUTH_HEADER. A revisão mascara API key, token e URL MCP nos logs. Não criar port forwarding, hostname público, regra de firewall ampla ou rota do Forja para a rede doméstica.
@@ -144,6 +147,9 @@ O supervisor do processo atualiza o estado para exited quando o subprocesso term
 - HTTP 401 no Control Plane: verificar validade e escopos Tunnels Read + Tunnels Use. Não gerar chave nem rotacionar por tentativa.
 - HTTP 401/403 no MCP: verificar o Bearer token daquela entrada. A máscara da UI não indica erro e não revela o valor original. Não substituir token sem evidência.
 - Não copiar credenciais entre entradas: HA-MCP e n8n têm destinos/autenticações distintos.
+- Se o Bearer token MCP do n8n tiver sido perdido e não existir cópia segura, a UI não revela o valor anterior. Somente após autorização e avaliação dos outros clientes MCP, gerar outro em **n8n → Settings → Instance-level MCP → Connect → API key**, atualizar o campo Bearer somente na entrada n8n e validar uma chamada real. A rotação invalida o token anterior e pode afetar outros clientes MCP que o utilizem; não é a API REST do n8n.
+- Se a Runtime API key OpenAI estiver ausente/invalidada, confirmar primeiro erro 401 do Control Plane. Criar uma nova chave de runtime na organização correta, com **Tunnels Read + Tunnels Use**, guardar o segredo no mecanismo seguro e atualizar a entrada afetada. Validar Control Plane e chamada MCP antes de revogar uma chave antiga. Não recriar o Tunnel ID.
+- Se o Tunnel ID não estiver visível no contexto de um chat, consultar a página OpenAI Platform Tunnels na organização correta e localizar o túnel existente pelo nome/descrição. Não criar outro túnel como atalho.
 
 ### 6.4. Atualização e rollback
 
