@@ -8,12 +8,20 @@ import json
 import re
 import time
 from urllib.error import HTTPError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
+from urllib.parse import urlencode, urlsplit
+from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 
 MAX_GRAPH_RESPONSE = 64 * 1024
 GRAPH_VERSION = re.compile(r"v[0-9]{1,2}\.0\Z")
 IG_ACCOUNT = re.compile(r"[0-9]{8,30}\Z")
+
+
+class _NoGraphRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_GRAPH_OPEN = build_opener(_NoGraphRedirect()).open
 
 
 class ConnectionError(Exception):
@@ -57,6 +65,14 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
         if fields != {'platform': 'instagram', 'fields': 'id', 'limit': '1'}:
             raise ConnectionError('Conversation diagnostic must not read message content')
+    elif path == '/debug_token' and method == 'GET':
+        if (not isinstance(fields, dict) or set(fields) != {'input_token'}
+                or not isinstance(fields['input_token'], str)
+                or not 20 <= len(fields['input_token']) <= 8192):
+            raise ConnectionError('Invalid token diagnostic')
+    elif re.fullmatch(r'/[0-9]{8,30}/subscriptions', path) and method == 'GET':
+        if fields not in (None, {}):
+            raise ConnectionError('Invalid app subscription diagnostic')
     else:
         raise ConnectionError("Graph request not permitted")
     if method not in ("GET", "POST"):
@@ -78,7 +94,9 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded"})
     try:
-        with opener(req, timeout=timeout) as response:
+        # Never forward a token/app secret to a redirect destination.
+        open_request = _GRAPH_OPEN if opener is urlopen else opener
+        with open_request(req, timeout=timeout) as response:
             raw = response.read(MAX_GRAPH_RESPONSE + 1)
         if len(raw) > MAX_GRAPH_RESPONSE:
             raise GraphError('invalid_response')
@@ -156,7 +174,100 @@ def diagnose_receiving(cfg, credential):
             report[key] = {'status': 'error', **exc.details}
         except ConnectionError:
             report[key] = {'status': 'error', 'reason': 'request_unavailable'}
+    report.update(diagnose_app_metadata(cfg, credential))
     return report
+
+
+def callback_origin(value):
+    """Public origin only; never keep credentials, callback path or query values."""
+    if not isinstance(value, str) or len(value) > 2048:
+        raise GraphError('invalid_response')
+    try:
+        parsed = urlsplit(value)
+        host, port = parsed.hostname, parsed.port
+        if (parsed.scheme not in ('https', 'http') or parsed.username is not None
+                or parsed.password is not None or not host or len(host) > 253
+                or not all(re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', label)
+                           for label in host.split('.'))):
+            raise ValueError('Invalid callback')
+        origin = parsed.scheme + '://' + host + (':' + str(port) if port is not None else '')
+        return {'callback_origin': origin, 'callback_https': parsed.scheme == 'https',
+                'callback_path_matches': parsed.path == '/webhook/instagram',
+                'callback_extra': bool(parsed.query or parsed.fragment)}
+    except ValueError:
+        raise GraphError('invalid_response') from None
+
+
+def diagnose_app_metadata(cfg, credential):
+    """Read app/token metadata. Generic subscriptions may not expose Instagram.
+
+    Absence here is unknown, not proof that the Dashboard has no subscription.
+    The app credential exists only in memory and never replaces the OAuth token.
+    """
+    result = {key: {'status': 'unknown', 'reason': 'configuration_incomplete'}
+              for key in ('token_metadata', 'app_subscription')}
+    app_id, secret = cfg.get('meta_app_id'), cfg.get('meta_app_secret')
+    if (not credential_status(credential, cfg)['account_verified']
+            or not IG_ACCOUNT.fullmatch(str(app_id or ''))
+            or not isinstance(secret, str) or not 16 <= len(secret) <= 128
+            or any(char.isspace() for char in secret) or '|' in secret):
+        return result
+    app_credential = app_id + '|' + secret
+    for key, path, fields in (
+            ('token_metadata', '/debug_token', {'input_token': credential.get('access_token')}),
+            ('app_subscription', '/' + app_id + '/subscriptions', None)):
+        try:
+            data = request_graph(cfg.get('meta_graph_version'), path, app_credential,
+                                 fields=fields, timeout=5)
+            if key == 'token_metadata':
+                part = data.get('data')
+                if not isinstance(part, dict) or type(part.get('is_valid')) is not bool:
+                    raise GraphError('invalid_response')
+                value = {'status': 'confirmed', 'token_is_valid': part['is_valid']}
+                if 'app_id' in part:
+                    if not isinstance(part['app_id'], str) or not IG_ACCOUNT.fullmatch(part['app_id']):
+                        raise GraphError('invalid_response')
+                    value['app_matches'] = part['app_id'] == app_id
+                if 'scopes' in part:
+                    scopes = part['scopes']
+                    if (not isinstance(scopes, list) or len(scopes) > 256
+                            or any(not isinstance(scope, str) or len(scope) > 100 for scope in scopes)):
+                        raise GraphError('invalid_response')
+                    value.update(basic_granted='instagram_basic' in scopes,
+                                 messages_granted='instagram_manage_messages' in scopes)
+                result[key] = value
+                continue
+            entries = data.get('data')
+            if not isinstance(entries, list) or len(entries) > 100:
+                raise GraphError('invalid_response')
+            matches = [item for item in entries if isinstance(item, dict) and item.get('object') == 'instagram']
+            if not matches:
+                result[key] = {'status': 'unknown', 'reason': 'app_subscription_not_exposed'}
+                continue
+            if len(matches) != 1:
+                raise GraphError('invalid_response')
+            part = matches[0]
+            value = {'status': 'confirmed'}
+            if 'active' in part:
+                if type(part['active']) is not bool:
+                    raise GraphError('invalid_response')
+                value['active'] = part['active']
+            if 'fields' in part:
+                names = part['fields']
+                if not isinstance(names, list) or len(names) > 100:
+                    raise GraphError('invalid_response')
+                names = [item.get('name') if isinstance(item, dict) else item for item in names]
+                if any(not isinstance(name, str) or len(name) > 100 for name in names):
+                    raise GraphError('invalid_response')
+                value['messages'] = 'messages' in names
+            if 'callback_url' in part:
+                value.update(callback_origin(part['callback_url']))
+            result[key] = value
+        except GraphError as exc:
+            result[key] = {'status': 'error', **exc.details}
+        except ConnectionError:
+            result[key] = {'status': 'error', 'reason': 'request_unavailable'}
+    return result
 
 
 def safe_diagnostics(report):
@@ -167,8 +278,8 @@ def safe_diagnostics(report):
     clean = {'checked_at': report['checked_at']}
     reasons = {'configuration_incomplete', 'invalid_response', 'message_access_disabled',
                'permission_denied', 'token_invalid', 'unsupported_request',
-               'provider_error', 'transport_error', 'request_unavailable'}
-    for key in ('subscription', 'conversations'):
+               'provider_error', 'transport_error', 'request_unavailable', 'app_subscription_not_exposed'}
+    for key in ('subscription', 'conversations', 'token_metadata', 'app_subscription'):
         part = report.get(key)
         part = part if isinstance(part, dict) else {}
         status = part.get('status')
@@ -178,9 +289,19 @@ def safe_diagnostics(report):
         for code in ('http_status', 'provider_code', 'provider_subcode'):
             if type(part.get(code)) is int and 0 <= part[code] <= 2**31-1:
                 value[code] = part[code]
-        for flag in ('messages', 'conversation_found'):
+        for flag in ('messages', 'conversation_found', 'token_is_valid', 'app_matches',
+                     'basic_granted', 'messages_granted', 'active', 'callback_https',
+                     'callback_path_matches', 'callback_extra'):
             if type(part.get(flag)) is bool:
                 value[flag] = part[flag]
+        if key == 'app_subscription' and isinstance(part.get('callback_origin'), str):
+            try:
+                origin = callback_origin(part['callback_origin'])['callback_origin']
+                # Stored input must be an origin already, not a URL to sanitize.
+                if part['callback_origin'] == origin:
+                    value['callback_origin'] = origin
+            except GraphError:
+                pass
         clean[key] = value
     return clean
 

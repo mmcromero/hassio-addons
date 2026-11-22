@@ -50,6 +50,12 @@ def graph(version, path, token, **kwargs):
     if path == '/11111111/conversations' and kwargs.get('method', 'GET') == 'GET':
         assert kwargs.get('fields') == {'platform':'instagram','fields':'id','limit':'1'}
         return {'data':[{'id':'SYNTHETIC_CONVERSATION_ID_NEVER_RENDERED'}]}
+    if path == '/debug_token':
+        return {'data':{'is_valid':True,'app_id':CONFIG['meta_app_id'],
+                        'scopes':['instagram_basic','instagram_manage_messages']}}
+    if path == '/12345678/subscriptions':
+        return {'data':[{'object':'instagram','active':True,'fields':[{'name':'messages'}],
+                         'callback_url':CONFIG['public_base_url']+'/webhook/instagram'}]}
     raise AssertionError('Unexpected provider operation')
 
 server.instagram_connection.request_graph = graph

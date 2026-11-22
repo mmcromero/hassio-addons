@@ -1,6 +1,16 @@
-# Central Instagram — 0.1.22 (conferência do recebimento)
+# Central Instagram — 0.1.23 (auditoria do token e do webhook)
 
 [Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
+
+A **0.1.23** amplia **Verificar acesso Meta** com leituras de metadados do token salvo e da configuração de webhook do aplicativo, quando exposta pela API. O painel mostra validade do token, vínculo com o App ID e concessão de `instagram_basic`/`instagram_manage_messages`. Esses dados não informam o nível Standard/Advanced Access nem comprovam elegibilidade de produção ou entrega de DM.
+
+Se a Meta retornar o objeto Instagram na consulta do app, o diagnóstico mostra ativação, campo `messages`, HTTPS, correspondência do caminho `/webhook/instagram` e somente o domínio/porta de destino. Valores de parâmetros, fragmentos, identificadores de pessoas e respostas privadas são descartados. A consulta genérica pode não expor Instagram: nesse caso aparece **não confirmado**, sem concluir que a assinatura esteja ausente do portal.
+
+**Para atualizar da 0.1.22:** faça backup e atualize somente a Central, preservando opções e `/data`. Não altere proxy, certificado, credenciais ou modo publicado do app. Abra o painel externo e clique uma vez em **Verificar acesso Meta**. Compartilhe somente as novas linhas **Token salvo** e **Webhook do aplicativo**. Não é necessário enviar uma nova DM para obter esse diagnóstico. A atualização acrescenta evidência de configuração; não declara a falha de recebimento corrigida.
+
+As consultas são GET, com host fixo, timeout e tamanho de resposta limitados. A credencial do aplicativo é formada somente em memória no servidor, sem gerar ou substituir o token OAuth. Redirecionamentos de Graph são recusados para não encaminhar credenciais a outro destino. Nenhum segredo precisa ser copiado para o navegador ou enviado no chat. Nenhuma verificação empresarial, App Review ou assinatura adicional é executada por Verificar acesso Meta.
+
+## Diagnóstico anterior 0.1.22
 
 A **0.1.22** mostra o resultado de **Verificar acesso Meta** no próprio painel. Além de verificar a identidade, consulta, sem alterar a Meta, se o aplicativo configurado consta na assinatura da conta com o campo `messages` e se o token salvo permite consultar uma amostra de conversas. A amostra pede somente um ID, que é descartado; não consulta textos, participantes ou histórico. Falha de identidade não renova a verificação anterior e aparece explicitamente. Falhas de consulta aparecem separadas, com categorias fixas e códigos numéricos, sem a resposta privada da Meta.
 

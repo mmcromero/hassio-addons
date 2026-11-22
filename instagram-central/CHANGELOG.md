@@ -1,3 +1,11 @@
+## 0.1.23
+
+- Amplia Verificar acesso Meta com leitura do token já salvo: validade, app emissor e concessão das permissões de perfil/mensagens, sem expor token, segredos ou identificadores pessoais.
+- Consulta metadados de assinatura do app: quando Instagram é retornado, mostra ativação, messages e destino público sem parâmetros/fragmentos. A ausência na API genérica é inconclusiva, não prova ausência no portal.
+- Não infere Standard/Advanced Access nem bloqueio de produção a partir dos escopos. Mantém as consultas anteriores de assinatura da conta e acesso às conversas.
+- Recusa redirecionamentos HTTP do Graph para evitar encaminhar credenciais a outro destino. Novas rotas Graph permitem somente GET com parâmetros fixos.
+- Preserva opções, dados, URLs, proxy, manifesto e publicação do app. Sem envio de DM, novo OAuth, alteração de assinatura ou exigência de verificação empresarial nesta atualização.
+
 ## 0.1.22
 
 - Documentação pública: política de privacidade com o escopo completo condicionado aos recursos ativados, termos de uso e instruções de exclusão pelo contato informado. Documentos publicados separadamente, sem alterar a versão ou exigir atualização do aplicativo instalado.

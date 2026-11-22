@@ -34,7 +34,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.22"
+APP_VERSION = "0.1.23"
 
 
 def settings():
@@ -603,15 +603,32 @@ def render_meta_diagnostics(summary):
         'invalid_response': 'A resposta da consulta não permitiu uma confirmação.',
         'transport_error': 'Não foi possível concluir a comunicação com a Meta.',
         'provider_error': 'A Meta recusou esta consulta.',
-        'request_unavailable': 'A consulta não pôde ser concluída.'}
+        'request_unavailable': 'A consulta não pôde ser concluída.',
+        'app_subscription_not_exposed': 'A consulta genérica não retornou a configuração Instagram; isso não comprova ausência no portal.'}
     parts = []
+    def answer(value, key):
+        return 'Sim' if value.get(key) is True else 'Não' if value.get(key) is False else 'Não confirmado'
     for key, title in (('subscription', 'Assinatura consultada na Meta'),
-                       ('conversations', 'Acesso às conversas')):
+                       ('conversations', 'Acesso às conversas'),
+                       ('token_metadata', 'Token salvo'),
+                       ('app_subscription', 'Webhook do aplicativo')):
         value = report[key]
         if value['status'] == 'confirmed' and key == 'subscription':
             text = ('Aplicativo encontrado, campo messages presente.' if value.get('messages') is True else
                     'Aplicativo encontrado, campo messages ausente.' if value.get('messages') is False else
                     'Aplicativo encontrado; campo messages não confirmado.')
+        elif value['status'] == 'confirmed' and key == 'token_metadata':
+            text = ('Válido: ' + answer(value, 'token_is_valid') + '; pertence ao app configurado: ' +
+                    answer(value, 'app_matches') + '; instagram_basic: ' + answer(value, 'basic_granted') +
+                    '; instagram_manage_messages: ' + answer(value, 'messages_granted') + '.')
+        elif value['status'] == 'confirmed' and key == 'app_subscription':
+            text = ('Objeto Instagram encontrado. Ativo: ' + answer(value, 'active') +
+                    '; messages: ' + answer(value, 'messages') + '; HTTPS: ' + answer(value, 'callback_https') +
+                    '; caminho /webhook/instagram: ' + answer(value, 'callback_path_matches') + '.')
+            if 'callback_origin' in value:
+                text += ' Destino: ' + html.escape(value['callback_origin']) + '.'
+            if value.get('callback_extra') is True:
+                text += ' O callback contém parâmetros ou fragmento; seus valores não são exibidos.'
         elif value['status'] == 'confirmed':
             text = ('Acesso aceito; há conversa visível, sem consultar seu conteúdo.' if value.get('conversation_found') else
                     'Acesso aceito; a amostra retornou vazia.')
@@ -628,7 +645,8 @@ def render_meta_diagnostics(summary):
         ZoneInfo('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S')
     return (feedback + '<div aria-label="Diagnóstico de recebimento"><h3>Diagnóstico de recebimento</h3>'
             '<p>Última consulta: ' + checked + ' (Brasília).</p><ul>' + ''.join(parts) + '</ul>'
-            '<p>Estas consultas não enviam mensagens nem comprovam a entrega de eventos reais.</p></div>')
+            '<p>Estas consultas não enviam mensagens nem comprovam a entrega de eventos reais. '
+            'As permissões do token não informam o nível Standard ou Advanced Access do app.</p></div>')
 
 
 def render_connection_section(cfg, summary):
