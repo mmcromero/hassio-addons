@@ -9,6 +9,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import editorial_graph
+import editorial_history
 import server
 from editorial_publishing import PublisherHub
 from test_editorial_publishing import FakeMeta, png
@@ -33,6 +34,30 @@ hub = PublisherHub(server.meta_configuration_for_business, credentials, server.e
     lambda: ['umdoislab', second], server.PUBLICATION_DELIVERY, api_factory=meta.client,
     checker=lambda *a, **k: {'origin': 'https://callback.example:8443', 'stories': True})
 server.PUBLICATIONS = hub
+if '--history' in sys.argv[2:]:
+    from test_editorial_history import entry
+    from io import BytesIO
+    from PIL import Image
+    original_factory=hub.api_factory
+    def history_factory(cfg,credential):
+        client=original_factory(cfg,credential)
+        def page(after=None,*,expanded=False):
+            offset=int(after or '0');count=69 if cfg['business_id']=='umdoislab' else 3
+            rows=[entry(i) for i in range(offset,min(offset+25,count))]
+            for row in rows:
+                row.update(shares_count=2,saved_count=0)
+                if cfg['business_id']!='umdoislab':row['caption']='Segunda conta histórica '+row['caption']
+            result={'data':rows}
+            if offset+25<count:result['paging']={'next':'https://ignored.invalid/','cursors':{'after':str(offset+25)}}
+            return result
+        client.history_page=page;return client
+    hub.api_factory=history_factory
+    def download_synthetic(url):
+        index=int(url.rsplit('/',1)[1].split('.')[0]);stream=BytesIO()
+        Image.new('RGB',(640,800),(index%255,index*3%255,index*7%255)).save(stream,'PNG')
+        return stream.getvalue(),'png'
+    server.HISTORY=editorial_history.HistoryHub(hub,downloader=download_synthetic)
+    threading.Thread(target=server.HISTORY.run,daemon=True).start()
 for business, caption in [('umdoislab', 'Conteúdo da primeira conta'), (second, 'Conteúdo da segunda conta')]:
     store = server.editorial_store_for_business(business)
     mid = store.add_media(png(), 'png')

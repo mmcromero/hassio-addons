@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.28")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.29")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.28", body)
+        self.assertIn(b"0.1.29", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.28", body)
+            self.assertIn(b"0.1.29", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {

@@ -118,7 +118,7 @@ class PublisherHub:
                 cfg, credential, _ = self._identity(business)
                 if cfg['instagram_account_id'] != post['publication_account_id']:
                     raise graph.PublishingError('account_mismatch')
-                values = self.api_factory(cfg, credential).metrics(post['remote_id'])
+                values = self.api_factory(cfg, credential).metrics(post['remote_id'], expanded=True)
             except graph.PublishingError as error:
                 if error.reason == 'meta_rejected':
                     text = ('A Meta não permitiu consultar esta publicação. Ela pode estar indisponível '

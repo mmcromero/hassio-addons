@@ -23,7 +23,7 @@
       <section class="content" id="view-overview" data-panel="overview">
         <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Bom conteúdo começa aqui.</h1><p>Planeje, revise e organize suas próximas publicações em um só lugar.</p></div></div>
         <div class="metrics">
-          <article class="metric"><span>Publicações criadas</span><strong id="count-all">0</strong><small>Na sua biblioteca editorial</small></article>
+          <article class="metric"><span>Publicações registradas</span><strong id="count-all">0</strong><small>Conteúdo e histórico desta conta</small></article>
           <article class="metric"><span>Aguardando aprovação</span><strong id="count-draft">0</strong><small>Precisam de revisão</small></article>
           <article class="metric"><span>Prontas para agendar</span><strong id="count-approved">0</strong><small>Conteúdo aprovado</small></article>
           <article class="metric"><span>Agendadas</span><strong id="count-scheduled">0</strong><small>No calendário</small></article>
@@ -39,6 +39,20 @@
           </section>
         </div>
         <section class="note"><span>ⓘ</span><div><strong>Publicação sob seu controle</strong><p>Aprove o conteúdo e confirme Publicar agora ou um agendamento para esta conta. Agendamentos antigos exigem confirmação antes do primeiro envio. A Central precisa permanecer ligada para executar a agenda.</p></div></section>
+      </section>
+
+      <section class="content hidden" id="view-history" data-panel="history">
+        <div class="heading"><span class="eyebrow">SEU ACERVO</span><h1>Histórico do Instagram</h1><p>Publicações anteriores e envios da Central, organizados pela data original.</p></div>
+        <section class="panel history-import"><h2>Trazer publicações desta conta</h2>
+          <p>Consulta as publicações disponíveis na Meta, sem publicar novamente. Stories antigos e o arquivo privado não são recuperados. As contagens refletem a consulta atual.</p>
+          <label><input id="history-download" type="checkbox" checked> Baixar também as mídias para a biblioteca (até 25 MiB por arquivo e dentro da cota disponível).</label>
+          <div class="history-import-actions"><button class="btn primary" id="history-start" type="button">Sincronizar histórico</button><button class="btn quiet" id="history-cancel" type="button" hidden>Cancelar sincronização</button></div>
+          <div id="history-progress" role="status" aria-live="polite"></div>
+        </section>
+        <div id="history-summary" class="history-summary"></div>
+        <div class="history-filters"><label>Comparar por <select id="history-sort"><option value="date">Mais recentes</option><option value="likes">Curtidas</option><option value="comments">Comentários</option><option value="shares">Compartilhamentos</option><option value="interactions">Interações conhecidas</option></select></label><label>Formato <select id="history-format"><option value="all">Todos</option><option value="feed">Feed</option><option value="carousel">Carrossel</option><option value="reel">Reel</option><option value="story">Story</option></select></label></div>
+        <p class="muted">Interações conhecidas somam as contagens disponíveis de curtidas, comentários, compartilhamentos e salvamentos; não representam uma taxa de engajamento. Dados ausentes não são zero.</p>
+        <div id="history-list" class="stack"></div>
       </section>
 
       <section class="content hidden" id="view-library" data-panel="library">
@@ -76,7 +90,7 @@
       </section>
 
       <section class="content hidden" id="view-calendar" data-panel="calendar">
-        <div class="heading horizontal"><div><span class="eyebrow">PLANEJAMENTO</span><h1>Calendário editorial</h1><p>Visualize as publicações planejadas para o mês.</p></div><div class="calendar-nav"><button id="prev-month" class="btn quiet" aria-label="Mês anterior">‹</button><strong id="month-label"></strong><button id="next-month" class="btn quiet" aria-label="Próximo mês">›</button></div></div>
+        <div class="heading horizontal"><div><span class="eyebrow">PLANEJAMENTO</span><h1>Calendário editorial</h1><p>Visualize as publicações planejadas para o mês.</p></div><div class="calendar-nav"><button id="prev-month" class="btn quiet" aria-label="Mês anterior">‹</button><label class="calendar-month-picker">Mês <input id="calendar-month" type="month"></label><strong id="month-label"></strong><button id="next-month" class="btn quiet" aria-label="Próximo mês">›</button></div></div>
         <section class="panel"><div class="calendar-weekdays"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div><div class="calendar-grid" id="calendar-grid"></div></section>
         <section class="panel calendar-upcoming"><div class="panel-title"><h2>Publicações agendadas</h2></div><div id="calendar-list" class="stack"></div></section>
       </section>
@@ -91,6 +105,7 @@
       <div class="phone-bottom"><div>♡　◇　↗</div><p id="modal-preview-caption"></p></div>
     </div></div>
     <p id="modal-preview-description" class="preview-modal-description"></p>
+    <details id="modal-media-details" hidden><summary>Descrição de acessibilidade retornada pela Meta</summary><p id="modal-media-alt"></p><small>Este campo é o texto alternativo da mídia; não confirma a legenda visível individual do aplicativo Instagram.</small></details>
   </dialog>
   <dialog id="schedule-dialog" class="dialog small-dialog" aria-labelledby="schedule-dialog-title">
     <div class="dialog-head"><h2 id="schedule-dialog-title">Agendar publicação</h2><button class="icon-button" id="close-schedule-dialog" aria-label="Fechar" type="button">×</button></div>

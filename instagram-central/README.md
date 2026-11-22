@@ -1,4 +1,18 @@
-# Central Instagram — 0.1.28 (curtidas, comentários e duração dos Stories)
+# Central Instagram — 0.1.29 (histórico, calendário e importação de mídias)
+
+Em **Histórico**, clique em **Sincronizar histórico** para trazer as publicações que a Meta disponibilizar da conta selecionada, inclusive anteriores à Central. A opção de baixar mídias vem marcada. A sincronização percorre as páginas em segundo plano, mostra progresso e permite cancelar; registros já importados permanecem. Executar novamente atualiza registros pelo ID do Instagram sem duplicar nem publicar novamente. A conexão existente é usada por conta, com a mesma sessão e sem trocar proxy/login.
+
+O histórico reúne publicações importadas e envios da Central, com data original, legenda retornada, link, curtidas e comentários. Compartilhamentos/salvamentos são consultados separadamente quando disponíveis; recusa desses campos não impede importar o restante. Há filtro por formato e ordenação para comparação. **Interações conhecidas** somam as contagens disponíveis e mostram cobertura; não são uma taxa de engajamento nem reconstrução das contagens em datas passadas. Zero continua distinto de dado ausente. A data da consulta é exibida.
+
+O **Calendário** inclui publicações realizadas na data original e mantém as agendas. Use o seletor de mês ou **No calendário** em uma publicação para abrir seu mês. Registros importados são histórico publicado; não entram como rascunho ou fila de envio. A Central mantém o original local de posts que ela própria criou e apresenta os dados consultados separadamente. Não se presume exclusão remota quando uma publicação deixa de aparecer ou uma consulta falha.
+
+As cópias de mídia entram na **Biblioteca** com autenticação, conforme limites existentes: 25 MiB por arquivo, até 500 arquivos/1 GiB e até 1000 publicações locais. Imagens passam pela mesma validação/regravação dos uploads. Downloads aceitam somente HTTPS nos CDNs permitidos, sem seguir redirecionamentos nem enviar o token Meta ao CDN. Arquivo grande/indisponível ou biblioteca cheia não apaga o registro histórico. Se um vídeo não puder ser baixado, pode ser importada sua miniatura, com aviso explícito no registro; ela não é o vídeo original. A cópia depende da mídia fornecida pela API e não garante o arquivo original da câmera.
+
+Exclusão continua **local**. Ao apagar um registro importado, é possível remover suas mídias sem uso em outros posts; uma nova sincronização poderá trazê-lo novamente se existir no Instagram. Durante uma sincronização ativa, cancele ou aguarde antes de apagar um registro importado. Não recupera Stories antigos nem o arquivo privado do Instagram. Na prévia, Descrição de acessibilidade mostra o alt_text retornado, sem convertê-lo em legenda individual visível ou afirmar que são campos equivalentes.
+
+**Atualização:** apenas a Central para 0.1.29, preservando opções e /data. Sem nova configuração do proxy, token ou login. O importador não inicia sozinho após atualizar; você escolhe quando sincronizar cada conta. A importação real dos seus registros e as contagens efetivas ainda aguardam execução no HA pelo operador. Testes locais usaram 69 publicações sintéticas e duas contas simuladas. Recebimento de DMs continua pendente.
+
+## Curtidas, comentários e duração dos Stories (0.1.28)
 
 **Resultado real informado pelo operador:** uma publicação e um Story foram enviados com sucesso na 0.1.27. Carrossel, multicontas e DMs ainda não foram confirmados. A leitura real das contagens da 0.1.28 aguarda uso pelo operador.
 

@@ -18,7 +18,7 @@ import panel_login
 import interface_ui
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics")
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics", "history_start", "history_cancel")
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -122,7 +122,7 @@ def _schedule_time(value):
     return first
 
 
-def handle(handler, method, route, cfg, authorized, store_factory, *, business_id="umdoislab", publisher=None):
+def handle(handler, method, route, cfg, authorized, store_factory, *, business_id="umdoislab", publisher=None, history=None):
     if route.path != "/editorial" and not route.path.startswith("/editorial/"):
         return False
     def reply(status, body, mime="application/json"):
@@ -168,7 +168,8 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                 publication = publisher.public_state(business_id) if publisher else {'ready': False, 'message': 'Publicação não configurada.'}
                 return reply(200, {**store.snapshot(), "businessId": business_id,
                     'accountUsername': cfg.get('instagram_expected_username'),
-                    "publishingEnabled": publication['ready'], 'publication': publication})
+                    "publishingEnabled": publication['ready'], 'publication': publication,
+                    'history':history.public_state(business_id) if history else {'status':'idle'}})
             if re.fullmatch("/editorial/media/" + _ID, route.path):
                 raw, mime = store.read_media(route.path.rsplit("/", 1)[1])
                 return reply(200, raw, mime)
@@ -193,7 +194,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         # use existing POST paths and remain bound to their own account CSRF.
         requested_action = handler.headers.get('X-Editorial-Action')
         if requested_action:
-            if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media'):
+            if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media', 'history_start', 'history_cancel'):
                 action = requested_action
             elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post', 'metrics'):
                 action = requested_action
@@ -217,6 +218,13 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         data = json.loads(_read(handler, 256 * 1024 if action == "draft" else 16 * 1024))
         if not isinstance(data, dict):
             raise editorial_core.EditorialError("Objeto JSON obrigatório")
+        if action in ('history_start','history_cancel'):
+            if history is None: raise editorial_core.EditorialError('Sincronização não configurada.')
+            if action=='history_start':
+                if set(data)!={'downloadMedia'} or type(data['downloadMedia']) is not bool: raise editorial_core.EditorialError('Pedido inválido.')
+                return reply(200,{'history':history.start(business_id,download_media=data['downloadMedia'])})
+            if data: raise editorial_core.EditorialError('Pedido inválido.')
+            return reply(200,{'history':history.cancel(business_id)})
         if action == 'delete_media':
             if set(data) != {'mediaId'}:
                 raise editorial_core.EditorialError('Campos inválidos')

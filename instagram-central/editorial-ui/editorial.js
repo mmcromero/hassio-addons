@@ -9,7 +9,7 @@
     view:'overview', posts:[], media:[], currentPostId:null, currentPostVersion:null, currentMediaIds:[],
     pickerIds:[], month:new Date(), pendingSchedule:null, toastTimer:null,
     currentSlideCaptions:{}, currentPreviewIndex:0, modalPostId:null, modalPreviewIndex:0,
-    publication:{}, accountUsername:'', pendingPublish:null, busy:false,actionPending:false,
+    publication:{}, history:{status:'idle'}, accountUsername:'', pendingPublish:null, busy:false,actionPending:false,
     dataFingerprint:null,refreshPending:null,uploadLabel:'',editorPreviewKey:null,pendingDelete:null,storyTimer:null
   };
   const $ = id => document.getElementById(id);
@@ -30,7 +30,8 @@
     schedule:'Confirmando agendamento…',cancel:'Cancelando agendamento…',check:'Verificando publicação…',
     publish:'Preparando publicação…',activate:'Confirmando envio agendado…',reset:'Liberando conteúdo para edição…',
     reconcile:'Verificando o resultado…',retry:'Conferindo nova tentativa…',
-    delete_post:'Excluindo publicação local…',delete_media:'Excluindo mídia…',metrics:'Consultando curtidas e comentários…'};
+    delete_post:'Excluindo publicação local…',delete_media:'Excluindo mídia…',metrics:'Consultando curtidas e comentários…',
+    history_start:'Iniciando sincronização…',history_cancel:'Solicitando cancelamento…'};
 
   function uploadRequest(endpoint,file,headers,operation){
     return new Promise((resolve,reject)=>{
@@ -53,7 +54,7 @@
     try{
     const headers = {};
     let endpoint=path;
-    if(['check','delete_media'].includes(action)){
+    if(['check','delete_media','history_start','history_cancel'].includes(action)){
       endpoint='drafts';headers['X-Editorial-Action']=action;
     }else if(['publish','activate','reset','reconcile','retry','delete_post','metrics'].includes(action)){
       endpoint=path.replace(/\/[^/]+$/,'/approve');headers['X-Editorial-Action']=action;
@@ -95,6 +96,7 @@
     }
     state.refreshPending=(async()=>{
     const result = await api('state');
+    state.history=result.history || {status:'idle'};renderHistoryProgress();
     state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';
     $('publication-status').textContent=state.publication.message || 'Verifique o acesso de publicação.';
     const fingerprint=JSON.stringify([result.posts,result.media]);
@@ -150,7 +152,7 @@
     toast('Salvamento recusado: outra aba alterou esta publicação.','error');
   }
   function show(view) {
-    if (!['overview','library','editor','approval','calendar'].includes(view)) return;
+    if (!['overview','library','editor','approval','calendar','history'].includes(view)) return;
     state.view = view;
     const panels=all('[data-panel]');
     UI.switchPanel(panels,$('view-'+view));UI.closeMenu();
@@ -159,7 +161,7 @@
       node.classList.toggle('active',active);
       if (active) node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
     });
-    $('current-section').textContent = ({overview:'Visão geral',library:'Biblioteca',editor:state.currentPostId?'Editar publicação':'Criar publicação',approval:'Revisão e envios',calendar:'Calendário'})[view];
+    $('current-section').textContent = ({overview:'Visão geral',library:'Biblioteca',editor:state.currentPostId?'Editar publicação':'Criar publicação',approval:'Revisão e envios',calendar:'Calendário',history:'Histórico'})[view];
     history.replaceState(null,'','#'+view);
     render();
   }
@@ -227,18 +229,20 @@
     else if(state.view==='library')renderLibrary();
     else if(state.view==='approval')renderApprovals();
     else if(state.view==='calendar')renderCalendar();
+    else if(state.view==='history')renderHistory();
     else if(state.view==='editor')renderSelection();
   }
   function empty(target,message) { clear(target); target.append(el('div','empty',message)); }
   function badge(status) { return el('span','chip '+status,STATUS[status] || 'Revisão necessária'); }
-  function calendarTime(post) { return post.scheduledAt || post.pendingScheduledAt || null; }
+  function calendarTime(post) { return post.status==='published' ? post.publishedAt : post.scheduledAt || post.pendingScheduledAt || null; }
   function pendingApproval(post) { return post.status==='draft' && !!post.pendingScheduledAt; }
   function expiredReservation(post) {
     return post.status==='approved' && !!post.pendingScheduledAt &&
       post.pendingScheduledAt<=Date.now();
   }
   function postText(post) {
-    return post.caption?.trim() || post.slideCaptions?.find(t=>t.trim())?.trim() || '';
+    const caption=typeof post.remoteDetails?.caption==='string'?post.remoteDetails.caption:post.caption;
+    return caption?.trim() || post.slideCaptions?.find(t=>t.trim())?.trim() || '';
   }
   function postRow(post, options={}) {
     const row=el('article','item');
@@ -265,6 +269,9 @@
     content.append(el('span','post-excerpt',detail.slice(0,160)));
     const date=calendarTime(post);
     content.append(el('small','post-kind',formatLabel(post.format)+(date ? ' · '+friendlyDate(date) : '')));
+    if(post.source==='instagram')content.append(el('small','history-origin','Importada do Instagram · somente histórico'));
+    if(post.remoteDetails?.seenAt)content.append(el('small','history-origin','Consultada na Meta: '+friendlyDate(post.remoteDetails.seenAt)));
+    (post.remoteDetails?.mediaWarnings || []).forEach(warning=>content.append(el('small','metrics-error',warning)));
     if(pendingApproval(post)){
       content.append(el('span','chip awaiting-review','Aguardando nova aprovação'));
     }else if(expiredReservation(post)){
@@ -316,6 +323,11 @@
       numbers.setAttribute('role','group');numbers.setAttribute('aria-label','Curtidas e comentários desta publicação');
       const count=value=>typeof value==='number'?new Intl.NumberFormat('pt-BR').format(value):(metrics.checkedAt?'Não informado':'—');
       numbers.append(el('span','metric-likes','Curtidas: '+count(metrics.likes)),el('span','metric-comments','Comentários: '+count(metrics.comments)));
+      const extra=metrics.extra || {};
+      numbers.append(el('span','metric-shares','Compartilhamentos: '+(typeof extra.shares==='number'?new Intl.NumberFormat('pt-BR').format(extra.shares):'Não informado')),
+        el('span','metric-saves','Salvamentos: '+(typeof extra.saves==='number'?new Intl.NumberFormat('pt-BR').format(extra.saves):'Não informado')));
+      if(metrics.extraCheckedAt)numbers.append(el('small','','Compartilhamentos/salvamentos consultados em '+friendlyDate(metrics.extraCheckedAt)));
+      if(metrics.extraError)numbers.append(el('small','metrics-note',metrics.extraError));
       numbers.append(el('small','metrics-time',metrics.checkedAt?'Última consulta confirmada: '+friendlyDate(metrics.checkedAt):'Ainda não consultado na Meta.'));
       if(metrics.status==='error')numbers.append(el('small','metrics-error',metrics.error));
       else if(metrics.status==='ready' && (metrics.likes===null || metrics.comments===null))numbers.append(el('small','metrics-note','A Meta não informou todas as contagens. Isso não significa zero.'));
@@ -323,7 +335,9 @@
       const update=el('button','btn quiet','Atualizar métricas');update.type='button';update.disabled=!post.remoteId;
       if(update.disabled)update.title='O ID remoto desta publicação ainda não está disponível.';
       update.addEventListener('click',()=>guard(()=>refreshMetrics(post)));actions.append(update);
-      const remote=post.permalink;
+      const inCalendar=el('button','btn quiet','No calendário');inCalendar.type='button';inCalendar.disabled=!post.publishedAt;
+      inCalendar.addEventListener('click',()=>openCalendarAt(post.publishedAt));actions.append(inCalendar);
+      const remote=post.remoteDetails?.permalink || post.permalink;
       const hasLink=typeof remote==='string' && /^https:\/\/(www\.)?instagram\.com\/(p|reel|stories)\/[A-Za-z0-9_/-]+$/.test(remote);
       const expired=post.format==='story' && post.publishedAt && Date.now()>=post.publishedAt+86400000;
       if(post.format==='story'){
@@ -340,7 +354,7 @@
     if(options.approval){
       const remove=el('button','btn quiet danger','Excluir');remove.type='button';
       remove.disabled=!['draft','approved','scheduled','failed','published'].includes(post.status) ||
-        (post.publicationAttempted && post.status!=='published');
+        (post.publicationAttempted && post.status!=='published') || (post.source==='instagram' && historyActive());
       if(remove.disabled)remove.title='Confira o resultado do envio antes de excluir.';
       remove.addEventListener('click',()=>requestDeletion('post',post));actions.append(remove);
     }
@@ -362,6 +376,50 @@
     const expiries=items.filter(p=>p.status==='published' && p.format==='story' && p.publishedAt)
       .map(p=>p.publishedAt+86400000-Date.now()).filter(delay=>delay>0);
     if(expiries.length)state.storyTimer=setTimeout(()=>{if(state.view==='approval')renderApprovals();},Math.min(...expiries)+50);
+  }
+  function historyActive(){return ['queued','running'].includes(state.history.status);}
+  function renderHistoryProgress(){
+    const job=state.history,active=historyActive(),target=$('history-progress');
+    $('history-start').disabled=active || state.actionPending || state.busy;
+    $('history-download').disabled=active;
+    if(active && typeof job.download==='boolean')$('history-download').checked=job.download;
+    $('history-cancel').hidden=!active;$('history-cancel').disabled=!!job.cancel || state.actionPending;
+    clear(target);target.append(el('p','',job.message || 'Nenhuma sincronização iniciada nesta conta.'));
+    if(job.checkedAt)target.append(el('small','','Concluída em '+friendlyDate(job.checkedAt)));
+    if(active){
+      target.setAttribute('aria-busy','true');const track=el('div','ui-progress');track.setAttribute('role','progressbar');track.setAttribute('aria-label',job.phase==='media'?'Baixando mídias':'Consultando histórico');
+      const fill=el('span','ui-progress-fill');track.append(fill);
+      if(job.phase==='media' && job.totalFiles){
+        const value=Math.min(100,100*(job.processedFiles || 0)/job.totalFiles);
+        track.dataset.indeterminate='false';track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','100');track.setAttribute('aria-valuenow',String(Math.round(value)));fill.style.transform='scaleX('+(value/100)+')';
+      }else track.dataset.indeterminate='true';target.append(track);
+    }else target.removeAttribute('aria-busy');
+  }
+  function metricValue(post,kind){
+    const m=post.metrics || {},values=[m.likes,m.comments,m.extra?.shares,m.extra?.saves].filter(v=>typeof v==='number');
+    if(kind==='interactions')return values.length?values.reduce((a,b)=>a+b,0):null;
+    return kind==='shares'?m.extra?.shares:m[kind];
+  }
+  function renderHistory(){
+    renderHistoryProgress();
+    const allPosts=state.posts.filter(p=>p.status==='published'),fmt=$('history-format').value,sort=$('history-sort').value;
+    const posts=allPosts.filter(p=>fmt==='all' || p.format===fmt).sort((a,b)=>sort==='date'
+      ? (b.publishedAt || 0)-(a.publishedAt || 0)
+      : (metricValue(b,sort) ?? -1)-(metricValue(a,sort) ?? -1));
+    const summary=$('history-summary');clear(summary);
+    summary.append(el('strong','',posts.length+' publicação(ões) no filtro'));
+    for(const [kind,label] of [['likes','Curtidas'],['comments','Comentários'],['shares','Compartilhamentos'],['interactions','Interações conhecidas']]){
+      const values=posts.map(p=>metricValue(p,kind)).filter(v=>typeof v==='number');
+      summary.append(el('span','',label+': '+(values.length?new Intl.NumberFormat('pt-BR').format(values.reduce((a,b)=>a+b,0)):'—')+' · dados em '+values.length+'/'+posts.length));
+    }
+    const target=$('history-list');clear(target);
+    if(!posts.length)return empty(target,'Ainda não há publicações neste histórico. Sincronize a conta ou publique pela Central.');
+    posts.forEach(post=>target.append(postRow(post,{approval:true})));
+  }
+  function openCalendarAt(timestamp){
+    if(!timestamp)return;
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit'}).formatToParts(new Date(timestamp));
+    state.month=new Date(Date.UTC(Number(parts.find(p=>p.type==='year').value),Number(parts.find(p=>p.type==='month').value)-1,1));show('calendar');
   }
   function monitorMediaLoad(media, target) {
     media.addEventListener('error',()=>{
@@ -502,6 +560,9 @@
       post.caption,post.captionMode||'general',post.slideCaptions||[],
       index=>{state.modalPreviewIndex=index;renderModalPreview();});
     $('modal-preview-description').textContent=formatLabel(post.format)+' · '+(STATUS[post.status] || 'Revisão necessária');
+    const alt=post.remoteDetails?.altTexts?.[state.modalPreviewIndex];
+    $('modal-media-details').hidden=!post.remoteDetails?.altTexts;
+    $('modal-media-alt').textContent=alt || 'A Meta não retornou texto alternativo para esta mídia.';
   }
   function openPostPreview(id) {
     const post=state.posts.find(p=>p.id===id);
@@ -734,7 +795,8 @@
     $('delete-consequence').textContent=kind==='media'
       ? 'O arquivo será apagado do armazenamento da Central. Esta ação não pode ser desfeita.'
       : (item.status==='scheduled'?'O agendamento será cancelado. ':'')+
-        'O registro será apagado da Central. Conteúdo já publicado no Instagram permanece lá. Esta ação não pode ser desfeita.';
+        'O registro será apagado da Central. Conteúdo já publicado no Instagram permanece lá. Esta ação não pode ser desfeita.'+
+        (item.source==='instagram'?' Uma nova sincronização poderá importar o registro novamente.':'');
     $('delete-media-option').hidden=kind!=='post';$('delete-unused-media').checked=true;
     $('delete-feedback').textContent='';UI.dialog.open($('delete-dialog'));
   }
@@ -765,6 +827,7 @@
   function renderCalendar() {
     const start=new Date(Date.UTC(state.month.getUTCFullYear(),state.month.getUTCMonth(),1));
     $('month-label').textContent=formatMonth(start);
+    $('calendar-month').value=start.getUTCFullYear()+'-'+String(start.getUTCMonth()+1).padStart(2,'0');
     const target=$('calendar-grid');clear(target);
     const firstWeekday=start.getUTCDay();
     const monthDays=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth()+1,0)).getUTCDate();
@@ -777,19 +840,19 @@
       const cell=el('div','calendar-day'+(outside?' outside':'')+(iso===today?' today':''));
       cell.append(el('span','day-number',date.getUTCDate()));
       const events=state.posts.filter(p=>calendarTime(p) &&
-        (p.status==='scheduled' || pendingApproval(p) || expiredReservation(p)) &&
+        (p.status==='published' || p.status==='scheduled' || pendingApproval(p) || expiredReservation(p)) &&
         new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(calendarTime(p)))===iso);
       events.forEach(post=>{
         const summary=postText(post);
         const needsReview=pendingApproval(post),expired=expiredReservation(post);
-        const prefix=needsReview?'Aprovação pendente':expired?'Horário expirado':formatLabel(post.format);
+        const prefix=post.status==='published'?'Publicada':needsReview?'Aprovação pendente':expired?'Horário expirado':formatLabel(post.format);
         const text=el('div','calendar-event'+(needsReview?' awaiting-review':expired?' expired-review':''),
           prefix+' · '+(summary.slice(0,15)||'Sem legenda'));
         text.title=prefix+' · '+summary;
-        if(needsReview){
+        if(needsReview || post.status==='published'){
           text.setAttribute('role','button');text.tabIndex=0;
-          text.setAttribute('aria-label','Ver publicação aguardando aprovação: '+summary.slice(0,60));
-          const focusItem=()=>document.getElementById('calendar-post-'+post.id)?.scrollIntoView({block:'nearest'});
+          text.setAttribute('aria-label','Ver publicação: '+summary.slice(0,60));
+          const focusItem=()=>{const item=document.getElementById('calendar-post-'+post.id);item?.scrollIntoView({block:'nearest'});item?.querySelector('.post-preview-trigger')?.focus({preventScroll:true});};
           text.addEventListener('click',focusItem);
           text.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();focusItem();}});
         }
@@ -798,10 +861,12 @@
       target.append(cell);
     }
     const list=$('calendar-list');clear(list);
+    const monthPrefix=start.getUTCFullYear()+'-'+String(start.getUTCMonth()+1).padStart(2,'0');
     const scheduled=state.posts.filter(p=>
-      p.status==='scheduled' || pendingApproval(p) || expiredReservation(p))
+      p.status==='scheduled' || pendingApproval(p) || expiredReservation(p) ||
+      p.status==='published' && p.publishedAt && saoPauloMinute(new Date(p.publishedAt)).startsWith(monthPrefix))
       .sort((a,b)=>calendarTime(a)-calendarTime(b));
-    if(!scheduled.length)return empty(list,'Nenhuma publicação agendada.');
+    if(!scheduled.length)return empty(list,'Nenhuma publicação neste mês ou agenda pendente.');
     scheduled.forEach(p=>{
       const row=postRow(p,{approval:true});
       row.id='calendar-post-'+p.id;
@@ -809,6 +874,10 @@
     });
   }
   function wireEvents() {
+    $('history-start').addEventListener('click',()=>guard(async()=>{await api('drafts',{action:'history_start',data:{downloadMedia:$('history-download').checked}});await refresh(true);toast('Sincronização iniciada. Acompanhe o progresso no Histórico.');}));
+    $('history-cancel').addEventListener('click',()=>guard(async()=>{await api('drafts',{action:'history_cancel',data:{}});await refresh(true);}));
+    ['history-sort','history-format'].forEach(id=>$(id).addEventListener('change',renderHistory));
+    $('calendar-month').addEventListener('change',()=>{const val=$('calendar-month').value;if(/^\d{4}-\d{2}$/.test(val)){state.month=new Date(val+'-01T12:00:00Z');renderCalendar();}});
     $('confirm-delete').addEventListener('click',submitDeletion);
     ['close-delete-dialog','cancel-delete'].forEach(id=>$(id).addEventListener('click',()=>{if(!state.busy)UI.dialog.close($('delete-dialog'));}));
     $('check-publication').addEventListener('click',()=>guard(checkPublication));
@@ -862,16 +931,19 @@
         ? 'O servidor respondeu de forma inesperada. Operação não confirmada.'
         : (err.message || 'Não foi possível concluir a operação.'),'error');
       try {await refresh();} catch (_) { /* keep the error visible */ }
-    }finally{state.actionPending=false;release();}
+    }finally{state.actionPending=false;release();renderHistoryProgress();}
   }
   async function init() {
     wireEvents();
     const initial=location.hash.slice(1);
-    if(['overview','library','editor','approval','calendar'].includes(initial))state.view=initial;
+    if(['overview','library','editor','approval','calendar','history'].includes(initial))state.view=initial;
     const load=async()=>{await refresh();formatHint();show(state.view);UI.ready();};
     try{
       await load();
     }catch(err){UI.initialError(load);}
+    setInterval(()=>{
+      if(document.visibilityState==='visible' && historyActive() && !state.actionPending && !state.busy)refresh().catch(()=>{});
+    },2500);
     setInterval(()=>{
         if(document.visibilityState==='visible' && !state.busy &&
            !state.actionPending && !document.body.dataset.uiLoading &&

@@ -79,7 +79,7 @@ def sidebar(cfg=None, *, active='accounts', editorial=False):
                         editorial and view == 'overview') for view, label, icon in (
                             ('overview', 'Visão geral', '◫'), ('library', 'Biblioteca', '▧'),
                             ('editor', 'Criar publicação', '✎'), ('approval', 'Revisão e envios', '✓'),
-                            ('calendar', 'Calendário', '▦')))
+                            ('history', 'Histórico', '◷'), ('calendar', 'Calendário', '▦')))
     account = ('<div class="ui-account-context"><small>CONTA SELECIONADA</small><strong>' + name +
                '</strong><span>@' + username + '</span></div>') if active != 'accounts' else (
                '<div class="ui-account-context"><strong>Comece escolhendo uma conta</strong><span>O conteúdo e a conexão ficam separados por conta.</span></div>')

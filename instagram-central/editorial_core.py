@@ -94,6 +94,14 @@ class EditorialStore:
                     remote_id TEXT NOT NULL, status TEXT NOT NULL,
                     likes INTEGER, comments INTEGER, checked_at INTEGER,
                     attempted_at INTEGER NOT NULL, error TEXT NOT NULL DEFAULT '');
+                CREATE TABLE IF NOT EXISTS history_jobs (
+                    slot INTEGER PRIMARY KEY CHECK(slot=1), id TEXT NOT NULL, status TEXT NOT NULL,
+                    data TEXT NOT NULL, lease TEXT, lease_until INTEGER NOT NULL DEFAULT 0);
+                CREATE TABLE IF NOT EXISTS history_media (
+                    remote_id TEXT PRIMARY KEY, post_id TEXT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                    position INTEGER NOT NULL, data TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending',
+                    media_id TEXT REFERENCES media(id) ON DELETE SET NULL, error TEXT NOT NULL DEFAULT '');
+                CREATE INDEX IF NOT EXISTS history_media_pending ON history_media(state,post_id);
             """)
             db.execute("BEGIN IMMEDIATE")
             columns = {r[1] for r in db.execute("PRAGMA table_info(posts)")}
@@ -113,10 +121,15 @@ class EditorialStore:
                 'publication_next': 'INTEGER',
                 'publication_started': 'INTEGER',
                 'publication_error': "TEXT NOT NULL DEFAULT ''",
+                'remote_details': "TEXT NOT NULL DEFAULT '{}'",
+                'source': "TEXT NOT NULL DEFAULT 'editorial'",
             }
             for name, declaration in publication_columns.items():
                 if name not in columns:
                     db.execute('ALTER TABLE posts ADD COLUMN ' + name + ' ' + declaration)
+            metric_columns = {r[1] for r in db.execute('PRAGMA table_info(publication_metrics)')}
+            for name, declaration in {'extra_data': "TEXT NOT NULL DEFAULT '{}'", 'extra_checked_at': 'INTEGER', 'extra_error': "TEXT NOT NULL DEFAULT ''"}.items():
+                if name not in metric_columns: db.execute('ALTER TABLE publication_metrics ADD COLUMN '+name+' '+declaration)
             attachment_columns = {r[1] for r in db.execute("PRAGMA table_info(attachments)")}
             if "slide_caption" not in attachment_columns:
                 db.execute("ALTER TABLE attachments ADD COLUMN slide_caption TEXT NOT NULL DEFAULT ''")
@@ -230,6 +243,8 @@ class EditorialStore:
         with self._tx() as db:
             self._check_version(db, post_id, expected_version)
             row = db.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+            if row['source']=='instagram' and db.execute("SELECT 1 FROM history_jobs WHERE status IN ('queued','running')").fetchone():
+                raise EditorialError('Aguarde ou cancele a sincronização antes de excluir um registro importado.')
             if row['state'] not in ('draft', 'approved', 'scheduled', 'failed', 'published') or (
                     json.loads(row['publication_data']).get('issued') and row['state'] != 'published'):
                 raise EditorialError('Esta publicação tem um envio em andamento ou resultado pendente. Confira o resultado antes de excluir.')
@@ -249,13 +264,20 @@ class EditorialStore:
                 'likes': row['likes'] if row else None, 'comments': row['comments'] if row else None,
                 'checkedAt': row['checked_at'] * 1000 if row and row['checked_at'] is not None else None,
                 'attemptedAt': row['attempted_at'] * 1000 if row else None,
-                'error': row['error'] if row else ''}
+                'error': row['error'] if row else '',
+                'extra': json.loads(row['extra_data']) if row else {},
+                'extraCheckedAt': row['extra_checked_at'] * 1000 if row and row['extra_checked_at'] is not None else None,
+                'extraError': row['extra_error'] if row else ''}
 
     def save_metrics(self, post_id, remote_id, *, values=None, error='', now=None):
-        if values is not None and (set(values) != {'likes', 'comments'} or any(
+        if values is not None and (not {'likes', 'comments'} <= set(values) or set(values)-{'likes','comments','extra','extraError'} or any(
                 value is not None and (type(value) is not int or not 0 <= value <= 2**63-1)
-                for value in values.values())):
+                for value in (values['likes'],values['comments']))):
             raise EditorialError('Contagens inválidas')
+        if values is not None and 'extra' in values:
+            if (not isinstance(values['extra'],dict) or set(values['extra']) != {'shares','saves'} or any(
+                    v is not None and (type(v) is not int or not 0<=v<=2**63-1) for v in values['extra'].values())):
+                raise EditorialError('Contagens adicionais inválidas')
         if not isinstance(error, str) or len(error) > 500:
             raise EditorialError('Diagnóstico inválido')
         timestamp = int(time.time() if now is None else now)
@@ -273,6 +295,13 @@ class EditorialStore:
                 attempted_at=excluded.attempted_at,error=excluded.error''',
                 (post_id, remote_id, 'ready' if ready else 'error', values['likes'] if ready else None,
                  values['comments'] if ready else None, timestamp if ready else None, timestamp, error))
+            if values is not None:
+                if 'extra' in values:
+                    db.execute('UPDATE publication_metrics SET extra_data=?,extra_checked_at=?,extra_error=? WHERE post_id=?',
+                               (json.dumps(values['extra']),timestamp,'',post_id))
+                elif values.get('extraError'):
+                    db.execute('UPDATE publication_metrics SET extra_error=? WHERE post_id=?',
+                               ('A Meta não disponibilizou compartilhamentos e salvamentos nesta consulta.',post_id))
             result = db.execute('SELECT * FROM publication_metrics WHERE post_id=?', (post_id,)).fetchone()
             return self._metrics_snapshot(result)
 
@@ -483,6 +512,11 @@ class EditorialStore:
                 "SELECT post_id,MIN(at) AS at FROM audit WHERE event='publication_published' GROUP BY post_id")}
             posts = []
             for row in db.execute("SELECT * FROM posts ORDER BY created_at DESC,id"):
+                remote = json.loads(row['remote_details'])
+                warnings=[item[0] for item in db.execute("SELECT DISTINCT error FROM history_media WHERE post_id=? AND error!=''",(row['id'],))]
+                if warnings: remote['mediaWarnings']=warnings
+                descriptions=[json.loads(item[0]).get('alt','') for item in db.execute('SELECT data FROM history_media WHERE post_id=? ORDER BY position',(row['id'],))]
+                if descriptions: remote['altTexts']=descriptions
                 attachment_rows = db.execute(
                     "SELECT media_id,slide_caption FROM attachments WHERE post_id=? ORDER BY position",
                     (row["id"],)).fetchall()
@@ -496,10 +530,11 @@ class EditorialStore:
                               "publicationMessage": row['publication_error'],
                               "publicationPhase": row['publication_phase'],
                               "publicationAttempted": bool(json.loads(row['publication_data']).get('issued')),
-                              "permalink": json.loads(row['publication_data']).get('permalink'),
+                              "permalink": remote.get('permalink') or json.loads(row['publication_data']).get('permalink'),
                               "remoteId": row['remote_id'],
+                              "source": row['source'], "remoteDetails": remote,
                               "metrics": self._metrics_snapshot(metrics.get(row['id'])),
-                              "publishedAt": published[row['id']] * 1000 if row['id'] in published else None,
+                              "publishedAt": remote.get('timestamp', published.get(row['id'])) * 1000 if remote.get('timestamp', published.get(row['id'])) is not None else None,
                               "scheduledAt": row["scheduled_at"] * 1000 if row["scheduled_at"] else None,
                               "pendingScheduledAt": row["pending_schedule_at"] * 1000
                                   if row["pending_schedule_at"] else None,

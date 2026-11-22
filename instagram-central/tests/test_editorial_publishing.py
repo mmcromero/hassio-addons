@@ -69,7 +69,7 @@ class FakeMeta:
                 if backend.link_failure:
                     raise graph.PublishingError('network_unavailable', ambiguous=True)
                 return 'https://www.instagram.com/p/synthetic-post/'
-            def metrics(self, remote):
+            def metrics(self, remote, *, expanded=False):
                 assert backend.published[int(remote)-18000000000000001][0] == account
                 backend.calls.append(('metrics', account, remote))
                 if backend.metric_callback: backend.metric_callback()

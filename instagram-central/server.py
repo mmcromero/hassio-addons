@@ -28,6 +28,7 @@ import editorial_core
 import editorial_http
 import editorial_delivery
 import editorial_publishing
+import editorial_history
 import interface_ui
 import panel_login
 import origin_configuration
@@ -39,7 +40,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.28"
+APP_VERSION = "0.1.29"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -1096,7 +1097,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, self.request_configuration(),
                 panel_session_authorized(self.headers, settings()), editorial_store_for_business,
-                business_id=self.request_business(), publisher=PUBLICATIONS):
+                business_id=self.request_business(), publisher=PUBLICATIONS, history=HISTORY):
             return
         if route.path == "/panel/account-context" and not route.query:
             cfg = self.request_configuration()
@@ -1318,7 +1319,7 @@ class Handler(BaseHTTPRequestHandler):
         route = urlsplit(self.path)
         if route.path.startswith("/editorial") and editorial_http.handle(self, "POST", route, self.request_configuration(),
                 panel_session_authorized(self.headers, settings()), editorial_store_for_business,
-                business_id=self.request_business(), publisher=PUBLICATIONS):
+                business_id=self.request_business(), publisher=PUBLICATIONS, history=HISTORY):
             return
         if self.path in ("/panel/meta/check", "/panel/meta/subscribe"):
             try:
@@ -1553,6 +1554,7 @@ PUBLICATION_DELIVERY = editorial_delivery.MediaDelivery(database, editorial_stor
 PUBLICATIONS = editorial_publishing.PublisherHub(
     meta_configuration_for_business, _meta_credential, editorial_store_for_business,
     publication_businesses, PUBLICATION_DELIVERY)
+HISTORY = editorial_history.HistoryHub(PUBLICATIONS)
 
 
 if __name__ == "__main__":
@@ -1565,9 +1567,14 @@ if __name__ == "__main__":
                     internal.server_address[1], APP_VERSION, transport)
         worker = threading.Thread(target=PUBLICATIONS.run, name='editorial-publisher', daemon=True)
         worker.start()
+        history_worker = threading.Thread(target=HISTORY.run, name="editorial-history", daemon=True)
+        history_worker.start()
         try:
             internal.serve_forever()
         finally:
             PUBLICATIONS.stop.set()
             PUBLICATIONS.wake.set()
+            HISTORY.stop.set()
+            HISTORY.wake.set()
             worker.join(timeout=3)
+            history_worker.join(timeout=3)

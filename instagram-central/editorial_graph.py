@@ -40,7 +40,7 @@ class PublishingAPI:
             raise PublishingError('connection_required')
         self.opener = opener or _OPEN
 
-    def _request(self, method, path, fields=None, *, stage=None):
+    def _request(self, method, path, fields=None, *, stage=None, max_response=MAX_RESPONSE):
         params = urlencode(fields or {}).encode()
         url = 'https://graph.facebook.com/' + self.version + path
         if method == 'GET' and params:
@@ -50,8 +50,8 @@ class PublishingAPI:
                                    'Content-Type': 'application/x-www-form-urlencoded'})
         try:
             with self.opener(request, timeout=12) as response:
-                raw = response.read(MAX_RESPONSE + 1)
-            if len(raw) > MAX_RESPONSE:
+                raw = response.read(max_response + 1)
+            if len(raw) > max_response:
                 raise ValueError()
             data = json.loads(raw)
             if not isinstance(data, dict) or 'error' in data:
@@ -94,7 +94,7 @@ class PublishingAPI:
         if usage >= total:
             raise PublishingError('publishing_limit')
 
-    def metrics(self, remote):
+    def metrics(self, remote, *, expanded=False):
         remote = identifier(remote)
         data = self._request('GET', '/' + remote, {'fields': 'id,like_count,comments_count'}, stage='metrics')
         if data.get('id') != remote:
@@ -105,7 +105,36 @@ class PublishingAPI:
             if value is not None and (type(value) is not int or not 0 <= value <= 2**63-1):
                 raise PublishingError('invalid_response', stage='metrics')
             result[target] = value
+        if expanded:
+            try:
+                extra = self._request('GET', '/' + remote, {'fields': 'id,shares_count,saved_count'}, stage='metrics')
+                if extra.get('id') != remote: raise PublishingError('invalid_response')
+                result['extra'] = self._counts(extra, (('shares_count', 'shares'), ('saved_count', 'saves')))
+                result['extraError'] = ''
+            except PublishingError:
+                result['extraError'] = 'A Meta não disponibilizou compartilhamentos e salvamentos nesta consulta.'
         return result
+
+    @staticmethod
+    def _counts(data, fields):
+        result = {}
+        for source, target in fields:
+            value = data.get(source)
+            if value is not None and (type(value) is not int or not 0 <= value <= 2**63-1):
+                raise PublishingError('invalid_response')
+            result[target] = value
+        return result
+
+    def history_page(self, after=None, *, expanded=False):
+        fields = ('id,caption,media_type,media_product_type,timestamp,permalink,like_count,comments_count,'
+                  'media_url,thumbnail_url,alt_text,children.limit(20){id,media_type,media_url,thumbnail_url,alt_text}')
+        if expanded: fields += ',shares_count,saved_count'
+        params = {'fields': fields, 'limit': '25'}
+        if after:
+            if not isinstance(after, str) or len(after) > 8192 or any(ord(c)<32 for c in after):
+                raise PublishingError('invalid_response')
+            params['after'] = after
+        return self._request('GET', '/' + self.account + '/media', params, stage='history', max_response=1024*1024)
 
     def create(self, fields):
         allowed = {'image_url', 'video_url', 'caption', 'media_type', 'is_carousel_item', 'children'}

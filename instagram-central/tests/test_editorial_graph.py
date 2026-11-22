@@ -17,6 +17,24 @@ class Response(BytesIO):
 
 
 class GraphPublishingTests(unittest.TestCase):
+    def test_history_uses_account_edge_and_cursor_not_provider_next_url(self):
+        requests=[]
+        api=graph.PublishingAPI(CFG,CREDENTIAL,opener=lambda req,**kw:(requests.append(req) or Response({'data':[]})))
+        self.assertEqual(api.history_page('opaque-cursor',expanded=True),{'data':[]})
+        from urllib.parse import parse_qs,urlsplit
+        req=requests[0];parsed=urlsplit(req.full_url);fields=parse_qs(parsed.query)
+        self.assertEqual(parsed.netloc,'graph.facebook.com')
+        self.assertEqual(parsed.path,'/v27.0/'+CFG['instagram_account_id']+'/media')
+        self.assertEqual(fields['after'],['opaque-cursor']);self.assertIn('shares_count',fields['fields'][0])
+        self.assertNotIn(CREDENTIAL['access_token'],req.full_url)
+
+    def test_optional_metrics_rejection_does_not_discard_base_counts(self):
+        def read(req,**kw):
+            if 'shares_count' in req.full_url:raise HTTPError(req.full_url,400,'PRIVATE',{},BytesIO(b'{"error":{"code":100}}'))
+            return Response({'id':'18000000000000001','like_count':5,'comments_count':0})
+        result=graph.PublishingAPI(CFG,CREDENTIAL,opener=read).metrics('18000000000000001',expanded=True)
+        self.assertEqual(result['likes'],5);self.assertEqual(result['comments'],0)
+        self.assertIn('não disponibilizou',result['extraError']);self.assertNotIn('PRIVATE',str(result))
     def test_metrics_is_read_only_and_distinguishes_zero_from_missing(self):
         requests = []
         def read(req, **kwargs):

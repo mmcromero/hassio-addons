@@ -1,3 +1,12 @@
+## 0.1.29
+
+- Importa histórico do Instagram por conta, paginado e em segundo plano, com progresso, cancelamento, persistência/reinício e deduplicação por ID remoto. Apenas consultas GET; não cria envios nem transforma histórico em rascunho.
+- Inclui Histórico com filtros, ordenação por contagens/interações conhecidas e cobertura dos dados, além de publicações realizadas no Calendário com data original e seletor de mês.
+- Baixa cópias de mídias para a biblioteca dentro das cotas, usando HTTPS/CDNs restritos, sem bearer no CDN ou redirecionamento. Valida/regrava como uploads, preserva metadados quando arquivos falham e identifica miniatura substituta de vídeo. Sincronização repetida reutiliza arquivos/IDs existentes.
+- Acrescenta compartilhamentos/salvamentos quando a API permitir, com fallback para dados básicos e horários separados. Campo ausente não vira zero; interações conhecidas não são taxa de engajamento.
+- Preserva autoria/local original, versões, sessões/CSRF por ação/conta, revisão e agendas existentes. Mostra texto alternativo retornado em detalhes de acessibilidade sem tratá-lo como legenda visível individual.
+- Mantém exclusão local e proteção de registros durante sincronização, mesmos proxy/login/credenciais e build de sintaxe no HA. Stories antigos/arquivo privado e DMs continuam fora desta entrega; importação real ainda não homologada no HA.
+
 ## 0.1.28
 
 - Acrescenta consulta manual de curtidas e quantidade de comentários por publicação e conta, usando somente GET na Meta e os campos id,like_count,comments_count. Não exige verificar a permissão de publicação para ler contagens e não envia conteúdo.
