@@ -32,7 +32,7 @@ CONFIG = {'instagram_account_id': '11111111', 'panel_password': 'oauth_fixture_p
           'ingress_enabled': False, 'drafts_enabled': False, 'meta_oauth_redirect_uri': ''}
 server.settings = lambda: dict(CONFIG)
 server.LOGGER.addHandler(logging.NullHandler()); server.LOGGER.propagate = False
-state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0}
+state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0, 'routing_reads': 0}
 
 
 def exchange(code, cfg):
@@ -49,6 +49,13 @@ def graph(version, path, token, **kwargs):
     if path == '/11111111/subscribed_apps' and kwargs.get('method', 'GET') == 'GET':
         return {'data':[{'app_id':CONFIG['meta_app_id'],'subscribed_fields':['messages']}]}
     if path == '/11111111/conversations' and kwargs.get('method', 'GET') == 'GET':
+        if '--routing' in sys.argv and kwargs.get('fields') == server.instagram_connection.ROUTING_FIELDS:
+            state['routing_reads'] += 1
+            return {'data': [
+                {'id': 'PRIVATE_OWNED_ID', 'is_owner': True, 'updated_time': '2026-11-22T05:41:00-03:00'},
+                {'id': 'PRIVATE_OTHER_ID', 'is_owner': False},
+                {'id': 'PRIVATE_UNSPECIFIED_ID', 'messages': {'data': [{'text': 'PRIVATE_MESSAGE'}]}}
+            ]}
         assert kwargs.get('fields') == {'platform':'instagram','fields':'id','limit':'1'}
         return {'data':[{'id':'SYNTHETIC_CONVERSATION_ID_NEVER_RENDERED'}]}
     if path == '/debug_token':
@@ -165,7 +172,7 @@ class Proxy(BaseHTTPRequestHandler):
         raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',
                    'Content-Type': self.headers.get('Content-Type', '')}
-        for key in ('Cookie', 'Origin', 'Authorization', 'X-CSRF-Token', 'X-Editorial-Action', 'X-Import-Id', 'X-Media-Index'):
+        for key in ('Cookie', 'Origin', 'Authorization', 'X-CSRF-Token', 'X-Editorial-Action', 'X-Import-Id', 'X-Media-Index', 'X-Meta-Diagnostic'):
             if self.headers.get(key): headers[key] = self.headers[key]
         client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
         try:
@@ -191,6 +198,8 @@ class Control(BaseHTTPRequestHandler):
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
         elif self.path == '/drift': CONFIG['meta_login_config_id'] = '98765432'; data = {}
+        elif self.path == '/routing-observe' and '--routing' in sys.argv:
+            data = {'routingReads': state['routing_reads']}
         elif self.path == '/integration-observe' and '--integration' in sys.argv:
             for business in server.publication_businesses():
                 for _ in range(8):

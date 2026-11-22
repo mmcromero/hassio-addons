@@ -19,13 +19,13 @@ _ATTEMPTS = {}
 _ATTEMPTS_LOCK = threading.Lock()
 _MAX_FAILURES = 8
 _FAILURE_WINDOW = 120
-_ADMIN_ACTIONS = frozenset(("check", "subscribe")) | frozenset(
+_ADMIN_ACTIONS = frozenset(("check", "subscribe", "routing")) | frozenset(
     "editorial:umdoislab:" + action for action in ("upload", "draft", "approve", "schedule", "cancel"))
 
 
 def _valid_action(action):
     return (isinstance(action, str) and (action in _ADMIN_ACTIONS or action == 'accounts:create' or
-            re.fullmatch(r'(?:editorial:[a-z][a-z0-9_-]{1,39}:(?:upload|draft|approve|schedule|cancel|check|publish|activate|reset|reconcile|retry|delete_post|delete_media|metrics|history_start|history_cancel|integration_list|integration_create|integration_revoke)|meta:[a-z][a-z0-9_-]{1,39}:(?:check|subscribe))', action) is not None))
+            re.fullmatch(r'(?:editorial:[a-z][a-z0-9_-]{1,39}:(?:upload|draft|approve|schedule|cancel|check|publish|activate|reset|reconcile|retry|delete_post|delete_media|metrics|history_start|history_cancel|integration_list|integration_create|integration_revoke)|meta:[a-z][a-z0-9_-]{1,39}:(?:check|subscribe|routing))', action) is not None))
 
 
 def _valid_password(password):

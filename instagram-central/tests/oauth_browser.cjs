@@ -32,7 +32,7 @@ async function start(){
   const expected='ig_oauth_state_'+crypto.createHash('sha256').update(nonce).digest('hex').slice(0,32);
   obs.expectedStored=(await ctx.cookies(base+'/oauth/meta/callback')).some(c=>c.name===expected);
   assert.equal(obs.status,['same_https','same_host_other_port','split_cookie_header'].includes(kind)?200:400,kind);
-  const text=await page.locator('body').innerText();assert(text.includes('0.1.31'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
+  const text=await page.locator('body').innerText();assert(text.includes('0.1.32'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
   if(kind==='strip_request_cookie'||kind==='insecure_start'||kind==='strip_set_cookie'||kind==='different_start_host')assert(text.includes('Nenhum cabeçalho Cookie'),kind+' classification');
   if(kind==='rewrite_nonce')assert(text.includes('Cookies chegaram'),kind+' wrong-name classification');
   console.log('PASS probe '+JSON.stringify(obs));await ctx.close();

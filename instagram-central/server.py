@@ -41,7 +41,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.31"
+APP_VERSION = "0.1.32"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -809,6 +809,17 @@ def render_integration_settings(cfg):
       <div id="integration-connections" aria-live="polite"></div></section>''')
 
 
+def render_routing_settings(cfg):
+    endpoint = html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/panel/meta/check', quote=True)
+    return ('<section class="panel" aria-label="Controle e atividade das conversas">'
+            '<h2>Controle e atividade das conversas</h2>'
+            '<p>Consulta até cinco conversas usando somente metadados: controle pelo nosso aplicativo e horário da última atividade. '
+            'Não lê textos ou participantes, não envia mensagens e não altera o encaminhamento.</p>'
+            '<button type="button" class="btn quiet" id="check-routing" data-routing-url="' + endpoint + '" data-routing-csrf="">Consultar controle e atividade</button>'
+            '<div id="routing-result" role="status" aria-live="polite"></div>'
+            '<p id="routing-feedback" role="status" aria-live="polite">Nenhuma consulta realizada nesta página.</p></section>')
+
+
 def render_panel(cfg=None, *, settings_page=False):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
@@ -858,7 +869,7 @@ def render_panel(cfg=None, *, settings_page=False):
     if settings_page:
         content = ('<div class="heading"><span class="eyebrow">CONFIGURAÇÃO DA CONTA</span>'
                    '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' +
-                   render_connection_section(cfg, connection_summary(cfg)) + render_publication_settings(cfg) +
+                   render_connection_section(cfg, connection_summary(cfg)) + render_routing_settings(cfg) + render_publication_settings(cfg) +
                    render_integration_settings(cfg))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1340,6 +1351,9 @@ class Handler(BaseHTTPRequestHandler):
             csrf_subscribe = panel_login.admin_csrf_token(
                 self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("subscribe"))
             if settings_page and csrf_check:
+                csrf_routing = panel_login.admin_csrf_token(
+                    self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('routing'))
+                page = page.replace('data-routing-csrf=""', 'data-routing-csrf="' + csrf_routing + '"')
                 controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button>Verificar acesso Meta</button></form>'
                 if (connection_summary(cfg)["accountVerified"] and
                         connection_summary(cfg)["webhookEnabled"] and
@@ -1418,6 +1432,13 @@ class Handler(BaseHTTPRequestHandler):
             if size <= 0 or size > 512:
                 return self.respond(413, {"error": "size not allowed"})
             action = "check" if self.path.endswith("/check") else "subscribe"
+            diagnostics = self.headers.get_all('X-Meta-Diagnostic', [])
+            if diagnostics:
+                if diagnostics != ['routing'] or action != 'check':
+                    return self.respond(400, {'error': 'invalid diagnostic'})
+                if self.headers.get('Transfer-Encoding') or len(self.headers.get_all('Content-Length', [])) != 1:
+                    return self.respond(400, {'error': 'invalid diagnostic length'})
+                action = 'routing'
             candidate = _meta_action_body(self.rfile.read(size))
             if not panel_login.admin_csrf_valid(
                     self.headers.get("Cookie", ""), cfg.get("panel_password"),
@@ -1425,6 +1446,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(403, {"error": "invalid CSRF"})
             if not oauth_meta.is_ready(cfg):
                 return self.respond(503, {"error": "OAuth disabled or incomplete"})
+            if action == 'routing':
+                # Read only; never replace/refresh credentials or run the other diagnostics.
+                return self.respond(200, instagram_connection.diagnose_conversation_routing(
+                    cfg, _meta_credential(self.request_business())))
             try:
                 credential = _meta_credential(self.request_business())
                 if credential is None or credential.get("business_id", "umdoislab") != cfg["business_id"]:

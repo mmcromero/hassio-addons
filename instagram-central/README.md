@@ -1,4 +1,12 @@
-# Central Instagram — 0.1.31 (integração de ferramentas e menu unificado)
+# Central Instagram — 0.1.32 (controle e atividade das conversas)
+
+Em **Conexão Meta → Configurações Meta → Controle e atividade das conversas**, clique em **Consultar controle e atividade** para uma leitura específica com o token já salvo da conta selecionada. Uma única consulta GET examina até cinco conversas e mostra quantas estão sob controle do aplicativo, fora desse controle ou sem essa informação, além do horário de atividade mais recente da amostra em Brasília. Não consulta textos nem participantes; os IDs recebidos são descartados, sem armazenamento ou exibição. O resultado fica somente na página e não é renovado automaticamente.
+
+`is_owner` depende do que a Meta disponibiliza para esse acesso/encaminhamento. Campo ausente é **não informado**, nunca interpretado como controle de outro aplicativo. Recusa da consulta mostra erro/códigos numéricos sem inventar contagens; falha preserva o resultado anterior. A amostra não identifica o aplicativo padrão nem prova recebimento da DM enviada ou entrega de webhook. O botão mostra carregamento e impede cliques repetidos enquanto aguarda.
+
+**Atualização 0.1.32:** somente a Central, preservando opções e `/data`. Usa a sessão, a credencial de cada conta e a rota de diagnóstico existentes, sem novo OAuth ou configuração de proxy. O operador confirmou a 0.1.31 instalada; amostras da Meta chegaram e foram aceitas, mas a DM real não apresentou novo marcador de chegada. Alterar somente a assinatura de `messages` de v27 para v26 não trouxe melhora observada; retornar esse campo à v27 é uma ação manual pendente, sem mudar a versão Graph da Central. A 0.1.32 acrescenta evidência para investigar, sem declarar o recebimento corrigido. Instalação e consulta real desta versão ainda dependem do operador.
+
+## Integração de ferramentas e menu unificado (0.1.31, preservados)
 
 A 0.1.31 incorpora o PR #13, preservando as configurações e a abertura externa da 0.1.30. O menu mantém **Editorial, Mensagens, Contas e Conexão Meta** em todas as páginas. Contas usa o mesmo cabeçalho e estilo; o seletor de conta permanece no topo e a navegação preserva a seleção por URL, sem alterar a conta de outra aba. **Calendário** e **Histórico** continuam separados. Criar publicação abre uma composição nova.
 

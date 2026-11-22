@@ -7,6 +7,7 @@ never logged or reflected to the browser.
 import json
 import re
 import time
+from datetime import datetime
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
@@ -14,6 +15,7 @@ from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 MAX_GRAPH_RESPONSE = 64 * 1024
 GRAPH_VERSION = re.compile(r"v[0-9]{1,2}\.0\Z")
 IG_ACCOUNT = re.compile(r"[0-9]{8,30}\Z")
+ROUTING_FIELDS = {'platform': 'instagram', 'fields': 'id,is_owner,updated_time', 'limit': '5'}
 
 
 class _NoGraphRedirect(HTTPRedirectHandler):
@@ -63,7 +65,7 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     elif re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method in ('GET', 'POST'):
         pass
     elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
-        if fields != {'platform': 'instagram', 'fields': 'id', 'limit': '1'}:
+        if fields not in ({'platform': 'instagram', 'fields': 'id', 'limit': '1'}, ROUTING_FIELDS):
             raise ConnectionError('Conversation diagnostic must not read message content')
     elif path == '/debug_token' and method == 'GET':
         if (not isinstance(fields, dict) or set(fields) != {'input_token'}
@@ -119,6 +121,53 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if not isinstance(obj, dict) or "error" in obj:
         raise _graph_error(obj)
     return obj
+
+
+def diagnose_conversation_routing(cfg, credential):
+    """One bounded GET of metadata; no message text, participants or retained IDs."""
+    report = {'checked_at': int(time.time()), 'status': 'unknown'}
+    if (not credential_status(credential, cfg)['account_verified']
+            or not IG_ACCOUNT.fullmatch(str(cfg.get('instagram_account_id') or ''))):
+        return {**report, 'reason': 'configuration_incomplete'}
+    try:
+        result = request_graph(cfg.get('meta_graph_version'),
+            '/' + cfg['instagram_account_id'] + '/conversations', credential.get('access_token'),
+            fields=dict(ROUTING_FIELDS), timeout=5)
+        rows = result.get('data')
+        if not isinstance(rows, list) or len(rows) > 5:
+            raise GraphError('invalid_response')
+        owned = other = unspecified = 0
+        latest = None
+        for row in rows:
+            if (not isinstance(row, dict) or not isinstance(row.get('id'), str)
+                    or not 1 <= len(row['id']) <= 256):
+                raise GraphError('invalid_response')
+            owner = row.get('is_owner')
+            if owner is not None and type(owner) is not bool:
+                raise GraphError('invalid_response')
+            owned += owner is True
+            other += owner is False
+            unspecified += owner is None
+            updated = row.get('updated_time')
+            if updated is not None:
+                if not isinstance(updated, str) or len(updated) > 64:
+                    raise GraphError('invalid_response')
+                try:
+                    stamp = datetime.fromisoformat(updated.replace('Z', '+00:00'))
+                    if stamp.utcoffset() is None:
+                        raise ValueError()
+                    seconds = int(stamp.timestamp())
+                    if not 0 <= seconds <= report['checked_at'] + 300:
+                        raise ValueError()
+                except (ValueError, OverflowError, OSError):
+                    raise GraphError('invalid_response') from None
+                latest = seconds if latest is None else max(latest, seconds)
+        return {**report, 'status': 'confirmed', 'sample_count': len(rows), 'owned': owned,
+                'other': other, 'unspecified': unspecified, 'latest_activity': latest}
+    except GraphError as exc:
+        return {**report, 'status': 'error', **{k:v for k,v in exc.details.items() if v is not None}}
+    except ConnectionError:
+        return {**report, 'status': 'error', 'reason': 'configuration_incomplete'}
 
 
 def diagnose_receiving(cfg, credential):

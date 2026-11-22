@@ -1,3 +1,10 @@
+## 0.1.32
+
+- Consulta manual de controle e atividade em Configurações Meta, por conta, com uma única leitura de até cinco conversas usando `id,is_owner,updated_time`. Descarta IDs e não pede conteúdo nem participantes.
+- Apresenta contagens de controle próprio/outro/não informado e atividade mais recente da amostra em Brasília. Ausência de `is_owner` e recusas da API permanecem inconclusivas; não comprovam falha de roteamento nem entrega da DM.
+- Usa token salvo e sessão/CSRF por ação e conta, sem renovar credencial, assinar eventos, enviar mensagens ou alterar encaminhamento. Não grava o resultado nem consulta automaticamente ao abrir/recarregar.
+- Botão com espera e bloqueio de repetição; falhas preservam o último resultado exibido. Mantém integração genérica, menu, Editorial, abertura externa, proxy e receptor da 0.1.31. Não declara corrigido o recebimento de DMs reais.
+
 ## 0.1.31
 
 - Chaves por conta/ferramenta, com prazo de 90 dias, revogação e permissão opcional de publicação direta. Gerenciamento usa sessão administrativa e CSRF por ação/conta.

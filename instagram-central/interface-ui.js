@@ -187,6 +187,52 @@
       }finally{done();operation.end();}
     });
   }
+  function initRoutingSettings(){
+    const button=document.getElementById('check-routing');if(!button)return;
+    const result=document.getElementById('routing-result'),feedback=document.getElementById('routing-feedback');
+    const date=stamp=>new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'medium',timeZone:'America/Sao_Paulo'}).format(new Date(stamp*1000))+' (Brasília)';
+    button.addEventListener('click',async()=>{
+      if(button.disabled)return;
+      const done=hold(button,'Consultando…'),progress=start('Consultando controle e atividade…');
+      feedback.textContent='Lendo somente metadados de até cinco conversas…';
+      try{
+        const response=await fetch(button.dataset.routingUrl,{method:'POST',credentials:'same-origin',cache:'no-store',
+          signal:AbortSignal.timeout(12000),headers:{'Content-Type':'application/x-www-form-urlencoded','X-Meta-Diagnostic':'routing'},
+          body:new URLSearchParams({csrf:button.dataset.routingCsrf})});
+        const raw=await response.text();let report;
+        try{if(raw.length<=16384)report=JSON.parse(raw);}catch(_){}
+        if(response.status===403)throw new Error('A sessão expirou ou a consulta não foi autorizada. Entre novamente.');
+        if(!response.ok || !report || !['confirmed','unknown','error'].includes(report.status))
+          throw new Error('Não foi possível concluir a consulta. O resultado anterior foi preservado.');
+        if(report.status!=='confirmed'){
+          const reasons={configuration_incomplete:'A conexão desta conta está incompleta ou não foi confirmada.',
+            unsupported_request:'A Meta não disponibilizou estes metadados para este acesso.',
+            permission_denied:'A Meta recusou o acesso aos metadados das conversas.',token_invalid:'A Meta recusou o token salvo.',
+            message_access_disabled:'O acesso externo às mensagens está desativado no Instagram.',
+            transport_error:'Não foi possível concluir a comunicação com a Meta.',invalid_response:'A Meta retornou metadados em formato inesperado.'};
+          const codes=[['HTTP',report.http_status],['código Meta',report.provider_code],['subcódigo',report.provider_subcode]]
+            .filter(item=>Number.isInteger(item[1])).map(item=>item[0]+' '+item[1]).join(', ');
+          throw new Error((reasons[report.reason] || 'A consulta não foi concluída.')+(codes?' ('+codes+')':'')+' O resultado anterior foi preservado.');
+        }
+        if(![report.sample_count,report.owned,report.other,report.unspecified].every(v=>Number.isInteger(v)&&v>=0&&v<=5)
+          || report.sample_count!==report.owned+report.other+report.unspecified || !Number.isInteger(report.checked_at))
+          throw new Error('Não foi possível confirmar o resultado. O resultado anterior foi preservado.');
+        const lines=['Consulta confirmada: '+date(report.checked_at)+'.','Conversas na amostra: '+report.sample_count+'.'];
+        if(report.sample_count){
+          lines.push('Sob controle do nosso aplicativo: '+report.owned+'.','Fora do controle do nosso aplicativo: '+report.other+'.',
+            'Controle não informado pela Meta: '+report.unspecified+'.');
+          lines.push(Number.isInteger(report.latest_activity)?'Atividade mais recente na amostra: '+date(report.latest_activity)+'.':'Atividade recente não informada pela Meta.');
+          if(report.unspecified)lines.push('Campo de controle ausente não comprova erro de encaminhamento.');
+        }else lines.push('A Meta não retornou conversas nesta amostra. Isso não comprova ausência de conversas no Instagram.');
+        lines.push('Esta consulta não comprova entrega de webhook nem muda o aplicativo padrão.');
+        result.replaceChildren(...lines.map(line=>make('p','',line)));
+        feedback.textContent='Consulta concluída. Estes metadados não ficam salvos ao recarregar a página.';announce(feedback.textContent);
+      }catch(error){
+        feedback.textContent=['TimeoutError','AbortError'].includes(error.name) || error instanceof TypeError
+          ?'A consulta foi interrompida. O resultado anterior foi preservado.':error.message;announce(feedback.textContent);
+      }finally{done();progress.end();}
+    });
+  }
   function initIntegrationSettings(){
     const section=document.querySelector('[data-integration-base]');if(!section)return;
     const find=id=>section.querySelector('#integration-'+id),feedback=find('feedback');
@@ -299,7 +345,7 @@
       start(label);document.body.classList.add('ui-page-leaving');
     });
     addEventListener('pageshow',event=>{if(event.persisted)restore();});
-    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initIntegrationSettings();
+    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initRoutingSettings();initIntegrationSettings();
     if(!instant()){
       document.body.classList.add('ui-page-enter');
       requestAnimationFrame(()=>{document.body.classList.remove('ui-page-enter');document.body.classList.add('ui-page-ready');});
