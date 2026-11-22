@@ -1,6 +1,14 @@
-# Central Instagram — 0.1.24 (registro de chegada e retorno das ações Meta)
+# Central Instagram — 0.1.25 (conexão interna IPv4 e IPv6)
 
 [Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
+
+A **0.1.25** corrige a incompatibilidade identificada nos logs reais: o NGINX tentou alcançar a porta 8099 por IPv6, enquanto o receptor aceitava somente IPv4. A Central usa uma única porta com IPv4/IPv6 quando o sistema permite dual stack; mantém IPv4 em sistemas sem esse suporte. O comportamento HTTP, assinatura e armazenamento são os mesmos nos dois protocolos.
+
+**Para atualizar da 0.1.24:** faça backup e atualize somente a Central, preservando opções e `/data`. Não substitua arquivos nem reinicie o proxy. A linha de inicialização deve mostrar `version=0.1.25 transport=ipv4_ipv6` no ambiente com dual stack. Isso confirma a abertura do receptor, ainda não a entrega de DM. As consultas Meta já aprovadas não precisam ser repetidas.
+
+As recusas IPv6 são comprovadas, mas não foram correlacionadas à DM real: uma coincide com o pedido técnico que acabou respondendo 403. O HTML 504 antigo também não teve origem/horário correlacionados. Esta correção remove a incompatibilidade demonstrada sem atribuir toda a falha a ela.
+
+## Registro e interface anteriores 0.1.24
 
 A **0.1.24** mostra **Verificando…** ou **Solicitando assinatura…** imediatamente após o clique, com aviso de espera e botões Meta desabilitados enquanto a navegação está pendente. A trava vale para a mesma tela; ao voltar pelo histórico em cache, os controles são restaurados.
 

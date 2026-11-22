@@ -1,3 +1,9 @@
+## 0.1.25
+
+- Corrige incompatibilidade entre o proxy interno com destino IPv6 e o receptor que aceitava somente IPv4: uma única porta interna passa a aceitar IPv4/IPv6 quando o sistema oferece dual stack, mantendo IPv4 em sistemas sem esse suporte.
+- Registra prontidão somente após abrir a porta, incluindo transporte ipv4_ipv6 ou ipv4. Mantém porta 8099, proxy, URLs, opções, dados, validação HMAC e isolamento por conta.
+- Não declara que a entrega da DM foi resolvida: as recusas IPv6 foram confirmadas, mas não foi possível correlacioná-las à DM real. Build leve da 0.1.24 preservado.
+
 ## 0.1.24
 
 - Mostra Verificando… ou Solicitando assinatura… imediatamente ao enviar uma ação Meta, com aviso de espera acessível e bloqueio de novos envios na mesma tela enquanto a navegação está pendente.

@@ -9,6 +9,7 @@ import logging
 import os
 import secrets
 import re
+import socket
 from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
@@ -34,7 +35,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.24"
+APP_VERSION = "0.1.25"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -1516,10 +1517,27 @@ class Handler(BaseHTTPRequestHandler):
         return
 
 
+class _DualStackHTTPServer(ThreadingHTTPServer):
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        # One internal port accepts IPv6 and IPv4-mapped connections.
+        self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        super().server_bind()
+
+
+def create_internal_http_server(port):
+    if socket.has_dualstack_ipv6():
+        return _DualStackHTTPServer(("::", port), Handler)
+    return ThreadingHTTPServer(("0.0.0.0", port), Handler)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     with database():
         pass
-    LOGGER.info("Central internal HTTP ready: port=8099 version=%s; public TLS belongs to reverse proxy", APP_VERSION)
-    with ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "8099"))), Handler) as internal:
+    with create_internal_http_server(int(os.environ.get("PORT", "8099"))) as internal:
+        transport = "ipv4_ipv6" if internal.address_family == socket.AF_INET6 else "ipv4"
+        LOGGER.info("Central internal HTTP ready: port=%s version=%s transport=%s; public TLS belongs to reverse proxy",
+                    internal.server_address[1], APP_VERSION, transport)
         internal.serve_forever()
