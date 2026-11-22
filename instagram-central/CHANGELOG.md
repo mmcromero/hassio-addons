@@ -1,3 +1,11 @@
+## 0.1.28
+
+- Acrescenta consulta manual de curtidas e quantidade de comentários por publicação e conta, usando somente GET na Meta e os campos id,like_count,comments_count. Não exige verificar a permissão de publicação para ler contagens e não envia conteúdo.
+- Persiste contagens e horários separadamente da revisão editorial. Distingue zero de campo não retornado, preserva o último resultado em falhas e não presume que um erro de acesso prova exclusão no Instagram. Protege sessão/CSRF, conta, ID remoto, versão, consultas concorrentes e exclusão durante a leitura.
+- Indica o link de Story como temporário e o retira após 24 horas da confirmação registrada, preservando histórico/prévia local. Não oferece link ao arquivo privado. Links de perfil deixam de ser apresentados como se fossem permalink de uma publicação.
+- Confirmação operacional recebida: uma publicação e um Story reais funcionaram na 0.1.27. Carrossel, multicontas, DMs e as novas contagens reais continuam pendentes de confirmação.
+- Mantém login Unified, tokens, permissões, proxy, isolamento, dados existentes, publicação e esteira rápida. Excluir continua sendo exclusão local; edição remota de legenda e republicação não foram incluídas neste lote.
+
 ## 0.1.27
 
 - Corrige a sequência Meta 100 → indisponibilidade: o cache negativo guarda identidade e validade, preserva a causa específica, expira em 30 segundos e pode ser renovado pelo botão. Troca de credencial/conta invalida o resultado anterior.

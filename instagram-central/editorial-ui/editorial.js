@@ -10,7 +10,7 @@
     pickerIds:[], month:new Date(), pendingSchedule:null, toastTimer:null,
     currentSlideCaptions:{}, currentPreviewIndex:0, modalPostId:null, modalPreviewIndex:0,
     publication:{}, accountUsername:'', pendingPublish:null, busy:false,actionPending:false,
-    dataFingerprint:null,refreshPending:null,uploadLabel:'',editorPreviewKey:null,pendingDelete:null
+    dataFingerprint:null,refreshPending:null,uploadLabel:'',editorPreviewKey:null,pendingDelete:null,storyTimer:null
   };
   const $ = id => document.getElementById(id);
   const all = selector => [...document.querySelectorAll(selector)];
@@ -30,7 +30,7 @@
     schedule:'Confirmando agendamento…',cancel:'Cancelando agendamento…',check:'Verificando publicação…',
     publish:'Preparando publicação…',activate:'Confirmando envio agendado…',reset:'Liberando conteúdo para edição…',
     reconcile:'Verificando o resultado…',retry:'Conferindo nova tentativa…',
-    delete_post:'Excluindo publicação local…',delete_media:'Excluindo mídia…'};
+    delete_post:'Excluindo publicação local…',delete_media:'Excluindo mídia…',metrics:'Consultando curtidas e comentários…'};
 
   function uploadRequest(endpoint,file,headers,operation){
     return new Promise((resolve,reject)=>{
@@ -55,7 +55,7 @@
     let endpoint=path;
     if(['check','delete_media'].includes(action)){
       endpoint='drafts';headers['X-Editorial-Action']=action;
-    }else if(['publish','activate','reset','reconcile','retry','delete_post'].includes(action)){
+    }else if(['publish','activate','reset','reconcile','retry','delete_post','metrics'].includes(action)){
       endpoint=path.replace(/\/[^/]+$/,'/approve');headers['X-Editorial-Action']=action;
     }
     if(action){
@@ -88,8 +88,11 @@
     return result;
     }finally{operation?.end();}
   }
-  async function refresh() {
-    if(state.refreshPending)return state.refreshPending;
+  async function refresh(fresh=false) {
+    if(state.refreshPending){
+      if(!fresh)return state.refreshPending;
+      try{await state.refreshPending;}catch(_){ /* fetch a fresh state after a mutation */ }
+    }
     state.refreshPending=(async()=>{
     const result = await api('state');
     state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';
@@ -308,11 +311,31 @@
       }
     }
     if(post.status==='published'){
-      const link=el('a','btn quiet','Ver no Instagram');
+      const metrics=post.metrics || {};
+      const numbers=el('div','post-metrics');numbers.dataset.status=metrics.status || 'not_checked';
+      numbers.setAttribute('role','group');numbers.setAttribute('aria-label','Curtidas e comentários desta publicação');
+      const count=value=>typeof value==='number'?new Intl.NumberFormat('pt-BR').format(value):(metrics.checkedAt?'Não informado':'—');
+      numbers.append(el('span','metric-likes','Curtidas: '+count(metrics.likes)),el('span','metric-comments','Comentários: '+count(metrics.comments)));
+      numbers.append(el('small','metrics-time',metrics.checkedAt?'Última consulta confirmada: '+friendlyDate(metrics.checkedAt):'Ainda não consultado na Meta.'));
+      if(metrics.status==='error')numbers.append(el('small','metrics-error',metrics.error));
+      else if(metrics.status==='ready' && (metrics.likes===null || metrics.comments===null))numbers.append(el('small','metrics-note','A Meta não informou todas as contagens. Isso não significa zero.'));
+      row.append(numbers);
+      const update=el('button','btn quiet','Atualizar métricas');update.type='button';update.disabled=!post.remoteId;
+      if(update.disabled)update.title='O ID remoto desta publicação ainda não está disponível.';
+      update.addEventListener('click',()=>guard(()=>refreshMetrics(post)));actions.append(update);
       const remote=post.permalink;
-      link.href=typeof remote==='string' && /^https:\/\/(www\.)?instagram\.com\/(p|reel|stories)\/[A-Za-z0-9_/-]+$/.test(remote)
-        ? remote : 'https://www.instagram.com/'+encodeURIComponent(state.accountUsername)+'/';
-      link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
+      const hasLink=typeof remote==='string' && /^https:\/\/(www\.)?instagram\.com\/(p|reel|stories)\/[A-Za-z0-9_/-]+$/.test(remote);
+      const expired=post.format==='story' && post.publishedAt && Date.now()>=post.publishedAt+86400000;
+      if(post.format==='story'){
+        const note=expired?'Story: prazo público de 24 horas transcorrido. Consulte o arquivo no aplicativo Instagram.'
+          :'Story: link temporário, disponível por até 24 horas. O arquivo privado do Instagram não é aberto pela Central.';
+        numbers.append(el('small','story-availability',note));
+      }
+      if(post.format!=='story' || !expired && hasLink){
+        const link=el('a','btn quiet',post.format==='story'?'Abrir Story (até 24h)':hasLink?'Ver no Instagram':'Abrir perfil no Instagram');
+        link.href=hasLink?remote:'https://www.instagram.com/'+encodeURIComponent(state.accountUsername)+'/';
+        link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
+      }
     }
     if(options.approval){
       const remove=el('button','btn quiet danger','Excluir');remove.type='button';
@@ -331,10 +354,14 @@
     clear(target);items.forEach(p=>target.append(postRow(p)));
   }
   function renderApprovals() {
+    clearTimeout(state.storyTimer);
     const target=$('approval-list');
     const items=state.posts;
     if(!items.length)return empty(target,'Nenhuma publicação criada. Use “Nova publicação” para começar.');
     clear(target);items.forEach(p=>target.append(postRow(p,{approval:true})));
+    const expiries=items.filter(p=>p.status==='published' && p.format==='story' && p.publishedAt)
+      .map(p=>p.publishedAt+86400000-Date.now()).filter(delay=>delay>0);
+    if(expiries.length)state.storyTimer=setTimeout(()=>{if(state.view==='approval')renderApprovals();},Math.min(...expiries)+50);
   }
   function monitorMediaLoad(media, target) {
     media.addEventListener('error',()=>{
@@ -689,6 +716,12 @@
     await api('publication/check',{action:'check',data:{}});await refresh();
     toast(state.publication.ready?'Verificação concluída: acesso de publicação confirmado.'
       :'Verificação concluída: '+state.publication.message,state.publication.ready?'success':'error');
+  }
+  async function refreshMetrics(post){
+    const result=await api('posts/'+post.id+'/metrics',{action:'metrics',data:{version:post.version}});
+    await refresh(true);
+    toast(result.metrics.status==='ready'?'Consulta concluída. Contagens retornadas pela Meta atualizadas.'
+      : result.metrics.error,result.metrics.status==='ready'?'success':'error');
   }
   const bytesLabel=value=>new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(value/1024/1024)+' MB';
   function requestDeletion(kind,item){

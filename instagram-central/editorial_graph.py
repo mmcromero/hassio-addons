@@ -94,6 +94,19 @@ class PublishingAPI:
         if usage >= total:
             raise PublishingError('publishing_limit')
 
+    def metrics(self, remote):
+        remote = identifier(remote)
+        data = self._request('GET', '/' + remote, {'fields': 'id,like_count,comments_count'}, stage='metrics')
+        if data.get('id') != remote:
+            raise PublishingError('invalid_response', stage='metrics')
+        result = {}
+        for source, target in (('like_count', 'likes'), ('comments_count', 'comments')):
+            value = data.get(source)
+            if value is not None and (type(value) is not int or not 0 <= value <= 2**63-1):
+                raise PublishingError('invalid_response', stage='metrics')
+            result[target] = value
+        return result
+
     def create(self, fields):
         allowed = {'image_url', 'video_url', 'caption', 'media_type', 'is_carousel_item', 'children'}
         if not fields or not set(fields) <= allowed:

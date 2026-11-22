@@ -18,7 +18,7 @@ import panel_login
 import interface_ui
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media")
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics")
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -195,7 +195,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         if requested_action:
             if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media'):
                 action = requested_action
-            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post'):
+            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post', 'metrics'):
                 action = requested_action
             else:
                 return reply(422, {'error': 'Ação indisponível nesta rota.'})
@@ -263,6 +263,10 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                 if publisher is None:
                     raise editorial_core.EditorialError('Publicação não configurada.')
                 publisher.queue(business_id, post_id, data['version'], activate=action == 'activate')
+            elif action == 'metrics':
+                if publisher is None:
+                    raise editorial_core.EditorialError('Conexão não configurada.')
+                return reply(200, {'metrics': publisher.refresh_metrics(business_id, post_id, data['version'])})
             else:
                 if publisher is None:
                     raise editorial_core.EditorialError('Publicação não configurada.')

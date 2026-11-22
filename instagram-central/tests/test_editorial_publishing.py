@@ -28,6 +28,9 @@ class FakeMeta:
         self.containers, self.calls, self.published = {}, [], []
         self.failure, self.before_failure, self.link_failure = None, False, False
         self.delivery = None
+        self.metric_failure = None
+        self.metric_values = None
+        self.metric_callback = None
 
     def client(self, cfg, credential):
         backend, account = self, cfg['instagram_account_id']
@@ -66,6 +69,12 @@ class FakeMeta:
                 if backend.link_failure:
                     raise graph.PublishingError('network_unavailable', ambiguous=True)
                 return 'https://www.instagram.com/p/synthetic-post/'
+            def metrics(self, remote):
+                assert backend.published[int(remote)-18000000000000001][0] == account
+                backend.calls.append(('metrics', account, remote))
+                if backend.metric_callback: backend.metric_callback()
+                if backend.metric_failure: raise backend.metric_failure
+                return backend.metric_values if backend.metric_values is not None else {'likes': int(account[-1])*12, 'comments': int(account[-1])+2}
         return Client()
 
 

@@ -17,6 +17,23 @@ class Response(BytesIO):
 
 
 class GraphPublishingTests(unittest.TestCase):
+    def test_metrics_is_read_only_and_distinguishes_zero_from_missing(self):
+        requests = []
+        def read(req, **kwargs):
+            requests.append(req)
+            return Response({'id': '18000000000000001', 'like_count': 0})
+        result = graph.PublishingAPI(CFG, CREDENTIAL, opener=read).metrics('18000000000000001')
+        self.assertEqual(result, {'likes': 0, 'comments': None})
+        self.assertEqual(requests[0].method, 'GET')
+        self.assertTrue(requests[0].full_url.endswith('?fields=id%2Clike_count%2Ccomments_count'))
+        self.assertNotIn(CREDENTIAL['access_token'], requests[0].full_url)
+
+    def test_metrics_rejects_wrong_identity_and_invalid_counts(self):
+        for value in (True, -1, '100', 2**63):
+            api = graph.PublishingAPI(CFG, CREDENTIAL, opener=lambda *a, **k: Response({'id': '18000000000000001', 'like_count': value}))
+            with self.assertRaises(graph.PublishingError): api.metrics('18000000000000001')
+        api = graph.PublishingAPI(CFG, CREDENTIAL, opener=lambda *a, **k: Response({'id': '18000000000000002', 'like_count': 5}))
+        with self.assertRaises(graph.PublishingError): api.metrics('18000000000000001')
     def test_facebook_login_profile_uses_only_supported_identity_fields(self):
         from urllib.parse import urlsplit, parse_qs
         queries = []

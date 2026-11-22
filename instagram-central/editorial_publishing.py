@@ -50,6 +50,7 @@ class PublisherHub:
         self.businesses, self.delivery = businesses, media_delivery
         self.api_factory, self.checker, self.clock = api_factory, checker, clock
         self._checks = {}
+        self._metrics_pending = set()
         self._lock = threading.Lock()
         self.stop = threading.Event()
         self.wake = threading.Event()
@@ -99,6 +100,39 @@ class PublisherHub:
         if not result['ready']:
             raise core.EditorialError(result['message'])
         return result
+
+    def refresh_metrics(self, business, post_id, version):
+        store = self.store_for(business)
+        post = self._post(store, post_id)
+        if type(version) is not int or post['version'] != version:
+            raise core.EditorialConflict('Conteúdo mudou. Atualize a lista antes de consultar.')
+        if post['state'] != 'published' or not post['remote_id']:
+            raise core.EditorialError('É necessário um envio publicado com ID confirmado para consultar os números.')
+        key = (business, post_id)
+        with self._lock:
+            if key in self._metrics_pending:
+                raise core.EditorialConflict('Uma consulta desta publicação já está em andamento. Aguarde.')
+            self._metrics_pending.add(key)
+        try:
+            try:
+                cfg, credential, _ = self._identity(business)
+                if cfg['instagram_account_id'] != post['publication_account_id']:
+                    raise graph.PublishingError('account_mismatch')
+                values = self.api_factory(cfg, credential).metrics(post['remote_id'])
+            except graph.PublishingError as error:
+                if error.reason == 'meta_rejected':
+                    text = ('A Meta não permitiu consultar esta publicação. Ela pode estar indisponível '
+                            'ou o acesso da conta pode estar limitado. Isso não confirma exclusão.')
+                    if error.code is not None:
+                        text += ' Código Meta: ' + str(error.code) + (('/' + str(error.subcode)) if error.subcode is not None else '') + '.'
+                elif error.reason in ('connection_required', 'account_mismatch'):
+                    text = message(error)
+                else:
+                    text = 'Não foi possível atualizar os números na Meta. Últimos dados confirmados foram preservados.'
+                return store.save_metrics(post_id, post['remote_id'], error=text, now=self.clock())
+            return store.save_metrics(post_id, post['remote_id'], values=values, now=self.clock())
+        finally:
+            with self._lock: self._metrics_pending.discard(key)
 
     @staticmethod
     def _post(store, post):

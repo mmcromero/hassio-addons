@@ -89,6 +89,11 @@ class EditorialStore:
                 CREATE INDEX IF NOT EXISTS attachments_media ON attachments(media_id);
                 CREATE TABLE IF NOT EXISTS media_deletions (
                     id TEXT PRIMARY KEY, extension TEXT NOT NULL, size INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS publication_metrics (
+                    post_id TEXT PRIMARY KEY REFERENCES posts(id) ON DELETE CASCADE,
+                    remote_id TEXT NOT NULL, status TEXT NOT NULL,
+                    likes INTEGER, comments INTEGER, checked_at INTEGER,
+                    attempted_at INTEGER NOT NULL, error TEXT NOT NULL DEFAULT '');
             """)
             db.execute("BEGIN IMMEDIATE")
             columns = {r[1] for r in db.execute("PRAGMA table_info(posts)")}
@@ -237,6 +242,39 @@ class EditorialStore:
                     if self._remove_unused_media(db, mid): removed.add(mid)
                     else: kept += 1
         return {'deletedMedia': len(removed), 'keptMedia': kept, **self.cleanup_deleted_media(removed)}
+
+    @staticmethod
+    def _metrics_snapshot(row):
+        return {'status': row['status'] if row else 'not_checked',
+                'likes': row['likes'] if row else None, 'comments': row['comments'] if row else None,
+                'checkedAt': row['checked_at'] * 1000 if row and row['checked_at'] is not None else None,
+                'attemptedAt': row['attempted_at'] * 1000 if row else None,
+                'error': row['error'] if row else ''}
+
+    def save_metrics(self, post_id, remote_id, *, values=None, error='', now=None):
+        if values is not None and (set(values) != {'likes', 'comments'} or any(
+                value is not None and (type(value) is not int or not 0 <= value <= 2**63-1)
+                for value in values.values())):
+            raise EditorialError('Contagens inválidas')
+        if not isinstance(error, str) or len(error) > 500:
+            raise EditorialError('Diagnóstico inválido')
+        timestamp = int(time.time() if now is None else now)
+        ready = values is not None
+        with self._tx() as db:
+            row = db.execute('SELECT state,remote_id FROM posts WHERE id=?', (post_id,)).fetchone()
+            if row is None or row['state'] != 'published' or row['remote_id'] != remote_id:
+                raise EditorialConflict('A publicação mudou durante a consulta. Atualize a lista.')
+            db.execute('''INSERT INTO publication_metrics
+                (post_id,remote_id,status,likes,comments,checked_at,attempted_at,error) VALUES(?,?,?,?,?,?,?,?)
+                ON CONFLICT(post_id) DO UPDATE SET status=excluded.status,
+                likes=CASE WHEN excluded.status='ready' THEN excluded.likes ELSE publication_metrics.likes END,
+                comments=CASE WHEN excluded.status='ready' THEN excluded.comments ELSE publication_metrics.comments END,
+                checked_at=CASE WHEN excluded.status='ready' THEN excluded.checked_at ELSE publication_metrics.checked_at END,
+                attempted_at=excluded.attempted_at,error=excluded.error''',
+                (post_id, remote_id, 'ready' if ready else 'error', values['likes'] if ready else None,
+                 values['comments'] if ready else None, timestamp if ready else None, timestamp, error))
+            result = db.execute('SELECT * FROM publication_metrics WHERE post_id=?', (post_id,)).fetchone()
+            return self._metrics_snapshot(result)
 
     def create_draft(self, format: str, caption: str):
         if format not in _FORMATS or not isinstance(caption, str) or len(caption) > 2200:
@@ -440,6 +478,9 @@ class EditorialStore:
     def snapshot(self):
         with self._db() as db:
             db.execute("BEGIN")
+            metrics = {row['post_id']: row for row in db.execute('SELECT * FROM publication_metrics')}
+            published = {row['post_id']: row['at'] for row in db.execute(
+                "SELECT post_id,MIN(at) AS at FROM audit WHERE event='publication_published' GROUP BY post_id")}
             posts = []
             for row in db.execute("SELECT * FROM posts ORDER BY created_at DESC,id"):
                 attachment_rows = db.execute(
@@ -457,6 +498,8 @@ class EditorialStore:
                               "publicationAttempted": bool(json.loads(row['publication_data']).get('issued')),
                               "permalink": json.loads(row['publication_data']).get('permalink'),
                               "remoteId": row['remote_id'],
+                              "metrics": self._metrics_snapshot(metrics.get(row['id'])),
+                              "publishedAt": published[row['id']] * 1000 if row['id'] in published else None,
                               "scheduledAt": row["scheduled_at"] * 1000 if row["scheduled_at"] else None,
                               "pendingScheduledAt": row["pending_schedule_at"] * 1000
                                   if row["pending_schedule_at"] else None,

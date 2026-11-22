@@ -39,7 +39,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.27"
+APP_VERSION = "0.1.28"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');

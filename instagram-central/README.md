@@ -1,4 +1,16 @@
-# Central Instagram — 0.1.27 (correções de publicação, navegação e exclusão)
+# Central Instagram — 0.1.28 (curtidas, comentários e duração dos Stories)
+
+**Resultado real informado pelo operador:** uma publicação e um Story foram enviados com sucesso na 0.1.27. Carrossel, multicontas e DMs ainda não foram confirmados. A leitura real das contagens da 0.1.28 aguarda uso pelo operador.
+
+Em **Revisão e envios**, publicações enviadas com ID confirmado mostram curtidas e quantidade de comentários. Clique em **Atualizar métricas** para consultar os números daquela publicação, usando a conexão da conta selecionada. Não há consultas contínuas nem acesso ao conteúdo dos comentários. Os números e a data da última consulta ficam salvos. Zero aparece como zero; campo ausente aparece como não informado. Falha de acesso preserva os últimos valores e não é tratada como prova de exclusão. Contagens dependem do que a Meta disponibiliza, inclusive conforme formato, privacidade e superfície; não são uma promessa de totais de anúncios.
+
+Stories têm link explicitamente temporário. Após 24 horas da confirmação de envio registrada localmente, o botão de abrir o Story é retirado; o histórico e a prévia local permanecem enquanto seus arquivos forem mantidos. A Central orienta consultar o arquivo no aplicativo Instagram, sem prometer acesso ao arquivo privado pela API. Publicações anteriores usam o horário já registrado na auditoria; não se inventa horário quando ele estiver ausente.
+
+**Limites após publicar:** Excluir continua apagando somente o registro/arquivos locais escolhidos. Edição posterior de legenda na Meta e cópia/republicação não estão implementadas. A referência IG Media documenta atualização de comentários, sem edição da legenda. A exclusão remota é documentada para Facebook Login com instagram_manage_contents; a tabela dessa operação não confirma Unified Login/BISU, utilizado pela Central. Não se trocou login nem foram solicitadas permissões adicionais neste lote. [Referência oficial](https://developers.facebook.com/documentation/instagram-platform/reference/instagram-media).
+
+**Atualização:** somente a Central, preservando opções e /data. Mesmos proxy, login e credenciais. As consultas novas usam as rotas já permitidas e CSRF próprio por ação/conta. Sem suíte integral no build do HA.
+
+## Correções de publicação, navegação e exclusão (0.1.27)
 
 A 0.1.27 corrige o erro interno que transformava uma primeira recusa da Meta em “Editorial temporariamente indisponível” nas tentativas seguintes. A verificação não pede mais `account_type`, campo não documentado para o IGUser do Facebook Login. Consulta somente `id,username`; a Meta continua responsável pela elegibilidade de Stories. Uma recusa agora identifica a etapa com um rótulo fixo e código numérico, sem expor resposta privada ou credenciais. O primeiro erro 100 observado é compatível com a consulta removida, mas sua causa exata não foi comprovada por uma resposta real detalhada.
 
@@ -8,7 +20,7 @@ Há skeleton no carregamento dos dados e das mídias, carregamento de mídia con
 
 **Excluir:** em Revisão e envios, use Excluir e confirme. É possível preservar as mídias ou remover somente as que não são usadas em outra publicação. Na Biblioteca, Excluir mídia apaga arquivos sem vínculo; arquivos em uso mostram a quantidade de publicações e ficam protegidos. Excluir um agendamento pendente cancela seu envio; conteúdos em processamento ou com resultado remoto incerto não podem ser apagados. Excluir um registro publicado remove apenas o histórico local, mantendo o conteúdo no Instagram. A confirmação informa o espaço liberado e eventual limpeza pendente. A limpeza de arquivos interrompida é retomada ao abrir a conta; bytes pendentes continuam contando na cota.
 
-**Atualização da 0.1.26:** atualize somente a Central, preservando opções e `/data`. Não exige reconexão, troca de token ou alteração no proxy. Publicação real ainda depende do aceite do operador; testes locais usam contas e Meta simuladas. O 504 identificado no acompanhamento `logs/follow` é do caminho de logs HA/NGINX, sem evidência de relação com a publicação.
+**Atualização da 0.1.26:** atualize somente a Central, preservando opções e `/data`. Não exige reconexão, troca de token ou alteração no proxy. O aceite real de uma publicação e um Story foi informado posteriormente pelo operador; testes automatizados continuam usando contas e Meta simuladas. O 504 identificado no acompanhamento `logs/follow` é do caminho de logs HA/NGINX, sem evidência de relação com a publicação.
 
 ## Publicação editorial em múltiplas contas (introduzida na 0.1.26)
 

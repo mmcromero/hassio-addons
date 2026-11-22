@@ -8,6 +8,7 @@ import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import editorial_graph
 import server
 from editorial_publishing import PublisherHub
 from test_editorial_publishing import FakeMeta, png
@@ -39,6 +40,12 @@ for business, caption in [('umdoislab', 'Conteúdo da primeira conta'), (second,
     if business == 'umdoislab':
         legacy = store.save_draft('feed', 'Agendamento antigo sem autorização', [mid]);store.approve(legacy)
         store.schedule(legacy, datetime.now(timezone.utc)+timedelta(days=1))
+        if '--stories' in sys.argv[2:]:
+            for name, age in [('Story expirado', 90000), ('Story recente', 10)]:
+                story = store.save_draft('story', name, [mid])
+                with store._tx() as db:
+                    db.execute("UPDATE posts SET state='published',publication_data=? WHERE id=?", (json.dumps({'permalink':'https://www.instagram.com/stories/umdoislab/123456789/'}), story))
+                    db.execute("INSERT INTO audit(post_id,event,at) VALUES(?,?,?)", (story, 'publication_published', int(time.time())-age))
 class Handler(server.Handler):
     def do_POST(self):
         # Let Chromium report actual uploaded bytes while the server is still
@@ -47,6 +54,9 @@ class Handler(server.Handler):
             time.sleep(.8)
         super().do_POST()
     def do_GET(self):
+        if self.path == '/__metrics_failure':
+            meta.metric_failure = editorial_graph.PublishingError('meta_rejected', code=100, subcode=33)
+            return self.respond(200, {'syntheticFailure': True})
         if self.path == '/__publication_test':
             return self.respond(200, {'published': meta.published, 'calls': [item[:2] for item in meta.calls]})
         super().do_GET()

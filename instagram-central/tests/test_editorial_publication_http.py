@@ -57,6 +57,25 @@ class PublicationHTTPTests(unittest.TestCase):
         self.assertFalse(self.fixture.state()['posts'][0]['publishAuthorized'])
         self.assertEqual(self.meta.calls, [])
 
+    def test_metrics_are_authenticated_scoped_and_cannot_publish_or_use_other_csrf(self):
+        post, _, version = self.approved()
+        self.assertEqual(self.operation(post, 'metrics', {'version': version})[0], 422)
+        self.operation(post, 'publish', {'version': version})
+        for _ in range(6): self.hub.step('umdoislab')
+        version = self.fixture.state()['posts'][0]['version']
+        self.assertEqual(self.operation(post, 'metrics', {'version': version}, cookie=False)[0], 403)
+        self.assertEqual(self.operation(post, 'metrics', {'version': version}, token_action='publish')[0], 403)
+        self.assertEqual(self.operation(post, 'metrics', {'version': version, 'remoteId': '18000000000009999'})[0], 422)
+        status, _, raw = self.operation(post, 'metrics', {'version': version})
+        self.assertEqual(status, 200); self.assertEqual(json.loads(raw)['metrics']['likes'], 12)
+        self.assertEqual(len(self.meta.published), 1)
+        self.assertEqual(self.fixture.state()['posts'][0]['version'], version)
+        with server.database() as db:
+            business = server.account_registry.provision(db, 'other_account', 'Other')
+            server.account_registry.bind_verified(db, business, '17841400000000002', 'other_account')
+        self.assertEqual(self.operation(post, 'metrics', {'version': version}, business=business)[0], 422)
+        self.assertEqual(len([call for call in self.meta.calls if call[0]=='metrics']), 1)
+
     def test_repeated_preflight_rejection_stays_specific_instead_of_becoming_503(self):
         import editorial_graph
         post, _, version = self.approved()
