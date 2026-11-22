@@ -30,6 +30,18 @@ A versão candidata inclui a estrutura de contas isoladas (apenas Umdoislab ativ
 
 O Dockerfile copia os módulos Python presentes em [`SOURCE_PROVENANCE.json`](SOURCE_PROVENANCE.json); a UI `static/index.html`, `icon.png` e `logo.png` têm os mesmos hashes da distribuição anterior. Imagens e `panel_icon` são coisas diferentes.
 
+## Integração compartilhada ChatGPT / Home Assistant / n8n
+
+Os túneis MCP do ChatGPT são infraestrutura compartilhada do Raspberry Pi, não componentes instalados dentro desta Central:
+
+- O túnel HA-MCP permite ao conector ChatGPT consultar o Home Assistant em modo somente leitura.
+- O túnel n8n MCP permite ao conector ChatGPT acessar as ferramentas explicitamente habilitadas no MCP HTTP do n8n.
+- Ambos são duas entradas da mesma integração OpenAI Tunnel for HA-MCP, executadas no Home Assistant. O túnel n8n já foi migrado do CMD Windows para o Raspberry, preservando o Tunnel ID original.
+
+**Não confundir esses túneis com o webhook Evolution → n8n, o transporte da Central ou o Gateway de atendimento.** A falha de um túnel MCP não prova falha no atendimento WhatsApp. Não modificar webhook ativo, Evolution, Gateway, worker, credenciais comerciais ou banco da Central para recuperar o túnel.
+
+Antes de qualquer intervenção, consultar o [manual operacional central dos túneis](../docs/HA-MCP-ACESSO-SOMENTE-LEITURA.md) e o [inventário do Raspberry](../docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não reinstalar a integração, não criar novos Tunnel IDs e não registrar segredos no Git. O acesso HA-MCP é somente leitura; as permissões do MCP n8n devem ser verificadas separadamente.
+
 ## Segurança e configuração
 
 As opções `bridge_secret`, `evolution_webhook_secret`, `evolution_url`, `evolution_instance`, `evolution_api_key` e `auto_test_sender` pertencem ao Supervisor. Segredos não devem ser gravados aqui. `evolution_webhook_secret` foi acrescentado com default vazio e schema de senha.
