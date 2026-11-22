@@ -1,7 +1,7 @@
 # HA-MCP — acesso operacional somente leitura pelo ChatGPT
 
 **Registro:** 22/11/2026 · **Responsável:** Infraestrutura / Governança  
-**Estado:** conexão e consultas homologadas; recuperação automática do túnel após reinício pendente.  
+**Estado:** HA-MCP e túnel n8n migrado para o Raspberry Pi; consultas pelos dois túneis homologadas após interromper o processo do Windows. Recuperação após reinício do Core/host ainda pendente.  
 **Escopo:** referência central para todas as equipes dos projetos que compartilham o Home Assistant. Esta página pública não é um perfil de conexão nem contém credenciais.
 
 ## 1. Decisão e arquitetura
@@ -10,7 +10,9 @@ ChatGPT (plugin pessoal **Home Assistant — Somente leitura**) → OpenAI Secur
 
 - Raspberry Pi 4, ARM64, Home Assistant OS. Core 2026.10.4 confirmado pela consulta; Supervisor 2026.11.0 e OS 18.4 informados pelo proprietário durante a instalação.
 - Forja 01 permanece na rede Guest isolada, sem rota nova para a rede doméstica. Não instalar o túnel no Forja nem enfraquecer esse isolamento.
-- O túnel HA-MCP é separado do túnel n8n existente. Não depende do n8n nem de um processo no Windows para atender às consultas HA-MCP. A migração do túnel n8n não integra esta entrega.
+- Há duas entradas independentes da integração `hass_codex_tunnel_mcp`: uma para o HA-MCP e outra para o n8n. Cada entrada usa seu próprio Tunnel ID, endpoint e credenciais; o túnel original do n8n foi preservado, sem criar outro ID na OpenAI. Ambos executam no Raspberry Pi.
+- Em 22/11/2026, o processo do túnel no CMD do Windows foi interrompido. Depois disso, consultas reais ao n8n continuaram funcionando e o contador MCP da segunda entrada registrou 5 requisições aceitas/concluídas, HTTP 200, sem erros, retries ou falhas de entrega. O CMD não é mais necessário para a operação normal testada.
+- O cliente da segunda entrada atualizou automaticamente de v0.0.19 para v0.0.21. A atualização automática está habilitada. Isso não substitui o teste de recuperação após reinício do Home Assistant/host.
 - Não criar redirecionamentos de portas, regras de firewall permissivas ou novas rotas públicas para o MCP. Nenhuma mudança desse tipo foi solicitada nesta instalação.
 - O antigo teste n8n de consulta ao Supervisor falhou (execução 2476, HTTP 401 na rota HTTP legada). A consulta ao Core por n8n foi comprovada separadamente (2615, success). Não repetir esse diagnóstico como requisito para usar o novo plugin.
 
@@ -20,7 +22,7 @@ Procedimento realizado pelo proprietário, com orientação assistida. Para rein
 
 1. Na loja de apps do HA, adicionar o repositório https://github.com/homeassistant-ai/ha-mcp e instalar a versão estável do Home Assistant MCP Server; não escolher DEV. Configurar o modo somente leitura e iniciar o app.
 2. No HACS já instalado, adicionar https://github.com/norpol/hass-codex-tunnel-mcp como repositório personalizado, categoria Integração. Instalar OpenAI Tunnel for HA-MCP e reiniciar o Core quando solicitado. Essa foi a via usada no Core 2026.10.4; não houve necessidade de atualizar Core/OS para a instalação.
-3. No [gerenciador de túneis OpenAI](https://platform.openai.com/settings/organization/tunnels), criar túnel dedicado, associado à organização e ao workspace autorizado. Não reutilizar a identidade do túnel n8n. Criar chave de execução restrita às permissões Tunnels Read e Tunnels Use, sem Tunnels Manage ou permissões de API alheias. Verificar a política de expiração e rotação aplicável.
+3. No [gerenciador de túneis OpenAI](https://platform.openai.com/settings/organization/tunnels), criar um túnel dedicado para HA-MCP e manter o Tunnel ID original do n8n em sua própria entrada. Não reutilizar o ID do HA-MCP para n8n nem gerar novo ID para substituir o túnel n8n existente. Cada entrada deve usar chave de execução restrita às permissões Tunnels Read e Tunnels Use, sem Tunnels Manage ou permissões de API alheias. Verificar a política de expiração e rotação aplicável.
 4. Em Configurações → Dispositivos e serviços → Adicionar integração → OpenAI Tunnel for HA-MCP, informar o Tunnel ID real, a chave de execução e a URL privada completa exibida pelo app HA-MCP. Deixar Home Assistant access token vazio para esse modo de autenticação por URL privada, manter os campos control-plane no padrão. A configuração orientada manteve a atualização automática do tunnel-client habilitada; o valor efetivo não foi relido. Não substituir pelo servidor MCP nativo /api/mcp: ele não é o app HA-MCP configurado nesta entrega.
 5. Aguardar a integração indicar disponibilidade. No catálogo de plugins do ChatGPT, usar Adicionar → servidor MCP personalizado → conexão por Tunnel, informar o mesmo identificador e nome Home Assistant — Somente leitura. A opção No Auth no conector não substitui autenticação: o encaminhamento usa o endpoint privado configurado no cliente do túnel. Validar a identidade e o escopo do plugin na conta autorizada.
 6. Executar somente os testes de leitura da seção 4. Nunca desativar proteções para obter PASS.
@@ -63,6 +65,26 @@ Consultas reais pelo plugin, em 22/11/2026; nenhum comando de escrita executado 
 | H09 — recuperação automática | boot/watchdog do app confirmados; não houve reinício controlado do ambiente após concluir a conexão nem prova de reconexão do tunnel-client | PENDENTE |
 | H10 — filtragem integral de segredos | redact_secrets=true confirmado; cobertura de todos os campos/logs não demonstrada | PARCIAL |
 
+### 4.1. Migração e homologação do túnel n8n — 22/11/2026
+
+A segunda entrada `OpenAI Tunnel for HA-MCP` foi adicionada à mesma integração HACS, sem remover ou editar a entrada HA-MCP. O Tunnel ID original do n8n foi reutilizado; o plugin/conector existente, workflows e credenciais não foram recriados nem rotacionados. Endpoint MCP local configurado para o app n8n no Raspberry Pi; os valores completos de URL e credenciais foram omitidos por segurança.
+
+O processo do túnel no CMD do Windows foi interrompido antes dos testes abaixo. Depois da interrupção, chamadas de leitura pelo conector n8n tiveram sucesso: busca de workflows, busca de execuções e leitura de detalhes de workflow. O sensor da segunda instância registrou 5 requisições MCP aceitas e concluídas, HTTP 200, 0 retries, 0 falhas terminais, 0 falhas de entrega e 0 erros MCP. O estado observado foi `ready`, processo `healthy`, Control Plane `ok` sem falhas consecutivas e cliente `v0.0.21` com atualização automática habilitada.
+
+A primeira instância (HA-MCP) permaneceu `ready`/`healthy`, com 0 erros MCP, após a criação e o teste da segunda entrada. Não houve alteração de workflows, execução de workflow, mudança de credenciais ou intervenção no Forja.
+
+**Aviso observado:** o log do cliente registrou avisos de auto-registro de endpoints auxiliares OAuth/Harpoon porque o host local anunciado usa HTTP e esse registro auxiliar exige HTTPS. Apesar desses avisos, o canal MCP principal foi aceito e respondeu HTTP 200 nos testes. Não declarar o fluxo auxiliar OAuth homologado; se ele vier a ser necessário, avaliar HTTPS e testar separadamente.
+
+| Teste n8n | Evidência | Resultado |
+|---|---|---|
+| N01 — segunda entrada da integração | duas entradas `hass_codex_tunnel_mcp` carregadas no HA | PASS |
+| N02 — processo local após parar CMD | processo `healthy`, túnel `ready`, Control Plane `ok` | PASS |
+| N03 — chamada real do conector após parar CMD | busca de workflows, execuções e detalhes retornou sucesso | PASS |
+| N04 — tráfego confirmado no túnel Raspberry | 5 aceitas/concluídas, HTTP 200, sem retries, falhas ou erros | PASS |
+| N05 — túnel HA-MCP preservado | primeira entrada `ready`/`healthy`, 0 erros MCP | PASS |
+| N06 — independência do Windows | CMD interrompido antes das chamadas N03/N04 | PASS para operação atual |
+| N07 — recuperação após reinício do HA/host | não foi realizado reinício controlado | PENDENTE |
+
 Estado started não comprova saúde funcional ou homologação individual dos produtos. Inventário é fotografia datada, não deve ser copiado para outros projetos. Versões atuais devem ser consultadas novamente por necessidade.
 
 ## 5. Disponibilidade para todas as equipes
@@ -77,7 +99,7 @@ Ficam fora do escopo: ligar/desligar dispositivos, chamar serviços de escrita, 
 
 ## 6. Manutenção e recuperação
 
-Responsável: Infraestrutura, com autorização do proprietário para intervenções. Se a conexão falhar, verificar estado da integração e do app, logs sanitizados, validade da chave restrita e associação correta do túnel. Não alterar credenciais nem reiniciar serviços alheios por tentativa. Em janela autorizada de manutenção, medir retorno do túnel após reinício do Core/host conforme o evento escolhido; repetir H01, H02 e uma leitura curta de logs sem iniciar manualmente o cliente. Registrar resultado e eventual intervalo de indisponibilidade. Até então, recuperação automática permanece pendente. Sem reinício só para produzir evidência.
+Responsável: Infraestrutura, com autorização do proprietário para intervenções. Se a conexão falhar, verificar estado da integração e do app, logs sanitizados, validade da chave restrita e associação correta do túnel. Não alterar credenciais nem reiniciar serviços alheios por tentativa. Em janela autorizada de manutenção, medir retorno do túnel após reinício do Core/host conforme o evento escolhido; repetir H01, H02 e uma leitura curta de logs sem iniciar manualmente o cliente. Registrar resultado e eventual intervalo de indisponibilidade. O túnel n8n não depende mais do CMD do Windows para a operação atual testada. A recuperação automática de ambas as entradas após reinício do Core/host permanece pendente. Sem reinício só para produzir evidência.
 
 ## Referências
 
