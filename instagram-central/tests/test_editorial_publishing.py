@@ -273,6 +273,51 @@ class PublishingTests(unittest.TestCase):
         with self.assertRaises(core.EditorialError): self.queue(post)
         self.assertEqual(self.meta.calls, [])
 
+    def test_first_meta_error_remains_specific_on_repeated_attempts_of_every_format(self):
+        calls = []
+        def rejected(*args, **kwargs):
+            calls.append(True)
+            raise graph.PublishingError('meta_rejected', code=100)
+        self.hub.checker = rejected
+        for fmt in ('story', 'reel', 'feed', 'story'):
+            post = self.draft(format=fmt)
+            with self.assertRaisesRegex(core.EditorialError, 'Código Meta: 100'):
+                self.queue(post)
+            self.assertFalse(self.snapshot(post)['publishAuthorized'])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self.meta.calls, [])
+
+    def test_failed_check_expires_can_be_forced_and_does_not_follow_token_or_account(self):
+        calls = []
+        def rejected(*args, **kwargs):
+            calls.append(True)
+            raise graph.PublishingError('meta_rejected', code=100, stage='profile')
+        self.hub.checker = rejected
+        self.assertIn('identidade', self.hub.check('umdoislab')['message'])
+        self.hub.check('umdoislab', force=False)
+        self.assertEqual(len(calls), 1)
+        self.hub.check('second', force=False)
+        self.assertEqual(len(calls), 2)
+        self.credentials['umdoislab']['access_token'] += '-renewed'
+        self.assertIsNone(self.hub.public_state('umdoislab')['checkedAt'])
+        self.hub.check('umdoislab', force=False)
+        self.assertEqual(len(calls), 3)
+        self.now += 31
+        self.assertIsNone(self.hub.public_state('umdoislab')['checkedAt'])
+        self.hub.check('umdoislab', force=False)
+        self.assertEqual(len(calls), 4)
+        self.hub.checker = self.checker
+        self.assertTrue(self.hub.check('umdoislab', force=True)['ready'])
+
+    def test_story_unknown_capability_is_deferred_to_meta_but_confirmed_ineligible_is_blocked(self):
+        self.hub.checker = lambda *a, **k: {'origin': 'https://callback.example:8443', 'stories': None}
+        post = self.draft(format='story'); self.queue(post)
+        self.assertEqual(self.finish(post)['status'], 'published')
+        self.hub.checker = lambda *a, **k: {'origin': 'https://callback.example:8443', 'stories': False}
+        self.hub.check('umdoislab', force=True)
+        with self.assertRaisesRegex(core.EditorialError, 'Empresa'):
+            self.queue(self.draft(format='story'))
+
     def test_unsupported_caption_semantics_are_not_silently_dropped(self):
         store = self.stores['umdoislab']
         mids = [store.add_media(png(), 'png') for _ in range(2)]

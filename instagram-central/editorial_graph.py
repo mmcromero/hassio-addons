@@ -14,11 +14,12 @@ MAX_RESPONSE = 64 * 1024
 
 
 class PublishingError(Exception):
-    def __init__(self, reason, *, code=None, subcode=None, ambiguous=False):
+    def __init__(self, reason, *, code=None, subcode=None, ambiguous=False, stage=None):
         self.reason = reason
         self.code = code if type(code) is int else None
         self.subcode = subcode if type(subcode) is int else None
         self.ambiguous = ambiguous
+        self.stage = stage
         super().__init__(reason)
 
 
@@ -39,7 +40,7 @@ class PublishingAPI:
             raise PublishingError('connection_required')
         self.opener = opener or _OPEN
 
-    def _request(self, method, path, fields=None):
+    def _request(self, method, path, fields=None, *, stage=None):
         params = urlencode(fields or {}).encode()
         url = 'https://graph.facebook.com/' + self.version + path
         if method == 'GET' and params:
@@ -66,21 +67,23 @@ class PublishingAPI:
             except (ValueError, TypeError, AttributeError, OSError):
                 pass
             raise PublishingError('meta_rejected', code=code, subcode=subcode,
-                                  ambiguous=error.code >= 500) from None
+                                  ambiguous=error.code >= 500, stage=stage) from None
         except (URLError, TimeoutError, OSError):
-            raise PublishingError('network_unavailable', ambiguous=True) from None
+            raise PublishingError('network_unavailable', ambiguous=True, stage=stage) from None
         except (ValueError, TypeError):
-            raise PublishingError('invalid_response', ambiguous=True) from None
+            raise PublishingError('invalid_response', ambiguous=True, stage=stage) from None
 
     def profile(self):
-        data = self._request('GET', '/' + self.account, {'fields': 'id,username,account_type'})
+        # Facebook Login's IGUser does not document account_type. Request only
+        # the identity fields already supported by this connection flow.
+        data = self._request('GET', '/' + self.account, {'fields': 'id,username'}, stage='profile')
         if data.get('id') != self.account:
             raise PublishingError('account_mismatch')
         return data
 
     def check_limit(self):
         data = self._request('GET', '/' + self.account + '/content_publishing_limit',
-                             {'fields': 'quota_usage,config'})
+                             {'fields': 'quota_usage,config'}, stage='limit')
         rows = data.get('data')
         if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
             raise PublishingError('invalid_response')
@@ -95,16 +98,16 @@ class PublishingAPI:
         allowed = {'image_url', 'video_url', 'caption', 'media_type', 'is_carousel_item', 'children'}
         if not fields or not set(fields) <= allowed:
             raise PublishingError('invalid_request')
-        return identifier(self._request('POST', '/' + self.account + '/media', fields).get('id'))
+        return identifier(self._request('POST', '/' + self.account + '/media', fields, stage='create').get('id'))
 
     def status(self, container):
-        value = self._request('GET', '/' + identifier(container), {'fields': 'status_code'}).get('status_code')
+        value = self._request('GET', '/' + identifier(container), {'fields': 'status_code'}, stage='status').get('status_code')
         if value not in ('IN_PROGRESS', 'FINISHED', 'ERROR', 'EXPIRED', 'PUBLISHED'):
             raise PublishingError('invalid_response', ambiguous=True)
         return value
 
     def permalink(self, remote):
-        value = self._request('GET', '/' + identifier(remote), {'fields': 'permalink'}).get('permalink')
+        value = self._request('GET', '/' + identifier(remote), {'fields': 'permalink'}, stage='permalink').get('permalink')
         if isinstance(value, str) and len(value) < 400:
             parsed = urlsplit(value)
             if (parsed.scheme == 'https' and parsed.netloc in ('www.instagram.com', 'instagram.com')
@@ -116,7 +119,7 @@ class PublishingAPI:
     def publish(self, container):
         # A lost/malformed response is ambiguous; the worker must reconcile it.
         value = self._request('POST', '/' + self.account + '/media_publish',
-                              {'creation_id': identifier(container)})
+                              {'creation_id': identifier(container)}, stage='publish')
         try:
             return identifier(value.get('id'))
         except PublishingError:
@@ -130,6 +133,7 @@ def check_connection(cfg, credential, *, api_factory=PublishingAPI, graph=connec
     secret = cfg.get('meta_app_secret')
     if not isinstance(secret, str) or not 16 <= len(secret) <= 128 or '|' in secret or any(c.isspace() for c in secret):
         raise PublishingError('connection_required')
+    stage = 'token'
     try:
         token = graph(cfg['meta_graph_version'], '/debug_token', app_id + '|' + secret,
                       fields={'input_token': credential['access_token']}, timeout=5).get('data')
@@ -140,10 +144,11 @@ def check_connection(cfg, credential, *, api_factory=PublishingAPI, graph=connec
         if (not isinstance(scopes, list) or
                 not {'instagram_basic', 'instagram_content_publish'} <= set(s for s in scopes if isinstance(s, str))):
             raise PublishingError('permission_required')
+        stage = 'subscription'
         subscriptions = graph(cfg['meta_graph_version'], '/' + app_id + '/subscriptions',
                               app_id + '|' + secret, timeout=5).get('data')
     except connection.ConnectionError:
-        raise PublishingError('check_unavailable') from None
+        raise PublishingError('check_unavailable', stage=stage) from None
     matches = [item for item in subscriptions if isinstance(item, dict) and item.get('object') == 'instagram'] if isinstance(subscriptions, list) else []
     if len(matches) != 1:
         raise PublishingError('delivery_not_configured')
@@ -153,4 +158,8 @@ def check_connection(cfg, credential, *, api_factory=PublishingAPI, graph=connec
     profile = api.profile()
     if str(profile.get('username', '')).lower() != str(cfg.get('instagram_expected_username', '')).lower().lstrip('@'):
         raise PublishingError('account_mismatch')
-    return {'origin': callback['callback_origin'], 'stories': profile.get('account_type') == 'BUSINESS'}
+    kind = profile.get('account_type')
+    # Unknown is not a negative capability. Meta enforces Story eligibility
+    # when creating the container; do not block every account at preflight.
+    stories = kind == 'BUSINESS' if kind in ('BUSINESS', 'MEDIA_CREATOR', 'CREATOR', 'PERSONAL') else None
+    return {'origin': callback['callback_origin'], 'stories': stories}

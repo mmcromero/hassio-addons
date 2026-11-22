@@ -57,6 +57,44 @@ class PublicationHTTPTests(unittest.TestCase):
         self.assertFalse(self.fixture.state()['posts'][0]['publishAuthorized'])
         self.assertEqual(self.meta.calls, [])
 
+    def test_repeated_preflight_rejection_stays_specific_instead_of_becoming_503(self):
+        import editorial_graph
+        post, _, version = self.approved()
+        def rejected(*args, **kwargs):
+            raise editorial_graph.PublishingError('meta_rejected', code=100, stage='profile')
+        self.hub.checker = rejected
+        for _ in range(3):
+            status, _, raw = self.operation(post, 'publish', {'version': version})
+            self.assertEqual(status, 422)
+            self.assertIn('Código Meta: 100', json.loads(raw)['error'])
+            self.assertIn('identidade', json.loads(raw)['error'])
+        self.assertEqual(self.meta.calls, [])
+
+    def test_delete_uses_existing_proxy_routes_with_own_csrf_and_account_boundary(self):
+        post, mid, version = self.approved()
+        payload = {'version': version, 'deleteUnusedMedia': True}
+        self.assertEqual(self.operation(post, 'delete_post', payload, cookie=False)[0], 403)
+        self.assertEqual(self.operation(post, 'delete_post', payload, token_action='approve')[0], 403)
+        with server.database() as db:
+            business = server.account_registry.provision(db, 'other_account', 'Other')
+            server.account_registry.bind_verified(db, business, '17841400000000002', 'other_account')
+        self.assertEqual(self.operation(post, 'delete_post', payload, business=business)[0], 409)
+        self.assertEqual(self.operation(post, 'delete_post', {**payload, 'deleteUnusedMedia': 'true'})[0], 422)
+        status, _, raw = self.operation(post, 'delete_post', payload)
+        self.assertEqual(status, 200); self.assertEqual(json.loads(raw)['deletedMedia'], 1)
+        self.assertEqual(self.fixture.state()['posts'], [])
+        self.assertEqual(self.fixture.request('/editorial/media/'+mid)[0], 422)
+        self.assertEqual(self.operation(post, 'delete_post', payload)[0], 409)
+
+    def test_library_delete_rejects_referenced_media_and_requires_delete_media_csrf(self):
+        post, mid, version = self.approved()
+        token = server.panel_login.admin_csrf_token(self.fixture.cookie, self.fixture.cfg['panel_password'], editorial_http.csrf_action('delete_media'))
+        headers = {'Content-Type': 'application/json', 'X-CSRF-Token': token, 'X-Editorial-Action': 'delete_media'}
+        self.assertEqual(self.fixture.request('/editorial/api/drafts', 'POST', json.dumps({'mediaId': mid}), headers)[0], 422)
+        self.operation(post, 'delete_post', {'version': version, 'deleteUnusedMedia': False})
+        self.assertEqual(self.fixture.request('/editorial/api/drafts', 'POST', json.dumps({'mediaId': mid}), headers)[0], 200)
+        self.assertEqual(self.fixture.state()['media'], [])
+
     def test_public_media_capability_supports_head_range_expiry_without_opening_library(self):
         post, media, version = self.approved()
         self.operation(post, 'publish', {'version': version})

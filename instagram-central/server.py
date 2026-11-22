@@ -28,6 +28,7 @@ import editorial_core
 import editorial_http
 import editorial_delivery
 import editorial_publishing
+import interface_ui
 import panel_login
 import origin_configuration
 from urllib.parse import parse_qs, urlsplit
@@ -38,7 +39,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.26"
+APP_VERSION = "0.1.27"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -890,16 +891,7 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
 </style></head><body>
 <a class="skip" href="#principal">Pular para conteúdo</a>
 <div class="shell">
-<aside class="sidebar">
- <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
- <div class="section-label">CENTRAL INSTAGRAM</div>
- <nav class="nav" aria-label="Módulos">
-  <a class="nav-link active" aria-current="page" href="./"><span aria-hidden="true">◉</span> Mensagens</a>
-  <a class="nav-link" href="editorial/"><span aria-hidden="true">✎</span> Editorial</a>
-  <a class="nav-link" href="/accounts"><span aria-hidden="true">◎</span> Contas</a>
- </nav>
- <div class="sidebar-foot"><span class="status-led"></span><div><strong>Atendimento local</strong><small>Sem envio automático</small></div></div>
-</aside>
+""" + interface_ui.sidebar(cfg, active='messages') + """
 <main id="principal" class="main">
  <header class="topbar">
   <div class="crumb">""" + html.escape(str(cfg.get("account_display_name") or "Umdoislab")) + """ <span>/</span> <strong>Mensagens</strong></div>
@@ -908,17 +900,17 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
   </div>
  </header>
  <div class="content">
-  <div class="heading"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
-   <h1>Mensagens e conexão</h1><p>Acompanhe o estado da conexão e as mensagens recebidas.</p>
+  <div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
+   <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p>
   </div>
-  """ + connection_section + """
   <section class="panel" aria-label="Últimas mensagens">
-   <div class="panel-title"><h2>Mensagens recebidas</h2></div>
+   <div class="panel-title"><h2>Mensagens recebidas</h2><a class="btn quiet" href="panel">Atualizar mensagens</a></div>
    <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
    <div class="table-wrap">
     <table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
             + body + """</tbody></table></div></section>
-   <div class="note">ⓘ Todo conteúdo permanece sob controle do administrador. Nenhum envio automático está ativado.</div>
+   <div id="connection">""" + connection_section + """</div>
+   <div class="note">ⓘ As ações desta área controlam o atendimento. Respostas automáticas por Direct continuam desativadas.</div>
   </div>
  </main>
 </div></body></html>""")
@@ -988,6 +980,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def respond(self, status, body, content_type="application/json", *, csp=None):
         raw = body if isinstance(body, bytes) else body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
+        if content_type == 'text/html':
+            raw = interface_ui.enhance(raw)
+            csp = interface_ui.policy(csp or "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; object-src 'none'", raw)
         self.send_response(status)
         self.send_header("Content-Type", content_type + ("; charset=utf-8" if content_type.startswith("text/") or content_type == "application/json" else ""))
         self.send_header("Content-Length", str(len(raw)))

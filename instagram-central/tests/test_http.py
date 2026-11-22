@@ -84,7 +84,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.26")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.27")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +266,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.26", body)
+        self.assertIn(b"0.1.27", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +284,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.26", body)
+            self.assertIn(b"0.1.27", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -447,8 +447,8 @@ class HTTPContractTests(unittest.TestCase):
         self.assertIn(b"Assumir", body)
         # Same approved visual language as Editorial; H07 login/logout contract unchanged.
         self.assertIn(b'class="topbar"', body)
-        self.assertIn(b'class="sidebar"', body)
-        self.assertIn('aria-label="Módulos"'.encode("utf-8"), body)
+        self.assertIn(b'class="sidebar ui-sidebar"', body)
+        self.assertIn('aria-label="Conteúdo"'.encode("utf-8"), body)
         self.assertIn(b'--bg:#0c1520', body)
         self.assertIn(b'action="auth/logout"', body)
         self.assertEqual(body.count(b'>Sair</button>'), 1)

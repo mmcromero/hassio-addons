@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 import threading
+import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import server
@@ -39,6 +40,12 @@ for business, caption in [('umdoislab', 'Conteúdo da primeira conta'), (second,
         legacy = store.save_draft('feed', 'Agendamento antigo sem autorização', [mid]);store.approve(legacy)
         store.schedule(legacy, datetime.now(timezone.utc)+timedelta(days=1))
 class Handler(server.Handler):
+    def do_POST(self):
+        # Let Chromium report actual uploaded bytes while the server is still
+        # validating/storing the synthetic file. This is a test fixture only.
+        if self.path.endswith('/editorial/api/media'):
+            time.sleep(.8)
+        super().do_POST()
     def do_GET(self):
         if self.path == '/__publication_test':
             return self.respond(200, {'published': meta.published, 'calls': [item[:2] for item in meta.calls]})

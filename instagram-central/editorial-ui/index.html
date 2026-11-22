@@ -9,30 +9,17 @@
   <link rel="stylesheet" href="./editorial.css">
   <script src="./editorial.js" defer></script>
 </head>
-<body>
+<body data-ui-loading="initial">
   <a href="#principal" class="skip">Pular para conteúdo</a>
   <div class="shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-icon">U<span class="dot">.</span></span><div><strong>UMDOISLAB</strong><small>Central de mídia</small></div></div>
-      <div class="section-label">CENTRAL INSTAGRAM</div>
-      <a class="nav-link" href="../">← Mensagens e conexão</a>
-      <a class="nav-link" href="/accounts">Trocar conta</a>
-      <div class="section-label">EDITORIAL</div>
-      <nav class="nav" aria-label="Seções">
-        <button class="nav-link active" data-view="overview" aria-current="page"><span>◫</span> Visão geral</button>
-        <button class="nav-link" data-view="library"><span>▧</span> Biblioteca</button>
-        <button class="nav-link" data-view="editor"><span>✎</span> Criar publicação</button>
-        <button class="nav-link" data-view="approval"><span>✓</span> Aprovações</button>
-        <button class="nav-link" data-view="calendar"><span>▦</span> Calendário</button>
-      </nav>
-      <div class="sidebar-foot"><span class="status-led"></span><div><strong>Publicação por conta</strong><small>Envio após sua confirmação</small></div></div>
-    </aside>
-    <main id="principal" class="main">
+    <!--CENTRAL_SIDEBAR-->
+    <main id="principal" class="main" aria-busy="true">
       <header class="topbar">
         <div class="crumb">Umdoislab <span>/</span> <strong id="current-section">Visão geral</strong></div>
-        <div class="top-actions"><span class="account">@umdoislab</span><button id="new-post" class="btn primary">+ Nova publicação</button><form id="editorial-logout" class="logout-form" action="../auth/logout" method="post"><button class="btn quiet" type="submit">Sair</button></form></div>
+        <div class="top-actions"><span class="account">@umdoislab</span><button id="refresh-content" class="btn quiet" type="button">Atualizar</button><button id="new-post" class="btn primary">+ Nova publicação</button><form id="editorial-logout" class="logout-form" action="../auth/logout" method="post"><button class="btn quiet" type="submit">Sair</button></form></div>
       </header>
       <section class="note publication-access" aria-label="Acesso de publicação"><div><strong>Publicação no Instagram</strong><p id="publication-status" role="status">Verifique o acesso desta conta antes de publicar.</p><small>Imagens PNG são convertidas para JPEG, com fundo branco nas áreas transparentes.</small></div><button class="btn quiet" id="check-publication" type="button">Verificar publicação</button></section>
+      <!--INITIAL_SKELETON-->
       <section class="content" id="view-overview" data-panel="overview">
         <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Bom conteúdo começa aqui.</h1><p>Planeje, revise e organize suas próximas publicações em um só lugar.</p></div></div>
         <div class="metrics">
@@ -84,7 +71,7 @@
       </section>
 
       <section class="content hidden" id="view-approval" data-panel="approval">
-        <div class="heading"><span class="eyebrow">REVISÃO HUMANA</span><h1>Aprovações</h1><p>Confira cada conteúdo antes de liberar o agendamento.</p></div>
+        <div class="heading"><span class="eyebrow">REVISÃO HUMANA</span><h1>Revisão e envios</h1><p>Confira cada conteúdo antes de liberar o agendamento.</p></div>
         <div id="approval-list" class="stack"></div>
       </section>
 
@@ -122,6 +109,14 @@
     <p id="publish-account"></p><p id="publish-explanation"></p>
     <div id="publish-feedback" class="feedback" role="status" aria-live="polite"></div>
     <div class="dialog-actions"><button class="btn primary" id="confirm-publish" type="button">Confirmar publicação</button></div>
+  </dialog>
+  <dialog id="delete-dialog" class="dialog small-dialog" aria-labelledby="delete-title">
+    <div class="dialog-head"><h2 id="delete-title">Excluir publicação local</h2><button class="icon-button" id="close-delete-dialog" aria-label="Fechar exclusão" type="button">×</button></div>
+    <p id="delete-description"></p>
+    <p id="delete-consequence"></p>
+    <label id="delete-media-option"><input id="delete-unused-media" type="checkbox" checked> Excluir também as mídias que não são usadas em outras publicações.</label>
+    <div id="delete-feedback" class="feedback" role="status" aria-live="polite"></div>
+    <div class="dialog-actions"><button class="btn quiet" id="cancel-delete" type="button">Cancelar</button><button class="btn danger" id="confirm-delete" type="button">Confirmar exclusão</button></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>
 </body>

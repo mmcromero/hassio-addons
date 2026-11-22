@@ -17,6 +17,19 @@ class Response(BytesIO):
 
 
 class GraphPublishingTests(unittest.TestCase):
+    def test_facebook_login_profile_uses_only_supported_identity_fields(self):
+        from urllib.parse import urlsplit, parse_qs
+        queries = []
+        def identity(req, **kwargs):
+            fields = parse_qs(urlsplit(req.full_url).query)['fields'][0]
+            queries.append(fields)
+            if 'account_type' in fields:
+                raise HTTPError(req.full_url, 400, 'unsupported field', {}, BytesIO(b'{"error":{"code":100}}'))
+            return Response({'id': CFG['instagram_account_id'], 'username': 'umdoislab'})
+        result = graph.PublishingAPI(CFG, CREDENTIAL, opener=identity).profile()
+        self.assertEqual(result['id'], CFG['instagram_account_id'])
+        self.assertEqual(queries, ['id,username'])
+
     def test_account_path_host_and_bearer_are_fixed(self):
         requests = []
         def open_request(req, **kwargs):
@@ -41,6 +54,7 @@ class GraphPublishingTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, 100)
         self.assertEqual(caught.exception.subcode, 2207052)
         self.assertNotIn('PRIVATE', str(caught.exception))
+        self.assertEqual(caught.exception.stage, 'publish')
 
     def test_transport_and_bad_json_are_ambiguous_and_redirects_are_not_followed(self):
         for failure in (URLError('PRIVATE'), HTTPError('https://graph.facebook.com', 504, 'PRIVATE', {}, BytesIO(b'PRIVATE'))):

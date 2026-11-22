@@ -32,6 +32,13 @@ MESSAGES = {
 
 def message(error):
     text = MESSAGES.get(error.reason, MESSAGES['internal_error'])
+    stages = {'profile': 'consulta da identidade da conta', 'token': 'verificação do token',
+              'subscription': 'consulta da configuração de entrega', 'limit': 'consulta do limite de publicação',
+              'create': 'preparação da mídia', 'status': 'consulta do processamento',
+              'publish': 'confirmação da publicação', 'permalink': 'consulta do link publicado'}
+    stage = stages.get(error.stage)
+    if error.reason == 'meta_rejected' and stage:
+        text = 'A Meta recusou a ' + stage + '. A publicação não foi confirmada.'
     number = str(error.code) + ('/' + str(error.subcode) if error.subcode is not None else '') if error.code is not None else ''
     return text + (' Código Meta: ' + number + '.' if number else '')
 
@@ -58,18 +65,20 @@ class PublisherHub:
         return cfg, credential, identity
 
     def check(self, business, *, force=True):
+        identity = None
         try:
             cfg, credential, identity = self._identity(business)
             with self._lock:
                 cached = self._checks.get(business)
-            if not force and cached and cached['identity'] == identity and cached['until'] > self.clock() and cached['ready']:
+            if not force and cached and cached.get('identity') == identity and cached.get('until', 0) > self.clock():
                 return cached
             result = self.checker(cfg, credential, api_factory=self.api_factory)
             value = {**result, 'identity': identity, 'until': self.clock() + 300,
                      'ready': True, 'message': 'Token e permissão de publicação conferidos para esta conta.',
                      'checkedAt': int(self.clock())}
         except graph.PublishingError as error:
-            value = {'ready': False, 'message': message(error), 'checkedAt': int(self.clock())}
+            value = {'ready': False, 'message': message(error), 'checkedAt': int(self.clock()),
+                     'identity': identity, 'until': self.clock() + 30}
         with self._lock:
             self._checks[business] = value
         return value
@@ -83,8 +92,6 @@ class PublisherHub:
             return {'ready': False, 'message': message(error), 'checkedAt': None}
         if cached and cached.get('identity') == identity and cached.get('until', 0) > self.clock():
             return {key: cached[key] for key in ('ready', 'message', 'checkedAt', 'stories') if key in cached}
-        if cached and not cached.get('ready'):
-            return {key: cached[key] for key in ('ready', 'message', 'checkedAt')}
         return {'ready': False, 'message': 'Verifique o acesso de publicação desta conta.', 'checkedAt': None}
 
     def _ready(self, business):
@@ -108,7 +115,7 @@ class PublisherHub:
         if post['caption_mode'] != 'general':
             raise core.EditorialError('A API do Instagram usa uma legenda geral por carrossel. Escolha Uma legenda para todas as imagens antes de publicar.')
         if post['format'] == 'story':
-            if not ready.get('stories'):
+            if ready.get('stories') is False:
                 raise core.EditorialError('Publicação de Stories pela API requer conta do tipo Empresa na Meta.')
             if post['caption']:
                 raise core.EditorialError('A API não aplica legenda textual ao Story. Inclua o texto na própria mídia e deixe a legenda vazia.')

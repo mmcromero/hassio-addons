@@ -1,4 +1,16 @@
-# Central Instagram — 0.1.26 (publicação editorial em múltiplas contas)
+# Central Instagram — 0.1.27 (correções de publicação, navegação e exclusão)
+
+A 0.1.27 corrige o erro interno que transformava uma primeira recusa da Meta em “Editorial temporariamente indisponível” nas tentativas seguintes. A verificação não pede mais `account_type`, campo não documentado para o IGUser do Facebook Login. Consulta somente `id,username`; a Meta continua responsável pela elegibilidade de Stories. Uma recusa agora identifica a etapa com um rótulo fixo e código numérico, sem expor resposta privada ou credenciais. O primeiro erro 100 observado é compatível com a consulta removida, mas sua causa exata não foi comprovada por uma resposta real detalhada.
+
+**Criar publicação sempre inicia um formulário vazio.** Para continuar uma publicação salva, abra **Revisão e envios → Editar**. O menu agrupa Contas, Conteúdo, Atendimento e Configuração; mantém o contexto da conta em todas as páginas. Verificar publicação mostra andamento, bloqueia repetição e confirma a conclusão mesmo quando o resultado permanece igual.
+
+Há skeleton no carregamento dos dados e das mídias, carregamento de mídia conforme visibilidade, progresso real de upload seguido da etapa de validação, e transições curtas de entrada/saída. Teclado e preferência de movimento reduzido têm resposta imediata; indicadores preservam o texto da operação. Aplicação da skill [Design Motion Principles](https://github.com/kylezantos/design-motion-principles).
+
+**Excluir:** em Revisão e envios, use Excluir e confirme. É possível preservar as mídias ou remover somente as que não são usadas em outra publicação. Na Biblioteca, Excluir mídia apaga arquivos sem vínculo; arquivos em uso mostram a quantidade de publicações e ficam protegidos. Excluir um agendamento pendente cancela seu envio; conteúdos em processamento ou com resultado remoto incerto não podem ser apagados. Excluir um registro publicado remove apenas o histórico local, mantendo o conteúdo no Instagram. A confirmação informa o espaço liberado e eventual limpeza pendente. A limpeza de arquivos interrompida é retomada ao abrir a conta; bytes pendentes continuam contando na cota.
+
+**Atualização da 0.1.26:** atualize somente a Central, preservando opções e `/data`. Não exige reconexão, troca de token ou alteração no proxy. Publicação real ainda depende do aceite do operador; testes locais usam contas e Meta simuladas. O 504 identificado no acompanhamento `logs/follow` é do caminho de logs HA/NGINX, sem evidência de relação com a publicação.
+
+## Publicação editorial em múltiplas contas (introduzida na 0.1.26)
 
 [Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
 
@@ -10,7 +22,7 @@ A **0.1.26** implementa o envio do Editorial ao Instagram para a conta seleciona
 
 1. Abra **https://instagram.romeropi.duckdns.org:8443/accounts** e escolha a conta. Para adicionar outra, informe seu nome/usuário e conclua **Conectar com a Meta** no painel correspondente. A conta precisa ser profissional e estar disponível na autorização Meta; estar na mesma Central de Contas não substitui essa autorização. A principal não é desconectada.
 2. Entre em **Editorial** da conta e clique em **Verificar publicação**. A Central lê validade/app/permissões do token, identidade e configuração de entrega de mídia. Se faltar `instagram_content_publish`, inclua essa permissão na configuração de login do app Meta e reconecte somente a conta afetada. Não substitua App Secret ou verify token por um token de acesso. A confirmação de pré-requisitos não equivale a App Review aprovado nem à publicação real concluída.
-3. Na **Biblioteca**, carregue a mídia; em **Criar publicação**, prepare conteúdo e legenda. Em **Aprovações**, revise e aprove. Escolha **Publicar agora** e confira a conta exibida antes de confirmar, ou **Agendar** e confirme um horário futuro de São Paulo.
+3. Na **Biblioteca**, carregue a mídia; em **Criar publicação**, prepare conteúdo e legenda. Em **Revisão e envios**, revise e aprove. Escolha **Publicar agora** e confira a conta exibida antes de confirmar, ou **Agendar** e confirme um horário futuro de São Paulo.
 4. Acompanhe **Publicando**, **Publicada** ou o motivo da interrupção em Aprovações. O resultado atualiza enquanto a página está visível. **Ver no Instagram** abre o post quando a Meta fornece o link; caso contrário, abre o perfil da conta. A Central deve permanecer ligada para executar a agenda; envios autorizados vencidos são retomados quando ela volta.
 
 Agendamentos de versões anteriores ficam aguardando **Confirmar envio agendado**. Aprovar/editar conteúdo não libera silenciosamente uma agenda antiga; edição e cancelamento revogam a autorização. Um envio possivelmente aceito sem resposta entra em verificação, sem novo POST automático. Use **Verificar resultado**; somente libere nova tentativa após conferir que não foi publicado. A tentativa usa o mesmo contêiner da Meta. Falhas anteriores ao envio podem voltar ao rascunho para correção.
@@ -23,7 +35,7 @@ Agendamentos de versões anteriores ficam aguardando **Confirmar envio agendado*
 - O acesso à biblioteca continua autenticado. Somente mídias de um post autorizado recebem links temporários de uma hora, restritos à conta/revisão/execução. Cancelamento, edição, falha ou conclusão interrompem seu acesso; links antigos não voltam a funcionar numa nova execução. Não compartilhe esses links.
 - A Meta precisa conseguir buscar a mídia pela URL HTTPS do callback cadastrado. A Central reutiliza essa rota existente para entrega temporária, sem depender da chegada de eventos de mensagens e sem alteração dos arquivos NGINX. Tokens OAuth não são enviados nessa URL.
 
-As seções seguintes registram versões e etapas anteriores. O funcionamento da 0.1.26 descrito acima prevalece sobre limitações históricas de publicação local.
+As seções seguintes registram versões e etapas anteriores. O funcionamento da 0.1.27 descrito acima prevalece sobre limitações históricas de publicação local.
 
 ## Histórico 0.1.25 — conexão interna
 

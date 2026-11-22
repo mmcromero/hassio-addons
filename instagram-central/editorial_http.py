@@ -15,9 +15,10 @@ import editorial_core
 import editorial_graph
 import editorial_publishing
 import panel_login
+import interface_ui
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry")
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media")
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -157,6 +158,8 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                            .replace('<strong>umdoislab</strong>', '<strong>' + username + '</strong>')
                            .replace('<strong>UMDOISLAB</strong>', '<strong>' + display + '</strong>')
                            .replace('<div class="crumb">Umdoislab ', '<div class="crumb">' + display + ' ').encode())
+                    raw = raw.decode().replace('<!--CENTRAL_SIDEBAR-->', interface_ui.sidebar(cfg, editorial=True))
+                    raw = raw.replace('<!--INITIAL_SKELETON-->', interface_ui.INITIAL_SKELETON).encode()
                 return reply(200, raw, mime)
             if route.path == "/editorial/api/csrf":
                 return reply(200, {a: panel_login.admin_csrf_token(handler.headers.get("Cookie", ""),
@@ -190,9 +193,9 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         # use existing POST paths and remain bound to their own account CSRF.
         requested_action = handler.headers.get('X-Editorial-Action')
         if requested_action:
-            if route.path == '/editorial/api/drafts' and requested_action == 'check':
-                action = 'check'
-            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry'):
+            if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media'):
+                action = requested_action
+            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post'):
                 action = requested_action
             else:
                 return reply(422, {'error': 'Ação indisponível nesta rota.'})
@@ -214,6 +217,15 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         data = json.loads(_read(handler, 256 * 1024 if action == "draft" else 16 * 1024))
         if not isinstance(data, dict):
             raise editorial_core.EditorialError("Objeto JSON obrigatório")
+        if action == 'delete_media':
+            if set(data) != {'mediaId'}:
+                raise editorial_core.EditorialError('Campos inválidos')
+            return reply(200, {'deleted': True, **store.delete_media(data['mediaId'])})
+        if action == 'delete_post':
+            if set(data) != {'version', 'deleteUnusedMedia'}:
+                raise editorial_core.EditorialError('Campos inválidos')
+            result = store.delete_post(post_id, expected_version=data['version'], delete_unused_media=data['deleteUnusedMedia'])
+            return reply(200, {'deleted': True, **result})
         if action == 'check':
             if data or publisher is None:
                 raise editorial_core.EditorialError('Pedido inválido.')

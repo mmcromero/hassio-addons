@@ -1,3 +1,13 @@
+## 0.1.27
+
+- Corrige a sequência Meta 100 → indisponibilidade: o cache negativo guarda identidade e validade, preserva a causa específica, expira em 30 segundos e pode ser renovado pelo botão. Troca de credencial/conta invalida o resultado anterior.
+- Retira account_type da consulta IGUser do Facebook Login; usa id,username. Elegibilidade desconhecida de Stories não é tratada como inelegibilidade confirmada; a Meta valida a operação. Recusas identificam a etapa sem revelar respostas privadas.
+- Criar publicação inicia sempre uma composição vazia; edição só ocorre por Editar. Verificação mostra progresso, trava repetição e informa conclusão mesmo com resultado igual.
+- Acrescenta exclusão local de publicações e de mídias, com confirmação, controle de versão, CSRF específico e isolamento por conta. Mídias compartilhadas são preservadas, agendamento pendente é cancelado e envios em andamento ou incertos ficam protegidos. Não remove posts no Instagram.
+- Registra limpeza de arquivos em fila durável, retoma interrupções e contabiliza bytes pendentes na cota; informa espaço liberado e pendências.
+- Unifica o menu em Contas, Conteúdo, Atendimento e Configuração. Acrescenta skeleton, carregamento de mídias por visibilidade, progresso real de upload, estados ocupados e transições curtas com suporte a teclado/movimento reduzido, usando Design Motion Principles.
+- Preserva portas, proxy, credenciais, dados existentes, receptor de DMs e esteira rápida de sintaxe no build do HA. Publicação real segue aguardando confirmação do operador.
+
 ## 0.1.26
 
 - Implementa publicação editorial por conta: imagem no feed, carrossel de imagens, Reel e Story, com confirmação imediata ou agendamento persistente no horário de São Paulo.

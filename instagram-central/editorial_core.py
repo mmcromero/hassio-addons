@@ -86,6 +86,9 @@ class EditorialStore:
                     id INTEGER PRIMARY KEY AUTOINCREMENT, post_id TEXT NOT NULL,
                     event TEXT NOT NULL, at INTEGER NOT NULL);
                 CREATE INDEX IF NOT EXISTS posts_due ON posts(state, scheduled_at);
+                CREATE INDEX IF NOT EXISTS attachments_media ON attachments(media_id);
+                CREATE TABLE IF NOT EXISTS media_deletions (
+                    id TEXT PRIMARY KEY, extension TEXT NOT NULL, size INTEGER NOT NULL);
             """)
             db.execute("BEGIN IMMEDIATE")
             columns = {r[1] for r in db.execute("PRAGMA table_info(posts)")}
@@ -114,6 +117,7 @@ class EditorialStore:
                 db.execute("ALTER TABLE attachments ADD COLUMN slide_caption TEXT NOT NULL DEFAULT ''")
             db.commit()
         os.chmod(self.db_path, 0o600)
+        self.cleanup_deleted_media()
 
     @contextmanager
     def _db(self):
@@ -156,7 +160,7 @@ class EditorialStore:
                 os.fsync(handle.fileno())
             try:
                 with self._tx() as db:
-                    count, total = db.execute("SELECT COUNT(*),COALESCE(SUM(size),0) FROM media").fetchone()
+                    count, total = db.execute("SELECT COUNT(*),COALESCE(SUM(size),0) FROM (SELECT size FROM media UNION ALL SELECT size FROM media_deletions)").fetchone()
                     if count >= 500 or total + len(content) > 1024 * 1024 * 1024:
                         raise EditorialError("Limite da biblioteca atingido (500 arquivos / 1 GiB)")
                     db.execute("INSERT INTO media VALUES (?,?,?,?)",
@@ -168,6 +172,71 @@ class EditorialStore:
             path.unlink(missing_ok=True)
             raise
         return media_id
+
+    def cleanup_deleted_media(self, ids=None):
+        """Durable unlink queue: commit references first, then remove bytes.
+
+        Interrupted/failed cleanup is retried when opening the store; pending
+        bytes still count against quota. A rollback cannot strand a live post
+        without its file, and shared media never enters this queue.
+        """
+        with self._db() as db:
+            rows = db.execute('SELECT * FROM media_deletions').fetchall()
+        freed = pending = 0
+        for row in rows:
+            if ids is not None and row['id'] not in ids:
+                continue
+            if not re.fullmatch(r'[0-9a-f]{32}', row['id']) or row['extension'] not in _EXTENSIONS:
+                raise EditorialError('Registro de exclusão inválido')
+            try:
+                (self.media_dir / (row['id'] + '.' + row['extension'])).unlink(missing_ok=True)
+            except OSError:
+                pending += row['size']
+                continue
+            with self._tx() as db:
+                db.execute('DELETE FROM media_deletions WHERE id=?', (row['id'],))
+            freed += row['size']
+        return {'freedBytes': freed, 'pendingBytes': pending}
+
+    @staticmethod
+    def _remove_unused_media(db, media_id):
+        row = db.execute('SELECT * FROM media WHERE id=?', (media_id,)).fetchone()
+        if row is None:
+            raise EditorialError('Mídia inexistente nesta conta.')
+        if db.execute('SELECT 1 FROM attachments WHERE media_id=? LIMIT 1', (media_id,)).fetchone():
+            return False
+        db.execute('INSERT INTO media_deletions(id,extension,size) VALUES(?,?,?)',
+                   (media_id, row['extension'], row['size']))
+        db.execute('DELETE FROM media WHERE id=?', (media_id,))
+        return True
+
+    def delete_media(self, media_id):
+        if not isinstance(media_id, str) or not re.fullmatch(r'[0-9a-f]{32}', media_id):
+            raise EditorialError('Mídia inexistente nesta conta.')
+        with self._tx() as db:
+            if not self._remove_unused_media(db, media_id):
+                raise EditorialError('Esta mídia está em uso. Exclua ou edite as publicações que a utilizam antes de apagar o arquivo.')
+        return {'deletedMedia': 1, **self.cleanup_deleted_media({media_id})}
+
+    def delete_post(self, post_id, *, expected_version, delete_unused_media=False):
+        if type(expected_version) is not int or type(delete_unused_media) is not bool:
+            raise EditorialError('Pedido de exclusão inválido.')
+        removed, kept = set(), 0
+        with self._tx() as db:
+            self._check_version(db, post_id, expected_version)
+            row = db.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+            if row['state'] not in ('draft', 'approved', 'scheduled', 'failed', 'published') or (
+                    json.loads(row['publication_data']).get('issued') and row['state'] != 'published'):
+                raise EditorialError('Esta publicação tem um envio em andamento ou resultado pendente. Confira o resultado antes de excluir.')
+            mids = [item[0] for item in db.execute('SELECT media_id FROM attachments WHERE post_id=?', (post_id,))]
+            db.execute('DELETE FROM attachments WHERE post_id=?', (post_id,))
+            db.execute('DELETE FROM audit WHERE post_id=?', (post_id,))
+            db.execute('DELETE FROM posts WHERE id=?', (post_id,))
+            if delete_unused_media:
+                for mid in mids:
+                    if self._remove_unused_media(db, mid): removed.add(mid)
+                    else: kept += 1
+        return {'deletedMedia': len(removed), 'keptMedia': kept, **self.cleanup_deleted_media(removed)}
 
     def create_draft(self, format: str, caption: str):
         if format not in _FORMATS or not isinstance(caption, str) or len(caption) > 2200:
@@ -394,7 +463,7 @@ class EditorialStore:
                               "createdAt": row["created_at"] * 1000})
             media = [{"id": r["id"], "name": r["id"] + "." + r["extension"],
                       "size": r["size"], "type": {"png": "image/png", "jpg": "image/jpeg", "mp4": "video/mp4"}[r["extension"]],
-                      "url": "media/" + r["id"]} for r in db.execute("SELECT * FROM media ORDER BY rowid")]
+                      "usageCount": r['uses'], "url": "media/" + r["id"]} for r in db.execute("SELECT m.*,(SELECT COUNT(*) FROM attachments a WHERE a.media_id=m.id) AS uses FROM media m ORDER BY m.rowid")]
             return {"posts": posts, "media": media}
 
     def read_media(self, media_id):
