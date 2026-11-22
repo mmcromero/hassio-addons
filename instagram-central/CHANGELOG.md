@@ -1,5 +1,6 @@
 ## 0.1.22
 
+- Documentação pública: política de privacidade com o escopo completo condicionado aos recursos ativados, termos de uso e instruções de exclusão pelo contato informado. Documentos publicados separadamente, sem alterar a versão ou exigir atualização do aplicativo instalado.
 - Verificar acesso Meta consulta a assinatura efetiva do app/conta e acesso às conversas, usando o token cifrado já salvo e apenas GETs com campos limitados.
 - Exibe diagnóstico com horário, estados independentes e erros fixos/códigos numéricos; não consulta conteúdo nem armazena IDs de conversas/respostas privadas.
 - Mostra confirmação das ações; falha de identidade não renova a verificação anterior. Assinar mensagens não é confundido com entrega real e invalida diagnóstico anterior.

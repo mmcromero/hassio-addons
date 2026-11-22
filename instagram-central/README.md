@@ -1,5 +1,7 @@
 # Central Instagram — 0.1.22 (conferência do recebimento)
 
+[Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
+
 A **0.1.22** mostra o resultado de **Verificar acesso Meta** no próprio painel. Além de verificar a identidade, consulta, sem alterar a Meta, se o aplicativo configurado consta na assinatura da conta com o campo `messages` e se o token salvo permite consultar uma amostra de conversas. A amostra pede somente um ID, que é descartado; não consulta textos, participantes ou histórico. Falha de identidade não renova a verificação anterior e aparece explicitamente. Falhas de consulta aparecem separadas, com categorias fixas e códigos numéricos, sem a resposta privada da Meta.
 
 **Atualização da 0.1.21:** faça backup e atualize somente a Central, preservando opções e `/data`. Não substitua o proxy nem refaça OAuth por rotina. Abra **https://instagram.romeropi.duckdns.org:8443/panel**, clique uma vez em **Verificar acesso Meta** e leia **Diagnóstico de recebimento**. É possível compartilhar somente as linhas **Assinatura consultada na Meta** e **Acesso às conversas**. Nenhum token precisa ser copiado. Recarregar a página apenas exibe o último diagnóstico, com horário; não consulta novamente a Meta. Um acesso aceito com amostra vazia não comprova recebimento de DM.
