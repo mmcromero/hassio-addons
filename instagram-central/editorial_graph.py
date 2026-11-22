@@ -40,7 +40,7 @@ class PublishingAPI:
             raise PublishingError('connection_required')
         self.opener = opener or _OPEN
 
-    def _request(self, method, path, fields=None, *, stage=None, max_response=MAX_RESPONSE):
+    def _request(self, method, path, fields=None, *, stage=None, max_response=MAX_RESPONSE, timeout=12):
         params = urlencode(fields or {}).encode()
         url = 'https://graph.facebook.com/' + self.version + path
         if method == 'GET' and params:
@@ -49,7 +49,7 @@ class PublishingAPI:
                           headers={'Authorization': 'Bearer ' + self.token,
                                    'Content-Type': 'application/x-www-form-urlencoded'})
         try:
-            with self.opener(request, timeout=12) as response:
+            with self.opener(request, timeout=timeout) as response:
                 raw = response.read(max_response + 1)
             if len(raw) > max_response:
                 raise ValueError()
@@ -80,6 +80,49 @@ class PublishingAPI:
         if data.get('id') != self.account:
             raise PublishingError('account_mismatch')
         return data
+
+    def check_delete(self, cfg, credential):
+        """Read-only capability and live ownership checks, before any DELETE."""
+        app = identifier(cfg.get('meta_app_id'))
+        secret = cfg.get('meta_app_secret')
+        if not isinstance(secret, str) or not 16 <= len(secret) <= 128 or '|' in secret or any(c.isspace() for c in secret):
+            raise PublishingError('connection_required')
+        try:
+            token = connection.request_graph(self.version, '/debug_token', app + '|' + secret,
+                fields={'input_token': self.token}, timeout=5).get('data')
+        except connection.ConnectionError:
+            raise PublishingError('check_unavailable', stage='delete') from None
+        if not isinstance(token, dict) or token.get('is_valid') is not True or token.get('app_id') != app:
+            raise PublishingError('token_invalid')
+        scopes = token.get('scopes')
+        if not isinstance(scopes, list) or not {'instagram_basic', 'instagram_manage_contents'} <= {s for s in scopes if isinstance(s, str)}:
+            raise PublishingError('delete_permission_required')
+
+    def check_media_owner(self, remote):
+        remote = identifier(remote)
+        data = self._request('GET', '/' + remote, {'fields': 'id,owner,username'}, stage='delete', timeout=6)
+        if data.get('id') != remote:
+            raise PublishingError('invalid_response', stage='delete')
+        owner = data.get('owner')
+        owner_id = owner.get('id') if isinstance(owner, dict) else owner
+        if owner_id is not None:
+            if owner_id != self.account:
+                raise PublishingError('delete_owner_mismatch')
+            return
+        # Meta may omit owner. Compare with the current profile, never a stale
+        # configured username or merely a token that can access several accounts.
+        profile = self._request('GET', '/' + self.account, {'fields': 'id,username'}, stage='delete', timeout=6)
+        username = profile.get('username')
+        if (profile.get('id') != self.account or not isinstance(username, str) or not username or
+                not isinstance(data.get('username'), str) or username.lower() != data['username'].lower()):
+            raise PublishingError('delete_owner_mismatch')
+
+    def delete_media(self, remote):
+        remote = identifier(remote)
+        result = self._request('DELETE', '/' + remote, stage='delete', timeout=6)
+        if result.get('success') is not True or ('deleted_id' in result and result['deleted_id'] != remote):
+            raise PublishingError('invalid_response', ambiguous=True, stage='delete')
+        return True
 
     def check_limit(self):
         data = self._request('GET', '/' + self.account + '/content_publishing_limit',

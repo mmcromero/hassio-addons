@@ -4,6 +4,8 @@
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const mobile=matchMedia('(max-width: 760px)');
   const pending=new Map(),held=new Map(),dialogs=new WeakMap();
+  const tabs=new Map(),leaveGuards=new Map();
+  let submitting=false;
   let feedback,caption,bar,fill,live,hideTimer,sequence=0,paneSequence=0,menuSequence=0;
   const instant=()=>reduced.matches || document.documentElement.dataset.uiInput==='keyboard';
   const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
@@ -50,6 +52,7 @@
     };
   }
   function restore(){
+    submitting=false;
     for(const [button,saved] of held){button.replaceChildren(...saved.nodes);button.disabled=saved.disabled;button.classList.remove('ui-button-busy');button.removeAttribute('aria-busy');}
     held.clear();pending.clear();document.body.classList.remove('ui-page-leaving');
     document.querySelectorAll('form[data-ui-pending]').forEach(form=>{delete form.dataset.uiPending;form.removeAttribute('aria-busy');});
@@ -213,7 +216,14 @@
             message_access_disabled:'O acesso externo às mensagens está desativado no Instagram.',
             message_identity_unavailable:'A Meta retornou mensagens sem identificar remetente e destinatário suficientes para importá-las com segurança.',
             transport_error:'Não foi possível concluir a comunicação com a Meta.',
-            invalid_response:'A Meta retornou mensagens em formato inesperado.',storage_error:'Não foi possível gravar a busca na caixa de entrada.'};
+            invalid_response:'A Meta retornou mensagens em formato inesperado.',storage_error:'Não foi possível gravar a busca na caixa de entrada.',
+            inbox_conversations_shape:'A Meta não retornou uma lista válida de conversas (inbox_conversations_shape).',
+            inbox_conversation_shape:'A Meta retornou uma conversa sem identificação válida (inbox_conversation_shape).',
+            inbox_messages_shape:'A Meta não retornou a lista de mensagens esperada dentro de uma conversa (inbox_messages_shape).',
+            inbox_message_shape:'A Meta retornou um item de mensagem incompatível (inbox_message_shape).',
+            inbox_identity_shape:'O formato de remetente ou destinatário difere do esperado (inbox_identity_shape). Nenhuma identidade foi presumida.',
+            inbox_message_id_shape:'O identificador de uma mensagem está ausente ou excede o limite aceito (inbox_message_id_shape).',
+            inbox_timestamp_shape:'A data de uma mensagem está ausente, inválida ou à frente do relógio da Central (inbox_timestamp_shape).'};
           const codes=[['HTTP',report.http_status],['código Meta',report.provider_code],['subcódigo',report.provider_subcode]]
             .filter(item=>Number.isInteger(item[1])).map(item=>item[0]+' '+item[1]).join(', ');
           throw new Error((reasons[report.reason] || 'A busca não foi concluída.')+(codes?' ('+codes+')':''));
@@ -363,13 +373,94 @@
     }));
     find('hide').addEventListener('click',()=>{if(!busy){hide();say('Chave ocultada.');}});
   }
+  function navigateAccount(value){
+    const target=new URL(value,location.href);if(target.origin!==location.origin)return;
+    if(!canLeave())return;
+    if(location.pathname.endsWith('/editorial/') && target.pathname.endsWith('/editorial/'))target.hash=location.hash;
+    if(location.search==='?view=settings' && target.search==='?view=settings')target.hash=location.hash;
+    submitting=true;
+    start('Abrindo a conta selecionada…');document.body.classList.add('ui-page-leaving');location.assign(target.href);
+  }
+  function initAccountPicker(){
+    const picker=document.querySelector('.ui-visual-account-picker');if(!picker)return;
+    // Native details and links remain usable even without JavaScript.
+    document.querySelectorAll('.ui-account-avatar img').forEach(image=>{
+      const failed=()=>{image.hidden=true;};
+      image.addEventListener('error',failed);
+      if(image.complete && !image.naturalWidth)failed();
+    });
+    picker.querySelectorAll('[data-account-link]').forEach(link=>link.addEventListener('click',event=>{
+      if(event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)return;
+      event.preventDefault();navigateAccount(link.href);
+    }));
+    picker.addEventListener('keydown',event=>{
+      if(event.key==='Escape' && picker.open){event.preventDefault();event.stopPropagation();picker.open=false;picker.querySelector('summary').focus();}
+    });
+    picker.addEventListener('focusout',()=>setTimeout(()=>{if(!picker.contains(document.activeElement))picker.open=false;},0));
+    document.addEventListener('click',event=>{if(!picker.contains(event.target))picker.open=false;});
+    window.addEventListener('pageshow',()=>{picker.open=false;});
+    picker.hidden=false;document.querySelector('[data-native-account-picker]').hidden=true;
+  }
+  function canLeave(){
+    if(![...leaveGuards.values()].some(check=>check()))return true;
+    return window.confirm('Há alterações não salvas. Para salvar, cancele e use Salvar. Sair e descartar as alterações?');
+  }
+  function initLocalTabs(){
+    document.querySelectorAll('[data-ui-tabs]').forEach(group=>{
+      const name=group.dataset.uiTabs,buttons=[...group.querySelectorAll('[data-ui-tab]')],panes=[...group.querySelectorAll('[data-ui-pane]')];
+      const list=buttons[0]?.parentElement;if(!list)return;
+      let selected=group.dataset.tabsDefault || buttons[0].dataset.uiTab;
+      const select=(key,{focus=false,write=false}={})=>{
+        if(!buttons.some(b=>b.dataset.uiTab===key))return;
+        selected=key;group.dataset.tabsReady='true';
+        const split=group.hasAttribute('data-tabs-mobile') && !mobile.matches;
+        list.setAttribute('role','tablist');
+        buttons.forEach(button=>{
+          const active=button.dataset.uiTab===key,pane=panes.find(p=>p.dataset.uiPane===button.dataset.uiTab);
+          button.setAttribute('role','tab');button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;
+          button.setAttribute('aria-controls',pane.id);
+          pane.setAttribute('role','tabpanel');pane.setAttribute('aria-labelledby',button.id);
+          pane.hidden=!split && !active;pane.inert=!split && !active;
+          if(active && focus)button.focus();
+          if(active && !instant() && !split)pane.animate([{opacity:0,transform:'translateY(4px)'},{opacity:1,transform:'none'}],{duration:140,easing:'ease-out'});
+        });
+        group.dataset.selectedTab=key;
+        if(write && group.hasAttribute('data-tabs-hash'))history.pushState(null,'','#'+key);
+      };
+      buttons.forEach((button,index)=>{
+        button.addEventListener('click',()=>select(button.dataset.uiTab,{write:true}));
+        button.addEventListener('keydown',event=>{
+          const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:
+            event.key==='ArrowRight'?(index+1)%buttons.length:event.key==='ArrowLeft'?(index+buttons.length-1)%buttons.length:null;
+          if(next===null)return;event.preventDefault();select(buttons[next].dataset.uiTab,{focus:true,write:true});
+        });
+      });
+      const fromHash=()=>{const key=location.hash.slice(1);if(group.hasAttribute('data-tabs-hash') && buttons.some(b=>b.dataset.uiTab===key))select(key);};
+      tabs.set(name,select);select(selected);fromHash();
+      addEventListener('hashchange',fromHash);mobile.addEventListener('change',()=>select(selected));
+      group.addEventListener('invalid',event=>{const pane=event.target.closest('[data-ui-pane]');if(pane)select(pane.dataset.uiPane);},true);
+    });
+  }
+  function initAccountViews(){
+    const views=[...document.querySelectorAll('[data-account-view]')];if(!views.length)return;
+    const show=()=>{
+      const key=location.hash==='#add-account' || (!location.hash && document.querySelector('[data-account-error]'))?'add-account':'account-list';
+      views.forEach(view=>{view.hidden=view.id!==key;view.inert=view.hidden;});
+    };
+    show();addEventListener('hashchange',show);
+  }
   function init(){
     ensureFeedback();document.documentElement.dataset.uiInput='pointer';
     document.querySelector('[data-account-switch]')?.addEventListener('change',event=>{
-      const target=new URL(event.target.value,location.href);if(target.origin!==location.origin)return;
-      if(location.pathname.endsWith('/editorial/') && target.pathname.endsWith('/editorial/'))target.hash=location.hash;
-      start('Abrindo a conta selecionada…');document.body.classList.add('ui-page-leaving');location.assign(target.href);
+      navigateAccount(event.target.value);
     });
+    initAccountPicker();
+    initLocalTabs();initAccountViews();
+    document.querySelectorAll('form[data-ui-dirty]').forEach(form=>{
+      const signature=()=>JSON.stringify([...new FormData(form)].filter(([key])=>key!=='csrf'));
+      const initial=form.hasAttribute('data-ui-unsaved')?JSON.stringify([['display_name',''],['username','']]):signature();leaveGuards.set(form.id,()=>signature()!==initial);
+    });
+    addEventListener('beforeunload',event=>{if(!submitting && [...leaveGuards.values()].some(check=>check())){event.preventDefault();event.returnValue='';}});
     const visibility=()=>{document.documentElement.dataset.uiBackground=String(document.hidden);};
     document.addEventListener('visibilitychange',visibility);visibility();
     document.addEventListener('keydown',event=>{
@@ -388,13 +479,14 @@
       if(url.pathname===location.pathname && url.search===location.search && url.hash){
         syncNativeNav();return;
       }
+      if(!canLeave()){event.preventDefault();return;}submitting=true;
       start('Abrindo '+(link.textContent.trim()||'a página')+'…');document.body.classList.add('ui-page-leaving');
     });
     document.addEventListener('submit',event=>{
       if(event.defaultPrevented || !(event.target instanceof HTMLFormElement))return;
       const form=event.target;
       if(form.dataset.uiPending){event.preventDefault();announce('Aguarde a conclusão da operação atual.');return;}
-      form.dataset.uiPending='true';form.setAttribute('aria-busy','true');const label=nativeLabel(form);
+      submitting=true;form.dataset.uiPending='true';form.setAttribute('aria-busy','true');const label=nativeLabel(form);
       if(!form.closest('#meta-actions'))hold(event.submitter || form.querySelector('button[type="submit"],button'),label);
       start(label);document.body.classList.add('ui-page-leaving');
     });
@@ -414,6 +506,7 @@
     }
   }
   window.CentralUI={start,hold,announce,instant,switchPanel,media:trackMedia,releaseMedia,ready,initialError,
+    tabs:{select:(name,key)=>tabs.get(name)?.(key)},dirty:{register:(name,check)=>leaveGuards.set(name,check),confirmLeave:canLeave},
     dialog:{open:openDialog,close:closeDialog},closeMenu:()=>setMenu(false)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

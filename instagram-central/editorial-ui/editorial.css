@@ -87,3 +87,10 @@
 .publication-access{margin:20px clamp(16px,3vw,40px);align-items:center;justify-content:space-between;flex-wrap:wrap}
 .publication-access p{margin:6px 0}.publication-error{display:block;color:#ffd1b9;max-width:560px;line-height:1.5}
 .chip.published{background:#183c35;color:#a3e4c5}.chip.publishing{background:#273952;color:#bddbff}.chip.failed{background:#462a27;color:#ffe2d9}
+/* Deletion choices remain reachable by touch and keyboard in a narrow dialog. */
+#delete-dialog fieldset{border:1px solid var(--edge);border-radius:10px;padding:10px;margin:12px 0}
+#delete-dialog label{display:flex;align-items:center;gap:10px;min-height:44px;line-height:1.5;font-weight:400;cursor:pointer}
+#delete-dialog input{flex:0 0 auto;width:20px;height:20px;margin:0;accent-color:var(--orange)}
+#delete-dialog [hidden]{display:none}
+#delete-dialog .dialog-actions{gap:10px;flex-wrap:wrap}
+#delete-dialog .dialog-actions button{min-height:44px;white-space:normal}

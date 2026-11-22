@@ -29,6 +29,13 @@ def credentials(business='umdoislab'):
             'username': cfg['instagram_expected_username'], 'verified_at': 1,
             'access_token': 'synthetic-browser-token-'+business}
 server._meta_credential = credentials
+# Profile thumbnails are synthetic, even when saved credentials are simulated.
+from io import BytesIO
+from PIL import Image
+avatar = BytesIO(); Image.new('RGB', (96, 96), 'coral').save(avatar, 'JPEG')
+server.account_avatar.get = lambda root, cfg, credential: (avatar.getvalue()
+    if '--avatars' in sys.argv and cfg['business_id'] == 'umdoislab' else None)
+
 meta = FakeMeta();meta.delivery = server.PUBLICATION_DELIVERY
 checks = []
 def check_connection(cfg, credential, **kwargs):
@@ -38,6 +45,21 @@ hub = PublisherHub(server.meta_configuration_for_business, credentials, server.e
     lambda: ['umdoislab', second], server.PUBLICATION_DELIVERY, api_factory=meta.client,
     checker=check_connection)
 server.PUBLICATIONS = hub
+delete_calls = []
+delete_refused = False
+if '--deletion' in sys.argv:
+    original_delete_factory = hub.api_factory
+    def deletion_factory(cfg, credential):
+        client = original_delete_factory(cfg, credential)
+        client.check_delete = lambda *args: None
+        client.check_media_owner = lambda remote: None
+        def remove(remote):
+            delete_calls.append((cfg['business_id'], remote))
+            if delete_refused: raise editorial_graph.PublishingError('meta_rejected', code=200)
+            return True
+        client.delete_media = remove
+        return client
+    hub.api_factory = deletion_factory
 if '--history' in sys.argv[2:]:
     from test_editorial_history import entry
     from io import BytesIO
@@ -67,6 +89,12 @@ for business, caption in [('umdoislab', 'Conteúdo da primeira conta'), (second,
     mid = store.add_media(png(), 'png')
     post = store.save_draft('feed', caption, [mid]);store.approve(post)
     if business == 'umdoislab':
+        if '--deletion' in sys.argv:
+            for index in range(2):
+                remote_post = store.save_draft('feed', 'Excluir remoto sintético '+str(index), [mid])
+                with store._tx() as db:
+                    db.execute("UPDATE posts SET state='published',remote_id=?,publication_account_id=?,publication_data=? WHERE id=?",
+                        (str(18000000000000001+index),'17841400000000001',json.dumps({'permalink':'https://www.instagram.com/p/synthetic/'}),remote_post))
         legacy = store.save_draft('feed', 'Agendamento antigo sem autorização', [mid]);store.approve(legacy)
         store.schedule(legacy, datetime.now(timezone.utc)+timedelta(days=1))
         if '--stories' in sys.argv[2:]:
@@ -83,6 +111,12 @@ class Handler(server.Handler):
             time.sleep(.8)
         super().do_POST()
     def do_GET(self):
+        global delete_refused
+        if self.path in ('/__delete_refuse','/__delete_allow'):
+            delete_refused = self.path == '/__delete_refuse'
+            return self.respond(200, {'syntheticOnly':True})
+        if self.path == '/__delete_observe':
+            return self.respond(200, {'calls':delete_calls})
         if self.path == '/__metrics_failure':
             meta.metric_failure = editorial_graph.PublishingError('meta_rejected', code=100, subcode=33)
             return self.respond(200, {'syntheticFailure': True})

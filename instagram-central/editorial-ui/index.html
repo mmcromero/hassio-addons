@@ -15,10 +15,10 @@
     <!--CENTRAL_SIDEBAR-->
     <main id="principal" class="main" aria-busy="true">
       <!--CENTRAL_HEADER-->
-      <div class="ui-context-actions"><button id="refresh-content" class="btn quiet" type="button">Atualizar</button><button id="new-post" class="btn primary">+ Nova publicação</button></div>
+      <div class="ui-context-actions"><button id="refresh-content" class="btn quiet" type="button">Atualizar</button><button id="resume-editor" class="btn quiet" type="button" hidden>Continuar composição</button><button id="new-post" class="btn primary">+ Nova publicação</button></div>
       <!--INITIAL_SKELETON-->
       <section class="content" id="view-overview" data-panel="overview">
-        <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Bom conteúdo começa aqui.</h1><p>Planeje, revise e organize suas próximas publicações em um só lugar.</p></div></div>
+        <div class="heading"><div><span class="eyebrow">SEU ESTÚDIO DE CONTEÚDO</span><h1>Visão geral</h1><p>Acompanhe sua agenda e continue suas publicações.</p></div></div>
         <div class="metrics">
           <article class="metric"><span>Publicações registradas</span><strong id="count-all">0</strong><small>Conteúdo e histórico desta conta</small></article>
           <article class="metric"><span>Aguardando aprovação</span><strong id="count-draft">0</strong><small>Precisam de revisão</small></article>
@@ -59,9 +59,11 @@
       </section>
 
       <section class="content hidden" id="view-editor" data-panel="editor">
-        <div class="heading horizontal"><div><span class="eyebrow">ESTÚDIO CRIATIVO</span><h1 id="editor-heading">Nova publicação</h1><p>Monte o conteúdo e confira a prévia antes de aprovar.</p></div><button id="clear-editor" class="btn quiet">Nova composição</button></div>
+        <div class="heading horizontal"><div><span class="eyebrow">ESTÚDIO CRIATIVO</span><h1 id="editor-heading">Nova publicação</h1><p>Monte o conteúdo e confira a prévia antes de aprovar.</p></div><button id="clear-editor" class="btn quiet" aria-label="Nova composição"><span class="ui-desktop-label">Nova composição</span><span class="ui-mobile-label" aria-hidden="true">Nova</span></button></div>
+        <div data-ui-tabs="editor-preview" data-tabs-mobile data-tabs-default="content" class="ui-editor-tabs">
+        <div class="ui-local-tabs" aria-label="Composição da publicação"><button type="button" id="editor-tab-content" data-ui-tab="content">Conteúdo</button><button type="button" id="editor-tab-preview" data-ui-tab="preview">Prévia</button></div>
         <div class="editor-layout">
-          <form id="post-form" class="panel form-panel">
+          <form id="post-form" class="panel form-panel" data-ui-pane="content">
             <div class="field"><label for="post-format">Formato</label><select id="post-format"><option value="feed">Publicação no feed (1 ou mais imagens)</option><option value="story">Story</option><option value="reel">Reel</option></select></div>
             <div class="field" id="general-caption-field"><label for="post-caption">Legenda geral <span id="caption-count">0/2200</span></label><textarea id="post-caption" maxlength="2200" rows="7" placeholder="Escreva sua legenda, descrição ou chamada..."></textarea></div>
             <fieldset id="carousel-caption-options" class="caption-options hidden"><legend>Legendas do carrossel</legend>
@@ -74,10 +76,10 @@
             <div id="form-feedback" class="feedback" role="status" aria-live="polite"></div>
             <div class="form-actions"><button class="btn quiet" type="button" id="save-draft">Salvar rascunho</button><button class="btn primary" type="submit">Salvar e revisar</button></div>
           </form>
-          <div class="preview-area"><div class="panel-title"><div><h2>Prévia do conteúdo</h2><p>Representação visual para revisão</p></div></div>
-            <div class="phone"><div class="phone-top"><span class="avatar">U.</span><strong>umdoislab</strong><span>•••</span></div><div class="phone-media" id="phone-media"><span>Selecione uma mídia para visualizar</span></div><div class="phone-bottom"><div>♡　◇　↗</div><p id="preview-caption">Sua legenda aparece aqui.</p></div></div>
+          <div class="preview-area" id="editor-preview-pane" data-ui-pane="preview"><div class="panel-title"><div><h2>Prévia do conteúdo</h2><p>Representação visual para revisão</p></div></div>
+            <div class="phone"><div class="phone-top"><span class="avatar">U.</span><strong data-preview-account>umdoislab</strong><span>•••</span></div><div class="phone-media" id="phone-media"><span>Selecione uma mídia para visualizar</span></div><div class="phone-bottom"><div>♡　◇　↗</div><p id="preview-caption">Sua legenda aparece aqui.</p></div></div>
           </div>
-        </div>
+        </div></div>
       </section>
 
       <section class="content hidden" id="view-approval" data-panel="approval">
@@ -96,7 +98,7 @@
   <dialog id="preview-dialog" class="dialog preview-dialog" aria-labelledby="preview-dialog-title">
     <div class="dialog-head"><h2 id="preview-dialog-title">Visualizar publicação</h2><button class="icon-button" id="close-preview-dialog" aria-label="Fechar visualização" type="button">×</button></div>
     <div class="preview-modal-body"><div class="phone large-phone">
-      <div class="phone-top"><span class="avatar">U.</span><strong>umdoislab</strong><span>•••</span></div>
+      <div class="phone-top"><span class="avatar">U.</span><strong data-preview-account>umdoislab</strong><span>•••</span></div>
       <div class="phone-media" id="modal-phone-media"><span>Selecione uma publicação</span></div>
       <div class="phone-bottom"><div>♡　◇　↗</div><p id="modal-preview-caption"></p></div>
     </div></div>
@@ -122,11 +124,18 @@
     <div class="dialog-actions"><button class="btn primary" id="confirm-publish" type="button">Confirmar publicação</button></div>
   </dialog>
   <dialog id="delete-dialog" class="dialog small-dialog" aria-labelledby="delete-title">
-    <div class="dialog-head"><h2 id="delete-title">Excluir somente da Central</h2><button class="icon-button" id="close-delete-dialog" aria-label="Fechar exclusão" type="button">×</button></div>
+    <div class="dialog-head"><h2 id="delete-title">Excluir publicação</h2><button class="icon-button" id="close-delete-dialog" aria-label="Fechar exclusão" type="button">×</button></div>
     <p id="delete-description"></p>
+    <fieldset id="delete-scope"><legend>Onde excluir?</legend>
+      <label><input type="radio" name="delete-scope" id="delete-local" value="local" checked> Somente da Central Editorial</label>
+      <label id="delete-remote-option"><input type="radio" name="delete-scope" id="delete-remote" value="remote"> Da Central Editorial e do Instagram</label>
+    </fieldset>
     <p id="delete-consequence"></p>
+    <label id="delete-remote-confirm-option" hidden><input id="delete-remote-confirm" type="checkbox"> Confirmo a exclusão desta publicação no Instagram da conta indicada acima.</label>
+    <label id="delete-retry-option" hidden><input id="delete-retry" type="checkbox"> Conferi o Instagram e autorizo uma nova tentativa após o resultado incerto anterior.</label>
     <label id="delete-media-option"><input id="delete-unused-media" type="checkbox" checked> Excluir também as mídias que não são usadas em outras publicações.</label>
     <div id="delete-feedback" class="feedback" role="status" aria-live="polite"></div>
+    <p id="delete-settings-help" hidden><a href="../panel?view=settings">Abrir Conexão Meta para renovar a autorização</a></p>
     <div class="dialog-actions"><button class="btn quiet" id="cancel-delete" type="button">Cancelar</button><button class="btn danger" id="confirm-delete" type="button">Excluir somente da Central</button></div>
   </dialog>
   <div id="toast" role="status" aria-live="polite"></div>

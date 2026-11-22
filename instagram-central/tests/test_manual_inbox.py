@@ -25,6 +25,27 @@ def payload(*messages):
 
 
 class ManualRead(unittest.TestCase):
+    def test_opaque_long_message_ids_are_preserved_and_oversized_ids_are_specific(self):
+        mid='encoded-message-id-'+('a'*300)
+        with patch.object(ic,'request_graph',return_value=payload(message(mid=mid))):
+            rows,_=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(rows[0][2],mid)
+        for bad in ('x'*(ic.MAX_MESSAGE_ID+1), 'line\nbreak'):
+            with patch.object(ic,'request_graph',return_value=payload(message(mid=bad))):
+                with self.assertRaises(ic.GraphError) as caught:ic.read_recent_inbox(CFG,CREDENTIAL)
+            self.assertEqual(caught.exception.details['reason'],'inbox_message_id_shape')
+
+    def test_specific_schema_categories_never_include_provider_values(self):
+        cases=[({'data':None},'inbox_conversations_shape'),
+               ({'data':[{'id':'PRIVATE'}]},'inbox_messages_shape'),
+               (payload('PRIVATE'),'inbox_message_shape'),
+               (payload({**message(),'created_time':'PRIVATE'}),'inbox_timestamp_shape')]
+        for value,reason in cases:
+            with patch.object(ic,'request_graph',return_value=value):
+                with self.assertRaises(ic.GraphError) as caught:ic.read_recent_inbox(CFG,CREDENTIAL)
+            self.assertEqual(caught.exception.details['reason'],reason)
+            self.assertNotIn('PRIVATE',json.dumps(caught.exception.details))
+
     def test_one_fixed_get_filters_direction_and_media_without_following_paging(self):
         value=payload(message(),message(),message(mid='out',sender='11111111',target='99999999'),
                       message(mid='other',target='22222222'),message(mid='media',text=''))
@@ -80,6 +101,20 @@ class ManualHTTP(unittest.TestCase):
         csrf=panel_login.admin_csrf_token(self.f.session,self.f.fixture.config['panel_password'],action)
         return self.f.fixture.request(path,'POST',urlencode({'csrf':csrf}),
             {**self.f.headers,'X-Meta-Inbox':'refresh',**(extra or {})})
+
+    def test_long_id_manual_import_then_real_webhook_claim_and_ack(self):
+        mid='encoded-message-id-'+('a'*300)
+        with patch.object(ic,'request_graph',return_value=payload(message(mid=mid))):
+            self.assertEqual(json.loads(self.refresh()[2])['imported'],1)
+        import hmac,hashlib
+        event={'object':'instagram','entry':[{'messaging':[{'sender':{'id':'99999999'},'recipient':{'id':'11111111'},'message':{'mid':mid,'text':'oi'}}]}]}
+        raw=json.dumps(event).encode()
+        signature='sha256='+hmac.new(self.f.fixture.config['meta_app_secret'].encode(),raw,hashlib.sha256).hexdigest()
+        self.assertEqual(json.loads(self.f.fixture.request('/webhook/instagram','POST',raw,{'X-Hub-Signature-256':signature})[2])['new_text_messages'],1)
+        claim=self.server.claim_message(account_id='11111111')
+        self.assertEqual(claim['messageId'],mid)
+        self.assertIsNotNone(self.server.evaluate_claim({k:claim[k] for k in ('accountId','senderId','messageId','claimToken')}))
+        self.assertTrue(self.server.acknowledge_message({k:claim[k] for k in ('accountId','senderId','messageId','claimToken')}))
 
     def test_manual_click_stores_and_displays_safely_but_never_enters_queue_or_confirms_webhook(self):
         token_path=self.server.DATA_DIR/self.server.oauth_meta.TOKEN_FILENAME
@@ -138,7 +173,7 @@ class ManualHTTP(unittest.TestCase):
             report=json.loads(self.refresh()[2]);self.assertEqual(report['reason'],'token_invalid');self.assertEqual(report['provider_code'],190)
         bad=message(mid='bad');bad['created_time']='bad'
         with patch.object(ic,'request_graph',return_value=payload(message(mid='new'),bad)):
-            self.assertEqual(json.loads(self.refresh()[2])['reason'],'invalid_response')
+            self.assertEqual(json.loads(self.refresh()[2])['reason'],'inbox_timestamp_shape')
         with self.server.database() as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],1)
         self.server._INBOX_LOCK.acquire()
         try:

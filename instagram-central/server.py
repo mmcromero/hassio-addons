@@ -22,6 +22,7 @@ from panel_actions import parse_action, token_for
 from policy import prepare_decision
 import oauth_meta
 import instagram_connection
+import account_avatar
 import account_registry
 import account_management
 import editorial_core
@@ -41,7 +42,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.33"
+APP_VERSION = "0.1.34"
 _INBOX_LOCK = threading.Lock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
@@ -226,7 +227,7 @@ def acknowledge_message(data):
         return False
     account, sender, mid, token = (data["accountId"], data["senderId"],
                                    data["messageId"], data["claimToken"])
-    if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (account, sender, mid)):
+    if not _valid_message_identity(account, sender, mid):
         return False
     if not isinstance(token, str) or len(token) < 32 or len(token) > 256:
         return False
@@ -244,7 +245,7 @@ def evaluate_claim(data):
     if not isinstance(data, dict) or set(data) != keys:
         return None
     values = [data[k] for k in ("accountId", "senderId", "messageId", "claimToken")]
-    if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in values[:3]):
+    if not _valid_message_identity(*values[:3]):
         return None
     if not isinstance(values[3], str) or not 32 <= len(values[3]) <= 256:
         return None
@@ -358,6 +359,12 @@ def _message_envelopes(payload):
                 yield "unified", change["value"]
 
 
+def _valid_message_identity(account, sender, mid):
+    return (all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (account,sender)) and
+            isinstance(mid, str) and 1 <= len(mid) <= instagram_connection.MAX_MESSAGE_ID and
+            not any(ord(c)<32 for c in mid))
+
+
 def normalized_messages(payload, account_id=None):
     """Only normal text messages, scoped to permitted Meta recipient IDs."""
     if not isinstance(payload, dict) or payload.get("object") != "instagram":
@@ -386,7 +393,7 @@ def normalized_messages(payload, account_id=None):
             continue  # reject unknown/disabled recipients; preserve official accountId
         if sender_id == recipient_id:
             continue  # never treat business-originated content as a customer request
-        if not all(isinstance(v, str) and 1 <= len(v) <= 160 for v in (sender_id, recipient_id, mid)):
+        if not _valid_message_identity(recipient_id, sender_id, mid):
             continue
         if not isinstance(text, str) or not 1 <= len(text.strip()) <= 2000:
             continue
@@ -460,6 +467,7 @@ def refresh_inbox(cfg, credential):
         return {**report, 'status': 'confirmed', 'imported': inserted,
                 'existing': len(messages) - inserted}
     except instagram_connection.GraphError as exc:
+        LOGGER.info('Meta manual inbox failed: version=%s reason=%s', APP_VERSION, exc.details['reason'])
         return {'status': 'error', **{k:v for k,v in exc.details.items() if v is not None}}
     except (instagram_connection.ConnectionError, account_registry.RegistryError):
         return {'status': 'error', 'reason': 'configuration_incomplete'}
@@ -782,15 +790,20 @@ def render_connection_section(cfg, summary):
                        + '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a>')
     if not origin_matches:
         actions.append('<p>Configure o retorno OAuth na mesma URL pública HTTPS da Central antes de conectar.</p>')
-    if summary['oauthReady'] and (not summary['accountVerified'] or summary.get('reauthRequired')) and origin_matches:
+    if summary['oauthReady'] and origin_matches:
         # A browser session established via the same HTTPS hostname is required
         # for the public proxy route to recognize the session cookie.
         start_url = url[:-len("/oauth/meta/callback")] + cfg.get("account_path", "") + "/oauth/meta/start"
         actions.append('<a href="' + html.escape(start_url + "?probe=1", quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Testar navegador e proxy (sem Meta)</a>')
-        actions.insert(1, '<p><a class="btn primary" href="' + html.escape(start_url, quote=True)
+        authorize = ('<p><a class="btn primary" href="' + html.escape(start_url, quote=True)
                        + '" target="_blank" rel="noopener noreferrer">' +
                        ('Reconectar Instagram pela Meta' if summary.get('reauthRequired') else 'Conectar Instagram pela Meta') + '</a></p>')
+        if not summary['accountVerified'] or summary.get('reauthRequired'):
+            actions.insert(1, authorize)
+        else:
+            actions.append('<details><summary>Atualizar permissões da conta</summary><p>Para excluir publicações no Instagram, inclua instagram_manage_contents no app Meta e na configuração do Login do Facebook para Empresas. Depois renove a autorização desta conta.</p>' +
+                authorize.replace('Conectar Instagram pela Meta', 'Renovar autorização da conta') + '</details>')
     setup = (
         ("App Meta", bool(str(cfg.get("meta_app_id") or "").isdigit())),
         ("Login unificado", bool(str(cfg.get("meta_login_config_id") or "").isdigit())),
@@ -811,7 +824,16 @@ def render_connection_section(cfg, summary):
        <p>Em contas novas, a Meta preenche o ID do Instagram depois da autorização.</p>
        <p>As credenciais são configuradas nas opções do aplicativo no Home Assistant.
        Não compartilhe segredos por mensagem.</p></details>
-       <h3>Recebimento por webhook</h3><ul>""" + flags(items[2:]) + """</ul>
+       </section>""")
+
+
+def render_receiving_settings(cfg, summary):
+    flags = ''.join('<li>' + label + ': <strong>' + ('Sim' if value else 'Não') + '</strong></li>'
+                    for label, value in (("Webhook habilitado", summary['webhookEnabled']),
+                                         ("Assinatura solicitada", summary['subscriptionRequested'])))
+    webhook_setup = '<li>Token de verificação: ' + ('configurado' if summary['webhookConfigReady'] else 'pendente') + '</li>'
+    last = summary['lastMessageReceived'] or 'Nenhuma'
+    return ("""<section class="panel" aria-label="Diagnóstico de mensagens"><h2>Recebimento de mensagens</h2><ul>""" + flags + """</ul>
        <p>Autorizar a conta e receber eventos são etapas distintas. A configuração do webhook não é pré-requisito para iniciar a autorização da conta.</p>
        <details><summary>Configuração do webhook</summary><ul>""" + webhook_setup + """</ul></details>
        <p><strong>Mensagens recebidas por webhook: """ + str(summary["messagesStored"]) +
@@ -960,8 +982,10 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
                     META_RESULTS[meta_result] + '</p>') if meta_result in META_RESULTS else ''
         content = ('<div class="heading"><span class="eyebrow">CONFIGURAÇÃO DA CONTA</span>'
                    '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' + feedback +
-                   render_connection_section(cfg, summary) + render_routing_settings(cfg) + render_publication_settings(cfg) +
-                   render_integration_settings(cfg))
+                   interface_ui.settings_tabs(render_connection_section(cfg, summary),
+                       render_receiving_settings(cfg, summary) + render_routing_settings(cfg) + render_publication_settings(cfg),
+                       render_integration_settings(cfg), default='diagnostics' if meta_result and not summary.get('reauthRequired')
+                           and summary.get('tokenStored') else 'connection'))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111c29">
@@ -1227,7 +1251,8 @@ class Handler(BaseHTTPRequestHandler):
                 accounts = account_registry.administrative_accounts(conn)
             page_cfg = {**meta_configuration_for_business(selected_business), 'navigation_accounts': accounts}
             page = account_management.render(accounts, page_cfg, self.headers.get('Cookie', ''),
-                    lambda business: connection_summary(meta_configuration_for_business(business)), error=invalid)
+                    lambda business: connection_summary(meta_configuration_for_business(business)), error=invalid,
+                    values=fields if invalid else None)
             self.respond(409 if invalid else 200, page, 'text/html')
             return False
         if not route.path.startswith('/accounts/'):
@@ -1267,6 +1292,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self.account_route('GET'):
             return
         route = urlsplit(self.path)
+        if route.path == '/panel' and route.query == 'view=profile-image':
+            if not panel_session_authorized(self.headers, settings()):
+                return self.respond(403, {'error': 'authentication required'})
+            cfg = self.request_configuration()
+            raw = account_avatar.get(DATA_DIR, cfg, _meta_credential(self.request_business()))
+            return self.respond(200 if raw else 404, raw or b'', 'image/jpeg', csp="default-src 'none'")
         if self.path == '/webhook/instagram?open=central':
             # Native HA Web UI launcher: reuse the existing GET proxy route.
             # The destination comes only from validated local configuration.

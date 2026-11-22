@@ -73,3 +73,82 @@ body[data-ui-page]{margin:0;background:var(--bg);color:var(--text);font-size:14p
 .ui-accounts-page .btn{font:inherit;cursor:pointer;border:1px solid var(--edge);border-radius:10px;padding:11px 17px;font-weight:700}.ui-accounts-page .primary{background:var(--orange);color:#161b23;border-color:var(--orange)}
 .ui-accounts-page .skip{position:absolute;top:-100px;background:#fff;color:#111;padding:12px;z-index:10}.ui-accounts-page .skip:focus{top:0}
 @media(max-width:760px){.ui-shell{grid-template-columns:minmax(0,1fr)}.ui-app-header.topbar{padding:12px 16px;gap:12px;min-height:96px;flex-wrap:wrap}.ui-app-header .top-actions{width:100%;flex-wrap:nowrap}.ui-account-picker{flex:1;min-width:0;margin:0!important}.ui-account-picker select{max-width:100%;min-width:0}.ui-account-content{padding:27px 16px}.ui-context-actions{padding:16px 16px 0}.ui-accounts-page .panel,.ui-account-grid>li{padding:17px}}
+
+/* Account identity: progressive native fallback, same-origin optional thumbnails. */
+.ui-account-picker{position:relative;min-width:0;flex:1}
+.ui-account-picker [hidden]{display:none!important}
+.ui-visual-account-picker{position:relative;min-width:0;text-align:left}
+.ui-visual-account-picker summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:48px;padding:8px 12px;border:1px solid var(--line,#30485b);border-radius:8px;background:var(--panel,#142735);color:inherit}
+.ui-visual-account-picker summary::-webkit-details-marker{display:none}
+.ui-visual-account-picker summary:focus-visible,.ui-visual-account-picker a:focus-visible{outline:2px solid #ffad69;outline-offset:2px}
+.ui-account-avatar{position:relative;display:grid;place-items:center;width:32px;height:32px;flex:0 0 32px;overflow:hidden;border-radius:50%;background:#30485b;color:#fff;font-size:12px;font-weight:700}
+.ui-account-avatar img{position:absolute;inset:0;width:32px;height:32px;object-fit:cover}
+.ui-account-label{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;overflow-wrap:anywhere;line-height:1.3}
+.ui-account-label strong{font-size:13px}.ui-account-label small{font-size:12px;color:#b8c9d6}
+.ui-visual-account-picker nav{position:absolute;top:calc(100% + 6px);right:0;z-index:50;width:100%;min-width:220px;max-height:55vh;overflow-y:auto;border:1px solid #405a6e;border-radius:8px;background:#142735;box-shadow:0 8px 24px #0008}
+.ui-visual-account-picker ul{list-style:none;padding:4px;margin:0}
+.ui-visual-account-picker a{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px;color:#edf3f8;text-decoration:none;border-radius:5px}
+.ui-visual-account-picker a:hover,.ui-visual-account-picker a[aria-current]{background:#263f52}
+@media(max-width:760px){.ui-visual-account-picker nav{min-width:0}}
+/* UX-STD-001: task groups, readable summaries and native local navigation. */
+[hidden]{display:none!important}
+.ui-local-tabs{display:none}
+[data-tabs-ready]>.ui-local-tabs{display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;gap:4px;margin:0 0 20px;padding:4px;border:1px solid var(--edge,#2b4051);border-radius:12px;background:var(--surface,#152231)}
+.ui-local-tabs button{min-width:0;min-height:44px;border:0;border-radius:8px;padding:8px 5px;background:transparent;color:var(--muted,#a3b5c5);font-weight:650;font-size:13px;cursor:pointer}
+.ui-local-tabs button[aria-selected=true]{background:var(--surface2,#1b2b3a);color:var(--text,#f3f5f7);box-shadow:inset 0 -2px var(--orange,#ff8e40)}
+[data-ui-pane]{min-width:0}
+.ui-list-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.ui-list-heading h2{margin:0}
+.ui-account-grid{display:grid;grid-template-columns:1fr;gap:12px;padding:0;list-style:none}
+.ui-account-grid>li{padding:18px;margin:0;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.ui-account-row-head{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 250px}
+.ui-account-row-head h2{font-size:17px;margin:0 0 5px}
+.ui-account-row-head p{margin:0 0 4px}
+.ui-account-row-head .ui-account-avatar{flex:none}
+.ui-account-row-head a{display:inline-flex;align-items:center;min-height:44px}
+.ui-account-row-actions{display:flex;flex-wrap:wrap;gap:8px}
+#add-account{max-width:620px}
+#add-account form input{width:100%;min-height:44px}
+#add-account label{display:block;margin:16px 0 6px}
+.post-details{flex:1 0 100%;min-width:0;border-top:1px solid var(--edge,#2b4051)}
+.post-details summary{min-height:44px;display:list-item;align-content:center;cursor:pointer;color:var(--muted,#a3b5c5);padding:10px 0;font-size:13px}
+.post-details-content{padding:0 0 12px;overflow-wrap:anywhere}
+.post-details-content p{margin-top:0}
+.post-full-caption{white-space:pre-wrap;line-height:1.6}
+.post-open-hint{display:block;color:var(--blue,#79aafa);font-size:12px;margin-top:4px}
+.post-metrics-brief{flex:1 1 190px;border:0;padding:6px 0;gap:5px 18px}
+.ui-account-grid a,.post-details a{overflow-wrap:anywhere}
+@media(min-width:761px){[data-tabs-mobile]>.ui-local-tabs{display:none}}
+@media(max-width:760px){.ui-account-grid>li{gap:10px;padding:16px}.ui-account-row-actions{width:100%}.ui-account-row-actions .btn{flex:1 1 180px;text-align:center}.post-metrics-brief{flex-basis:100%}.ui-editor-tabs .preview-area{margin-top:0}.ui-editor-tabs .editor-layout{display:block}.ui-local-tabs{scroll-margin-top:16px}}
+@media(max-width:360px){.ui-local-tabs button{font-size:12px}}
+/* Mobile workspace: keep the active account in the shared header without repeating it in the closed menu. */
+@media(max-width:760px){
+ .ui-sidebar .ui-account-context{display:none}
+ .heading .eyebrow{display:none}
+ .ui-context-actions{gap:8px;padding:12px 16px}
+ .content{padding-top:20px}
+ .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .metric{min-height:0;padding:13px}
+ .metric strong{font-size:28px}
+ .media-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .media-card-info{padding:10px;overflow-wrap:anywhere}
+ .media-card .btn{width:100%;white-space:normal;min-height:44px}
+ .item-actions{justify-content:flex-start;gap:8px}
+ .item-actions .btn{flex:1 1 120px;white-space:normal;text-align:center}
+ .calendar-event[role=button]{min-height:44px;display:flex;align-items:center}
+}
+.ui-account-row-actions .btn.quiet{background:transparent;color:var(--text,#f3f5f7);border:1px solid var(--edge,#2b4051)}
+@media(max-width:760px){body[data-editor-view=editor] #new-post{display:none}.ui-context-actions .btn{min-height:44px;white-space:normal}}
+.ui-mobile-label{display:none}
+@media(max-width:760px){
+ body[data-editor-view=editor] .ui-context-actions{display:none}
+ #view-editor .heading.horizontal{flex-direction:row;align-items:center;gap:12px}
+ #view-editor .heading p{display:none}
+ #view-editor .heading h1{font-size:24px;margin:0}
+ #clear-editor{flex:none;min-height:44px}
+ .ui-mobile-label{display:inline}.ui-desktop-label{display:none}
+ .selected-thumb{max-width:100%;overflow-wrap:anywhere}
+ .selected-thumb button{min-width:44px;min-height:44px;flex:none}
+ .selected-thumb span{min-width:0;overflow-wrap:anywhere}
+}
+.icon-button,.carousel-arrow,.calendar-nav button{min-width:44px;min-height:44px}

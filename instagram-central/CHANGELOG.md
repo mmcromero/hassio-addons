@@ -1,3 +1,10 @@
+## 0.1.34
+
+- Acrescenta ao modal Excluir as opções Somente da Central Editorial e Da Central Editorial e do Instagram. A segunda exige confirmação explícita da conta/publicação, verifica permissão e propriedade e só limpa o registro local após sucesso confirmado pela Meta. Recusa e resultado incerto preservam dados; recibos persistentes impedem repetição automática e reimportação indevida do histórico. Carrosséis são excluídos por inteiro.
+- Mostra fotos, nome e @ no seletor comum de contas, com cache local, iniciais de reserva e navegação acessível. Integra a branch feat/account-profile-avatars, preservando as correções da 0.1.33.
+- Amplia o limite local de IDs opacos de mensagens de 160 para 1.024 caracteres na busca manual, webhook e processamento local. Distingue falhas de estrutura, identidade, ID e data na busca manual, sem exibir respostas privadas. A causa do erro real informado e a entrega de DMs reais por webhook continuam sem confirmação.
+- Aplica a organização Mobile First aprovada: Conexão/Diagnósticos/Ferramentas, lista de contas separada do cadastro e Conteúdo/Prévia no celular. Cartões resumidos com detalhes e métricas sob demanda, contexto da conta preservado, proteção contra perda de alterações, retomada de composição e navegação de retorno. Cabeçalho sem repetição no celular, alvos de toque e estados consistentes.
+
 ## 0.1.33
 
 - Atualizar mensagens passa a buscar textos recentes na Meta por conta e gravar/exibir na caixa: até 5 conversas × 10 mensagens, em um GET explícito. Sem polling ou resposta automática. Espera, trava de duplicação, resultado/erro acessível e preservação da caixa.

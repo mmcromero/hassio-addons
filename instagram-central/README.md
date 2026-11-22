@@ -1,4 +1,14 @@
-# Central Instagram — 0.1.33 (busca manual e conexão de contas)
+# Central Instagram — 0.1.34 (Mobile First, exclusão e fotos)
+
+A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor; sem foto, aparecem as iniciais.
+
+Há proteção contra perda de alterações e **Continuar composição** para retomar o que ainda não foi salvo. **Criar publicação** continua abrindo uma composição nova após confirmar o descarte quando necessário. O menu mantém as quatro seções aprovadas e o mesmo contexto da conta.
+
+**Atualização:** preserve as opções e `/data` e atualize somente a Central. Não exige alterar NGINX, webhook, portas ou login. A nova exclusão no Instagram pode exigir uma permissão adicional, conforme abaixo. Testes locais incluem toque emulado, criação/revisão/agendamento, larguras 320/360/390, teclado e movimento reduzido. Uso em aparelho real e operações Meta reais precisam ser confirmados após instalar.
+
+No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para publicações com ID remoto confirmado, **Da Central Editorial e do Instagram**. A opção remota pede confirmação da conta indicada e só remove o registro local após a Meta confirmar a exclusão. Pode exigir incluir `instagram_manage_contents` no aplicativo e na configuração do Login do Facebook para Empresas e usar **Conexão Meta → Atualizar permissões da conta → Renovar autorização da conta**. A permissão e o suporte da conexão são conferidos antes de enviar a exclusão; uma recusa preserva registro e arquivos. Carrosséis são excluídos inteiros, não uma imagem isolada. Em caso de resultado incerto, confira o Instagram antes de autorizar nova tentativa; a Central não repete a exclusão automaticamente. As mídias usadas por outras publicações continuam preservadas.
+
+## Busca manual de mensagens
 
 Em **Mensagens → Caixa de entrada → Atualizar mensagens**, o botão agora consulta a Meta com a credencial da conta selecionada e grava os textos recebidos para exibir na caixa. Antes, ele apenas recarregava o banco local. A busca é feita **somente pelo clique**, sem consulta periódica ou resposta automática.
 

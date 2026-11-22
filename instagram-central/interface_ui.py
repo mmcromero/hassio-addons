@@ -34,6 +34,7 @@ def policy(value, raw=None):
     for entry in value.split(';'):
         parts = entry.strip().split()
         if parts: directives[parts[0]] = parts[1:]
+    directives.setdefault('img-src', ["'self'"])
     for name, digest in (('script-src', _hash(SCRIPT)), ('style-src', _hash(STYLE))):
         values = [part for part in directives.get(name, []) if part != "'none'" and not (name == 'style-src' and part == "'unsafe-inline'")]
         if digest not in values: values.append(digest)
@@ -60,13 +61,40 @@ def enhance(raw):
     return text.encode()
 
 
+def _avatar(account):
+    business = account['business_id']
+    path = '' if business == 'umdoislab' else '/accounts/' + business
+    label = str(account.get('display_name') or account.get('username') or '?')
+    initials = ''.join(word[0] for word in label.split()[:2]).upper()
+    return ('<span class="ui-account-avatar" aria-hidden="true"><span>' + html.escape(initials) +
+            '</span><img src="' + html.escape(path + '/panel?view=profile-image', quote=True) +
+            '" alt="" width="32" height="32" loading="lazy" decoding="async" referrerpolicy="no-referrer"></span>')
+
+
+def _account_label(account):
+    return ('<span class="ui-account-label"><strong>' + html.escape(account['display_name']) +
+            '</strong><small>@' + html.escape(account['username']) + '</small></span>')
+
+
+def settings_tabs(connection, diagnostics, tools, *, default='connection'):
+    sections = [('connection', 'Conexão', connection), ('diagnostics', 'Diagnósticos', diagnostics),
+                ('tools', 'Ferramentas', tools)]
+    return ('<div data-ui-tabs="settings" data-tabs-hash data-tabs-default="' + default + '">' +
+            '<div class="ui-local-tabs" aria-label="Configurações desta conta">' + ''.join(
+                '<button type="button" id="settings-tab-' + key + '" data-ui-tab="' + key + '">' + label + '</button>'
+                for key, label, _ in sections) + '</div>' + ''.join(
+                '<div id="settings-pane-' + key + '" data-ui-pane="' + key + '">' + content + '</div>'
+                for key, _, content in sections) + '</div>')
+
+
 def header(cfg, section, *, editorial=False):
     business = cfg.get('business_id', 'umdoislab')
     prefix = '' if business == 'umdoislab' else '/accounts/' + business
     choices = cfg.get('navigation_accounts') or [{'business_id': business,
         'display_name': cfg.get('account_display_name') or 'Umdoislab',
         'username': cfg.get('instagram_expected_username') or 'umdoislab'}]
-    options = []
+    options, links = [], []
+    current = next((account for account in choices if account['business_id'] == business), choices[0])
     for account in choices:
         name = account['business_id']
         path = '' if name == 'umdoislab' else '/accounts/' + name
@@ -75,11 +103,18 @@ def header(cfg, section, *, editorial=False):
         selected = ' selected' if name == business else ''
         options.append('<option value="' + html.escape(target, quote=True) + '"' + selected + '>' +
                        html.escape(account['display_name'] + ' · @' + account['username']) + '</option>')
+        links.append('<li><a href="' + html.escape(target, quote=True) + '" data-account-link' +
+                     (' aria-current="true"' if name == business else '') + '>' + _avatar(account) +
+                     _account_label(account) + ('<span aria-hidden="true">✓</span>' if name == business else '') + '</a></li>')
     return ('<header class="topbar ui-app-header"><div class="crumb">' +
             html.escape(str(cfg.get('account_display_name') or 'Umdoislab')) +
             ' <span>/</span> <strong id="current-section">' + html.escape(section) + '</strong></div>' +
-            '<div class="top-actions"><label class="ui-account-picker">Conta<select aria-label="Conta selecionada" data-account-switch>' +
-            ''.join(options) + '</select></label><span class="account ui-sr-only" aria-hidden="true">@' +
+            '<div class="top-actions"><div class="ui-account-picker"><label data-native-account-picker hidden>Conta<select aria-label="Conta selecionada" data-account-switch>' +
+            ''.join(options) + '</select></label><details class="ui-visual-account-picker">' +
+            '<summary aria-label="Trocar conta. Conta selecionada: ' + html.escape(current['display_name'] + ' @' + current['username'], quote=True) + '">' +
+            _avatar(current) + _account_label(current) + '<span aria-hidden="true">▾</span></summary>' +
+            '<nav aria-label="Selecionar conta"><ul>' + ''.join(links) + '</ul></nav></details></div>' +
+            '<span class="account ui-sr-only" aria-hidden="true">@' +
             html.escape(str(cfg.get('instagram_expected_username') or 'umdoislab')) + '</span>' +
             '<form class="logout-form" method="post" action="' + prefix + '/auth/logout">' +
             '<button type="submit" class="btn quiet">Sair</button></form></div></header>')

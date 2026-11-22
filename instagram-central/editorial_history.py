@@ -140,6 +140,8 @@ class HistoryHub:
         details['seenAt']=int(time.time()*1000)
         with store._tx() as db:
             self._guard(db,job,lease)
+            if db.execute("SELECT 1 FROM remote_deletions WHERE remote_id=? AND account_id=? AND status IN ('issued','unknown','confirmed')", (item['id'],account)).fetchone():
+                return None
             row=db.execute("SELECT * FROM posts WHERE remote_id=? AND publication_account_id=? AND state='published' ORDER BY created_at LIMIT 1",(item['id'],account)).fetchone()
             created=row is None
             if created:
@@ -221,7 +223,7 @@ class HistoryHub:
                     if item['id'] in data['remoteSeen']: continue
                     created=self._upsert(store,item,data['account'],job,lease)
                     data['remoteSeen'].append(item['id'])
-                    data['seen']+=1;data['imported' if created else 'updated']+=1
+                    data['seen']+=1;data['skipped' if created is None else 'imported' if created else 'updated']+=1
                 data['pages']+=1
                 paging=page.get('paging',{})
                 if paging.get('next'):

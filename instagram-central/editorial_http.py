@@ -19,7 +19,7 @@ import panel_login
 import interface_ui
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics", "history_start", "history_cancel") + editorial_import.ACTIONS
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_remote", "delete_media", "metrics", "history_start", "history_cancel") + editorial_import.ACTIONS
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -170,6 +170,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                 publication = publisher.public_state(business_id) if publisher else {'ready': False, 'message': 'Publicação não configurada.'}
                 return reply(200, {**store.snapshot(), "businessId": business_id,
                     'accountUsername': cfg.get('instagram_expected_username'),
+                    'instagramAccountId': cfg.get('instagram_account_id'),
                     "publishingEnabled": publication['ready'], 'publication': publication,
                     'history':history.public_state(business_id) if history else {'status':'idle'}})
             if re.fullmatch("/editorial/media/" + _ID, route.path):
@@ -198,7 +199,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         if requested_action:
             if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media', 'history_start', 'history_cancel') + editorial_import.ACTIONS:
                 action = requested_action
-            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post', 'metrics'):
+            elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post', 'delete_remote', 'metrics'):
                 action = requested_action
             else:
                 return reply(422, {'error': 'Ação indisponível nesta rota.'})
@@ -233,6 +234,9 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
             if set(data) != {'mediaId'}:
                 raise editorial_core.EditorialError('Campos inválidos')
             return reply(200, {'deleted': True, **store.delete_media(data['mediaId'])})
+        if action == 'delete_remote':
+            if publisher is None: raise editorial_core.EditorialError('Conexão não configurada.')
+            return reply(200, publisher.delete_remote(business_id, post_id, data))
         if action == 'delete_post':
             if set(data) != {'version', 'deleteUnusedMedia'}:
                 raise editorial_core.EditorialError('Campos inválidos')

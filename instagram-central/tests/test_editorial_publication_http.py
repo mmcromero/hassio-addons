@@ -105,6 +105,31 @@ class PublicationHTTPTests(unittest.TestCase):
         self.assertEqual(self.fixture.request('/editorial/media/'+mid)[0], 422)
         self.assertEqual(self.operation(post, 'delete_post', payload)[0], 409)
 
+    def test_remote_delete_requires_distinct_csrf_and_bound_confirmation_and_is_idempotent(self):
+        from types import SimpleNamespace
+        self.fixture.cfg['instagram_account_id']='17841400000000001'
+        with server.database() as db:
+            db.execute("UPDATE instagram_accounts SET instagram_account_id=? WHERE business_id='umdoislab'", ('17841400000000001',))
+        post, _, version = self.approved()
+        self.operation(post,'publish',{'version':version})
+        for _ in range(6): self.hub.step('umdoislab')
+        snap = self.fixture.state()['posts'][0]
+        cfg = server.meta_configuration_for_business('umdoislab')
+        payload = dict(version=snap['version'],deleteUnusedMedia=True,remoteId=snap['remoteId'],
+            instagramAccountId=cfg['instagram_account_id'],confirmRemote=True,retryUncertain=False)
+        calls=[]
+        self.hub.api_factory=lambda *args: SimpleNamespace(check_delete=lambda *a:None,check_media_owner=lambda *a:None,
+            delete_media=lambda remote:calls.append(remote) or True)
+        self.assertEqual(self.operation(post,'delete_remote',payload,cookie=False)[0],403)
+        self.assertEqual(self.operation(post,'delete_remote',payload,token_action='delete_post')[0],403)
+        self.assertEqual(self.operation(post,'delete_remote',{**payload,'confirmRemote':False})[0],422)
+        self.assertEqual(self.operation(post,'delete_remote',{**payload,'remoteId':'18000000000009999'})[0],409)
+        self.assertEqual(calls,[])
+        status,_,body=self.operation(post,'delete_remote',payload)
+        self.assertEqual(status,200);self.assertTrue(json.loads(body)['remoteDeleted'])
+        self.assertEqual(self.operation(post,'delete_remote',payload)[0],200)
+        self.assertEqual(calls,[snap['remoteId']]);self.assertEqual(self.fixture.state()['posts'],[])
+
     def test_library_delete_rejects_referenced_media_and_requires_delete_media_csrf(self):
         post, mid, version = self.approved()
         token = server.panel_login.admin_csrf_token(self.fixture.cookie, self.fixture.cfg['panel_password'], editorial_http.csrf_action('delete_media'))

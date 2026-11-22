@@ -16,6 +16,8 @@ MESSAGES = {
     'connection_required': 'Conecte e verifique esta conta na Central antes de publicar.',
     'token_invalid': 'O token desta conta não está válido para o aplicativo configurado. Reconecte esta conta.',
     'permission_required': 'Falta conceder instagram_content_publish a esta conta. Inclua a permissão na configuração Meta e reconecte esta conta.',
+    'delete_permission_required': 'Falta a permissão instagram_manage_contents para excluir no Instagram. Inclua-a no app Meta e na configuração do Login do Facebook para Empresas; depois renove a autorização desta conta em Conexão Meta.',
+    'delete_owner_mismatch': 'Não foi possível confirmar que esta publicação pertence à conta selecionada. Nenhum pedido de exclusão foi enviado.',
     'delivery_not_configured': 'Não foi possível confirmar o endereço HTTPS de entrega das mídias na configuração do aplicativo Meta.',
     'account_mismatch': 'A identidade da conta mudou. A publicação foi interrompida para evitar envio para outra conta.',
     'check_unavailable': 'Não foi possível conferir o acesso de publicação na Meta. Tente verificar novamente.',
@@ -51,6 +53,7 @@ class PublisherHub:
         self.api_factory, self.checker, self.clock = api_factory, checker, clock
         self._checks = {}
         self._metrics_pending = set()
+        self._delete_pending = set()
         self._lock = threading.Lock()
         self.stop = threading.Event()
         self.wake = threading.Event()
@@ -133,6 +136,92 @@ class PublisherHub:
             return store.save_metrics(post_id, post['remote_id'], values=values, now=self.clock())
         finally:
             with self._lock: self._metrics_pending.discard(key)
+
+    def delete_remote(self, business, post_id, data):
+        """Explicit, account-bound deletion, with durable uncertain/success receipts."""
+        required = {'version', 'deleteUnusedMedia', 'instagramAccountId', 'remoteId', 'confirmRemote', 'retryUncertain'}
+        if (not isinstance(data, dict) or set(data) != required or type(data['version']) is not int or
+                any(type(data[k]) is not bool for k in ('deleteUnusedMedia','confirmRemote','retryUncertain')) or
+                data['confirmRemote'] is not True):
+            raise core.EditorialError('Confirme a exclusão desta publicação no Instagram.')
+        account, remote = data['instagramAccountId'], data['remoteId']
+        graph.identifier(account); graph.identifier(remote)
+        store = self.store_for(business)
+        key = (business, post_id)
+        with self._lock:
+            if key in self._delete_pending:
+                raise core.EditorialConflict('A exclusão desta publicação já está em andamento. Aguarde.')
+            self._delete_pending.add(key)
+        try:
+            cfg, credential, identity = self._identity(business)
+            if cfg['instagram_account_id'] != account:
+                raise core.EditorialConflict('A conta selecionada mudou. Atualize a tela antes de excluir.')
+            with store._db() as db:
+                row = db.execute('SELECT * FROM remote_deletions WHERE post_id=?', (post_id,)).fetchone()
+                receipt = dict(row) if row else None
+                exists = db.execute('SELECT 1 FROM posts WHERE id=?', (post_id,)).fetchone()
+            if receipt and (receipt['remote_id'],receipt['account_id'],receipt['version']) != (remote,account,data['version']):
+                raise core.EditorialConflict('A publicação mudou. Atualize a lista antes de excluir.')
+            if receipt and receipt['status'] == 'confirmed':
+                return self._finish_delete(store, post_id, data, receipt, exists=bool(exists))
+            post = self._post(store, post_id)
+            if (post['version'] != data['version'] or post['remote_id'] != remote or
+                    post['publication_account_id'] != account or post['state'] != 'published'):
+                raise core.EditorialConflict('Selecione uma publicação confirmada desta conta e atualize a lista antes de excluir.')
+            if receipt and receipt['status'] in ('issued','unknown'):
+                if not data['retryUncertain'] or self.clock() - receipt['attempted_at'] < 60:
+                    return {'deleted': False, 'remoteDeleted': False, 'status': 'unknown',
+                            'error': 'A Meta não confirmou o resultado anterior. Confira a publicação no Instagram. Para autorizar outra tentativa, aguarde um minuto e marque a confirmação específica.'}
+            api = self.api_factory(cfg, credential)
+            try:
+                api.check_delete(cfg, credential)
+                api.check_media_owner(remote)
+            except graph.PublishingError as error:
+                # A failed read never proves a publication has been removed.
+                return {'deleted': False, 'remoteDeleted': False, 'status': 'refused', 'error': message(error)}
+            operation = secrets.token_hex(16)
+            if self._identity(business)[2] != identity:
+                raise core.EditorialConflict('A conexão mudou. Atualize a tela antes de excluir.')
+            with store._tx() as db:
+                store._check_version(db, post_id, data['version'])
+                latest = db.execute('SELECT operation,status FROM remote_deletions WHERE post_id=?', (post_id,)).fetchone()
+                if (tuple(latest) if latest else None) != ((receipt['operation'],receipt['status']) if receipt else None):
+                    raise core.EditorialConflict('Outra exclusão desta publicação foi iniciada. Atualize a lista.')
+                current = db.execute('SELECT state,remote_id,publication_account_id FROM posts WHERE id=?', (post_id,)).fetchone()
+                if tuple(current) != ('published',remote,account):
+                    raise core.EditorialConflict('A publicação mudou. Atualize a lista antes de excluir.')
+                if db.execute("SELECT 1 FROM history_jobs WHERE status IN ('queued','running')").fetchone():
+                    raise core.EditorialError('Aguarde ou cancele a sincronização de histórico antes de excluir no Instagram.')
+                db.execute('INSERT OR REPLACE INTO remote_deletions(post_id,remote_id,account_id,version,operation,status,attempted_at) VALUES(?,?,?,?,?,?,?)',
+                           (post_id,remote,account,data['version'],operation,'issued',int(self.clock())))
+            try:
+                if api.delete_media(remote) is not True:
+                    raise graph.PublishingError('invalid_response', ambiguous=True, stage='delete')
+            except Exception as error:
+                uncertain = not isinstance(error,graph.PublishingError) or error.ambiguous
+                status = 'unknown' if uncertain else 'refused'
+                text = ('A Meta não confirmou a exclusão. Confira a publicação no Instagram antes de autorizar outra tentativa.'
+                        if uncertain else 'A Meta recusou a exclusão. O registro e as mídias foram preservados. ' + message(error))
+                with store._tx() as db:
+                    db.execute('UPDATE remote_deletions SET status=?,message=? WHERE post_id=? AND operation=?', (status,text,post_id,operation))
+                return {'deleted': False, 'remoteDeleted': False, 'status': status, 'error': text}
+            with store._tx() as db:
+                db.execute("UPDATE remote_deletions SET status='confirmed',message='' WHERE post_id=? AND operation=?", (post_id,operation))
+            return self._finish_delete(store, post_id, data, {'operation': operation}, exists=True)
+        finally:
+            with self._lock: self._delete_pending.discard(key)
+
+    @staticmethod
+    def _finish_delete(store, post_id, data, receipt, *, exists):
+        if not exists:
+            return {'deleted': True, 'remoteDeleted': True, 'status': 'confirmed'}
+        try:
+            result = store.delete_post(post_id, expected_version=data['version'],
+                delete_unused_media=data['deleteUnusedMedia'], remote_receipt=receipt['operation'])
+            return {'deleted': True, 'remoteDeleted': True, 'status': 'confirmed', **result}
+        except (core.EditorialError, OSError):
+            return {'deleted': False, 'remoteDeleted': True, 'status': 'confirmed',
+                    'error': 'Exclusão confirmada no Instagram. A limpeza local ficou pendente; tente concluir novamente. A exclusão no Instagram não será repetida.'}
 
     @staticmethod
     def _post(store, post):

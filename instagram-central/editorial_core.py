@@ -89,6 +89,13 @@ class EditorialStore:
                 CREATE INDEX IF NOT EXISTS attachments_media ON attachments(media_id);
                 CREATE TABLE IF NOT EXISTS media_deletions (
                     id TEXT PRIMARY KEY, extension TEXT NOT NULL, size INTEGER NOT NULL);
+                -- Receipts survive removal of the local post (including history
+                -- tombstones). An issued request is never retried automatically.
+                CREATE TABLE IF NOT EXISTS remote_deletions (
+                    post_id TEXT PRIMARY KEY, remote_id TEXT NOT NULL, account_id TEXT NOT NULL,
+                    version INTEGER NOT NULL, operation TEXT NOT NULL, status TEXT NOT NULL,
+                    attempted_at INTEGER NOT NULL, message TEXT NOT NULL DEFAULT '');
+                CREATE INDEX IF NOT EXISTS remote_deletions_media ON remote_deletions(account_id,remote_id);
                 CREATE TABLE IF NOT EXISTS publication_metrics (
                     post_id TEXT PRIMARY KEY REFERENCES posts(id) ON DELETE CASCADE,
                     remote_id TEXT NOT NULL, status TEXT NOT NULL,
@@ -239,13 +246,18 @@ class EditorialStore:
                 raise EditorialError('Esta mídia está em uso. Exclua ou edite as publicações que a utilizam antes de apagar o arquivo.')
         return {'deletedMedia': 1, **self.cleanup_deleted_media({media_id})}
 
-    def delete_post(self, post_id, *, expected_version, delete_unused_media=False):
+    def delete_post(self, post_id, *, expected_version, delete_unused_media=False, remote_receipt=None):
         if type(expected_version) is not int or type(delete_unused_media) is not bool:
             raise EditorialError('Pedido de exclusão inválido.')
         removed, kept = set(), 0
         with self._tx() as db:
             self._check_version(db, post_id, expected_version)
             row = db.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+            receipt = db.execute('SELECT * FROM remote_deletions WHERE post_id=?', (post_id,)).fetchone()
+            if receipt and receipt['status'] in ('issued', 'unknown', 'confirmed') and not (
+                    receipt['status'] == 'confirmed' and remote_receipt == receipt['operation'] and
+                    receipt['remote_id'] == row['remote_id'] and receipt['account_id'] == row['publication_account_id']):
+                raise EditorialError('A exclusão no Instagram está pendente. Use Excluir da Central e do Instagram para conferir ou concluir a operação.')
             if row['source']=='instagram' and db.execute("SELECT 1 FROM history_jobs WHERE status IN ('queued','running')").fetchone():
                 raise EditorialError('Aguarde ou cancele a sincronização antes de excluir um registro importado.')
             if row['state'] not in ('draft', 'approved', 'scheduled', 'failed', 'published') or (
@@ -511,6 +523,7 @@ class EditorialStore:
         with self._db() as db:
             db.execute("BEGIN")
             metrics = {row['post_id']: row for row in db.execute('SELECT * FROM publication_metrics')}
+            deletions = {r['post_id']: {'status': r['status'], 'message': r['message']} for r in db.execute('SELECT * FROM remote_deletions')}
             published = {row['post_id']: row['at'] for row in db.execute(
                 "SELECT post_id,MIN(at) AS at FROM audit WHERE event='publication_published' GROUP BY post_id")}
             posts = []
@@ -535,6 +548,7 @@ class EditorialStore:
                               "publicationAttempted": bool(json.loads(row['publication_data']).get('issued')),
                               "permalink": remote.get('permalink') or json.loads(row['publication_data']).get('permalink'),
                               "remoteId": row['remote_id'],
+                              "remoteDeletion": deletions.get(row['id']),
                               "source": row['source'], "remoteDetails": remote,
                               "metrics": self._metrics_snapshot(metrics.get(row['id'])),
                               "publishedAt": remote.get('timestamp', published.get(row['id'])) * 1000 if remote.get('timestamp', published.get(row['id'])) is not None else None,

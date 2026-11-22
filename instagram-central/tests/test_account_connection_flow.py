@@ -24,6 +24,16 @@ class AccountConnectionFlow(unittest.TestCase):
         csrf=panel_login.admin_csrf_token(self.f.session,self.f.fixture.config['panel_password'],action)
         return self.f.fixture.request(path+'/panel/meta/'+kind,'POST',urlencode({'csrf':csrf}),self.f.headers)
 
+    def test_failed_registration_preserves_escaped_fields_in_its_own_view(self):
+        csrf=panel_login.admin_csrf_token(self.f.session,self.f.fixture.config['panel_password'],'accounts:create')
+        fields={'csrf':csrf,'username':'umdoislab','display_name':'Nome <script>privado</script>'}
+        status,_,body=self.f.fixture.request('/accounts','POST',urlencode(fields),self.f.headers)
+        self.assertEqual(status,409)
+        self.assertIn(b'data-account-error',body)
+        self.assertIn(b'value="Nome &lt;script&gt;privado&lt;/script&gt;"',body)
+        self.assertIn(b'value="umdoislab"',body)
+        self.assertNotIn(b'<script>privado</script>',body)
+
     def test_new_account_highlights_oauth_and_disables_check_without_requiring_webhook_fields(self):
         with self.server.database() as db:business=account_registry.provision(db,'second_review','Second')
         path='/accounts/'+business

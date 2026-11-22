@@ -12,6 +12,8 @@
     publication:{}, history:{status:'idle'}, accountUsername:'', pendingPublish:null, busy:false,actionPending:false,
     dataFingerprint:null,refreshPending:null,uploadLabel:'',editorPreviewKey:null,pendingDelete:null,storyTimer:null
   };
+  let editorClean='';
+  const viewScroll=new Map(),expandedPosts=new Set();
   const $ = id => document.getElementById(id);
   const all = selector => [...document.querySelectorAll(selector)];
   const escapeName = value => String(value || '').trim();
@@ -30,7 +32,7 @@
     schedule:'Confirmando agendamento…',cancel:'Cancelando agendamento…',check:'Verificando publicação…',
     publish:'Preparando publicação…',activate:'Confirmando envio agendado…',reset:'Liberando conteúdo para edição…',
     reconcile:'Verificando o resultado…',retry:'Conferindo nova tentativa…',
-    delete_post:'Excluindo publicação local…',delete_media:'Excluindo mídia…',metrics:'Consultando curtidas e comentários…',
+    delete_post:'Excluindo publicação local…',delete_remote:'Excluindo no Instagram…',delete_media:'Excluindo mídia…',metrics:'Consultando curtidas e comentários…',
     history_start:'Iniciando sincronização…',history_cancel:'Solicitando cancelamento…'};
 
   function uploadRequest(endpoint,file,headers,operation){
@@ -56,7 +58,7 @@
     let endpoint=path;
     if(['check','delete_media','history_start','history_cancel'].includes(action)){
       endpoint='drafts';headers['X-Editorial-Action']=action;
-    }else if(['publish','activate','reset','reconcile','retry','delete_post','metrics'].includes(action)){
+    }else if(['publish','activate','reset','reconcile','retry','delete_post','delete_remote','metrics'].includes(action)){
       endpoint=path.replace(/\/[^/]+$/,'/approve');headers['X-Editorial-Action']=action;
     }
     if(action){
@@ -97,7 +99,9 @@
     state.refreshPending=(async()=>{
     const result = await api('state');
     state.history=result.history || {status:'idle'};renderHistoryProgress();
-    state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';
+    state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';state.instagramAccountId=result.instagramAccountId || '';
+    all('[data-preview-account]').forEach(node=>node.textContent=state.accountUsername);
+    all('.phone-top .avatar').forEach(node=>node.textContent=state.accountUsername.slice(0,2).toUpperCase());
     const fingerprint=JSON.stringify([result.posts,result.media]);
     if(fingerprint!==state.dataFingerprint){
       state.posts=result.posts;state.media=result.media;state.dataFingerprint=fingerprint;render();
@@ -150,18 +154,21 @@
     feedback.scrollIntoView({block:'nearest'});
     toast('Salvamento recusado: outra aba alterou esta publicação.','error');
   }
-  function show(view) {
+  function show(view, {fromHistory=false}={}) {
     if (!['overview','library','editor','approval','calendar','history'].includes(view)) return;
+    if(state.view!==view)viewScroll.set(state.view,window.scrollY);
     state.view = view;
+    document.body.dataset.editorView=view;
+    $('resume-editor').hidden=view==='editor' || editorSignature()===editorClean;
     const panels=all('[data-panel]');
-    UI.switchPanel(panels,$('view-'+view));UI.closeMenu();
+    UI.switchPanel(panels,$('view-'+view)).then(()=>{if(state.view===view)window.scrollTo({top:viewScroll.get(view)||0});});UI.closeMenu();
     all('[data-view]').forEach(node=>{
       const active=node.dataset.view===view;
       node.classList.toggle('active',active);
       if (active) node.setAttribute('aria-current','page');else node.removeAttribute('aria-current');
     });
     $('current-section').textContent = ({overview:'Visão geral',library:'Biblioteca',editor:state.currentPostId?'Editar publicação':'Criar publicação',approval:'Revisão e envios',calendar:'Calendário',history:'Histórico'})[view];
-    history.replaceState(null,'','#'+view);
+    if(!fromHistory && location.hash!=='#'+view)history.pushState(null,'','#'+view);
     render();
   }
   function formatHint() {
@@ -175,6 +182,10 @@
   function selectedMedia() {
     return state.currentMediaIds.map(id=>state.media.find(m=>m.id===id)).filter(Boolean);
   }
+  function editorSignature(){
+    return JSON.stringify([$('post-format').value,$('post-caption').value,captionMode(),
+      state.currentMediaIds,state.currentMediaIds.map(id=>state.currentSlideCaptions[id] || '')]);
+  }
   function mediaValid(format, items) {
     if (format === 'carousel') return items.length >= 2 && items.length <= 20 && items.every(m=>m.type.startsWith('image/'));
     if (format === 'feed') return items.length === 1 && items[0].type.startsWith('image/');
@@ -183,6 +194,7 @@
   }
   function newDraft(format='feed') {
     if(state.actionPending || state.busy)return UI.announce('Aguarde a conclusão da operação atual.');
+    if(!UI.dirty.confirmLeave())return;
     state.currentPostId=null;
     state.currentPostVersion=null;
     state.currentMediaIds=[];
@@ -196,12 +208,14 @@
     clearDraftFeedback();
     formatHint();
     renderSelection();
+    editorClean=editorSignature();UI.tabs.select('editor-preview','content');
     show('editor');
   }
   function loadDraft(id) {
     const post=state.posts.find(p=>p.id===id);
     if (!post) return toast('Publicação não encontrada.');
     if(!['draft','approved','scheduled'].includes(post.status))return toast('Conteúdo bloqueado para revisão.');
+    if(!UI.dirty.confirmLeave())return;
     state.currentPostId=id;
     state.editorPreviewKey=null;
     state.currentPostVersion=post.version;
@@ -217,6 +231,7 @@
     clearDraftFeedback();
     formatHint();
     renderSelection();
+    editorClean=editorSignature();UI.tabs.select('editor-preview','content');
     show('editor');
   }
   function render() {
@@ -245,6 +260,13 @@
   }
   function postRow(post, options={}) {
     const row=el('article','item');
+    const details=el('details','post-details');details.open=expandedPosts.has(post.id);
+    details.append(el('summary','',post.status==='published'?'Detalhes e mais métricas':'Ver detalhes da publicação'));
+    const full=el('div','post-details-content');
+    full.append(el('p','post-full-caption',postText(post) || 'Publicação sem legenda'));
+    if(post.remoteDetails?.seenAt)full.append(el('small','','Consultada na Meta: '+friendlyDate(post.remoteDetails.seenAt)));
+    details.append(full);
+    details.addEventListener('toggle',()=>{if(details.isConnected){if(details.open)expandedPosts.add(post.id);else expandedPosts.delete(post.id);}});
     if(pendingApproval(post))row.classList.add('pending-review');
     else if(expiredReservation(post))row.classList.add('expired-reservation');
     const preview=el('button','post-preview-trigger');
@@ -263,13 +285,11 @@
     const content=el('span','item-content');
     const text=postText(post);
     const title=text.split(/\n/)[0].trim().slice(0,62) || 'Publicação sem legenda';
-    const detail=text.slice(title.length).trim() || text;
     content.append(el('strong','post-title',title));
-    content.append(el('span','post-excerpt',detail.slice(0,160)));
+    content.append(el('span','post-open-hint','Abrir conteúdo completo'));
     const date=calendarTime(post);
     content.append(el('small','post-kind',formatLabel(post.format)+(date ? ' · '+friendlyDate(date) : '')));
     if(post.source==='instagram')content.append(el('small','history-origin','Importada do Instagram · somente histórico'));
-    if(post.remoteDetails?.seenAt)content.append(el('small','history-origin','Consultada na Meta: '+friendlyDate(post.remoteDetails.seenAt)));
     (post.remoteDetails?.mediaWarnings || []).forEach(warning=>content.append(el('small','metrics-error',warning)));
     if(pendingApproval(post)){
       content.append(el('span','chip awaiting-review','Aguardando nova aprovação'));
@@ -317,20 +337,23 @@
       }
     }
     if(post.status==='published'){
+      if(post.remoteDeletion && ['issued','unknown','confirmed'].includes(post.remoteDeletion.status))
+        row.append(el('p','feedback',post.remoteDeletion.status==='confirmed'?'Excluída no Instagram; limpeza local pendente.':'Exclusão no Instagram: resultado pendente de confirmação.'));
       const metrics=post.metrics || {};
-      const numbers=el('div','post-metrics');numbers.dataset.status=metrics.status || 'not_checked';
+      const brief=el('div','post-metrics post-metrics-brief');brief.dataset.status=metrics.status || 'not_checked';
+      const numbers=el('div','post-metrics');
       numbers.setAttribute('role','group');numbers.setAttribute('aria-label','Curtidas e comentários desta publicação');
       const count=value=>typeof value==='number'?new Intl.NumberFormat('pt-BR').format(value):(metrics.checkedAt?'Não informado':'—');
-      numbers.append(el('span','metric-likes','Curtidas: '+count(metrics.likes)),el('span','metric-comments','Comentários: '+count(metrics.comments)));
+      brief.append(el('span','metric-likes','Curtidas: '+count(metrics.likes)),el('span','metric-comments','Comentários: '+count(metrics.comments)));
       const extra=metrics.extra || {};
       numbers.append(el('span','metric-shares','Compartilhamentos: '+(typeof extra.shares==='number'?new Intl.NumberFormat('pt-BR').format(extra.shares):'Não informado')),
         el('span','metric-saves','Salvamentos: '+(typeof extra.saves==='number'?new Intl.NumberFormat('pt-BR').format(extra.saves):'Não informado')));
       if(metrics.extraCheckedAt)numbers.append(el('small','','Compartilhamentos/salvamentos consultados em '+friendlyDate(metrics.extraCheckedAt)));
       if(metrics.extraError)numbers.append(el('small','metrics-note',metrics.extraError));
       numbers.append(el('small','metrics-time',metrics.checkedAt?'Última consulta confirmada: '+friendlyDate(metrics.checkedAt):'Ainda não consultado na Meta.'));
-      if(metrics.status==='error')numbers.append(el('small','metrics-error',metrics.error));
+      if(metrics.status==='error')brief.append(el('small','metrics-error',metrics.error));
       else if(metrics.status==='ready' && (metrics.likes===null || metrics.comments===null))numbers.append(el('small','metrics-note','A Meta não informou todas as contagens. Isso não significa zero.'));
-      row.append(numbers);
+      row.append(brief);full.append(numbers);
       const update=el('button','btn quiet','Atualizar métricas');update.type='button';update.disabled=!post.remoteId;
       if(update.disabled)update.title='O ID remoto desta publicação ainda não está disponível.';
       update.addEventListener('click',()=>guard(()=>refreshMetrics(post)));actions.append(update);
@@ -344,20 +367,20 @@
           :'Story: link temporário, disponível por até 24 horas. O arquivo privado do Instagram não é aberto pela Central.';
         numbers.append(el('small','story-availability',note));
       }
-      if(post.format!=='story' || !expired && hasLink){
+      if(post.remoteDeletion?.status!=='confirmed' && (post.format!=='story' || !expired && hasLink)){
         const link=el('a','btn quiet',post.format==='story'?'Abrir Story (até 24h)':hasLink?'Ver no Instagram':'Abrir perfil no Instagram');
         link.href=hasLink?remote:'https://www.instagram.com/'+encodeURIComponent(state.accountUsername)+'/';
         link.target='_blank';link.rel='noopener noreferrer';actions.append(link);
       }
     }
     if(options.approval){
-      const remove=el('button','btn quiet danger','Excluir da Central');remove.type='button';
+      const remove=el('button','btn quiet danger','Excluir');remove.type='button';
       remove.disabled=!['draft','approved','scheduled','failed','published'].includes(post.status) ||
         (post.publicationAttempted && post.status!=='published') || (post.source==='instagram' && historyActive());
       if(remove.disabled)remove.title='Confira o resultado do envio antes de excluir.';
       remove.addEventListener('click',()=>requestDeletion('post',post));actions.append(remove);
     }
-    row.append(actions);
+    row.append(details,actions);
     return row;
   }
   function renderUpcoming() {
@@ -610,6 +633,7 @@
     }finally{state.uploadLabel='';}
   }
   async function savePost(navigate=false) {
+    UI.tabs.select('editor-preview','content');
     const media=selectedMedia(),format=effectiveFormat();
     const mode=format==='carousel' && captionMode()==='per_slide'?'per_slide':'general';
     const caption=mode==='per_slide'?'':$('post-caption').value.trim();
@@ -629,7 +653,7 @@
       JSON.stringify(current.mediaIds)!==JSON.stringify(state.currentMediaIds) ||
       (current.captionMode || 'general')!==mode ||
       JSON.stringify(current.slideCaptions || current.mediaIds.map(()=>''))!==JSON.stringify(slideCaptions);
-    if(current && !changed){toast('Conteúdo sem alterações.');if(navigate)show('approval');return;}
+    if(current && !changed){editorClean=editorSignature();toast('Conteúdo sem alterações.');if(navigate)show('approval');return;}
     const data={format,caption,mediaIds:[...state.currentMediaIds],captionMode:mode,slideCaptions};
     if(current){data.id=current.id;data.version=state.currentPostVersion;}
     const saved=await api('drafts',{action:'draft',data});
@@ -637,6 +661,7 @@
     clearDraftFeedback();
     await refresh();
     state.currentPostVersion=state.posts.find(p=>p.id===saved.id)?.version;
+    editorClean=editorSignature();
     toast('Rascunho salvo. A revisão anterior, se houver, foi invalidada.');
     if(navigate)show('approval');
   }
@@ -738,7 +763,7 @@
       state.busy=false;release();
     }
     UI.dialog.close($('schedule-dialog'));state.pendingSchedule=null;
-    await refresh();toast('Envio agendado para @'+state.accountUsername+'. Mantenha a Central ligada.');
+    await refresh();toast('Agendamento confirmado para @'+state.accountUsername+'.');
     show('calendar');
   }
   function confirmPublication(post,action) {
@@ -779,39 +804,69 @@
       : result.metrics.error,result.metrics.status==='ready'?'success':'error');
   }
   const bytesLabel=value=>new Intl.NumberFormat('pt-BR',{maximumFractionDigits:1}).format(value/1024/1024)+' MB';
+  function updateDeleteChoice(){
+    const pending=state.pendingDelete;if(!pending)return;
+    const remote=pending.kind==='post' && $('delete-remote').checked;
+    const uncertain=['issued','unknown'].includes(pending.remoteDeletion?.status);
+    $('delete-remote-confirm-option').hidden=!remote;
+    $('delete-retry-option').hidden=!remote || !uncertain;
+    $('confirm-delete').textContent=remote?'Excluir da Central e do Instagram':pending.kind==='post'?'Excluir somente da Central':'Excluir arquivo da Central';
+    $('confirm-delete').disabled=remote && (!$('delete-remote-confirm').checked || (uncertain && !$('delete-retry').checked));
+    $('delete-consequence').textContent=remote
+      ? (pending.remoteDeletion?.status==='confirmed'?'A Meta já confirmou a exclusão. Será concluída somente a limpeza local.':
+          'Esta publicação será excluída do Instagram da conta indicada. Não é possível desfazer. Em carrosséis, todas as imagens serão excluídas juntas. A Central aguardará a confirmação da Meta antes de remover o registro local.')
+      : pending.kind==='media'?'O arquivo será apagado do armazenamento da Central. Esta ação não pode ser desfeita.':
+          (pending.status==='scheduled'?'O agendamento será cancelado. ':'')+'O registro será apagado somente da Central. Conteúdo já publicado continuará no Instagram. Esta ação local não pode ser desfeita.'+
+          (pending.source==='instagram'?' Uma nova sincronização poderá importar o registro novamente.':'');
+  }
   function requestDeletion(kind,item){
     if(state.busy || state.actionPending)return UI.announce('Aguarde a conclusão da operação atual.');
-    state.pendingDelete={kind,id:item.id,version:item.version};
-    $('delete-title').textContent=kind==='post'?'Excluir somente da Central':'Excluir mídia da biblioteca';
-    $('confirm-delete').textContent=kind==='post'?'Excluir somente da Central':'Excluir arquivo da Central';
+    state.pendingDelete={...item,kind,instagramAccountId:state.instagramAccountId};
+    $('delete-title').textContent=kind==='post'?'Excluir publicação':'Excluir mídia da biblioteca';
     $('delete-description').textContent=kind==='post'
       ? 'Conta @'+state.accountUsername+' · '+(postText(item).slice(0,120) || 'Publicação sem legenda')
       : 'Conta @'+state.accountUsername+' · '+item.name+' · '+bytesLabel(item.size);
-    $('delete-consequence').textContent=kind==='media'
-      ? 'O arquivo será apagado do armazenamento da Central. Esta ação não pode ser desfeita.'
-      : (item.status==='scheduled'?'O agendamento será cancelado. ':'')+
-        'O registro será apagado somente da Central. Conteúdo já publicado continuará no Instagram; nesta conexão, a remoção de lá deve ser feita no próprio Instagram. Esta ação local não pode ser desfeita.'+
-        (item.source==='instagram'?' Uma nova sincronização poderá importar o registro novamente.':'');
+    $('delete-scope').hidden=kind!=='post';
+    $('delete-remote-option').hidden=kind!=='post' || item.status!=='published' || !item.remoteId;
+    const pendingRemote=['issued','unknown','confirmed'].includes(item.remoteDeletion?.status);
+    $('delete-local').disabled=pendingRemote;
+    $('delete-local').checked=!pendingRemote;$('delete-remote').checked=pendingRemote;
+    $('delete-remote-confirm').checked=false;$('delete-retry').checked=false;
     $('delete-media-option').hidden=kind!=='post';$('delete-unused-media').checked=true;
-    $('delete-feedback').textContent='';UI.dialog.open($('delete-dialog'));
+    $('delete-settings-help').hidden=true;
+    $('delete-feedback').textContent=item.remoteDeletion?.message || '';
+    updateDeleteChoice();UI.dialog.open($('delete-dialog'));
   }
   async function submitDeletion(){
     if(state.busy || state.actionPending || !state.pendingDelete)return;
-    const pending=state.pendingDelete;state.busy=true;
+    const pending=state.pendingDelete;
+    const remote=pending.kind==='post' && $('delete-remote').checked;
+    if(remote && (!$('delete-remote-confirm').checked || (!pending.remoteId || !pending.instagramAccountId)))return;
+    state.busy=true;
     const release=UI.hold($('confirm-delete'),'Excluindo…');
-    $('delete-feedback').textContent='Excluindo somente da Central, na conta selecionada…';
+    $('delete-feedback').textContent=remote?'Conferindo acesso e solicitando exclusão no Instagram…':'Excluindo somente da Central, na conta selecionada…';
+    all('#delete-dialog input').forEach(input=>input.disabled=true);
     try{
-      const action=pending.kind==='post'?'delete_post':'delete_media';
+      const action=remote?'delete_remote':pending.kind==='post'?'delete_post':'delete_media';
       const data=pending.kind==='post'?{version:pending.version,deleteUnusedMedia:$('delete-unused-media').checked}:{mediaId:pending.id};
+      if(remote)Object.assign(data,{instagramAccountId:pending.instagramAccountId,remoteId:pending.remoteId,confirmRemote:true,retryUncertain:$('delete-retry').checked});
       const result=await api(pending.kind==='post'?'posts/'+pending.id+'/delete':'drafts',{action,data});
+      if(remote && !result.deleted){
+        await refresh(true);
+        pending.remoteDeletion=state.posts.find(post=>post.id===pending.id)?.remoteDeletion || {status:result.status};
+        $('delete-feedback').textContent=result.error || 'Não foi possível confirmar a exclusão. O registro foi preservado.';
+        $('delete-settings-help').hidden=!String(result.error || '').includes('instagram_manage_contents');
+        return;
+      }
       if(pending.kind==='post' && state.currentPostId===pending.id){state.currentPostId=null;state.currentPostVersion=null;}
       await refresh();state.currentMediaIds=state.currentMediaIds.filter(id=>state.media.some(m=>m.id===id));state.editorPreviewKey=null;
       UI.dialog.close($('delete-dialog'));state.pendingDelete=null;
-      toast('Exclusão da Central concluída. '+(result.deletedMedia || 0)+' mídia(s) removida(s); '+bytesLabel(result.freedBytes || 0)+' liberados.'+
+      toast((remote?'Exclusão confirmada no Instagram e na Central. ':'Exclusão da Central concluída. ')+(result.deletedMedia || 0)+' mídia(s) removida(s); '+bytesLabel(result.freedBytes || 0)+' liberados.'+
         (result.keptMedia?' '+result.keptMedia+' mídia(s) preservada(s) por uso em outra publicação.':'')+
         (result.pendingBytes?' Limpeza de '+bytesLabel(result.pendingBytes)+' pendente; será retomada ao abrir a conta.':''));
     }catch(error){$('delete-feedback').textContent=error.message || 'Não foi possível confirmar a exclusão. Atualize e confira os dados.';}
-    finally{state.busy=false;release();}
+    finally{state.busy=false;release();all('#delete-dialog input').forEach(input=>input.disabled=false);
+      if(state.pendingDelete){$('delete-local').disabled=['issued','unknown','confirmed'].includes(state.pendingDelete.remoteDeletion?.status);updateDeleteChoice();}}
   }
   async function cancelSchedule(id) {
     const post=state.posts.find(p=>p.id===id);
@@ -874,6 +929,7 @@
     ['history-sort','history-format'].forEach(id=>$(id).addEventListener('change',renderHistory));
     $('calendar-month').addEventListener('change',()=>{const val=$('calendar-month').value;if(/^\d{4}-\d{2}$/.test(val)){state.month=new Date(val+'-01T12:00:00Z');renderCalendar();}});
     $('confirm-delete').addEventListener('click',submitDeletion);
+    ['delete-local','delete-remote','delete-remote-confirm','delete-retry'].forEach(id=>$(id).addEventListener('change',updateDeleteChoice));
     ['close-delete-dialog','cancel-delete'].forEach(id=>$(id).addEventListener('click',()=>{if(!state.busy)UI.dialog.close($('delete-dialog'));}));
     $('confirm-publish').addEventListener('click',submitPublication);
     $('close-publish-dialog').addEventListener('click',()=>{if(!state.busy)UI.dialog.close($('publish-dialog'));});
@@ -884,6 +940,7 @@
     all('[data-goto]').forEach(node=>node.addEventListener('click',()=>show(node.dataset.goto)));
     all('[data-new-format]').forEach(node=>node.addEventListener('click',()=>newDraft(node.dataset.newFormat)));
     $('new-post').addEventListener('click',()=>newDraft());
+    $('resume-editor').addEventListener('click',()=>show('editor'));
     $('clear-editor').addEventListener('click',()=>newDraft());
     $('post-format').addEventListener('change',()=>{state.currentPreviewIndex=0;formatHint();renderSelection();});
     $('post-caption').addEventListener('input',renderSelection);
@@ -931,7 +988,9 @@
     wireEvents();
     const initial=location.hash.slice(1);
     if(['overview','library','editor','approval','calendar','history'].includes(initial))state.view=initial;
-    const load=async()=>{await refresh();formatHint();show(state.view);UI.ready();};
+    editorClean=editorSignature();UI.dirty.register('editor',()=>editorSignature()!==editorClean);
+    addEventListener('popstate',()=>show(location.hash.slice(1)||'overview',{fromHistory:true}));
+    const load=async()=>{await refresh();formatHint();show(state.view,{fromHistory:true});UI.ready();};
     try{
       await load();
     }catch(err){UI.initialError(load);}

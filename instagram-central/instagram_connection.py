@@ -14,6 +14,8 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 
 MAX_GRAPH_RESPONSE = 64 * 1024
+# Message IDs are opaque (often encoded), unlike numeric account IDs.
+MAX_MESSAGE_ID = 1024
 GRAPH_VERSION = re.compile(r"v[0-9]{1,2}\.0\Z")
 IG_ACCOUNT = re.compile(r"[0-9]{8,30}\Z")
 ROUTING_FIELDS = {'platform': 'instagram', 'fields': 'id,is_owner,updated_time', 'limit': '5'}
@@ -65,6 +67,9 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if path in ("/me/assigned_instagram_accounts", "/me"):
         if method != "GET":
             raise ConnectionError("Graph method not permitted")
+    elif re.fullmatch(r"/[0-9]{8,30}", path) and method == 'GET':
+        if fields != {'fields': 'id,username,profile_picture_url'}:
+            raise ConnectionError('Invalid profile request')
     elif re.fullmatch(r"/[0-9]{8,30}/subscribed_apps", path) and method in ('GET', 'POST'):
         pass
     elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
@@ -137,21 +142,21 @@ def read_recent_inbox(cfg, credential):
         credential.get('access_token'), fields=dict(INBOX_FIELDS), timeout=8)
     conversations = result.get('data')
     if not isinstance(conversations, list) or len(conversations) > 5:
-        raise GraphError('invalid_response')
+        raise GraphError('inbox_conversations_shape')
     found, seen = [], set()
     scanned = skipped = 0
     limited = bool(result.get('paging', {}).get('next')) if isinstance(result.get('paging'), dict) else False
     for conversation in conversations:
         if not isinstance(conversation, dict) or not isinstance(conversation.get('id'), str):
-            raise GraphError('invalid_response')
+            raise GraphError('inbox_conversation_shape')
         messages = conversation.get('messages')
         if not isinstance(messages, dict) or not isinstance(messages.get('data'), list) or len(messages['data']) > 10:
-            raise GraphError('invalid_response')
+            raise GraphError('inbox_messages_shape')
         limited |= bool(messages.get('paging', {}).get('next')) if isinstance(messages.get('paging'), dict) else False
         for message in messages['data']:
             scanned += 1
             if not isinstance(message, dict):
-                raise GraphError('invalid_response')
+                raise GraphError('inbox_message_shape')
             mid, text = message.get('id'), message.get('message')
             sender, recipients = message.get('from'), message.get('to')
             if (not isinstance(sender, dict) or 'id' not in sender
@@ -160,16 +165,16 @@ def read_recent_inbox(cfg, credential):
             if (not isinstance(sender, dict) or not isinstance(sender.get('id'), str)
                     or not IG_ACCOUNT.fullmatch(sender['id']) or not isinstance(recipients, dict)
                     or not isinstance(recipients.get('data'), list) or len(recipients['data']) > 10):
-                raise GraphError('invalid_response')
+                raise GraphError('inbox_identity_shape')
             targets = recipients['data']
             if any(not isinstance(target, dict) or not isinstance(target.get('id'), str) for target in targets):
-                raise GraphError('invalid_response')
+                raise GraphError('inbox_identity_shape')
             if (sender['id'] == account or len(targets) != 1 or targets[0]['id'] != account
                     or not isinstance(text, str) or not 1 <= len(text.strip()) <= 2000):
                 skipped += 1
                 continue
-            if not isinstance(mid, str) or not 1 <= len(mid) <= 160:
-                raise GraphError('invalid_response')
+            if not isinstance(mid, str) or not 1 <= len(mid) <= MAX_MESSAGE_ID or any(ord(c)<32 for c in mid):
+                raise GraphError('inbox_message_id_shape')
             try:
                 raw_time = message['created_time']
                 if not isinstance(raw_time, str) or len(raw_time) > 64:
@@ -178,7 +183,7 @@ def read_recent_inbox(cfg, credential):
                 if stamp.utcoffset() is None or not 0 <= stamp.timestamp() <= time.time() + 300:
                     raise ValueError()
             except (KeyError, ValueError, OverflowError, OSError):
-                raise GraphError('invalid_response') from None
+                raise GraphError('inbox_timestamp_shape') from None
             if (sender['id'], mid) not in seen:
                 seen.add((sender['id'], mid))
                 found.append((account, sender['id'], mid, text.strip(), stamp.astimezone(timezone.utc).isoformat()))
