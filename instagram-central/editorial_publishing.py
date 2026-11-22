@@ -169,8 +169,18 @@ class PublisherHub:
                     if not .8 <= ratio <= 1.91:
                         raise core.EditorialError('Imagens de feed e carrossel precisam ter proporção entre 4:5 e 1,91:1. Ajuste a mídia antes de publicar.')
 
-    def queue(self, business, post_id, version, *, when=None, activate=False):
+    def queue(self, business, post_id, version, *, when=None, activate=False, import_request=None, expected_account=None):
         store = self.store_for(business)
+        if import_request is not None:
+            with store._db() as db:
+                receipt = db.execute('SELECT * FROM import_receipts WHERE request_id=? AND post_id=?', (import_request,post_id)).fetchone()
+                if receipt is None: raise core.EditorialError('Transferência não encontrada.')
+                if type(version) is not int or receipt['imported_version'] != version:
+                    raise core.EditorialConflict('A publicação direta exige a versão originalmente transferida.')
+                if receipt['publish_version'] is not None:
+                    if type(version) is not int or receipt['publish_version'] != version or receipt['publication_account'] != expected_account:
+                        raise core.EditorialConflict('Autorização diferente da publicação já recebida.')
+                    return
         post = self._post(store, post_id)
         if type(version) is not int or post['version'] != version:
             raise core.EditorialConflict('Conteúdo mudou. Recarregue antes de tentar novamente.')
@@ -180,10 +190,30 @@ class PublisherHub:
             raise core.EditorialError('Data deve ser futura')
         ready = self._ready(business)
         cfg, _, _ = self._identity(business)
+        if import_request is not None and cfg['instagram_account_id'] != expected_account:
+            raise core.EditorialError('A conta de destino mudou.')
         self._validate(store, post, ready)
         with store._tx() as db:
+            if import_request is not None:
+                receipt = db.execute('SELECT * FROM import_receipts WHERE request_id=? AND post_id=?', (import_request,post_id)).fetchone()
+                if receipt is None: raise core.EditorialError('Transferência não encontrada.')
+                if receipt['imported_version'] != version:
+                    raise core.EditorialConflict('A publicação direta exige a versão originalmente transferida.')
+                if receipt['publish_version'] is not None:
+                    if receipt['publish_version'] != version or receipt['publication_account'] != expected_account: raise core.EditorialConflict('Autorização diferente da publicação já recebida.')
+                    return
             store._check_version(db, post_id, version)
             row = db.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+            if import_request is not None:
+                key = db.execute('SELECT can_publish FROM integration_keys WHERE id=? AND revoked=0 AND expires>?',
+                                 (receipt['key_id'],int(time.time()))).fetchone()
+                if key is None or not key['can_publish']:
+                    raise core.EditorialError('A conexão não tem permissão ativa para publicar.')
+                if activate or when is not None or row['state'] not in ('draft','approved'):
+                    raise core.EditorialError('Conteúdo indisponível para publicação direta.')
+                db.execute("UPDATE posts SET state='approved',approved_revision=revision WHERE id=?", (post_id,))
+                db.execute('INSERT INTO audit(post_id,event,at) VALUES(?,?,?)', (post_id,'integration_publication_approved',clock))
+                row = db.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
             expected = 'scheduled' if activate else 'approved'
             if row['state'] != expected or row['revision'] != row['approved_revision']:
                 raise core.EditorialError('Aprove a revisão atual antes de liberar o envio.')
@@ -196,6 +226,8 @@ class PublisherHub:
                 publication_next=?,publication_started=NULL,publication_error='',lease_token=NULL,lease_until=NULL
                 WHERE id=?''', (scheduled, cfg['instagram_account_id'], json.dumps({'run_id': secrets.token_hex(16)}), scheduled, post_id))
             store._audit(db, post_id, 'publication_authorized')
+            if import_request is not None:
+                db.execute('UPDATE import_receipts SET publish_version=?,publication_account=? WHERE request_id=?', (version,cfg['instagram_account_id'],import_request))
         self.wake.set()
 
     def recover(self, business, post_id, version, action, *, confirmed=False):

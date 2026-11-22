@@ -1,0 +1,284 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Central Editorial — integração genérica",
+    "version": "1.0.0",
+    "description": "Conexão independente de fornecedor. Não interpreta frases: o operador/agente deve obter autorização explícita antes de upload e confirmação de publicação direta antes de import_publish. Chaves restritas à conta e permissões, criadas no painel autenticado. Credencial Meta nunca é entregue ao cliente. JPEG/PNG/MP4, 25 MiB por arquivo, 20 arquivos/carrossel, 500 arquivos e 1 GiB incluindo temporários."
+  },
+  "servers": [
+    {
+      "url": "https://central.example",
+      "description": "Substituir pela origem HTTPS configurada, sem prefixo de conta."
+    }
+  ],
+  "security": [
+    {
+      "integrationKey": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "integrationKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Chave cei1 específica da conta/ferramenta, mostrada uma vez. Expira em 90 dias e pode ser revogada. Publicação direta é opcional; não concede administração, leitura de biblioteca ou de outros posts."
+      }
+    },
+    "schemas": {
+      "Commit": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "schemaVersion",
+          "requestId",
+          "transferApproved",
+          "format",
+          "caption",
+          "mediaIds",
+          "contentDigest"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          },
+          "requestId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{16,100}$"
+          },
+          "transferApproved": {
+            "const": true
+          },
+          "format": {
+            "enum": [
+              "feed",
+              "carousel",
+              "story",
+              "reel"
+            ]
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 2200
+          },
+          "mediaIds": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          "contentDigest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      },
+      "ReceiptQuery": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestId"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{16,100}$"
+          }
+        }
+      },
+      "DirectPublication": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "requestId",
+          "version",
+          "instagramAccountId",
+          "publishApproved"
+        ],
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{16,100}$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instagramAccountId": {
+            "type": "string"
+          },
+          "publishApproved": {
+            "const": true
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/editorial/api/media": {
+      "post": {
+        "operationId": "uploadIncomingMedia",
+        "summary": "Preparar arquivo após autorização de transferência",
+        "description": "Temporário privado por até 24h; invisível na biblioteca. Repetir mesmo request/índice/conteúdo retorna mesmo ID. Normaliza imagens; não baixa URLs externas. O índice começa em zero.",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Editorial-Action",
+            "required": true,
+            "schema": {
+              "const": "import_upload"
+            },
+            "description": "Operação"
+          },
+          {
+            "in": "header",
+            "name": "X-Import-Id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{16,100}$"
+            },
+            "description": "ID estável da transferência"
+          },
+          {
+            "in": "header",
+            "name": "X-Media-Index",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 19
+            },
+            "description": "Posição no carrossel"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "video/mp4": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recibo da transferência ou consulta. published só é true após confirmação da Meta."
+          },
+          "201": {
+            "description": "Mídia temporária, ainda não aparece na biblioteca."
+          },
+          "202": {
+            "description": "Autorização aceita, envio assíncrono; não equivale a publicação concluída."
+          },
+          "403": {
+            "description": "Chave inválida, expirada, revogada ou sem permissão."
+          },
+          "409": {
+            "description": "ID reutilizado com outro conteúdo ou revisão alterada."
+          },
+          "421": {
+            "description": "Origem HTTPS incorreta."
+          },
+          "422": {
+            "description": "Dados ou mídia inválidos."
+          },
+          "429": {
+            "description": "Uploads ocupados."
+          },
+          "503": {
+            "description": "Serviço temporariamente indisponível; consulte recibo antes de repetir."
+          }
+        }
+      }
+    },
+    "/editorial/api/drafts": {
+      "post": {
+        "operationId": "incomingOperation",
+        "summary": "Concluir transferência, consultar recibo ou autorizar publicação direta",
+        "description": "Reutiliza rota permitida pelo proxy implantado. O header seleciona o schema: import_commit=Commit; import_receipt=ReceiptQuery; import_publish=DirectPublication. Commit cria um único post e todas as mídias atomicamente, sem aprovar/agendar/publicar. Publicar exige chave com permissão adicional, conta exata e versão importada ainda intacta. Repetição da mesma autorização não dispara novo envio.",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Editorial-Action",
+            "required": true,
+            "schema": {
+              "enum": [
+                "import_commit",
+                "import_receipt",
+                "import_publish"
+              ]
+            },
+            "description": "Selecione operação e corpo correspondente"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Commit"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReceiptQuery"
+                  },
+                  {
+                    "$ref": "#/components/schemas/DirectPublication"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recibo da transferência ou consulta. published só é true após confirmação da Meta."
+          },
+          "201": {
+            "description": "Mídia temporária, ainda não aparece na biblioteca."
+          },
+          "202": {
+            "description": "Autorização aceita, envio assíncrono; não equivale a publicação concluída."
+          },
+          "403": {
+            "description": "Chave inválida, expirada, revogada ou sem permissão."
+          },
+          "409": {
+            "description": "ID reutilizado com outro conteúdo ou revisão alterada."
+          },
+          "421": {
+            "description": "Origem HTTPS incorreta."
+          },
+          "422": {
+            "description": "Dados ou mídia inválidos."
+          },
+          "429": {
+            "description": "Uploads ocupados."
+          },
+          "503": {
+            "description": "Serviço temporariamente indisponível; consulte recibo antes de repetir."
+          }
+        }
+      }
+    }
+  }
+}

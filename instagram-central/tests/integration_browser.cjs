@@ -1,0 +1,126 @@
+/* Synthetic HTTPS, API, keys and persistent navigation. No real HA or Meta. */
+const {chromium}=require('playwright');
+const {spawn}=require('node:child_process');
+const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),readline=require('node:readline'),http=require('node:http');
+const assert=require('node:assert/strict');
+const root=fs.mkdtempSync(path.join(os.tmpdir(),'ig-integration-'));
+let child,browser;
+(async()=>{
+  child=spawn('python3',[path.join(__dirname,'oauth_browser_fixture.py'),root,'--integration'],{stdio:['ignore','pipe','inherit'],env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
+  const lines=readline.createInterface({input:child.stdout});
+  const config=await Promise.race([new Promise((resolve,reject)=>{lines.once('line',line=>{try{resolve(JSON.parse(line));}catch(e){reject(e);}});child.once('exit',code=>reject(Error('Fixture exited '+code)));}),new Promise((_,reject)=>setTimeout(()=>reject(Error('Fixture timeout')),10000).unref())]);lines.close();
+  const control=route=>new Promise((resolve,reject)=>{http.get({hostname:'127.0.0.1',port:config.control,path:route},r=>{let raw='';r.on('data',x=>raw+=x);r.on('end',()=>resolve(JSON.parse(raw)));}).on('error',reject);});
+  await control('/set/dedicated_host');
+  const origin='https://central.probe-review.test:'+config.https;
+  browser=await chromium.launch({executablePath:'/usr/bin/chromium',headless:true,args:['--no-sandbox','--ignore-certificate-errors','--no-proxy-server','--host-resolver-rules=MAP central.probe-review.test 127.0.0.1, MAP probe-review.test 127.0.0.1, MAP meta-review.test 127.0.0.1, MAP * ~NOTFOUND']});
+  const context=await browser.newContext({ignoreHTTPSErrors:true,viewport:{width:1440,height:1100},timezoneId:'America/Sao_Paulo',serviceWorkers:'block'});
+  await context.grantPermissions(['clipboard-read','clipboard-write'],{origin});
+  const errors=[],blocked=[];let creates=0;
+  await context.route('**/*',route=>{if(!['central.probe-review.test','probe-review.test','meta-review.test'].includes(new URL(route.request().url()).hostname)){blocked.push('external');return route.abort();}return route.continue();});
+  const page=await context.newPage();page.setDefaultTimeout(10000);
+  page.on('dialog',dialog=>dialog.accept());
+  page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',msg=>{if(msg.type()==='error' && /Content Security Policy|Refused to|Uncaught/.test(msg.text()))errors.push(msg.text());});
+  page.on('request',r=>{if(r.headers()['x-editorial-action']==='integration_create')creates++;});
+  await page.goto(origin+'/panel');await page.getByLabel('Senha',{exact:true}).fill('oauth_fixture_password_only_123');
+  await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.waitForURL('**/panel');
+  async function connect(){
+    const opened=context.waitForEvent('page');await page.getByRole('link',{name:'Conectar Instagram pela Meta',exact:true}).click();
+    const popup=await opened;await popup.getByRole('link',{name:'Voltar à Central'}).click();
+    await popup.getByText('Nenhum conteúdo foi enviado.',{exact:false}).waitFor();await popup.close();await page.reload();
+  }
+  await page.getByRole('link',{name:'Configurações Meta',exact:true}).click();await connect();
+  assert.equal(await page.locator('#integration-secret').isHidden(),true);
+  let seen,release;const received=new Promise(resolve=>seen=resolve),held=new Promise(resolve=>release=resolve);
+  await page.route('**/editorial/api/drafts',async route=>{
+    if(route.request().headers()['x-editorial-action']==='integration_create'){seen();await held;}await route.continue();
+  },{times:1});
+  await page.getByLabel('Nome da ferramenta',{exact:true}).fill('Editor sintético');
+  await page.locator('#integration-create').click();await received;
+  assert.equal(await page.locator('#integration-create').isDisabled(),true);
+  await page.locator('#integration-create').evaluate(node=>node.click());release();
+  await page.locator('#integration-secret').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.getElementById('integration-create').disabled);
+  const reviewKey=await page.locator('#integration-token').inputValue();assert.match(reviewKey,/^cei1\.umdoislab\./);
+  assert.equal(creates,1);assert.match(await page.locator('#integration-connections').innerText(),/Somente transferência/);
+  await page.locator('#integration-copy').click();await page.waitForFunction(()=>document.getElementById('integration-feedback').textContent.startsWith('Chave copiada.'));
+  await page.locator('#integration-hide').click();assert.equal(await page.locator('#integration-token').inputValue(),'');
+  const png=Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAHUlEQVR4nGNMaljDQC5gIlvnqOZRzaOaRzVTRTMAyc8BtjG4iWEAAAAASUVORK5CYII=','base64'));
+  const external=async(action,data,token=reviewKey,options={})=>page.evaluate(async args=>{
+    const upload=args.action==='upload';const headers={'Authorization':'Bearer '+args.token,'X-Editorial-Action':'import_'+args.action,'Content-Type':upload?'image/png':'application/json'};
+    if(upload){headers['X-Import-Id']=args.options.requestId;headers['X-Media-Index']=String(args.options.index || 0);}
+    const response=await fetch(args.origin+'/editorial/api/'+(upload?'media':'drafts'),{method:'POST',credentials:'omit',headers,body:upload?new Uint8Array(args.data):JSON.stringify(args.data)});
+    return {status:response.status,result:await response.json()};
+  },{origin,action,data,token,options});
+  async function transfer(token,requestId,caption){
+    const upload=await external('upload',png,token,{requestId});assert.equal(upload.status,201);
+    const manifest={schemaVersion:1,requestId,transferApproved:true,format:'feed',caption,mediaIds:[upload.result.id],contentDigest:'a'.repeat(64)};
+    const commit=await external('commit',manifest,token);assert.equal(commit.status,200);
+    const again=await external('commit',manifest,token);assert.equal(again.result.id,commit.result.id);
+    return commit.result;
+  }
+  const reviewId='browser_review_00001';const review=await transfer(reviewKey,reviewId,'Somente revisão');
+  assert.equal(review.status,'draft');assert.equal(review.publicationAuthorized,false);
+  assert.equal((await external('publish',{requestId:reviewId,version:review.importedVersion,instagramAccountId:'11111111',publishApproved:true})).status,403);
+  assert.equal((await control('/integration-observe')).publishedCount,0);
+  await page.getByLabel('Nome da ferramenta',{exact:true}).fill('Publicador sintético');await page.locator('#integration-publish').check();
+  await page.locator('#integration-create').click();await page.locator('#integration-secret').waitFor({state:'visible'});
+  await page.waitForFunction(()=>!document.getElementById('integration-create').disabled);
+  const directKey=await page.locator('#integration-token').inputValue();
+  assert.equal((await external('receipt',{requestId:reviewId},directKey)).result.found,false);
+  const directId='browser_direct_00001';const direct=await transfer(directKey,directId,'Publicação autorizada');
+  const approval={requestId:directId,version:direct.importedVersion,instagramAccountId:'11111111',publishApproved:true};
+  assert.equal((await external('publish',{...approval,instagramAccountId:'22222222'},directKey)).status,422);
+  assert.equal((await external('publish',approval,directKey)).status,202);
+  assert.equal((await external('publish',approval,directKey)).status,202);
+  assert.equal((await control('/integration-observe')).publishedCount,1);
+  assert.equal((await external('receipt',{requestId:directId},directKey)).result.published,true);
+  assert.equal((await external('publish',approval,directKey)).status,202);
+  assert.equal((await control('/integration-observe')).publishedCount,1);
+  console.log('PASS HTTPS incoming API: review-only transfer, explicit direct permission/account/version, persistent receipts and one simulated publication across repeated requests');
+  await page.getByRole('link',{name:'Contas conectadas',exact:true}).click();
+  await page.getByLabel('Nome da conta',{exact:true}).fill('Segunda conta');await page.getByLabel('Usuário do Instagram',{exact:true}).fill('second_review');
+  await page.getByRole('button',{name:'Adicionar conta',exact:true}).click();await page.waitForURL('**/accounts/*/panel?view=settings');
+  const second=new URL(page.url()).pathname.replace(/\/panel$/,'');await connect();
+  await page.getByLabel('Nome da ferramenta',{exact:true}).fill('Editor da segunda conta');await page.locator('#integration-create').click();
+  await page.locator('#integration-secret').waitFor({state:'visible'});await page.waitForFunction(()=>!document.getElementById('integration-create').disabled);
+  const secondKey=await page.locator('#integration-token').inputValue();
+  assert.equal((await external('receipt',{requestId:directId},secondKey)).result.found,false);
+  await transfer(secondKey,reviewId,'Revisão da segunda conta');
+  const menu=()=>page.locator('.ui-nav-group h2').allTextContents();
+  assert.deepEqual(await menu(),['Editorial','Mensagens','Contas','Conexão Meta']);
+  const headerHeight=await page.locator('.ui-app-header').evaluate(node=>node.getBoundingClientRect().height);
+  await page.getByRole('link',{name:'Contas conectadas',exact:true}).click();
+  assert.equal(new URL(page.url()).searchParams.get('account'),second.split('/').at(-1));
+  assert.deepEqual(await menu(),['Editorial','Mensagens','Contas','Conexão Meta']);
+  assert.equal(await page.locator('.ui-account-context span').innerText(),'@second_review');
+  assert.equal(await page.locator('.ui-app-header').evaluate(node=>node.getBoundingClientRect().height),headerHeight);
+  await page.getByRole('link',{name:'Visão geral',exact:true}).click();await page.waitForURL('**/editorial/#overview');
+  await page.waitForFunction(()=>document.body && !document.body.dataset.uiLoading);
+  assert.equal(new URL(page.url()).pathname,second+'/editorial/');assert.deepEqual(await menu(),['Editorial','Mensagens','Contas','Conexão Meta']);
+  assert.equal(await page.locator('.ui-app-header').evaluate(node=>node.getBoundingClientRect().height),headerHeight);
+  assert.equal(await page.locator('#integration-token').count(),0);
+  await page.locator('[data-view="calendar"]').click();assert.equal(await page.locator('#current-section').innerText(),'Calendário');
+  await page.locator('[data-view="history"]').click();assert.equal(await page.locator('#current-section').innerText(),'Histórico');
+  await page.getByRole('link',{name:'Caixa de entrada',exact:true}).click();await page.locator('#messages').waitFor();
+  assert.equal(new URL(page.url()).pathname,second+'/panel');assert.deepEqual(await menu(),['Editorial','Mensagens','Contas','Conexão Meta']);
+  await page.getByRole('link',{name:'Configurações Meta',exact:true}).click();
+  await page.getByLabel('Conta selecionada',{exact:true}).selectOption('/panel?view=settings');await page.waitForURL(origin+'/panel?view=settings');
+  assert.equal(await page.locator('#integration-token').inputValue(),'');await page.locator('#integration-list').click();
+  await page.locator('#integration-feedback').filter({hasText:'Lista de conexões atualizada.'}).waitFor();
+  await page.getByRole('button',{name:'Revogar conexão Editor sintético',exact:true}).click();
+  await page.locator('#integration-feedback').filter({hasText:'Conexão revogada.'}).waitFor();
+  assert.equal((await external('receipt',{requestId:reviewId})).status,403);
+  const evidence=process.env.IG_EVIDENCE_DIR || root;fs.mkdirSync(evidence,{recursive:true});
+  await page.screenshot({path:path.join(evidence,'integrations-desktop.png'),fullPage:true});
+  await page.getByRole('link',{name:'Contas conectadas',exact:true}).click();await page.screenshot({path:path.join(evidence,'accounts-menu.png'),fullPage:true});
+  await page.emulateMedia({reducedMotion:'reduce'});await page.setViewportSize({width:390,height:844});await page.locator('.ui-menu-toggle').click();
+  assert.deepEqual(await menu(),['Editorial','Mensagens','Contas','Conexão Meta']);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+  await page.screenshot({path:path.join(evidence,'accounts-menu-mobile.png'),fullPage:true});
+  assert.equal(blocked.length,0);assert.deepEqual(errors,[]);
+  console.log('PASS keys: create/copy/hide/revoke, duplicate lock, account isolation, CSP; persistent four-section menu/header/account across Accounts, Editorial, Messages and Meta; calendar/history distinct; mobile/reduced motion');
+})().catch(error=>{console.error(error);process.exitCode=1;}).finally(async()=>{
+  if(browser)await browser.close();if(child && child.exitCode===null){const done=new Promise(resolve=>child.once('exit',resolve));child.kill('SIGTERM');await done;}
+  fs.rmSync(root,{recursive:true,force:true});
+});

@@ -179,6 +179,9 @@ class EditorialStore:
             try:
                 with self._tx() as db:
                     count, total = db.execute("SELECT COUNT(*),COALESCE(SUM(size),0) FROM (SELECT size FROM media UNION ALL SELECT size FROM media_deletions)").fetchone()
+                    if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='incoming_media'").fetchone():
+                        staged_count, staged_size = db.execute('SELECT COUNT(*),COALESCE(SUM(size),0) FROM incoming_media').fetchone()
+                        count += staged_count; total += staged_size
                     if count >= 500 or total + len(content) > 1024 * 1024 * 1024:
                         raise EditorialError("Limite da biblioteca atingido (500 arquivos / 1 GiB)")
                     db.execute("INSERT INTO media VALUES (?,?,?,?)",

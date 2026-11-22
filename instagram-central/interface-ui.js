@@ -187,8 +187,89 @@
       }finally{done();operation.end();}
     });
   }
+  function initIntegrationSettings(){
+    const section=document.querySelector('[data-integration-base]');if(!section)return;
+    const find=id=>section.querySelector('#integration-'+id),feedback=find('feedback');
+    let busy=false;
+    const say=text=>{feedback.textContent=text;announce(text);};
+    const hide=()=>{find('token').value='';find('secret').hidden=true;};
+    addEventListener('pagehide',hide);
+    const api=async(action,data={})=>{
+      const request=async(path,options={})=>{
+        const response=await fetch(section.dataset.integrationBase+'api/'+path,{
+          credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(35000),...options
+        });
+        let result;const raw=await response.text();
+        try{if(raw.length<=65536)result=JSON.parse(raw);}catch(_){}
+        if(response.status===403)throw new Error('A sessão expirou ou a operação não foi autorizada. Entre novamente e tente outra vez.');
+        if(!response.ok || !result || typeof result!=='object' || Array.isArray(result))
+          throw new Error([409,422].includes(response.status) && typeof result?.error==='string'
+            ?result.error:'Não foi possível concluir a operação. Confira as conexões antes de repetir.');
+        return result;
+      };
+      const tokens=await request('csrf');
+      if(typeof tokens[action]!=='string' || !/^[a-f0-9]{64}$/.test(tokens[action]))throw new Error('A operação não foi autorizada. Recarregue a página.');
+      return request('drafts',{method:'POST',headers:{'Content-Type':'application/json',
+        'X-Editorial-Action':action,'X-CSRF-Token':tokens[action]},body:JSON.stringify(data)});
+    };
+    const run=async(button,label,operation)=>{
+      if(busy)return;busy=true;
+      const done=hold(button,label),progress=start(label);
+      const controls=[...section.querySelectorAll('button,input')].filter(node=>node!==button);
+      const saved=controls.map(node=>node.disabled);controls.forEach(node=>node.disabled=true);
+      try{await operation();}catch(error){
+        say(error instanceof TypeError || ['AbortError','TimeoutError'].includes(error.name)
+          ?'A conexão foi interrompida. Confira as conexões antes de repetir.':error.message);
+      }finally{controls.forEach((node,index)=>node.disabled=saved[index]);done();progress.end();busy=false;}
+    };
+    const list=async()=>{
+      const result=await api('integration_list');
+      if(!Array.isArray(result.connections))throw new Error('Não foi possível carregar as conexões. Tente novamente.');
+      const target=find('connections');target.replaceChildren();
+      for(const item of result.connections){
+        const row=make('div','integration-row');
+        const expiry=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(item.expires*1000));
+        const status=item.revoked?'Revogada':item.expires*1000<Date.now()?'Expirada':item.canPublish?'Transferência e publicação direta':'Somente transferência';
+        row.append(make('span','',item.label+' · '+status+' · validade: '+expiry));
+        if(!item.revoked){
+          const revoke=make('button','btn quiet','Revogar');revoke.type='button';
+          revoke.setAttribute('aria-label','Revogar conexão '+item.label);
+          revoke.addEventListener('click',()=>{
+            if(busy || !confirm('Revogar a conexão '+item.label+'?'))return;
+            run(revoke,'Revogando…',async()=>{await api('integration_revoke',{id:item.id});await list();say('Conexão revogada.');});
+          });row.append(revoke);
+        }
+        target.append(row);
+      }
+      if(!result.connections.length)target.textContent='Nenhuma conexão criada para esta conta.';
+    };
+    find('list').addEventListener('click',()=>run(find('list'),'Carregando conexões…',async()=>{await list();say('Lista de conexões atualizada.');}));
+    find('create').addEventListener('click',()=>{
+      if(busy)return;
+      const label=find('label').value.trim(),canPublish=find('publish').checked;
+      if(!label){say('Informe o nome da ferramenta.');find('label').focus();return;}
+      if(canPublish && !confirm('Permitir que esta ferramenta publique nesta conta quando você autorizar uma publicação direta?'))return;
+      run(find('create'),'Criando conexão…',async()=>{
+        hide();const result=await api('integration_create',{label,canPublish});
+        if(typeof result.token!=='string' || !/^cei1\.[a-z][a-z0-9_-]{1,39}\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$/.test(result.token))throw new Error('Não foi possível confirmar a chave. Confira as conexões antes de repetir.');
+        find('token').value=result.token;find('secret').hidden=false;
+        try{await list();say('Conexão criada. Guarde a chave na configuração privada da ferramenta.');}
+        catch(_){say('Conexão criada e chave exibida. Não foi possível atualizar a lista; use Ver conexões.');}
+      });
+    });
+    find('copy').addEventListener('click',()=>run(find('copy'),'Copiando…',async()=>{
+      if(!find('token').value)throw new Error('Crie uma conexão para obter a chave.');
+      await navigator.clipboard.writeText(find('token').value);say('Chave copiada. Guarde apenas na configuração privada da ferramenta.');
+    }));
+    find('hide').addEventListener('click',()=>{if(!busy){hide();say('Chave ocultada.');}});
+  }
   function init(){
     ensureFeedback();document.documentElement.dataset.uiInput='pointer';
+    document.querySelector('[data-account-switch]')?.addEventListener('change',event=>{
+      const target=new URL(event.target.value,location.href);if(target.origin!==location.origin)return;
+      if(location.pathname.endsWith('/editorial/') && target.pathname.endsWith('/editorial/'))target.hash=location.hash;
+      start('Abrindo a conta selecionada…');document.body.classList.add('ui-page-leaving');location.assign(target.href);
+    });
     const visibility=()=>{document.documentElement.dataset.uiBackground=String(document.hidden);};
     document.addEventListener('visibilitychange',visibility);visibility();
     document.addEventListener('keydown',event=>{
@@ -218,7 +299,7 @@
       start(label);document.body.classList.add('ui-page-leaving');
     });
     addEventListener('pageshow',event=>{if(event.persisted)restore();});
-    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();
+    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();initIntegrationSettings();
     if(!instant()){
       document.body.classList.add('ui-page-enter');
       requestAnimationFrame(()=>{document.body.classList.remove('ui-page-enter');document.body.classList.add('ui-page-ready');});

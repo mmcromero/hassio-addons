@@ -11,6 +11,7 @@ import socket
 import ssl
 import sys
 import threading
+import time
 from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -59,6 +60,16 @@ def graph(version, path, token, **kwargs):
     raise AssertionError('Unexpected provider operation')
 
 server.instagram_connection.request_graph = graph
+if '--integration' in sys.argv:
+    from editorial_publishing import PublisherHub
+    from test_editorial_publishing import FakeMeta
+    fake_meta = FakeMeta()
+    fake_meta.delivery = server.PUBLICATION_DELIVERY
+    integration_clock = [time.time()]
+    server.PUBLICATIONS = PublisherHub(server.meta_configuration_for_business, server._meta_credential,
+        server.editorial_store_for_business, server.publication_businesses, server.PUBLICATION_DELIVERY,
+        api_factory=fake_meta.client, checker=lambda cfg, *a, **kw: {'origin': CONFIG['public_base_url'], 'stories': True},
+        clock=lambda: integration_clock[0])
 original_connect = socket.socket.connect
 original_dns = socket.getaddrinfo
 
@@ -154,7 +165,7 @@ class Proxy(BaseHTTPRequestHandler):
         raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https',
                    'Content-Type': self.headers.get('Content-Type', '')}
-        for key in ('Cookie', 'Origin', 'X-CSRF-Token'):
+        for key in ('Cookie', 'Origin', 'Authorization', 'X-CSRF-Token', 'X-Editorial-Action', 'X-Import-Id', 'X-Media-Index'):
             if self.headers.get(key): headers[key] = self.headers[key]
         client = HTTPConnection('127.0.0.1', backend.server_address[1], timeout=5)
         try:
@@ -180,6 +191,12 @@ class Control(BaseHTTPRequestHandler):
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
         elif self.path == '/drift': CONFIG['meta_login_config_id'] = '98765432'; data = {}
+        elif self.path == '/integration-observe' and '--integration' in sys.argv:
+            for business in server.publication_businesses():
+                for _ in range(8):
+                    server.PUBLICATIONS.step(business)
+                    integration_clock[0] += 20
+            data = {'publishedCount': len(fake_meta.published)}
         else:
             primary = server.DATA_DIR / server.oauth_meta.TOKEN_FILENAME
             data = {**state['obs'], 'exchanges': state['exchanges'],

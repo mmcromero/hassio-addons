@@ -26,6 +26,7 @@ import account_registry
 import account_management
 import editorial_core
 import editorial_http
+import editorial_import
 import editorial_delivery
 import editorial_publishing
 import editorial_history
@@ -40,7 +41,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.30"
+APP_VERSION = "0.1.31"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -550,7 +551,7 @@ def _meta_credential(business_id=account_registry.PRIMARY_BUSINESS):
 
 
 def editorial_store_for_business(business_id=account_registry.PRIMARY_BUSINESS):
-    """Internal-only scoped EditorialStore, same add-on, no alternate login/API."""
+    """Account-scoped EditorialStore shared by UI and restricted incoming integration."""
     with database() as conn:
         account_registry.ensure_primary(conn, settings().get("instagram_account_id"))
         account_registry.require_business(conn, business_id)
@@ -767,6 +768,13 @@ def _meta_action_body(raw):
     return values["csrf"][0]
 
 
+def navigation_configuration(cfg):
+    with database() as conn:
+        account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
+        accounts = account_registry.administrative_accounts(conn)
+    return {**cfg, 'navigation_accounts': accounts}
+
+
 def render_publication_settings(cfg):
     result = PUBLICATIONS.public_state(cfg.get('business_id', 'umdoislab'))
     message = result.get('message', '')
@@ -782,9 +790,28 @@ def render_publication_settings(cfg):
             '<p id="publication-check-feedback" role="status" aria-live="polite"></p></section>')
 
 
+def render_integration_settings(cfg):
+    endpoint = html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/editorial/', quote=True)
+    return ('''<section class="panel integration-settings" aria-label="Ferramentas de criação" data-integration-base="''' + endpoint + '''">
+      <h2>Conectar ferramentas de criação</h2>
+      <p>Crie uma conexão para cada ferramenta e conta. Transfira somente o conteúdo que você autorizar.
+      Publicação direta exige uma permissão adicional na conexão e sua autorização para aquele conteúdo.</p>
+      <label for="integration-label">Nome da ferramenta</label>
+      <input id="integration-label" maxlength="80" placeholder="Minha ferramenta de vídeo" autocomplete="off">
+      <label><input id="integration-publish" type="checkbox"> Permitir publicação direta quando eu autorizar</label>
+      <div class="integration-actions"><button id="integration-create" class="btn primary" type="button">Criar conexão</button>
+      <button id="integration-list" class="btn quiet" type="button">Ver conexões</button></div>
+      <div id="integration-secret" hidden><p>A chave aparece somente agora e vence em 90 dias. Guarde-a apenas na configuração privada da ferramenta.</p>
+        <label for="integration-token">Chave da conexão</label><input id="integration-token" type="password" readonly autocomplete="off" spellcheck="false">
+        <div class="integration-actions"><button id="integration-copy" class="btn quiet" type="button">Copiar chave</button>
+        <button id="integration-hide" class="btn quiet" type="button">Fechar e ocultar chave</button></div></div>
+      <p id="integration-feedback" role="status" aria-live="polite"></p>
+      <div id="integration-connections" aria-live="polite"></div></section>''')
+
+
 def render_panel(cfg=None, *, settings_page=False):
     """Account-scoped messages or settings, rendered as separate documents."""
-    cfg = cfg or {}
+    cfg = navigation_configuration(cfg or {})
     rows, message_count = [], 0
     if not settings_page:
         with database() as conn:
@@ -831,7 +858,8 @@ def render_panel(cfg=None, *, settings_page=False):
     if settings_page:
         content = ('<div class="heading"><span class="eyebrow">CONFIGURAÇÃO DA CONTA</span>'
                    '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' +
-                   render_connection_section(cfg, connection_summary(cfg)) + render_publication_settings(cfg))
+                   render_connection_section(cfg, connection_summary(cfg)) + render_publication_settings(cfg) +
+                   render_integration_settings(cfg))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111c29">
@@ -880,6 +908,12 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 .heading p,.panel p{color:var(--muted);line-height:1.5}
 .panel{background:var(--surface);border:1px solid var(--edge);border-radius:14px;padding:25px;margin-bottom:22px;min-width:0}
 .panel h2{font-size:18px;margin:0 0 13px}
+.integration-settings label{display:block;margin:14px 0 7px;line-height:1.6}
+.integration-settings input:not([type=checkbox]){display:block;width:100%;max-width:440px;padding:12px;border:1px solid var(--edge);border-radius:8px;color:var(--text);background:var(--surface2)}
+.integration-settings .primary{background:var(--orange);color:#161b23;border-color:var(--orange)}
+.integration-actions,.integration-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.integration-row{justify-content:space-between;border-top:1px solid var(--edge);padding-top:14px}
+.integration-row span{overflow-wrap:anywhere;min-width:0;flex:1}
 .connection-panel ul{line-height:1.9;display:grid;gap:3px;padding-left:22px}
 .connection-panel li{overflow-wrap:anywhere}
 .connection-panel strong{color:#eaf1f8}
@@ -923,12 +957,7 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
 <div class="shell">
 """ + interface_ui.sidebar(cfg, active='settings' if settings_page else 'messages') + """
 <main id="principal" class="main">
- <header class="topbar">
-  <div class="crumb">""" + html.escape(str(cfg.get("account_display_name") or "Umdoislab")) + """ <span>/</span> <strong>""" + page_name + """</strong></div>
-  <div class="top-actions"><span class="account">@""" + html.escape(str(cfg.get("instagram_expected_username") or "umdoislab")) + """</span>
-  <form class="logout-form" method="post" action="auth/logout"><button type="submit" class="btn quiet">Sair</button></form>
-  </div>
- </header>
+""" + interface_ui.header(cfg, page_name) + """
  <div class="content">
 """ + content + """
   </div>
@@ -1036,13 +1065,25 @@ class Handler(BaseHTTPRequestHandler):
         self.route_business = account_registry.PRIMARY_BUSINESS
         self.account_prefix = ''
         route = urlsplit(self.path)
-        if route.path == '/accounts' and not route.query:
+        if route.path == '/accounts':
             cfg = settings()
             if not panel_session_authorized(self.headers, cfg):
                 self.respond(403, {'error': 'authentication required'})
                 return False
             with database() as conn:
                 account_registry.ensure_primary(conn, cfg.get('instagram_account_id'))
+            selected_business = account_registry.PRIMARY_BUSINESS
+            if route.query:
+                try:
+                    selection = parse_qs(route.query, keep_blank_values=True, max_num_fields=1)
+                    if method != 'GET' or set(selection) != {'account'} or len(selection['account']) != 1:
+                        raise ValueError()
+                    selected_business = selection['account'][0]
+                    with database() as conn:
+                        account_registry.operational_account(conn, selected_business)
+                except (ValueError, account_registry.RegistryError):
+                    self.respond(404, {'error': 'account context unavailable'})
+                    return False
             invalid = False
             if method == 'POST':
                 try:
@@ -1071,7 +1112,8 @@ class Handler(BaseHTTPRequestHandler):
                     return False
             with database() as conn:
                 accounts = account_registry.administrative_accounts(conn)
-            page = account_management.render(accounts, cfg, self.headers.get('Cookie', ''),
+            page_cfg = {**meta_configuration_for_business(selected_business), 'navigation_accounts': accounts}
+            page = account_management.render(accounts, page_cfg, self.headers.get('Cookie', ''),
                     lambda business: connection_summary(meta_configuration_for_business(business)), error=invalid)
             self.respond(409 if invalid else 200, page, 'text/html')
             return False
@@ -1130,7 +1172,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if editorial_delivery.serve(self, route, PUBLICATION_DELIVERY):
             return
-        if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, self.request_configuration(),
+        if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route,
+                navigation_configuration(self.request_configuration()) if route.path in ("/editorial", "/editorial/") else self.request_configuration(),
                 panel_session_authorized(self.headers, settings()), editorial_store_for_business,
                 business_id=self.request_business(), publisher=PUBLICATIONS, history=HISTORY):
             return
@@ -1350,6 +1393,8 @@ class Handler(BaseHTTPRequestHandler):
                         APP_VERSION, self.path == '/webhook/instagram', length_state,
                         bool(self.headers.get('X-Hub-Signature-256')),
                         bool(self.headers.get('Transfer-Encoding')))
+        if editorial_import.handle(self, editorial_store_for_business, meta_configuration_for_business, PUBLICATIONS):
+            return
         if not self.account_route('POST'):
             return
         route = urlsplit(self.path)

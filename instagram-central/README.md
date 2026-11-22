@@ -1,4 +1,16 @@
-# Central Instagram — 0.1.30 (configurações separadas e abertura externa)
+# Central Instagram — 0.1.31 (integração de ferramentas e menu unificado)
+
+A 0.1.31 incorpora o PR #13, preservando as configurações e a abertura externa da 0.1.30. O menu mantém **Editorial, Mensagens, Contas e Conexão Meta** em todas as páginas. Contas usa o mesmo cabeçalho e estilo; o seletor de conta permanece no topo e a navegação preserva a seleção por URL, sem alterar a conta de outra aba. **Calendário** e **Histórico** continuam separados. Criar publicação abre uma composição nova.
+
+Em **Conexão Meta → Configurações Meta → Conectar ferramentas de criação**, crie uma chave por ferramenta e conta. Ela aparece uma vez, vence em 90 dias e pode ser revogada. Por padrão permite somente transferir para revisão. **Permitir publicação direta quando eu autorizar** concede o acesso adicional; cada publicação ainda exige autorização específica para aquele conteúdo/versão e conta. Criar uma chave não autoriza transferências futuras ou automáticas.
+
+“Manda/sobe para a Central” autoriza transferir a versão escolhida para revisão. “Publica agora”, “publicação direta” ou autorização equivalente autoriza transferir pela Central e liberar aquele conteúdo. A interpretação pertence ao agente/ferramenta; a API exige indicadores separados e não depende de palavras-chave exatas. Conteúdo editado após a transferência não pode usar a autorização original da integração: revise/publique na Central ou faça nova transferência autorizada.
+
+A API recebe JPEG/PNG/MP4 em estágio privado e finaliza todas as mídias de um post em um commit. Recibos persistentes e requestId evitam recriação ou novo envio quando o pedido é repetido. Chaves não concedem administração, leitura de outras conexões/contas ou acesso ao token Meta. Cotas incluem temporários e biblioteca. [OpenAPI 3.1](tools/editorial-openapi.json) · [Cliente Python genérico](tools/editorial_client.py) (sem rede por padrão) · [Guia completo](https://github.com/mmcromero/instagram-automacoes/blob/feat/instagram-multicontas-operacional-001/docs/IG-EDITORIAL-INTEGRATION-001.md).
+
+**Atualização/ativação:** atualize somente a Central para 0.1.31, preservando opções e /data. Não altere proxy, certificados ou credenciais Meta. Depois escolha a conta, crie a conexão nas configurações e guarde a chave no cofre/configuração privada da ferramenta. Configure `CENTRAL_EDITORIAL_URL` com a origem HTTPS da Central e `CENTRAL_EDITORIAL_TOKEN` com essa chave. Não envie o valor no chat, Git ou URLs. O pacote não cria chaves reais nem configura automaticamente serviços externos. Instalação, conexão privada da ferramenta e homologação no HA são etapas posteriores do operador.
+
+## Configurações e abertura externa (0.1.30, preservadas)
 
 **Configurações Meta** é uma página própria da conta selecionada. Reúne conexão, configuração necessária, diagnóstico de recebimento, **Verificar acesso Meta**, assinatura de mensagens e **Verificar publicação**. Mensagens fica dedicada ao atendimento. O Editorial deixa de mostrar os dois avisos fixos de diagnóstico/publicação e funcionamento da agenda.
 
@@ -6,11 +18,12 @@
 
 **Abrir página no Home Assistant:** o botão passa a abrir a Central em outra aba, sem Ingress ou clique intermediário. O atalho Ingress da barra lateral do HA foi retirado. O manifesto usa o template suportado `https://[HOST]:[PORT:8443]/webhook/instagram?open=central`; o GET reaproveita a rota já existente no proxy e redireciona para o `public_base_url` HTTPS configurado, mantendo a autenticação da Central. Não publica a porta interna 8099 nem ocupa uma nova porta 8443. Para esse botão, acesse o HA pelo domínio HTTPS habitual **romeropi.duckdns.org:8443**: `[HOST]` acompanha o endereço usado no navegador; acesso por IP/hostname local não fornece o certificado do domínio. A URL direta da Central continua **https://instagram.romeropi.duckdns.org:8443/panel**.
 
-**Atualização:** somente a Central para 0.1.30, preservando opções e `/data`. Não é necessário alterar proxy, token, login ou configurações Meta. A abertura real do botão no HA aguarda confirmação após atualizar; manifesto/expansão de URL, redirecionamento e nova aba foram conferidos em ambiente local. A nova organização geral do menu será discutida com o proprietário antes de implementar; não faz parte deste lote.
+**Atualização:** somente a Central para 0.1.30, preservando opções e `/data`. Não é necessário alterar proxy, token, login ou configurações Meta. A abertura real do botão no HA aguarda confirmação após atualizar; manifesto/expansão de URL, redirecionamento e nova aba foram conferidos em ambiente local. A organização geral do menu foi aprovada e incorporada à 0.1.31.
 
 **Resultado real informado pelo proprietário:** o histórico da 0.1.29 carregou e algumas métricas apareceram. Uma publicação e um Story já funcionaram na 0.1.27. DMs, carrossel e multicontas reais continuam pendentes; esta versão não altera o receptor de mensagens.
 
 ## Histórico e importação de mídias (0.1.29)
+
 
 Em **Histórico**, clique em **Sincronizar histórico** para trazer as publicações que a Meta disponibilizar da conta selecionada, inclusive anteriores à Central. A opção de baixar mídias vem marcada. A sincronização percorre as páginas em segundo plano, mostra progresso e permite cancelar; registros já importados permanecem. Executar novamente atualiza registros pelo ID do Instagram sem duplicar nem publicar novamente. A conexão existente é usada por conta, com a mesma sessão e sem trocar proxy/login.
 

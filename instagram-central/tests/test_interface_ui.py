@@ -46,7 +46,7 @@ class SharedInterfaceTests(unittest.TestCase):
         self.assertIn('&lt;script&gt;bad&lt;/script&gt;', html)
         for route in ('/panel', '/panel?view=settings', '/editorial/#editor'):
             self.assertIn('href="/accounts/ig_0000000000000001'+route+'"', html)
-        self.assertIn('href="/accounts"', html)
+        self.assertIn('href="/accounts?account=ig_0000000000000001"', html)
         self.assertNotIn('href="/panel', html)
         editorial = ui.sidebar({'business_id': 'ig_0000000000000001'}, editorial=True)
         self.assertIn('data-view="editor"', editorial)

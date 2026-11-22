@@ -121,7 +121,7 @@ class OperationalAccounts(unittest.TestCase):
         self.assertEqual(self.request(b+'/editorial/media/'+mid)[0],422)
         self.assertEqual(self.request('/editorial/media/'+mid)[0],422)
         self.assertEqual(json.loads(self.request(b+'/editorial/api/state')[2])['media'],[])
-        self.assertNotIn(b'@umdoislab',self.request(a+'/editorial/')[2])
+        self.assertIn(b'<span class="account ui-sr-only" aria-hidden="true">@first_review</span>',self.request(a+'/editorial/')[2])
 
     def test_two_oauth_returns_resolve_their_original_accounts_and_preserve_primary(self):
         a,aid=self.create('first_review');b,bid=self.create('second_review')

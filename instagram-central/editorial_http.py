@@ -12,13 +12,14 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image, UnidentifiedImageError
 import editorial_core
+import editorial_import
 import editorial_graph
 import editorial_publishing
 import panel_login
 import interface_ui
 
 ASSETS = Path(__file__).parent / "editorial-ui"
-ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics", "history_start", "history_cancel")
+ACTIONS = ("upload", "draft", "approve", "schedule", "cancel", "check", "publish", "activate", "reset", "reconcile", "retry", "delete_post", "delete_media", "metrics", "history_start", "history_cancel") + editorial_import.ACTIONS
 UPLOAD_LIMIT = 25 * 1024 * 1024
 _UPLOAD_SLOTS = threading.BoundedSemaphore(2)
 _ID = r"[0-9a-f]{32}"
@@ -159,6 +160,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
                            .replace('<strong>UMDOISLAB</strong>', '<strong>' + display + '</strong>')
                            .replace('<div class="crumb">Umdoislab ', '<div class="crumb">' + display + ' ').encode())
                     raw = raw.decode().replace('<!--CENTRAL_SIDEBAR-->', interface_ui.sidebar(cfg, editorial=True))
+                    raw = raw.replace('<!--CENTRAL_HEADER-->', interface_ui.header(cfg, 'Visão geral', editorial=True))
                     raw = raw.replace('<!--INITIAL_SKELETON-->', interface_ui.INITIAL_SKELETON).encode()
                 return reply(200, raw, mime)
             if route.path == "/editorial/api/csrf":
@@ -194,7 +196,7 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         # use existing POST paths and remain bound to their own account CSRF.
         requested_action = handler.headers.get('X-Editorial-Action')
         if requested_action:
-            if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media', 'history_start', 'history_cancel'):
+            if route.path == '/editorial/api/drafts' and requested_action in ('check', 'delete_media', 'history_start', 'history_cancel') + editorial_import.ACTIONS:
                 action = requested_action
             elif post_id and action == 'approve' and requested_action in ('publish', 'activate', 'reset', 'reconcile', 'retry', 'delete_post', 'metrics'):
                 action = requested_action
@@ -218,6 +220,8 @@ def handle(handler, method, route, cfg, authorized, store_factory, *, business_i
         data = json.loads(_read(handler, 256 * 1024 if action == "draft" else 16 * 1024))
         if not isinstance(data, dict):
             raise editorial_core.EditorialError("Objeto JSON obrigatório")
+        if action in editorial_import.ACTIONS:
+            return reply(200, editorial_import.manage(store, business_id, action, data))
         if action in ('history_start','history_cancel'):
             if history is None: raise editorial_core.EditorialError('Sincronização não configurada.')
             if action=='history_start':

@@ -1,3 +1,12 @@
+## 0.1.31
+
+- Chaves por conta/ferramenta, com prazo de 90 dias, revogação e permissão opcional de publicação direta. Gerenciamento usa sessão administrativa e CSRF por ação/conta.
+- Entrada JPEG/PNG/MP4 em estágio privado, commit atômico para revisão, recibos persistentes e proteção contra duplicação. Sem envio de versões não autorizadas. Cotas somam mídias temporárias e biblioteca.
+- Publicação direta passa pelo executor da Central: autorização por conta/revisão, separada da transferência, sem novo envio na repetição do mesmo pedido. Falha de pré-requisitos mantém o conteúdo sem autorização de publicação.
+- OpenAPI 3.1 e cliente Python genérico, sem dependência do ChatGPT. Prévia local sem rede por padrão; envio e publicação exigem opções explícitas.
+- Menu aprovado em Editorial, Mensagens, Contas e Conexão Meta, sempre disponível; cabeçalho/seletor comuns, contexto por URL, Calendário e Histórico separados.
+- Administração das conexões em Configurações Meta; preserva navegação e abertura externa da 0.1.30. Publicação direta recusa conteúdo editado após a transferência. Sem alteração do proxy ou credenciais Meta; instalação no HA é etapa posterior.
+
 ## 0.1.30
 
 - Separa Mensagens e Configurações Meta em páginas por conta. Centraliza conexão, diagnóstico de recebimento e verificação de publicação nas configurações, com retorno das ações Meta/cadastro/OAuth para essa área. Mantém rotas existentes do proxy e sessão/CSRF por conta/ação.

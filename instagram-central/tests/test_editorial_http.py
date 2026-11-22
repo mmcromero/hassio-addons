@@ -125,9 +125,9 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
         self.assertNotIn("unsafe-inline", headers["Content-Security-Policy"])
         self.assertIn(b'href="/panel"', body)
-        self.assertIn(b'class="topbar"', body)
-        self.assertIn(b'class="account">@umdoislab', body)
-        self.assertIn(b'action="../auth/logout"', body)
+        self.assertIn(b'class="topbar ui-app-header"', body)
+        self.assertIn(b'class="account ui-sr-only" aria-hidden="true">@umdoislab', body)
+        self.assertIn(b'action="/auth/logout"', body)
         self.assertEqual(body.count(b'>Sair</button>'), 1)
         for asset in ("editorial.css", "editorial.js"):
             self.assertEqual(self.request("/editorial/" + asset)[0], 200)
@@ -140,7 +140,7 @@ class EditorialHTTPTests(unittest.TestCase):
 
     def test_editorial_logout_revokes_shared_session_without_changing_content(self):
         post_id, _ = self.draft()
-        self.assertIn(b'action="../auth/logout"', self.request("/editorial/")[2])
+        self.assertIn(b'action="/auth/logout"', self.request("/editorial/")[2])
         status, headers, _ = self.request("/auth/logout", "POST", headers={"Cookie": self.cookie})
         self.assertEqual(status, 303)
         self.assertIn("Max-Age=0", headers["Set-Cookie"])

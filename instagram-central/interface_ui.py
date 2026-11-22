@@ -60,41 +60,63 @@ def enhance(raw):
     return text.encode()
 
 
-def sidebar(cfg=None, *, active='accounts', editorial=False):
-    cfg = cfg or {}
-    if editorial: active = 'overview'
+def header(cfg, section, *, editorial=False):
     business = cfg.get('business_id', 'umdoislab')
     prefix = '' if business == 'umdoislab' else '/accounts/' + business
-    prefix = html.escape(prefix, quote=True)
+    choices = cfg.get('navigation_accounts') or [{'business_id': business,
+        'display_name': cfg.get('account_display_name') or 'Umdoislab',
+        'username': cfg.get('instagram_expected_username') or 'umdoislab'}]
+    options = []
+    for account in choices:
+        name = account['business_id']
+        path = '' if name == 'umdoislab' else '/accounts/' + name
+        target = ('/accounts?account=' + name if section == 'Contas' else path +
+                  ('/editorial/' if editorial else '/panel?view=settings' if section == 'Configurações Meta' else '/panel'))
+        selected = ' selected' if name == business else ''
+        options.append('<option value="' + html.escape(target, quote=True) + '"' + selected + '>' +
+                       html.escape(account['display_name'] + ' · @' + account['username']) + '</option>')
+    return ('<header class="topbar ui-app-header"><div class="crumb">' +
+            html.escape(str(cfg.get('account_display_name') or 'Umdoislab')) +
+            ' <span>/</span> <strong id="current-section">' + html.escape(section) + '</strong></div>' +
+            '<div class="top-actions"><label class="ui-account-picker">Conta<select aria-label="Conta selecionada" data-account-switch>' +
+            ''.join(options) + '</select></label><span class="account ui-sr-only" aria-hidden="true">@' +
+            html.escape(str(cfg.get('instagram_expected_username') or 'umdoislab')) + '</span>' +
+            '<form class="logout-form" method="post" action="' + prefix + '/auth/logout">' +
+            '<button type="submit" class="btn quiet">Sair</button></form></div></header>')
+
+
+def sidebar(cfg=None, *, active='accounts', editorial=False):
+    cfg = cfg or {}
+    business = cfg.get('business_id', 'umdoislab')
+    prefix = html.escape('' if business == 'umdoislab' else '/accounts/' + business, quote=True)
+    accounts_url = '/accounts?account=' + html.escape(business, quote=True)
     name = html.escape(str(cfg.get('account_display_name') or 'Umdoislab'))
     username = html.escape(str(cfg.get('instagram_expected_username') or 'umdoislab'))
     def item(label, icon, href, view=None, selected=False):
-        classes = 'nav-link' + (' active' if selected else '')
         current = ' aria-current="page"' if selected else ''
+        classes = 'nav-link' + (' active' if selected else '')
         symbol = '<span class="ui-nav-icon" aria-hidden="true">' + icon + '</span>'
         if editorial and view:
             return '<button type="button" class="' + classes + '" data-view="' + view + '"' + current + '>' + symbol + label + '</button>'
         return '<a class="' + classes + '" href="' + href + '"' + current + '>' + symbol + label + '</a>'
     contents = ''.join(item(label, icon, prefix + '/editorial/#' + view, view,
                         editorial and view == 'overview') for view, label, icon in (
-                            ('overview', 'Visão geral', '◫'), ('library', 'Biblioteca', '▧'),
-                            ('editor', 'Criar publicação', '✎'), ('approval', 'Revisão e envios', '✓'),
-                            ('history', 'Histórico', '◷'), ('calendar', 'Calendário', '▦')))
-    account = ('<div class="ui-account-context"><small>CONTA SELECIONADA</small><strong>' + name +
-               '</strong><span>@' + username + '</span></div>') if active != 'accounts' else (
-               '<div class="ui-account-context"><strong>Comece escolhendo uma conta</strong><span>O conteúdo e a conexão ficam separados por conta.</span></div>')
-    groups = ('<section class="ui-nav-group"><h2>Conteúdo</h2><nav class="nav" aria-label="Conteúdo">' + contents + '</nav></section>'
-              '<section class="ui-nav-group"><h2>Atendimento</h2><nav class="nav" aria-label="Atendimento">' +
-              item('Mensagens', '◉', prefix + '/panel', selected=active == 'messages') + '</nav></section>'
-              '<section class="ui-nav-group"><h2>Configuração</h2><nav class="nav" aria-label="Configuração">' +
-              item('Configurações Meta', '⚙', prefix + '/panel?view=settings', selected=active == 'settings') + '</nav></section>') if active != 'accounts' else ''
-    return ('<aside class="sidebar ui-sidebar"><div class="ui-sidebar-heading"><a class="brand" href="/accounts" aria-label="Central Instagram — Contas">'
+                            ('overview', 'Visão geral', '◫'), ('calendar', 'Calendário', '▦'),
+                            ('editor', 'Criar publicação', '✎'), ('library', 'Biblioteca', '▧'),
+                            ('approval', 'Revisão e envios', '✓'), ('history', 'Histórico', '◷')))
+    def group(label, links):
+        return '<section class="ui-nav-group"><h2>' + label + '</h2><nav class="nav" aria-label="' + label + '">' + links + '</nav></section>'
+    groups = (group('Editorial', contents) +
+              group('Mensagens', item('Caixa de entrada', '◉', prefix + '/panel', selected=active == 'messages')) +
+              group('Contas', item('Contas conectadas', '◎', accounts_url, selected=active == 'accounts') +
+                    item('Adicionar conta', '+', accounts_url + '#add-account')) +
+              group('Conexão Meta', item('Configurações Meta', '⚙', prefix + '/panel?view=settings', selected=active == 'settings')))
+    return ('<aside class="sidebar ui-sidebar"><div class="ui-sidebar-heading"><a class="brand" href="' + accounts_url + '" aria-label="Central Instagram — Contas">'
             '<span class="brand-icon">U<span class="dot">.</span></span><span><strong>CENTRAL INSTAGRAM</strong><small>Conteúdo e atendimento</small></span></a>'
             '<button class="ui-menu-toggle" type="button" aria-expanded="false" aria-controls="ui-navigation">Menu</button></div>' +
-            account + '<div id="ui-navigation" class="ui-nav-groups">' +
-            '<section class="ui-nav-group"><h2>Espaço de trabalho</h2><nav class="nav" aria-label="Contas">' +
-            item('Contas', '◎', '/accounts', selected=active == 'accounts') + '</nav></section>' + groups +
-            '</div><div class="sidebar-foot ui-sidebar-foot"><strong>Seu fluxo de trabalho</strong><small>Conta → conteúdo → revisão → envio</small></div></aside>')
+            '<div class="ui-account-context"><small>CONTA SELECIONADA</small><strong>' + name + '</strong><span>@' + username + '</span></div>' +
+            '<div id="ui-navigation" class="ui-nav-groups">' + groups + '</div>' +
+            '<div class="sidebar-foot ui-sidebar-foot"><strong>Seu fluxo de trabalho</strong><small>Conta → conteúdo → revisão → envio</small></div></aside>')
 
 
 INITIAL_SKELETON = '''<div id="initial-skeleton" class="ui-initial-skeleton" role="status" aria-live="polite">

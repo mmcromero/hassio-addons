@@ -109,3 +109,19 @@ class SettingsNavigation(unittest.TestCase):
         url = re.sub(r'\[PORT:(\d+)\]', lambda match: {}.get(match[1]+'/tcp', match[1]), url)
         self.assertEqual(url.replace('[HOST]', 'romeropi.duckdns.org'),
                          'https://romeropi.duckdns.org:8443/webhook/instagram?open=central')
+
+    def test_accounts_preserve_selected_context_and_the_four_sections(self):
+        with server.database() as db:
+            server.account_registry.ensure_primary(db, 'business-1')
+            business=server.account_registry.provision(db,'second_review','Segunda')
+        status,_,body=self.request('/accounts?account='+business)
+        self.assertEqual(status,200)
+        self.assertIn(b'class="topbar ui-app-header"',body)
+        self.assertIn(b'aria-label="Conta selecionada"',body)
+        self.assertIn(b'<span>@second_review</span>',body)
+        self.assertEqual(re.findall(rb'<section class="ui-nav-group"><h2>(.*?)</h2>',body),
+                         [b'Editorial',b'Mensagens',b'Contas','Conexão Meta'.encode()])
+        self.assertIn(('/accounts/'+business+'/editorial/#calendar').encode(),body)
+        for query in ('account=not_registered','account='+business+'&account=umdoislab','other=umdoislab','account='):
+            self.assertEqual(self.request('/accounts?'+query)[0],404)
+        self.assertEqual(self.fixture.request('/accounts?account='+business)[0],403)
