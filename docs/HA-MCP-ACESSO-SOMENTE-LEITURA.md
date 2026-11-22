@@ -29,6 +29,21 @@ Procedimento realizado pelo proprietário, com orientação assistida. Para rein
 
 Não registrar valores reais de chave API, token HA, URL privada, identificadores de túnel/organização/workspace, cabeçalhos de autenticação ou logs brutos no Git, Issues, PRs ou conversas de equipe. A URL privada do app deve ser tratada como segredo. Armazenar credenciais somente nos mecanismos protegidos das respectivas plataformas; revogar/rotacionar se expostas. Não distribuir credenciais entre chats.
 
+### 2.1. Segunda entrada: túnel n8n no mesmo Raspberry Pi
+
+A integração aceita múltiplas entradas porque o código usa o Tunnel ID como identificador único da config entry e bloqueia somente a duplicação do mesmo ID. Cada entrada recebe entry_id, diretório de execução e processo tunnel-client próprios. O desenho correto é uma instalação da integração com duas entradas independentes.
+
+| Entrada | Destino | Autenticação | Conector ChatGPT |
+|---|---|---|---|
+| HA-MCP | URL privada completa do app Home Assistant MCP Server; não usar /api/mcp nesta instalação | Bearer token vazio, conforme homologado | Home Assistant — Somente leitura |
+| n8n | endpoint MCP local do add-on, porta 5678, caminho /mcp-server/http | Bearer token aceito pelo MCP do n8n | n8n — Home Assistant V2 existente |
+
+**Configuração n8n já realizada:** adicionar uma segunda entrada da mesma integração; preservar o Tunnel ID original do n8n; usar Runtime API key com Tunnels Read e Tunnels Use; apontar para o host local do add-on na porta 5678 e caminho /mcp-server/http; preencher o campo Home Assistant access token com o Bearer token aceito pelo servidor MCP do n8n; manter control-plane base URL/path vazios e atualização automática ativada. O hostname e as credenciais reais são privados e não entram no Git.
+
+O campo Home Assistant access token corresponde internamente a ha_mcp_bearer_token e é encaminhado como Authorization: Bearer ao MCP configurado. Na entrada n8n, não é a Runtime API key OpenAI nem deve ser confundido com token HA. O valor está mascarado e foi aceito nos testes; preservar, não tentar recuperar da máscara e não rotacionar por tentativa.
+
+Com Bearer token e tunnel-client v0.0.21+, a integração define MCP_OAUTH_DISCOVERY=disabled. A Runtime API key vai por variável de ambiente CONTROL_PLANE_API_KEY; o Bearer token vai por HA_MCP_AUTH_HEADER. A revisão mascara API key, token e URL MCP nos logs. Não criar port forwarding, hostname público, regra de firewall ampla ou rota do Forja para a rede doméstica.
+
 ## 3. Configuração efetiva verificada via Supervisor em 22/11/2026
 
 App HA-MCP 9.2.0, estado started, boot auto, watchdog true. Opções selecionadas por segurança na resposta da ferramenta (nenhum segredo coletado neste registro):
@@ -97,9 +112,56 @@ Ficam fora do escopo: ligar/desligar dispositivos, chamar serviços de escrita, 
 
 **Recibo sugerido por chat/equipe:** data; plugin disponível sim/não; consulta mínima realizada e resultado; modo somente leitura confirmado; responsável. Não presumir adoção por outros chats. Governança acompanha distribuição e recebimento conforme as normas vigentes.
 
-## 6. Manutenção e recuperação
+## 6. Manutenção, inicialização e recuperação
 
-Responsável: Infraestrutura, com autorização do proprietário para intervenções. Se a conexão falhar, verificar estado da integração e do app, logs sanitizados, validade da chave restrita e associação correta do túnel. Não alterar credenciais nem reiniciar serviços alheios por tentativa. Em janela autorizada de manutenção, medir retorno do túnel após reinício do Core/host conforme o evento escolhido; repetir H01, H02 e uma leitura curta de logs sem iniciar manualmente o cliente. Registrar resultado e eventual intervalo de indisponibilidade. O túnel n8n não depende mais do CMD do Windows para a operação atual testada. A recuperação automática de ambas as entradas após reinício do Core/host permanece pendente. Sem reinício só para produzir evidência.
+Responsável: Infraestrutura, com autorização do proprietário para intervenções. Não reconstruir os túneis, reinstalar a integração, criar novos Tunnel IDs ou reabrir CMD no Windows como procedimento normal.
+
+### 6.1. Inicialização normal
+
+- O Home Assistant carrega cada config entry durante o setup do Core. async_setup_entry valida o endpoint MCP, prepara diretório próprio, obtém o binário e inicia um processo tunnel-client independente por entrada.
+- O add-on HA-MCP está em boot automático e watchdog ativo. O add-on n8n estava started, boot auto e watchdog ativo na captura de 22/11/2026.
+- Se o endpoint MCP responder 404 ou estiver inacessível durante o startup, a integração sinaliza ConfigEntryNotReady e o Home Assistant repete o setup automaticamente. Um 404 temporário não é sucesso nem inicia processo túnel prematuramente.
+- O n8n publica a porta interna 80/tcp na porta 5678 do host; o MCP HTTP usa /mcp-server/http. Obter o hostname privado atual pelo Supervisor, sem assumir que um alias local sempre resolve.
+- A recuperação após reinício do Core/host é esperada pelo ciclo de setup das config entries, mas ainda não foi comprovada por reinício controlado nesta instalação. Não reiniciar apenas para produzir evidência.
+
+### 6.2. Processo túnel encerrado com Core ativo
+
+O supervisor do processo atualiza o estado para exited quando o subprocesso termina, mas não implementa loop permanente de reinício automático após saída inesperada.
+
+1. Verificar Tunnel process state, Tunnel ready, Tunnel control plane e Tunnel MCP errors da entrada afetada.
+2. Consultar logs sanitizados e verificar se o endpoint MCP local está disponível.
+3. Corrigir a causa demonstrada antes de reiniciar.
+4. Usar Restart tunnel ou o serviço hass_codex_tunnel_mcp.restart_tunnel com entry_id explícito. Sem entry_id, o serviço pode atingir todas as entradas; não omitir o alvo quando a intenção for reiniciar somente uma.
+5. Executar restart pela UI/API local do Home Assistant, nunca pelo túnel que está sendo reiniciado.
+6. Confirmar Ready + Healthy + Control Plane OK + chamada MCP real com contador incrementado e sem erros.
+
+### 6.3. Falha de autenticação/Control Plane
+
+- Ready isolado não prova que o Control Plane aceitou a Runtime API key. Verificar o sensor Control Plane e uma chamada MCP real.
+- HTTP 401 no Control Plane: verificar validade e escopos Tunnels Read + Tunnels Use. Não gerar chave nem rotacionar por tentativa.
+- HTTP 401/403 no MCP: verificar o Bearer token daquela entrada. A máscara da UI não indica erro e não revela o valor original. Não substituir token sem evidência.
+- Não copiar credenciais entre entradas: HA-MCP e n8n têm destinos/autenticações distintos.
+
+### 6.4. Atualização e rollback
+
+- Código da integração e executável tunnel-client têm ciclos separados. Atualizar código HACS/Marketplace pode exigir reload/restart do Core conforme a UI; o binário é gerenciado pela integração.
+- Atualização automática do executável está habilitada nas duas entradas. O verificador retoma a agenda após startup/reload e mantém espera mínima de 8 dias para releases novas.
+- O binário candidato é validado por SHA-256 e só é ativado após readiness. Se falhar, a integração retorna ao último binário conhecido como bom e registra Repair.
+- Serviços disponíveis: restart_tunnel, redownload_tunnel_client, check_tunnel_client_update, update_tunnel_client e rollback_tunnel_client. Consulta de releases não instala; redownload é excepcional; update/rollback só com causa e alvo identificados.
+- Na homologação de 22/11, o cliente da entrada n8n atualizou automaticamente de v0.0.19 para v0.0.21 e permaneceu Ready/Healthy.
+
+### 6.5. Checklist de recuperação
+
+1. Verificar se a entrada já existe; não duplicar Tunnel ID.
+2. Verificar app MCP de destino e endpoint local.
+3. Consultar Ready/Healthy e Control Plane.
+4. Ler logs sanitizados com limite pequeno.
+5. Se processo exited, reiniciar somente a entrada afetada pela UI/API local.
+6. Fazer chamada MCP real de leitura e confirmar incremento, HTTP 200, zero erros e zero falhas.
+7. Se chave/token estiver ausente ou inválido, parar antes de rotacionar e solicitar apenas a autorização/credencial indispensável.
+8. Registrar resultado. Não reinstalar, recriar túnel, mexer no Forja nem pedir ao proprietário dados que Supervisor/connector já fornecem.
+
+**Estado de homologação:** o túnel n8n foi testado com CMD do Windows interrompido e registrou 5 requisições aceitas/concluídas (HTTP 200), sem retries, erros ou falhas. O CMD não é necessário para a operação atual. O teste de reinício do Core/host permanece pendente.
 
 ## Referências
 
