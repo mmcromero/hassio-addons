@@ -145,6 +145,48 @@
     if(path.endsWith('/meta/subscribe'))return 'Solicitando assinatura…';
     return 'Salvando…';
   }
+  function initPublicationSettings(){
+    const button=document.querySelector('button[data-publication-base]');if(!button)return;
+    const status=document.getElementById('publication-status'),time=document.getElementById('publication-checked-at');
+    const feedback=document.getElementById('publication-check-feedback');
+    const showTime=value=>{
+      const stamp=Number(value);time.dataset.checkedAt=String(stamp || '');
+      time.textContent=stamp>0 && Number.isFinite(stamp)?'Última consulta: '+new Intl.DateTimeFormat('pt-BR',{
+        dateStyle:'short',timeStyle:'medium',timeZone:'America/Sao_Paulo'
+      }).format(new Date(stamp*1000))+' (Brasília).':'';
+    };
+    showTime(time.dataset.checkedAt);
+    button.addEventListener('click',async()=>{
+      if(button.disabled)return;
+      const done=hold(button,'Verificando…'),operation=start('Verificando publicação…');
+      feedback.textContent='Consultando o acesso desta conta…';
+      const request=async(path,options={})=>{
+        const response=await fetch(button.dataset.publicationBase+'api/'+path,{
+          credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(35000),...options
+        });
+        if(response.status===403)throw new Error('A sessão expirou ou a consulta não foi autorizada. Entre novamente e tente outra vez.');
+        const raw=await response.text();let result;
+        try{if(raw.length<=65536)result=JSON.parse(raw);}catch(_){}
+        if(!response.ok || !result || typeof result!=='object' || Array.isArray(result))
+          throw new Error('Não foi possível concluir a consulta. Tente novamente em instantes.');
+        return result;
+      };
+      try{
+        const tokens=await request('csrf');
+        if(typeof tokens.check!=='string' || !/^[a-f0-9]{64}$/.test(tokens.check))throw new Error('A consulta não foi autorizada. Recarregue a página e tente novamente.');
+        const result=await request('drafts',{method:'POST',headers:{'Content-Type':'application/json',
+          'X-Editorial-Action':'check','X-CSRF-Token':tokens.check},body:'{}'});
+        if(typeof result.message!=='string' || typeof result.ready!=='boolean')throw new Error('Não foi possível confirmar o resultado da consulta. Tente novamente em instantes.');
+        status.textContent=result.message;showTime(result.checkedAt);
+        feedback.textContent=result.ready?'Verificação concluída: acesso de publicação confirmado.':'Verificação concluída: confira o diagnóstico acima.';
+        announce(feedback.textContent);
+      }catch(error){
+        feedback.textContent=error instanceof TypeError || error.name==='TimeoutError' || error.name==='AbortError'
+          ?'A consulta foi interrompida. O último diagnóstico foi preservado. Tente novamente em instantes.':error.message;
+        announce(feedback.textContent);
+      }finally{done();operation.end();}
+    });
+  }
   function init(){
     ensureFeedback();document.documentElement.dataset.uiInput='pointer';
     const visibility=()=>{document.documentElement.dataset.uiBackground=String(document.hidden);};
@@ -176,7 +218,7 @@
       start(label);document.body.classList.add('ui-page-leaving');
     });
     addEventListener('pageshow',event=>{if(event.persisted)restore();});
-    addEventListener('hashchange',syncNativeNav);syncNativeNav();
+    addEventListener('hashchange',syncNativeNav);syncNativeNav();initPublicationSettings();
     if(!instant()){
       document.body.classList.add('ui-page-enter');
       requestAnimationFrame(()=>{document.body.classList.remove('ui-page-enter');document.body.classList.add('ui-page-ready');});
@@ -184,12 +226,11 @@
   }
   function syncNativeNav(){
     if(location.pathname.endsWith('/editorial/') || location.pathname.endsWith('/editorial'))return;
-    const section=location.hash==='#connection'?'connection':'messages';
-    document.querySelectorAll('.ui-sidebar a[href]').forEach(link=>{
-      const url=new URL(link.href,location.href);if(url.pathname!==location.pathname || !['#messages','#connection'].includes(url.hash))return;
-      const active=url.hash==='#'+section;link.classList.toggle('active',active);
-      if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
-    });
+    // Old bookmarks lead to the separate settings document, preserving account.
+    if(location.hash==='#connection' && !location.search){
+      const link=document.querySelector('.ui-sidebar a[href$="/panel?view=settings"]');
+      if(link)location.replace(link.href);
+    }
   }
   window.CentralUI={start,hold,announce,instant,switchPanel,media:trackMedia,releaseMedia,ready,initialError,
     dialog:{open:openDialog,close:closeDialog},closeMenu:()=>setMenu(false)};

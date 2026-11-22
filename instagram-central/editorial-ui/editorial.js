@@ -98,7 +98,6 @@
     const result = await api('state');
     state.history=result.history || {status:'idle'};renderHistoryProgress();
     state.publication=result.publication || {};state.accountUsername=result.accountUsername || '';
-    $('publication-status').textContent=state.publication.message || 'Verifique o acesso de publicação.';
     const fingerprint=JSON.stringify([result.posts,result.media]);
     if(fingerprint!==state.dataFingerprint){
       state.posts=result.posts;state.media=result.media;state.dataFingerprint=fingerprint;render();
@@ -168,7 +167,7 @@
   function formatHint() {
     const fmt = $('post-format').value;
     $('selection-hint').textContent=({
-      feed:'De 1 a 20 imagens JPG ou PNG, entre 4:5 e 1,91:1; 2 ou mais formam um carrossel. A imagem para envio deve ter até 8 MB.',
+      feed:'De 1 a 20 imagens JPG ou PNG, entre 4:5 e 1,91:1; 2 ou mais formam um carrossel. A imagem para envio deve ter até 8 MB. PNG é enviado como JPEG, com fundo branco na transparência.',
       story:'Uma imagem ou MP4 de 3 a 60 segundos. Inclua o texto na própria mídia; deixe a legenda vazia. Requer conta Empresa.',
       reel:'Um MP4 de 3 segundos a 15 minutos. Limite de upload da Central: 25 MiB.'
     })[fmt] || 'Selecione uma mídia.';
@@ -773,11 +772,6 @@
     await api('posts/'+post.id+'/'+action,{action,data});await refresh();
     toast(action==='reset'?'Conteúdo liberado para edição.':'Verificação solicitada. Acompanhe o resultado.');
   }
-  async function checkPublication() {
-    await api('publication/check',{action:'check',data:{}});await refresh();
-    toast(state.publication.ready?'Verificação concluída: acesso de publicação confirmado.'
-      :'Verificação concluída: '+state.publication.message,state.publication.ready?'success':'error');
-  }
   async function refreshMetrics(post){
     const result=await api('posts/'+post.id+'/metrics',{action:'metrics',data:{version:post.version}});
     await refresh(true);
@@ -880,7 +874,6 @@
     $('calendar-month').addEventListener('change',()=>{const val=$('calendar-month').value;if(/^\d{4}-\d{2}$/.test(val)){state.month=new Date(val+'-01T12:00:00Z');renderCalendar();}});
     $('confirm-delete').addEventListener('click',submitDeletion);
     ['close-delete-dialog','cancel-delete'].forEach(id=>$(id).addEventListener('click',()=>{if(!state.busy)UI.dialog.close($('delete-dialog'));}));
-    $('check-publication').addEventListener('click',()=>guard(checkPublication));
     $('confirm-publish').addEventListener('click',submitPublication);
     $('close-publish-dialog').addEventListener('click',()=>{if(!state.busy)UI.dialog.close($('publish-dialog'));});
     all('[data-view]').forEach(node=>node.addEventListener('click',()=>{
@@ -948,7 +941,7 @@
         if(document.visibilityState==='visible' && !state.busy &&
            !state.actionPending && !document.body.dataset.uiLoading &&
            state.posts.some(post=>post.status==='publishing' || (post.status==='scheduled' && post.publishAuthorized))){
-          refresh().catch(()=>{ $('publication-status').textContent='Não foi possível atualizar o resultado. Recarregue para conferir antes de tentar outro envio.'; });
+          refresh().catch(()=>toast('Não foi possível atualizar o resultado. Use Atualizar para conferir.','error'));
         }
     },10000);
   }

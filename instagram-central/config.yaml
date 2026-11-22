@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.29"
+version: "0.1.30"
 slug: umdoislab_instagram
 description: "Central Instagram: múltiplas contas e publicação editorial (respostas automáticas desativadas)"
 arch:
@@ -8,11 +8,8 @@ startup: application
 boot: manual
 init: false
 stage: experimental
-ingress: true
-ingress_port: 8099
-panel_icon: mdi:instagram
-panel_title: "Central Instagram"
-panel_admin: true
+ingress: false
+webui: "https://[HOST]:[PORT:8443]/webhook/instagram?open=central"
 backup: cold
 options:
   public_base_url: ""

@@ -161,7 +161,7 @@ class ReceivingHTTP(unittest.TestCase):
             subscribe.assert_not_called()
         with patch.object(ic,'request_graph') as graph:
             for _ in range(2):
-                status,_,body=self.fixture.request('/panel',headers=self.headers)
+                status,_,body=self.fixture.request('/panel?view=settings',headers=self.headers)
                 self.assertEqual(status,200)
                 self.assertIn('campo messages presente.'.encode(),body)
                 self.assertIn('Acesso aceito; há conversa visível'.encode(),body)
@@ -189,7 +189,7 @@ class ReceivingHTTP(unittest.TestCase):
         saved=self.server._meta_credential()
         for key in CREDENTIAL:self.assertEqual(saved[key],CREDENTIAL[key])
         self.assertFalse(saved['last_meta_action']['identity_verified'])
-        body=self.fixture.request('/panel',headers=self.headers)[2]
+        body=self.fixture.request('/panel?view=settings',headers=self.headers)[2]
         self.assertIn('a verificação anterior não foi renovada'.encode(),body)
         self.assertIn('A Meta recusou o token salvo.'.encode(),body)
         self.assertNotIn(b'PRIVATE_PROVIDER_TEXT',body)
@@ -203,7 +203,7 @@ class ReceivingHTTP(unittest.TestCase):
         saved=self.server._meta_credential()
         self.assertEqual(saved['subscribed_at'],2)
         self.assertNotIn('receiving_diagnostics',saved)
-        body=self.fixture.request('/panel',headers=self.headers)[2]
+        body=self.fixture.request('/panel?view=settings',headers=self.headers)[2]
         self.assertIn('A Meta aceitou o pedido de assinatura.'.encode(),body)
 
     def test_bad_csrf_and_missing_session_never_query_meta(self):

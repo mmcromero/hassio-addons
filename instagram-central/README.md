@@ -1,4 +1,16 @@
-# Central Instagram — 0.1.29 (histórico, calendário e importação de mídias)
+# Central Instagram — 0.1.30 (configurações separadas e abertura externa)
+
+**Configurações Meta** é uma página própria da conta selecionada. Reúne conexão, configuração necessária, diagnóstico de recebimento, **Verificar acesso Meta**, assinatura de mensagens e **Verificar publicação**. Mensagens fica dedicada ao atendimento. O Editorial deixa de mostrar os dois avisos fixos de diagnóstico/publicação e funcionamento da agenda.
+
+**Verificar publicação** é uma consulta manual para investigar erros ou conferir uma conexão alterada; não é uma etapa obrigatória antes de cada envio. O executor continua conferindo o acesso automaticamente quando necessário. A consulta manual mostra carregamento, impede repetição enquanto aguarda, informa conclusão mesmo com resultado igual e preserva o diagnóstico anterior se a consulta falhar. Abrir/recarregar Configurações não consulta a Meta automaticamente.
+
+**Abrir página no Home Assistant:** o botão passa a abrir a Central em outra aba, sem Ingress ou clique intermediário. O atalho Ingress da barra lateral do HA foi retirado. O manifesto usa o template suportado `https://[HOST]:[PORT:8443]/webhook/instagram?open=central`; o GET reaproveita a rota já existente no proxy e redireciona para o `public_base_url` HTTPS configurado, mantendo a autenticação da Central. Não publica a porta interna 8099 nem ocupa uma nova porta 8443. Para esse botão, acesse o HA pelo domínio HTTPS habitual **romeropi.duckdns.org:8443**: `[HOST]` acompanha o endereço usado no navegador; acesso por IP/hostname local não fornece o certificado do domínio. A URL direta da Central continua **https://instagram.romeropi.duckdns.org:8443/panel**.
+
+**Atualização:** somente a Central para 0.1.30, preservando opções e `/data`. Não é necessário alterar proxy, token, login ou configurações Meta. A abertura real do botão no HA aguarda confirmação após atualizar; manifesto/expansão de URL, redirecionamento e nova aba foram conferidos em ambiente local. A nova organização geral do menu será discutida com o proprietário antes de implementar; não faz parte deste lote.
+
+**Resultado real informado pelo proprietário:** o histórico da 0.1.29 carregou e algumas métricas apareceram. Uma publicação e um Story já funcionaram na 0.1.27. DMs, carrossel e multicontas reais continuam pendentes; esta versão não altera o receptor de mensagens.
+
+## Histórico e importação de mídias (0.1.29)
 
 Em **Histórico**, clique em **Sincronizar histórico** para trazer as publicações que a Meta disponibilizar da conta selecionada, inclusive anteriores à Central. A opção de baixar mídias vem marcada. A sincronização percorre as páginas em segundo plano, mostra progresso e permite cancelar; registros já importados permanecem. Executar novamente atualiza registros pelo ID do Instagram sem duplicar nem publicar novamente. A conexão existente é usada por conta, com a mesma sessão e sem trocar proxy/login.
 
@@ -47,7 +59,7 @@ A **0.1.26** implementa o envio do Editorial ao Instagram para a conta seleciona
 ### Usar o Editorial
 
 1. Abra **https://instagram.romeropi.duckdns.org:8443/accounts** e escolha a conta. Para adicionar outra, informe seu nome/usuário e conclua **Conectar com a Meta** no painel correspondente. A conta precisa ser profissional e estar disponível na autorização Meta; estar na mesma Central de Contas não substitui essa autorização. A principal não é desconectada.
-2. Entre em **Editorial** da conta e clique em **Verificar publicação**. A Central lê validade/app/permissões do token, identidade e configuração de entrega de mídia. Se faltar `instagram_content_publish`, inclua essa permissão na configuração de login do app Meta e reconecte somente a conta afetada. Não substitua App Secret ou verify token por um token de acesso. A confirmação de pré-requisitos não equivale a App Review aprovado nem à publicação real concluída.
+2. Entre no **Editorial** da conta. O acesso de publicação é conferido automaticamente quando necessário. Se precisar investigar um erro, use **Configurações Meta → Verificar publicação**: a Central lê validade/app/permissões do token, identidade e configuração de entrega de mídia. Se faltar `instagram_content_publish`, inclua essa permissão na configuração de login do app Meta e reconecte somente a conta afetada. Não substitua App Secret ou verify token por um token de acesso. A confirmação de pré-requisitos não equivale a App Review aprovado nem à publicação real concluída.
 3. Na **Biblioteca**, carregue a mídia; em **Criar publicação**, prepare conteúdo e legenda. Em **Revisão e envios**, revise e aprove. Escolha **Publicar agora** e confira a conta exibida antes de confirmar, ou **Agendar** e confirme um horário futuro de São Paulo.
 4. Acompanhe **Publicando**, **Publicada** ou o motivo da interrupção em Aprovações. O resultado atualiza enquanto a página está visível. **Ver no Instagram** abre o post quando a Meta fornece o link; caso contrário, abre o perfil da conta. A Central deve permanecer ligada para executar a agenda; envios autorizados vencidos são retomados quando ela volta.
 
@@ -268,7 +280,7 @@ Resultados/SHAs finais e evidências estão na Issue #1 e no relatório privado 
 
 A Central publica somente posts aprovados e explicitamente autorizados na conta selecionada. Agendamentos antigos permanecem sem autorização até sua confirmação; atualizações não criam envios. Não envia Direct, não liga robô Gemini, não chama WooCommerce/n8n ou WhatsApp, não configura NGINX nem expõe a porta 8099 diretamente. O estado de publicação da API reflete os pré-requisitos conferidos para cada conta, sem comprovar uma publicação real antes de executá-la.
 
-Acesso administrativo deve ser por HA Ingress e HTTPS confiável quando usado com credenciais reais. A sessão do painel e as rotas Editorial exigem autenticação; mutações exigem CSRF por ação, e a mídia é privada. MP4 passa por verificação **estrutural**; não há transcodificação nem antivírus. Limites atuais: 25 MiB por upload, 20 MP para imagens, biblioteca até 500 arquivos/1 GiB e até 1000 publicações locais. Não há rotina automática de limpeza.
+Acesso administrativo deve usar a origem HTTPS própria da Central com credenciais reais; o Ingress foi retirado na 0.1.30. A sessão do painel e as rotas Editorial exigem autenticação; mutações exigem CSRF por ação, e a mídia é privada. MP4 passa por verificação **estrutural**; não há transcodificação nem antivírus. Limites atuais: 25 MiB por upload, 20 MP para imagens, biblioteca até 500 arquivos/1 GiB e até 1000 publicações locais. Não há rotina automática de limpeza.
 
 ## Testes de desenvolvimento — evidências já aceitas com ressalvas
 

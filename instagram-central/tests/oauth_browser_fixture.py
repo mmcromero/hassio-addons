@@ -109,7 +109,7 @@ class Proxy(BaseHTTPRequestHandler):
             raw = ('<!doctype html><title>Provider stub</title><a href="' + html.escape(callback, quote=True) + '">Voltar à Central</a>').encode()
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(raw))); self.end_headers(); self.wfile.write(raw); return
-        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback', '/panel', '/panel/account-context', '/accounts') and not route.path.startswith(('/accounts/', '/editorial/')):
+        if route.path not in ('/oauth/meta/start', '/oauth/meta/callback', '/panel', '/panel/account-context', '/accounts', '/webhook/instagram') and not route.path.startswith(('/accounts/', '/editorial/')):
             self.send_response(404); self.end_headers(); return
         cookie = self.headers.get('Cookie', '')
         headers = {'Host': self.headers.get('Host', ''), 'X-Forwarded-Proto': 'https'}
@@ -175,7 +175,7 @@ class Control(BaseHTTPRequestHandler):
             CONFIG['public_base_url'] = ''
             CONFIG['meta_oauth_redirect_uri'] = 'https://probe-review.test:' + str(first.server_address[1]) + '/oauth/meta/callback'
             if state['kind'] == 'dedicated_host':
-                CONFIG['public_base_url'] = 'https://alias-review.test:' + str(first.server_address[1])
+                CONFIG['public_base_url'] = 'https://central.probe-review.test:' + str(first.server_address[1])
                 CONFIG['meta_oauth_redirect_uri'] = CONFIG['public_base_url'] + '/oauth/meta/callback'
             state['alternate'] = server.oauth_meta.start_cookie_probe(CONFIG)[0]
             data = {}
@@ -200,7 +200,7 @@ cert = (x509.CertificateBuilder().subject_name(subject).issuer_name(subject).pub
         .serial_number(x509.random_serial_number()).not_valid_before(datetime.now(timezone.utc)-timedelta(days=1))
         .not_valid_after(datetime.now(timezone.utc)+timedelta(days=1))
         .add_extension(x509.SubjectAlternativeName([x509.DNSName(name) for name in
-                       ('probe-review.test', 'alias-review.test', 'meta-review.test')]), critical=False).sign(key, hashes.SHA256()))
+                       ('probe-review.test', 'central.probe-review.test', 'meta-review.test')]), critical=False).sign(key, hashes.SHA256()))
 fd = os.memfd_create('offline-oauth-fixture')
 os.write(fd, cert.public_bytes(serialization.Encoding.PEM) + key.private_bytes(serialization.Encoding.PEM,
          serialization.PrivateFormat.TraditionalOpenSSL, serialization.NoEncryption()))

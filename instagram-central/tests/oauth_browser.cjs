@@ -16,23 +16,23 @@ async function start(){
 (async()=>{
  const data=await start();
  function control(route){return new Promise((resolve,reject)=>{const q=http.get({hostname:'127.0.0.1',port:data.control,path:route},r=>{let s='';r.on('data',v=>s+=v);r.on('end',()=>resolve(JSON.parse(s)));});q.on('error',reject);});}
- browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--ignore-certificate-errors','--no-proxy-server','--disable-background-networking','--disable-component-update','--host-resolver-rules=MAP probe-review.test 127.0.0.1, MAP alias-review.test 127.0.0.1, MAP meta-review.test 127.0.0.1, MAP * ~NOTFOUND']});
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--ignore-certificate-errors','--no-proxy-server','--disable-background-networking','--disable-component-update','--host-resolver-rules=MAP probe-review.test 127.0.0.1, MAP central.probe-review.test 127.0.0.1, MAP meta-review.test 127.0.0.1, MAP * ~NOTFOUND']});
  const base='https://probe-review.test:'+data.https;
  async function context(){
   const ctx=await browser.newContext({ignoreHTTPSErrors:true,serviceWorkers:'block',extraHTTPHeaders:{Authorization:'Basic '+Buffer.from('admin:oauth_fixture_password_only_123').toString('base64')}});
-  await ctx.route('**/*',route=>['probe-review.test','alias-review.test','meta-review.test'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
+  await ctx.route('**/*',route=>['probe-review.test','central.probe-review.test','meta-review.test'].includes(new URL(route.request().url()).hostname)?route.continue():route.abort());
   return ctx;
  }
  for(const kind of ['same_https','same_host_other_port','different_start_host','insecure_start','strip_set_cookie','strip_request_cookie','rewrite_nonce','wrong_forwarded_https','split_cookie_header']){
   await control('/set/'+kind);const ctx=await context();const page=await ctx.newPage();
-  const origin=kind==='different_start_host'?'https://alias-review.test:'+data.https:kind==='insecure_start'?'http://probe-review.test:'+data.http:kind==='same_host_other_port'?'https://probe-review.test:'+data.other:base;
+  const origin=kind==='different_start_host'?'https://central.probe-review.test:'+data.https:kind==='insecure_start'?'http://probe-review.test:'+data.http:kind==='same_host_other_port'?'https://probe-review.test:'+data.other:base;
   const response=await page.goto(origin+'/oauth/meta/start?probe=1',{timeout:15000});
   const obs=await control('/observe');obs.case=kind;obs.status=response.status();
   const query=new URL(page.url()).searchParams;const nonce=query.get('probe');
   const expected='ig_oauth_state_'+crypto.createHash('sha256').update(nonce).digest('hex').slice(0,32);
   obs.expectedStored=(await ctx.cookies(base+'/oauth/meta/callback')).some(c=>c.name===expected);
   assert.equal(obs.status,['same_https','same_host_other_port','split_cookie_header'].includes(kind)?200:400,kind);
-  const text=await page.locator('body').innerText();assert(text.includes('0.1.29'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
+  const text=await page.locator('body').innerText();assert(text.includes('0.1.30'),kind+' version');assert(!text.includes(nonce),kind+' redaction');
   if(kind==='strip_request_cookie'||kind==='insecure_start'||kind==='strip_set_cookie'||kind==='different_start_host')assert(text.includes('Nenhum cabeçalho Cookie'),kind+' classification');
   if(kind==='rewrite_nonce')assert(text.includes('Cookies chegaram'),kind+' wrong-name classification');
   console.log('PASS probe '+JSON.stringify(obs));await ctx.close();
@@ -60,15 +60,25 @@ async function start(){
  assert.equal((await old.goto(base+'/oauth/meta/start?probe=1')).status(),400);
  console.log('PASS synthetic root worker interferes on old origin; reproduced without bypass');
  await control('/set/dedicated_host');
- const isolated='https://alias-review.test:'+data.https;
+ const isolated='https://central.probe-review.test:'+data.https;
  const own=await workerContext.newPage();await own.goto(isolated+'/panel');
  assert.equal(await own.evaluate(()=>navigator.serviceWorker.controller===null),true);
  await own.getByLabel('Senha',{exact:true}).fill('oauth_fixture_password_only_123');
  await own.getByRole('button',{name:'Entrar',exact:true}).click();await own.waitForURL('**/panel');
+ await own.goto(isolated+'/panel?view=settings');
  assert((await own.locator('body').innerText()).includes('Conexão com o Instagram'));
  const session=(await workerContext.cookies(isolated)).find(c=>c.name==='ig_panel_session');
  assert(session&&session.secure&&session.httpOnly&&session.sameSite==='Strict','proxy HTTPS session attributes');
  assert(!(await workerContext.cookies(base)).some(c=>c.name==='ig_panel_session'),'host-only session not sent to old HA hostname');
+ const launcher=await workerContext.newPage();await launcher.goto(base+'/worker-lab');
+ // Model the native non-Ingress HA anchor against the existing HTTPS proxy.
+ await launcher.setContent('<a href="'+base+'/webhook/instagram?open=central" target="_blank" rel="noopener">Abrir página</a>');
+ const opened=workerContext.waitForEvent('page');await launcher.getByRole('link',{name:'Abrir página',exact:true}).click();
+ const external=await opened;await external.waitForURL(isolated+'/panel');
+ await external.getByRole('heading',{name:'Mensagens',exact:true}).waitFor();
+ assert.equal(await external.evaluate(()=>window.opener),null);
+ assert.equal(new URL(launcher.url()).origin,base);await external.close();await launcher.close();
+ console.log('PASS native external anchor model: one click, new tab, existing GET proxy redirect, dedicated origin/session and no opener');
  const probe=await workerContext.newPage();assert.equal((await probe.goto(isolated+'/oauth/meta/start?probe=1')).status(),200);
  assert((await probe.locator('body').innerText()).includes('Teste aprovado'));
  assert.equal(await probe.evaluate(()=>navigator.serviceWorker.controller===null),true);
@@ -81,7 +91,7 @@ async function start(){
  assert.equal((await control('/observe')).exchanges,proxyBefore+1);
  console.log('PASS proxy HTTPS OAuth: synthetic provider round trip returns to dedicated hostname and existing account store');
 
- await own.goto(isolated+'/panel');
+ await own.goto(isolated+'/panel?view=settings');
  let checkPosts=0;
  own.on('request',request=>{if(request.method()==='POST'&&new URL(request.url()).pathname==='/panel/meta/check')checkPosts++;});
  // Hold the first submit at the document boundary, after the real region
@@ -98,7 +108,7 @@ async function start(){
  assert.equal(await own.getByRole('button',{name:'Verificar acesso Meta',exact:true}).isEnabled(),true);
  assert.equal(await own.locator('#meta-action-progress').isHidden(),true);
  await own.getByRole('button',{name:'Verificar acesso Meta',exact:true}).click();
- await own.waitForURL('**/panel');
+ await own.waitForURL('**/panel?view=settings');
  assert.equal(checkPosts,1,'only one Meta check POST');
  console.log('PASS Meta loading feedback under CSP: immediate busy state, disabled button, live notice and one POST despite repeat submission');
  const diagnostic=own.getByLabel('Diagnóstico de recebimento',{exact:true});
@@ -108,7 +118,7 @@ async function start(){
  assert((await diagnostic.innerText()).includes('Válido: Sim; pertence ao app configurado: Sim; instagram_basic: Sim; instagram_manage_messages: Sim.'));
  assert((await diagnostic.innerText()).includes('Objeto Instagram encontrado. Ativo: Sim; messages: Sim; HTTPS: Sim; caminho /webhook/instagram: Sim.'));
  assert(!(await own.locator('body').innerText()).includes('SYNTHETIC_CONVERSATION_ID'));
- assert((await own.getByRole('status').innerText()).includes('Verificação de identidade concluída'));
+ assert((await own.getByLabel('Conexão com Instagram',{exact:true}).innerText()).includes('Verificação de identidade concluída'));
  console.log('PASS visible receiving audit after authenticated POST/303: subscription and conversation access, no private content');
  const primaryDigest=(await control('/observe')).primaryDigest;
  await own.goto(isolated+'/accounts');
@@ -117,9 +127,9 @@ async function start(){
   await own.getByLabel('Nome da conta',{exact:true}).fill(name);
   await own.getByLabel('Usuário do Instagram',{exact:true}).fill('@'+user);
   await own.getByRole('button',{name:'Adicionar conta',exact:true}).click();
-  await own.waitForURL('**/accounts/*/panel');
+  await own.waitForURL('**/accounts/*/panel?view=settings');
   const accountPage=await workerContext.newPage();await accountPage.goto(own.url());
-  const accountBase=own.url().replace(/\/panel$/,'');
+  const accountBase=own.url().replace(/\/panel\?view=settings$/,'');
   const popupPromise=workerContext.waitForEvent('page');
   await accountPage.getByRole('link',{name:'Conectar Instagram pela Meta',exact:true}).click();
   const popup=await popupPromise;await popup.getByRole('link',{name:'Voltar à Central'}).waitFor();
@@ -129,13 +139,13 @@ async function start(){
  for(const item of [...contexts].reverse()){
   await item.popup.getByRole('link',{name:'Voltar à Central'}).click();
   assert((await item.popup.locator('body').innerText()).includes('Conta @'+item.user+' verificada e autorizada'));
-  assert.equal(await item.popup.getByRole('link',{name:'Voltar ao painel da conta',exact:true}).getAttribute('href'),new URL(item.base).pathname+'/panel');
+  assert.equal(await item.popup.getByRole('link',{name:'Abrir Configurações Meta desta conta',exact:true}).getAttribute('href'),new URL(item.base).pathname+'/panel?view=settings');
   await item.page.reload();assert.equal(await item.page.locator('.account').innerText(),'@'+item.user);
  }
  assert.equal((await control('/observe')).primaryDigest,primaryDigest,'primary encrypted credential preserved byte-for-byte');
  const left=contexts[0].page,right=contexts[1].page;
- await left.getByRole('link',{name:'Editorial',exact:true}).click();
- await right.getByRole('link',{name:'Editorial',exact:true}).click();
+ await left.getByRole('link',{name:'Visão geral',exact:true}).click();
+ await right.getByRole('link',{name:'Visão geral',exact:true}).click();
  await left.locator('#count-all').filter({hasText:'0'}).waitFor();
  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAIAAAAC64paAAAAHUlEQVR4nGNMaljDQC5gIlvnqOZRzaOaRzVTRTMAyc8BtjG4iWEAAAAASUVORK5CYII=','base64');
  await left.locator('[data-view="library"]').click();

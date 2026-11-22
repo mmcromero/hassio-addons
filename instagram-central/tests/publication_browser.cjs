@@ -19,8 +19,8 @@ let child,browser;
   await page.getByRole('button',{name:'Entrar',exact:true}).click();
   for(const [prefix,user] of [['','umdoislab'],['/accounts/'+config.second,'second_account']]){
     await page.goto(config.url+prefix+'/editorial/');
-    await page.getByRole('button',{name:'Verificar publicação',exact:true}).click();
-    await page.getByText('Token e permissão de publicação conferidos para esta conta.',{exact:true}).waitFor();
+    assert.equal(await page.locator('#check-publication').count(),0);
+    assert.equal(await page.getByText('Publicação sob seu controle',{exact:true}).count(),0);
     await page.locator('[data-view="approval"]').click();
     if(!prefix)await page.getByRole('button',{name:'Confirmar envio agendado',exact:true}).waitFor();
     await page.getByRole('button',{name:'Publicar agora',exact:true}).click();

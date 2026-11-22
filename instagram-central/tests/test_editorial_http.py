@@ -124,7 +124,7 @@ class EditorialHTTPTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("script-src 'self'", headers["Content-Security-Policy"])
         self.assertNotIn("unsafe-inline", headers["Content-Security-Policy"])
-        self.assertIn(b'href="/panel#messages"', body)
+        self.assertIn(b'href="/panel"', body)
         self.assertIn(b'class="topbar"', body)
         self.assertIn(b'class="account">@umdoislab', body)
         self.assertIn(b'action="../auth/logout"', body)

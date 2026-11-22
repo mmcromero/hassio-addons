@@ -85,15 +85,17 @@ let child,browser;
   const afterDeletion=await (await page.request.get(config.url+'/editorial/api/state')).json();
   assert.equal(afterDeletion.posts.length,initial.posts.length);assert.equal(afterDeletion.media.length,1);
   console.log('PASS deletion cancel/confirm, unused file removed, shared media preserved');
+  await page.getByRole('link',{name:'Configurações Meta',exact:true}).click();
   // Same rejected check still produces a completion acknowledgement and preserves stage.
   await page.route('**/editorial/api/drafts',async route=>{
-    if(route.request().headers()['x-editorial-action']==='check')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ready:false})});
+    if(route.request().headers()['x-editorial-action']==='check')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ready:false,message:'Diagnóstico sintético preservado',checkedAt:1795317079})});
     return route.continue();
   },{times:1});
   await page.locator('#check-publication').click();
-  await page.waitForFunction(()=>document.getElementById('toast').textContent.startsWith('Verificação concluída:'));
+  await page.waitForFunction(()=>document.getElementById('publication-check-feedback').textContent.startsWith('Verificação concluída:'));
   assert.equal(await page.locator('#check-publication').isDisabled(),false);
   console.log('PASS XHR byte upload followed by validation phase and explicit check completion');
+  await page.getByRole('link',{name:'Visão geral',exact:true}).click();
   await page.locator('[data-view="approval"]').click();await page.locator('#approval-list .post-preview-trigger').first().click();
   await page.locator('#preview-dialog[open]').waitFor();await page.keyboard.press('Escape');
   await page.waitForFunction(()=>!document.getElementById('preview-dialog').open);

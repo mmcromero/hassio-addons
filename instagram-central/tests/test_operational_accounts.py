@@ -49,7 +49,7 @@ class OperationalAccounts(unittest.TestCase):
         token=re.search(r'name="csrf" value="([a-f0-9]{64})"',page).group(1)
         status,headers,_=self.form('/accounts',{'username':username,'display_name':name,'csrf':token})
         self.assertEqual(status,303)
-        path=headers['Location'].removesuffix('/panel')
+        path=headers['Location'].removesuffix('/panel?view=settings')
         return path,path.split('/')[2]
 
     def csrf(self,path):
@@ -183,7 +183,7 @@ class OperationalAccounts(unittest.TestCase):
         with patch.object(server.instagram_connection,'verify_access',return_value={'account_id':'22222222','username':'first_review','verified_at':2}) as verify, patch.object(server.instagram_connection,'diagnose_receiving',return_value={'checked_at':1}) as diagnose:
             status,headers,_=self.form(path+'/panel/meta/check',{'csrf':secondary_csrf})
             self.assertEqual(status,303)
-            self.assertEqual(headers['Location'],path+'/panel')
+            self.assertEqual(headers['Location'],path+'/panel?view=settings')
             self.assertEqual(verify.call_args.args[0]['business_id'],business)
             self.assertEqual(diagnose.call_args.args[0]['business_id'],business)
             self.assertEqual(diagnose.call_args.args[1]['access_token'],credential['access_token'])

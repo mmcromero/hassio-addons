@@ -1,0 +1,111 @@
+"""Separate account settings and native HA launcher; loopback/synthetic only."""
+import json
+import re
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+from urllib.parse import urlencode
+
+import test_http as contracts
+
+server = contracts.server
+
+
+class SettingsNavigation(unittest.TestCase):
+    def setUp(self):
+        self.fixture = contracts.HTTPContractTests()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.tearDown)
+        _, headers, _ = self.fixture.request('/auth/login', 'POST', urlencode({
+            'username': 'admin', 'password': self.fixture.config['panel_password']}),
+            {'Content-Type': 'application/x-www-form-urlencoded'})
+        self.headers = {'Cookie': headers['Set-Cookie'].split(';')[0]}
+
+    def request(self, path):
+        return self.fixture.request(path, headers=self.headers)
+
+    def test_settings_are_separate_cached_only_documents_without_message_content(self):
+        self.assertEqual(self.fixture.post_event()[0], 200)
+        cached = {'ready': True, 'message': 'Diagnóstico sintético', 'checkedAt': 1795317079}
+        with patch.object(server.PUBLICATIONS, 'public_state', return_value=cached) as state, \
+                patch.object(server.instagram_connection, 'request_graph') as graph:
+            status, _, messages = self.request('/panel')
+            self.assertEqual(status, 200)
+            state.assert_not_called()
+            self.assertIn(b'customer-1', messages)
+            self.assertIn(b'id="messages"', messages)
+            self.assertNotIn(b'id="meta-actions"', messages)
+            self.assertNotIn(b'id="check-publication"', messages)
+            for _ in range(2):
+                status, headers, settings = self.request('/panel?view=settings')
+                self.assertEqual(status, 200)
+                self.assertIn(b'id="meta-actions"', settings)
+                self.assertIn(b'id="check-publication"', settings)
+                self.assertIn(b'customer-1', messages)
+                self.assertNotIn(b'customer-1', settings)
+                self.assertNotIn(b'id="messages"', settings)
+                self.assertIn(b'Diagn\xc3\xb3stico sint\xc3\xa9tico', settings)
+                self.assertIn("connect-src 'self'", headers['Content-Security-Policy'])
+            self.assertEqual(state.call_count, 2)
+            graph.assert_not_called()
+
+    def test_secondary_settings_keep_identity_routes_and_login_boundaries(self):
+        with server.database() as db:
+            server.account_registry.ensure_primary(db, 'business-1')
+            business = server.account_registry.provision(db, 'second_review', 'Segunda')
+        path = '/accounts/' + business
+        cached = {'ready': False, 'message': 'Sem consulta', 'checkedAt': None}
+        with patch.object(server.PUBLICATIONS, 'public_state', return_value=cached) as state:
+            status, _, body = self.request(path + '/panel?view=settings')
+            self.assertEqual(status, 200)
+            state.assert_called_once_with(business)
+            self.assertIn(('data-publication-base="'+path+'/editorial/"').encode(), body)
+            self.assertIn(('href="'+path+'/panel?view=settings" aria-current="page"').encode(), body)
+        self.assertEqual(self.fixture.request(path+'/panel?view=settings')[0], 403)
+        self.assertIn(b'autocomplete="current-password"', self.fixture.request('/panel?view=settings')[2])
+        for suffix in ('?view=unknown', '?view=settings&view=settings', '?view=settings&other=1'):
+            self.assertEqual(self.request('/panel'+suffix)[0], 404)
+
+    def test_editorial_has_no_persistent_diagnostics_or_uptime_banner(self):
+        status, _, body = self.request('/editorial/')
+        self.assertEqual(status, 200)
+        self.assertNotIn(b'id="check-publication"', body)
+        self.assertNotIn(b'id="publication-status"', body)
+        self.assertNotIn('Publicação sob seu controle'.encode(), body)
+        self.assertNotIn('Central precisa permanecer ligada'.encode(), body)
+
+    def test_native_launcher_redirects_only_to_configured_https_origin(self):
+        self.fixture.config.update(public_base_url='https://central.test:8443', ingress_enabled=False)
+        status, headers, body = self.fixture.request('/webhook/instagram?open=central')
+        self.assertEqual(status, 303)
+        self.assertEqual(headers['Location'], 'https://central.test:8443/panel')
+        self.assertEqual(headers['Cache-Control'], 'no-store')
+        self.assertNotIn('Set-Cookie', headers)
+        self.assertEqual(body, b'')
+        for origin in ('', 'http://central.test', 'https://user:secret@central.test', 'https://central.test/?next=evil'):
+            self.fixture.config['public_base_url'] = origin
+            status, headers, _ = self.fixture.request('/webhook/instagram?open=central')
+            self.assertEqual(status, 503)
+            self.assertNotIn('Location', headers)
+
+    def test_launch_query_cannot_override_destination_or_webhook_verification(self):
+        self.fixture.config['public_base_url'] = 'https://central.test:8443'
+        for query in ('open=central&next=https://evil.test', 'open=central&open=central', 'open=other'):
+            status, headers, _ = self.fixture.request('/webhook/instagram?'+query)
+            self.assertEqual(status, 403)
+            self.assertNotIn('Location', headers)
+        query = urlencode({'hub.mode':'subscribe', 'hub.verify_token':self.fixture.config['meta_verify_token'], 'hub.challenge':'synthetic-challenge'})
+        status, _, body = self.fixture.request('/webhook/instagram?'+query)
+        self.assertEqual((status, body), (200, b'synthetic-challenge'))
+        self.assertEqual(self.fixture.post_event()[0], 200)
+
+    def test_manifest_uses_native_external_ui_without_port_exposure_or_sidebar(self):
+        source = (Path(__file__).resolve().parents[1]/'config.yaml').read_text()
+        self.assertRegex(source, r'(?m)^ingress: false$')
+        self.assertNotRegex(source, r'(?m)^(ports|host_network|ingress_port|panel_title|panel_icon):')
+        url = re.search(r'(?m)^webui: "([^"]+)"$', source)[1]
+        # Supervisor validate.py Web UI grammar and App.webui port fallback.
+        self.assertRegex(url, r'^(?:https?|\[PROTO:\w+\]):\/\/\[HOST\]:\[PORT:\d+\].*$')
+        url = re.sub(r'\[PORT:(\d+)\]', lambda match: {}.get(match[1]+'/tcp', match[1]), url)
+        self.assertEqual(url.replace('[HOST]', 'romeropi.duckdns.org'),
+                         'https://romeropi.duckdns.org:8443/webhook/instagram?open=central')

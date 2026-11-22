@@ -85,9 +85,9 @@ def sidebar(cfg=None, *, active='accounts', editorial=False):
                '<div class="ui-account-context"><strong>Comece escolhendo uma conta</strong><span>O conteúdo e a conexão ficam separados por conta.</span></div>')
     groups = ('<section class="ui-nav-group"><h2>Conteúdo</h2><nav class="nav" aria-label="Conteúdo">' + contents + '</nav></section>'
               '<section class="ui-nav-group"><h2>Atendimento</h2><nav class="nav" aria-label="Atendimento">' +
-              item('Mensagens', '◉', prefix + '/panel#messages', selected=active == 'messages') + '</nav></section>'
+              item('Mensagens', '◉', prefix + '/panel', selected=active == 'messages') + '</nav></section>'
               '<section class="ui-nav-group"><h2>Configuração</h2><nav class="nav" aria-label="Configuração">' +
-              item('Conexão Meta', '⚙', prefix + '/panel#connection', selected=active == 'connection') + '</nav></section>') if active != 'accounts' else ''
+              item('Configurações Meta', '⚙', prefix + '/panel?view=settings', selected=active == 'settings') + '</nav></section>') if active != 'accounts' else ''
     return ('<aside class="sidebar ui-sidebar"><div class="ui-sidebar-heading"><a class="brand" href="/accounts" aria-label="Central Instagram — Contas">'
             '<span class="brand-icon">U<span class="dot">.</span></span><span><strong>CENTRAL INSTAGRAM</strong><small>Conteúdo e atendimento</small></span></a>'
             '<button class="ui-menu-toggle" type="button" aria-expanded="false" aria-controls="ui-navigation">Menu</button></div>' +

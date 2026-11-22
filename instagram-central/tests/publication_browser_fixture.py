@@ -30,9 +30,13 @@ def credentials(business='umdoislab'):
             'access_token': 'synthetic-browser-token-'+business}
 server._meta_credential = credentials
 meta = FakeMeta();meta.delivery = server.PUBLICATION_DELIVERY
+checks = []
+def check_connection(cfg, credential, **kwargs):
+    checks.append(cfg['business_id'])
+    return {'origin': 'https://callback.example:8443', 'stories': True}
 hub = PublisherHub(server.meta_configuration_for_business, credentials, server.editorial_store_for_business,
     lambda: ['umdoislab', second], server.PUBLICATION_DELIVERY, api_factory=meta.client,
-    checker=lambda *a, **k: {'origin': 'https://callback.example:8443', 'stories': True})
+    checker=check_connection)
 server.PUBLICATIONS = hub
 if '--history' in sys.argv[2:]:
     from test_editorial_history import entry
@@ -83,7 +87,7 @@ class Handler(server.Handler):
             meta.metric_failure = editorial_graph.PublishingError('meta_rejected', code=100, subcode=33)
             return self.respond(200, {'syntheticFailure': True})
         if self.path == '/__publication_test':
-            return self.respond(200, {'published': meta.published, 'calls': [item[:2] for item in meta.calls]})
+            return self.respond(200, {'published': meta.published, 'calls': [item[:2] for item in meta.calls], 'checks': checks})
         super().do_GET()
 http = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=hub.run, daemon=True).start()

@@ -40,7 +40,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.29"
+APP_VERSION = "0.1.30"
 
 META_ACTION_SCRIPT = """(() => {
   const region = document.getElementById('meta-actions');
@@ -716,7 +716,7 @@ def render_connection_section(cfg, summary):
     except ValueError:
         origin, origin_matches = "", False
     if origin:
-        actions.append('<a href="' + html.escape(origin + cfg.get("account_path", "") + "/panel", quote=True)
+        actions.append('<a href="' + html.escape(origin + cfg.get("account_path", "") + "/panel?view=settings", quote=True)
                        + '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a>')
     if not origin_matches:
         actions.append('<p>Configure o retorno OAuth na mesma URL pública HTTPS da Central antes de conectar.</p>')
@@ -767,21 +767,39 @@ def _meta_action_body(raw):
     return values["csrf"][0]
 
 
-def render_panel(cfg=None):
-    """Escaped local-only panel, with no Meta send or browser scripts."""
+def render_publication_settings(cfg):
+    result = PUBLICATIONS.public_state(cfg.get('business_id', 'umdoislab'))
+    message = result.get('message', '')
+    if message == 'Verifique o acesso de publicação desta conta.':
+        message = 'Sem consulta manual recente. O acesso será conferido automaticamente ao publicar.'
+    endpoint = html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/editorial/', quote=True)
+    return ('<section class="panel publication-settings" aria-label="Diagnóstico de publicação">'
+            '<h2>Publicação no Instagram</h2><p>O acesso é conferido automaticamente quando necessário para enviar uma publicação. '
+            'Use esta consulta manual após alterar a conexão ou para investigar um erro.</p>'
+            '<p id="publication-status" role="status" aria-live="polite">' + html.escape(message) + '</p>'
+            '<p id="publication-checked-at" data-checked-at="' + str(result.get('checkedAt') or '') + '"></p>'
+            '<button type="button" class="btn quiet" id="check-publication" data-publication-base="' + endpoint + '">Verificar publicação</button>'
+            '<p id="publication-check-feedback" role="status" aria-live="polite"></p></section>')
+
+
+def render_panel(cfg=None, *, settings_page=False):
+    """Account-scoped messages or settings, rendered as separate documents."""
     cfg = cfg or {}
-    with database() as conn:
-        account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
-        account_id = account_registry.require_business(conn, cfg.get('business_id', account_registry.PRIMARY_BUSINESS))['instagram_account_id']
-        rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
-          i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
-          COALESCE(d.draft_text, ''), COALESCE(d.status, '')
-          FROM inbound i LEFT JOIN handoff h
-            ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
-          LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
-            AND i.sender_id=d.sender_id AND i.message_id=d.message_id
-          WHERE i.recipient_id=?
-          ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""", (account_id,)).fetchall()
+    rows, message_count = [], 0
+    if not settings_page:
+        with database() as conn:
+            account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
+            account_id = account_registry.require_business(conn, cfg.get('business_id', account_registry.PRIMARY_BUSINESS))['instagram_account_id']
+            message_count = conn.execute('SELECT COUNT(*) FROM inbound WHERE recipient_id=?', (account_id,)).fetchone()[0]
+            rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
+              i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
+              COALESCE(d.draft_text, ''), COALESCE(d.status, '')
+              FROM inbound i LEFT JOIN handoff h
+                ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
+              LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
+                AND i.sender_id=d.sender_id AND i.message_id=d.message_id
+              WHERE i.recipient_id=?
+              ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""", (account_id,)).fetchall()
     entries = []
     cfg = cfg or {}
     for account, sender, message, received, processed, state, draft, draft_status in rows:
@@ -801,13 +819,24 @@ def render_panel(cfg=None):
         entries.append("<tr>" + "".join("<td>" + html.escape(str(v), quote=True) +
                        "</td>" for v in cells) + '<td><div class="item-actions">' + "".join(actions) + "</div></td></tr>")
     body = "".join(entries) if entries else '<tr><td colspan="7">Nenhuma mensagem recebida.</td></tr>'
-    summary = connection_summary(cfg)
-    connection_section = render_connection_section(cfg, summary)
+    page_name = 'Configurações Meta' if settings_page else 'Mensagens'
+    content = ('''<div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
+      <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p></div>
+      <section class="panel" aria-label="Últimas mensagens"><div class="panel-title"><h2>Mensagens recebidas</h2>
+      <a class="btn quiet" href="panel">Atualizar mensagens</a></div>
+      <p><strong>Mensagens armazenadas: ''' + str(message_count) + '''</strong></p>
+      <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
+      <div class="table-wrap"><table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead>
+      <tbody>''' + body + '</tbody></table></div></section>')
+    if settings_page:
+        content = ('<div class="heading"><span class="eyebrow">CONFIGURAÇÃO DA CONTA</span>'
+                   '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' +
+                   render_connection_section(cfg, connection_summary(cfg)) + render_publication_settings(cfg))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#111c29">
 <meta name="robots" content="noindex,nofollow">
-<title>Mensagens · Central Instagram Umdoislab</title>
+<title>""" + page_name + """ · Central Instagram</title>
 <style>
 :root{color-scheme:dark;--bg:#0c1520;--sidebar:#0e1722;--surface:#152231;--surface2:#1b2b3a;--edge:#2b4051;--text:#f3f5f7;--muted:#a3b5c5;--orange:#ff8e40;--green:#57cba2;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 *{box-sizing:border-box}
@@ -892,26 +921,16 @@ th:nth-child(5){width:11%}th:nth-child(6){width:16%}th:nth-child(7){width:19%}
 </style></head><body>
 <a class="skip" href="#principal">Pular para conteúdo</a>
 <div class="shell">
-""" + interface_ui.sidebar(cfg, active='messages') + """
+""" + interface_ui.sidebar(cfg, active='settings' if settings_page else 'messages') + """
 <main id="principal" class="main">
  <header class="topbar">
-  <div class="crumb">""" + html.escape(str(cfg.get("account_display_name") or "Umdoislab")) + """ <span>/</span> <strong>Mensagens</strong></div>
+  <div class="crumb">""" + html.escape(str(cfg.get("account_display_name") or "Umdoislab")) + """ <span>/</span> <strong>""" + page_name + """</strong></div>
   <div class="top-actions"><span class="account">@""" + html.escape(str(cfg.get("instagram_expected_username") or "umdoislab")) + """</span>
   <form class="logout-form" method="post" action="auth/logout"><button type="submit" class="btn quiet">Sair</button></form>
   </div>
  </header>
  <div class="content">
-  <div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
-   <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p>
-  </div>
-  <section class="panel" aria-label="Últimas mensagens">
-   <div class="panel-title"><h2>Mensagens recebidas</h2><a class="btn quiet" href="panel">Atualizar mensagens</a></div>
-   <p><small>Últimas 50 mensagens. Nenhuma resposta é enviada ao Instagram.</small></p>
-   <div class="table-wrap">
-    <table><thead><tr><th>Remetente</th><th>Mensagem</th><th>Estado</th><th>Recebida</th><th>Fila</th><th>Rascunho (sem envio)</th><th>Ações</th></tr></thead><tbody>"""
-            + body + """</tbody></table></div></section>
-   <div id="connection">""" + connection_section + """</div>
-   <div class="note">ⓘ As ações desta área controlam o atendimento. Respostas automáticas por Direct continuam desativadas.</div>
+""" + content + """
   </div>
  </main>
 </div></body></html>""")
@@ -1040,7 +1059,7 @@ class Handler(BaseHTTPRequestHandler):
                     with database() as conn:
                         business = account_registry.provision(conn, fields['username'], fields['display_name'])
                     self.send_response(303)
-                    self.send_header('Location', account_management.prefix(business) + '/panel')
+                    self.send_header('Location', account_management.prefix(business) + '/panel?view=settings')
                     self.send_header('Cache-Control', 'no-store')
                     self.send_header('Content-Length', '0')
                     self.end_headers()
@@ -1093,6 +1112,22 @@ class Handler(BaseHTTPRequestHandler):
         if not self.account_route('GET'):
             return
         route = urlsplit(self.path)
+        if self.path == '/webhook/instagram?open=central':
+            # Native HA Web UI launcher: reuse the existing GET proxy route.
+            # The destination comes only from validated local configuration.
+            try:
+                origin = origin_configuration.public_origin(settings())
+            except ValueError:
+                origin = ''
+            if not origin:
+                return self.respond(503, {'error': 'public Central address unavailable'})
+            self.send_response(303)
+            self.send_header('Location', origin + '/panel')
+            self.send_header('Content-Length', '0')
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Referrer-Policy', 'no-referrer')
+            self.end_headers()
+            return
         if editorial_delivery.serve(self, route, PUBLICATION_DELIVERY):
             return
         if route.path.startswith("/editorial") and editorial_http.handle(self, "GET", route, self.request_configuration(),
@@ -1247,20 +1282,21 @@ class Handler(BaseHTTPRequestHandler):
             # No token, authorization code, client ID, or secret is reflected to the client.
             return self.respond(200, "<!doctype html><html lang='pt-BR'><meta charset='utf-8'>"
                 "<title>Instagram</title><body>Conta @" + html.escape(cfg['instagram_expected_username']) + " verificada e autorizada. "
-                "Confira o acesso de publicação no Editorial ou volte ao painel da conta. "
+                "A conexão e as verificações estão em Configurações Meta. "
                 "Nenhum conteúdo foi enviado.<p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/editorial/'>Abrir Editorial desta conta</a></p><p><a href='" + account_management.prefix(cfg['business_id']) +
-                "/panel'>Voltar ao painel da conta</a></p></body></html>", "text/html")
-        if self.path in ("/", "/panel"):
+                "/panel?view=settings'>Abrir Configurações Meta desta conta</a></p></body></html>", "text/html")
+        settings_page = route.path in ('/', '/panel') and route.query == 'view=settings'
+        if self.path in ("/", "/panel") or settings_page:
             cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")
-            page = render_panel(cfg)
+            page = render_panel(cfg, settings_page=settings_page)
             csrf_check = panel_login.admin_csrf_token(
                 self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("check"))
             csrf_subscribe = panel_login.admin_csrf_token(
                 self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("subscribe"))
-            if csrf_check:
+            if settings_page and csrf_check:
                 controls = '<form method="post" action="panel/meta/check"><input type="hidden" name="csrf" value="' + csrf_check + '"><button>Verificar acesso Meta</button></form>'
                 if (connection_summary(cfg)["accountVerified"] and
                         connection_summary(cfg)["webhookEnabled"] and
@@ -1270,7 +1306,7 @@ class Handler(BaseHTTPRequestHandler):
                                     '<div id="meta-actions">' + controls +
                                     '<p id="meta-action-progress" role="status" aria-live="polite" hidden></p>' +
                                     '</div><script>' + META_ACTION_SCRIPT + '</script>')
-            return self.respond(200, page, "text/html", csp=META_ACTION_CSP)
+            return self.respond(200, page, "text/html", csp=META_ACTION_CSP + "; connect-src 'self'")
         if self.path == "/bridge/pending":
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
@@ -1377,7 +1413,7 @@ class Handler(BaseHTTPRequestHandler):
                     OSError, ValueError):
                 return self.respond(422, {"error": "Meta access or subscription not verified"})
             self.send_response(303)
-            self.send_header("Location", account_management.prefix(self.request_business()) + "/panel")
+            self.send_header("Location", account_management.prefix(self.request_business()) + "/panel?view=settings")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", "0")
             self.end_headers()

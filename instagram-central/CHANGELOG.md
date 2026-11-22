@@ -1,3 +1,10 @@
+## 0.1.30
+
+- Separa Mensagens e Configurações Meta em páginas por conta. Centraliza conexão, diagnóstico de recebimento e verificação de publicação nas configurações, com retorno das ações Meta/cadastro/OAuth para essa área. Mantém rotas existentes do proxy e sessão/CSRF por conta/ação.
+- Retira do Editorial os avisos fixos de verificação e de funcionamento da agenda. Verificação manual de publicação mostra carregamento, bloqueia repetição, informa conclusão e preserva o resultado anterior em falhas. O executor continua verificando o acesso quando necessário; não exige consulta manual antes de cada publicação.
+- Substitui Ingress pelo botão externo nativo do Home Assistant com template webui válido e remove o atalho lateral Ingress. Usa o HTTPS 8443 e GET já existentes para redirecionar à origem pública configurada; não expõe 8099, não cria mapeamento de portas nem exige alteração de proxy. Acesso ao HA pelo domínio habitual é necessário para o certificado HTTPS.
+- Registra histórico carregado e algumas métricas reais confirmadas pelo proprietário na 0.1.29. Não altera receptor de DMs, publicação, histórico, mídias ou agenda. A reorganização geral do menu fica para discussão posterior.
+
 ## 0.1.29
 
 - Importa histórico do Instagram por conta, paginado e em segundo plano, com progresso, cancelamento, persistência/reinício e deduplicação por ID remoto. Apenas consultas GET; não cria envios nem transforma histórico em rascunho.

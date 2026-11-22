@@ -44,7 +44,7 @@ class SharedInterfaceTests(unittest.TestCase):
                            'instagram_expected_username': 'secondary'}, active='messages')
         self.assertNotIn('<script>bad', html)
         self.assertIn('&lt;script&gt;bad&lt;/script&gt;', html)
-        for route in ('/panel#messages', '/panel#connection', '/editorial/#editor'):
+        for route in ('/panel', '/panel?view=settings', '/editorial/#editor'):
             self.assertIn('href="/accounts/ig_0000000000000001'+route+'"', html)
         self.assertIn('href="/accounts"', html)
         self.assertNotIn('href="/panel', html)
