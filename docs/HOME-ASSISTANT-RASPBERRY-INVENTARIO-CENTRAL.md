@@ -1,12 +1,16 @@
 # HOME ASSISTANT / RASPBERRY PI — INVENTÁRIO OPERACIONAL CENTRAL
 
-**Revisão:** 20/11/2026 (capturas e verificações operacionais fornecidas pelo proprietário nesta data)  
+**Revisão:** 22/11/2026 (consulta direta ao Supervisor via HA-MCP; capturas e verificações históricas de 19–20/11 preservadas)  
 **Responsável editorial:** Governança  
-**Natureza:** referência compartilhada entre todos os projetos que usam o mesmo Home Assistant. Fonte de código, configurações e credenciais continuam isoladas em seus projetos e no dispositivo. **Não é um backup nem acesso remoto ao Supervisor.**
+**Natureza:** referência compartilhada entre todos os projetos que usam o mesmo Home Assistant. Fonte de código, configurações e credenciais continuam isoladas em seus projetos e no dispositivo. **Não é um backup nem substitui a consulta ao Supervisor.**
 
 ## Leitura obrigatória para qualquer equipe
 
 Antes de perguntar ao proprietário sobre apps, infraestrutura, repositórios, publicação, ARM64, n8n ou disponibilidade do laboratório, consultar este inventário, [AGENTS.md](../AGENTS.md), [CONTRIBUTING.md](../CONTRIBUTING.md), [inventário de distribuições](INVENTARIO-DISTRIBUICOES-HA-2026-11-19.md) e manual do subsistema. **Não repetir perguntas respondidas aqui**, mas verificar dados voláteis no Supervisor quando necessário. Se uma decisão depender da versão exata, configuração real, arquivos persistentes ou operação irreversível, não inferir dados ausentes.
+
+## Acesso direto homologado em 22/11/2026
+
+O [manual HA-MCP — acesso somente leitura](HA-MCP-ACESSO-SOMENTE-LEITURA.md) registra instalação, configuração, testes e limites. O plugin pessoal **Home Assistant — Somente leitura** permite consulta direta ao Supervisor e ao Core sem depender do n8n. Resultado observado: 31 apps instalados, 28 em execução, 3 parados e 2 atualizações disponíveis; Core 2026.10.4; HA-MCP 9.2.0, modo somente leitura confirmado. Logs do Supervisor, Instagram e WhatsApp foram consultados com sucesso. Recuperação do túnel após reinício pendente. Usar consulta atual, quando disponível no chat e autorizada pela função, antes de solicitar dados ao proprietário. Não publicar credenciais nem permitir alterações por essa conexão. O inventário abaixo conserva evidências históricas; não confundir com estado atual.
 
 ## 1. Ambiente compartilhado
 
@@ -82,8 +86,8 @@ O catálogo central contém quatro diretórios de app: `pager-virtual/`, `evolut
 
 ## 6. Dados ainda não comprovados
 
-- Versão HA OS, Supervisor, firmware e kernel; uso atual de CPU/RAM/disco, rede e portas efetivas.
-- Versão instalada, slug/ID completo, origem e persistência de cada app; detalhes de reinício e logs.
+- Na captura histórica, versão HA OS, Supervisor, firmware e kernel; uso atual de CPU/RAM/disco, rede e portas efetivas. Em 22/11 o proprietário informou HA OS 18.4 e Supervisor 2026.11.0; o Core 2026.10.4 foi confirmado via HA-MCP.
+- Na captura histórica, versão instalada, slug/ID completo e origem de cada app; desde 22/11 esses metadados e logs podem ser consultados diretamente. Persistência, recuperação após reinício e saúde funcional requerem evidência própria.
 - Quais lojas de terceiros ainda fornecem apps instalados; se `Local Apps` ainda possui instalações locais.
 - Política e sucesso de backups/restore; dependências cruzadas entre serviços; disponibilidade de cada aplicação.
 
