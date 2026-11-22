@@ -33,6 +33,9 @@ Não registrar valores reais de chave API, token HA, URL privada, identificadore
 
 A integração aceita múltiplas entradas porque o código usa o Tunnel ID como identificador único da config entry e bloqueia somente a duplicação do mesmo ID. Cada entrada recebe entry_id, diretório de execução e processo tunnel-client próprios. O desenho correto é uma instalação da integração com duas entradas independentes.
 
+**Verificação de suporte a múltiplas entradas no código upstream:** revisão consultada `a56e5a5` de `norpol/hass-codex-tunnel-mcp`. O fluxo de configuração usa `async_set_unique_id(tunnel_id)` e bloqueia apenas a duplicação daquele ID ([config_flow.py, linhas 71–86](https://github.com/norpol/hass-codex-tunnel-mcp/blob/a56e5a5/custom_components/hass_codex_tunnel_mcp/config_flow.py#L71-L86)). O runtime é indexado por `entry.entry_id` e o diretório é separado por esse ID ([__init__.py, linhas 31–58](https://github.com/norpol/hass-codex-tunnel-mcp/blob/a56e5a5/custom_components/hass_codex_tunnel_mcp/__init__.py#L31-L58)). Assim, IDs de túnel diferentes podem coexistir na mesma instalação; não é necessário duplicar o componente.
+
+
 | Entrada | Destino | Autenticação | Conector ChatGPT |
 |---|---|---|---|
 | HA-MCP | URL privada completa do app Home Assistant MCP Server; não usar /api/mcp nesta instalação | Bearer token vazio, conforme homologado | Home Assistant — Somente leitura |
