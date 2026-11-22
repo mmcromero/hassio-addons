@@ -50,6 +50,16 @@
         "aarch64"
       ],
       "source_repo": "https://github.com/mmcromero/instagram-automacoes"
+    },
+    {
+      "id": "editorial-mcp",
+      "directory": "editorial-mcp",
+      "slug": "editorial_mcp_universal",
+      "architectures": [
+        "aarch64",
+        "amd64"
+      ],
+      "source_repo": "https://github.com/mmcromero/instagram-automacoes"
     }
   ]
 }
