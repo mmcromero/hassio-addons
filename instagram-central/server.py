@@ -42,7 +42,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.36"
+APP_VERSION = "0.1.37"
 _INBOX_LOCK = threading.Lock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
@@ -861,6 +861,14 @@ def _meta_action_body(raw):
     return values["csrf"][0]
 
 
+def panel_navigation_query(query):
+    """Ignore known attribution fields on UI navigation only; retain functional fields."""
+    tracking = {'utm_source', 'utm_medium', 'utm_campaign', 'utm_term',
+                'utm_content', 'utm_id', 'utm_source_platform'}
+    return '&'.join(field for field in query.split('&')
+                    if field.partition('=')[0] not in tracking)
+
+
 def settings_result(query):
     if query == 'view=settings':
         return ''
@@ -1490,9 +1498,15 @@ class Handler(BaseHTTPRequestHandler):
                 "Nenhum conteúdo foi enviado.<p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/editorial/'>Abrir Editorial desta conta</a></p><p><a href='" + account_management.prefix(cfg['business_id']) +
                 "/panel?view=settings'>Abrir Configurações Meta desta conta</a></p></body></html>", "text/html")
-        meta_result = settings_result(route.query)
-        settings_page = route.path in ('/', '/panel') and meta_result is not None
-        if self.path in ("/", "/panel") or settings_page:
+        # Chat clients can append attribution to links. This normalization is
+        # confined to UI navigation, after all OAuth/launcher routing.
+        panel_path = route.path in ('/', '/panel')
+        panel_query = panel_navigation_query(route.query) if panel_path else route.query
+        meta_result = settings_result(panel_query) if panel_path else None
+        settings_page = panel_path and meta_result is not None
+        messages_page = self.path in ('/', '/panel') or (
+            panel_path and bool(route.query) and not panel_query)
+        if messages_page or settings_page:
             cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")

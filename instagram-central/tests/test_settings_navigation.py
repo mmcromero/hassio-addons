@@ -66,6 +66,51 @@ class SettingsNavigation(unittest.TestCase):
         for suffix in ('?view=unknown', '?view=settings&view=settings', '?view=settings&other=1'):
             self.assertEqual(self.request('/panel'+suffix)[0], 404)
 
+    def test_chat_link_attribution_preserves_login_and_panel(self):
+        for path in ('/', '/panel'):
+            for tracking in ('utm_source=chatgpt.com',
+                             'utm_source=chatgpt.com&utm_medium=referral'):
+                url = path + '?' + tracking
+                with self.subTest(url=url):
+                    status, _, body = self.fixture.request(url)
+                    self.assertEqual(status, 200)
+                    self.assertIn(b'autocomplete="current-password"', body)
+                    self.assertNotIn(b'id="messages"', body)
+                    status, _, body = self.request(url)
+                    self.assertEqual(status, 200)
+                    self.assertIn(b'id="messages"', body)
+                    self.assertNotIn(b'autocomplete="current-password"', body)
+
+    def test_chat_link_preserves_settings_and_rejects_unknown_parameters(self):
+        for query in ('view=settings&utm_source=chatgpt.com',
+                      'utm_source=chatgpt.com&view=settings'):
+            status, _, body = self.request('/panel?' + query)
+            self.assertEqual(status, 200)
+            self.assertIn(b'id="meta-actions"', body)
+        result = next(iter(server.META_RESULTS))
+        query = urlencode({'view': 'settings', 'meta_result': result,
+                           'utm_source': 'chatgpt.com'})
+        self.assertEqual(self.request('/panel?' + query)[0], 200)
+        for query in ('view=unknown&utm_source=chatgpt.com',
+                      'view=settings&view=settings&utm_source=chatgpt.com',
+                      'other=1&utm_source=chatgpt.com',
+                      'next=https://evil.test&utm_source=chatgpt.com'):
+            self.assertEqual(self.request('/panel?' + query)[0], 404)
+
+    def test_attribution_does_not_relax_launcher_or_secondary_auth(self):
+        self.fixture.config['public_base_url'] = 'https://central.test:8443'
+        status, headers, _ = self.fixture.request(
+            '/webhook/instagram?open=central&utm_source=chatgpt.com')
+        self.assertEqual(status, 403)
+        self.assertNotIn('Location', headers)
+        self.assertEqual(self.fixture.request('/oauth/meta/start?utm_source=chatgpt.com')[0], 404)
+        with server.database() as db:
+            server.account_registry.ensure_primary(db, 'business-1')
+            business = server.account_registry.provision(db, 'second_review', 'Segunda')
+        url = '/accounts/' + business + '/panel?utm_source=chatgpt.com'
+        self.assertEqual(self.fixture.request(url)[0], 403)
+        self.assertEqual(self.request(url)[0], 200)
+
     def test_editorial_has_no_persistent_diagnostics_or_uptime_banner(self):
         status, _, body = self.request('/editorial/')
         self.assertEqual(status, 200)

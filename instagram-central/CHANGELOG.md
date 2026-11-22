@@ -1,3 +1,8 @@
+## 0.1.37
+
+- Corrige o acesso por links do ChatGPT que acrescentam `?utm_source=chatgpt.com`: ignora parâmetros UTM conhecidos na navegação da interface, preservando login, sessão e configurações da conta. Não altera webhook, OAuth, fila, dados, layout ou publicação editorial.
+- Mantém validação dos parâmetros funcionais e acrescenta testes de regressão de navegação e autenticação. Teste isolado de decisão de rota: 18/18 PASS; testes HTTP integrais pendentes. Publicação para homologação real autorizada pelo proprietário em 22/11/2026.
+
 ## 0.1.36
 
 - Corrige o layout das mensagens preenchidas: a tabela tinha oito colunas, mas as larguras de sete já consumiam 100%, comprimindo a coluna de ações e quebrando os rótulos letra por letra. Substitui a tabela por cartões responsivos com texto, estado/origem e ações em áreas próprias.

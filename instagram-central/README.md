@@ -1,4 +1,6 @@
-# Central Instagram — 0.1.36 (mensagens legíveis, Mobile First e editorial)
+# Central Instagram — 0.1.37 (links de acesso e mensagens legíveis)
+
+**Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 
 A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor; sem foto, aparecem as iniciais.
 
