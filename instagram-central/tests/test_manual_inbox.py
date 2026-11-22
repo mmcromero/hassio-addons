@@ -37,7 +37,6 @@ class ManualRead(unittest.TestCase):
 
     def test_specific_schema_categories_never_include_provider_values(self):
         cases=[({'data':None},'inbox_conversations_shape'),
-               ({'data':[{'id':'PRIVATE'}]},'inbox_messages_shape'),
                (payload('PRIVATE'),'inbox_message_shape'),
                (payload({**message(),'created_time':'PRIVATE'}),'inbox_timestamp_shape')]
         for value,reason in cases:
@@ -64,7 +63,7 @@ class ManualRead(unittest.TestCase):
                 with self.assertRaises(ic.GraphError):ic.read_recent_inbox(CFG,credential)
             graph.assert_not_called()
         bad=message();bad['created_time']='2026-11-22T00:00:00'
-        for value in ({'data':[{}]*6},payload(*([message()]*11)),payload(message(),bad),{'data':[{'id':'a'}]},payload({'id':'a'})):
+        for value in ({'data':[{}]*6},payload(message(),bad),{'data':[{'id':'a'}]},payload({'id':'a'})):
             with patch.object(ic,'request_graph',return_value=value):
                 with self.assertRaises(ic.GraphError):ic.read_recent_inbox(CFG,CREDENTIAL)
 
@@ -91,6 +90,101 @@ class ManualRead(unittest.TestCase):
         self.assertEqual(caught.exception.details['reason'],'message_identity_unavailable')
 
 
+class MissingExpansion(unittest.TestCase):
+    def setUp(self):
+        interval=patch.object(ic,'INBOX_INTERVAL',0);interval.start();self.addCleanup(interval.stop)
+
+    def test_missing_expansion_reads_the_fixed_message_edge_for_the_returned_conversation(self):
+        with patch.object(ic,'request_graph',side_effect=[{'data':[{'id':'PRIVATE_CONVERSATION'}]}, {'data':[message()]}]) as calls:
+            rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(rows[0][2],'manual-mid');self.assertEqual(report['fallback_requests'],1)
+        self.assertEqual(report['expansion_shapes']['missing'],1);self.assertEqual(report['unavailable_conversations'],0)
+        self.assertEqual(calls.call_args_list[1].args,('v27.0','/PRIVATE_CONVERSATION/messages',CREDENTIAL['access_token']))
+        self.assertEqual(calls.call_args_list[1].kwargs['fields'],ic.MESSAGE_FIELDS)
+        self.assertLessEqual(calls.call_args_list[1].kwargs['timeout'],4)
+        self.assertNotIn('PRIVATE',json.dumps(report))
+
+    def test_one_unavailable_conversation_does_not_hide_readable_messages(self):
+        result={'data':[{'id':'PRIVATE_UNAVAILABLE'}, {'id':'PRIVATE_READABLE','messages':{'data':[message()]}}]}
+        with patch.object(ic,'request_graph',side_effect=[result,ic.GraphError('permission_denied',400,200)]):
+            rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(len(rows),1);self.assertEqual(report['unavailable_conversations'],1)
+        self.assertEqual(report['conversations'],2)
+
+    def test_every_bad_expansion_shape_uses_at_most_one_direct_read(self):
+        for content,shape in ((None,'not_object'),({},'data_missing'),({'data':None},'data_not_list')):
+            result={'data':[{'id':'PRIVATE_CONVERSATION','messages':content}]}
+            with patch.object(ic,'request_graph',side_effect=[result,{'data':[message()]}]) as calls:
+                rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+            self.assertEqual(len(rows),1);self.assertEqual(calls.call_count,2);self.assertEqual(report['expansion_shapes'][shape],1)
+
+    def test_provider_ignoring_nested_limits_is_trimmed_without_rejecting_valid_messages(self):
+        value={'data':[{'id':'PRIVATE_CONVERSATION_'+str(i),'messages':{'data':[
+            message(mid='synthetic-'+str(i)+'-'+str(j)) for j in range(11)]}} for i in range(6)]}
+        with patch.object(ic,'request_graph',return_value=value) as calls:
+            rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(len(rows),50);self.assertEqual(report['conversations'],5);self.assertEqual(report['scanned'],50)
+        self.assertTrue(report['limited']);self.assertEqual(report['expansion_shapes']['too_many'],5);self.assertEqual(calls.call_count,1)
+
+    def test_all_unavailable_is_an_error_with_only_safe_counts_not_an_empty_inbox(self):
+        with patch.object(ic,'request_graph',side_effect=[{'data':[{'id':'PRIVATE_CONVERSATION'}]},{}]):
+            with self.assertRaises(ic.GraphError) as caught:ic.read_recent_inbox(CFG,CREDENTIAL)
+        info=caught.exception.details
+        self.assertEqual(info['reason'],'inbox_message_edge_shape');self.assertEqual(info['fallback_requests'],1)
+        self.assertEqual(info['unavailable_conversations'],1);self.assertNotIn('PRIVATE',json.dumps(info))
+
+    def test_budget_stops_further_requests_without_guessing_absence(self):
+        with patch.object(ic.time,'monotonic',side_effect=[0,20,20]),patch.object(ic,'request_graph',return_value={'data':[{'id':'PRIVATE_CONVERSATION'}]}) as calls:
+            with self.assertRaises(ic.GraphError) as caught:ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(calls.call_count,1);self.assertEqual(caught.exception.details['reason'],'inbox_read_budget')
+
+    def test_direct_reads_are_paced_and_budget_is_rechecked_after_wait(self):
+        first={'data':[{'id':'PRIVATE_CONVERSATION'}]}
+        with patch.object(ic,'INBOX_INTERVAL',.55),patch.object(ic.time,'monotonic',return_value=0),patch.object(ic.time,'sleep') as pause:
+            with patch.object(ic,'request_graph',side_effect=[first,{'data':[message()]}]):
+                ic.read_recent_inbox(CFG,CREDENTIAL)
+        pause.assert_called_once_with(.55)
+        with patch.object(ic,'INBOX_INTERVAL',.55),patch.object(ic.time,'monotonic',side_effect=[0,0,0,19]),patch.object(ic.time,'sleep'):
+            with patch.object(ic,'request_graph',return_value=first) as calls:
+                with self.assertRaises(ic.GraphError):ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(calls.call_count,1)
+
+    def test_direct_reply_still_filters_other_account_and_caps_messages(self):
+        first={'data':[{'id':'PRIVATE_CONVERSATION'}]}
+        with patch.object(ic,'request_graph',side_effect=[first,{'data':[message(mid='wrong',target='22222222')]+[
+                message(mid='ok-'+str(i)) for i in range(15)]}]):
+            rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(len(rows),9);self.assertEqual(report['scanned'],10);self.assertEqual(report['skipped'],1)
+        self.assertTrue(report['limited']);self.assertTrue(all(row[0]=='11111111' for row in rows))
+
+    def test_five_conversations_max_six_gets_no_paging(self):
+        result={'data':[{'id':'PRIVATE_CONVERSATION_'+str(i)} for i in range(5)]}
+        result['paging']={'next':'https://PRIVATE/?access_token=PRIVATE'}
+        with patch.object(ic,'request_graph',side_effect=[result]+[{'data':[message(mid='synthetic-'+str(i))]} for i in range(5)]) as calls:
+            rows,report=ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(len(rows),5);self.assertEqual(calls.call_count,6);self.assertTrue(report['limited'])
+        self.assertTrue(all(c.args[1].startswith('/') and 'PRIVATE/?' not in c.args[1] for c in calls.call_args_list))
+
+    def test_token_refusal_stops_the_whole_read_without_returning_partial_content(self):
+        result={'data':[{'id':'PRIVATE_READABLE','messages':{'data':[message()]}},{'id':'PRIVATE_UNAVAILABLE'}]}
+        with patch.object(ic,'request_graph',side_effect=[result,ic.GraphError('token_invalid',400,190)]):
+            with self.assertRaises(ic.GraphError) as caught:ic.read_recent_inbox(CFG,CREDENTIAL)
+        self.assertEqual(caught.exception.details['reason'],'token_invalid')
+
+    def test_direct_transport_is_get_only_fixed_fields_and_encodes_opaque_ids(self):
+        from urllib.parse import quote
+        seen=[]
+        def opener(request,timeout):seen.append(request);return io.BytesIO(b'{"data":[]}')
+        path='/'+quote('t_encoded+id/value:part=',safe='')+'/messages'
+        ic.request_graph('v27.0',path,CREDENTIAL['access_token'],fields=ic.MESSAGE_FIELDS,opener=opener)
+        self.assertEqual(seen[0].get_method(),'GET');self.assertEqual(urlsplit(seen[0].full_url).hostname,'graph.facebook.com')
+        self.assertNotIn(CREDENTIAL['access_token'],seen[0].full_url)
+        for path,method,fields in (('/../messages','GET',ic.MESSAGE_FIELDS),('/PRIVATE_CONVERSATION/messages','POST',ic.MESSAGE_FIELDS),
+                                   ('/PRIVATE_CONVERSATION/messages','GET',{'fields':'*'}),('/PRIVATE_CONVERSATION/messages?token=x','GET',ic.MESSAGE_FIELDS)):
+            with self.assertRaises(ic.ConnectionError):ic.request_graph('v27.0',path,CREDENTIAL['access_token'],method,fields,opener=opener)
+        self.assertEqual(len(seen),1)
+
+
 class ManualHTTP(unittest.TestCase):
     def setUp(self):
         self.f=receiving.ReceivingHTTP();self.f.setUp();self.addCleanup(self.f.tearDown)
@@ -101,6 +195,22 @@ class ManualHTTP(unittest.TestCase):
         csrf=panel_login.admin_csrf_token(self.f.session,self.f.fixture.config['panel_password'],action)
         return self.f.fixture.request(path,'POST',urlencode({'csrf':csrf}),
             {**self.f.headers,'X-Meta-Inbox':'refresh',**(extra or {})})
+
+    def test_partial_direct_read_stores_valid_text_reports_unavailable_and_preserves_queue(self):
+        value={'data':[{'id':'PRIVATE_UNAVAILABLE'},{'id':'PRIVATE_READABLE'}]}
+        with patch.object(ic,'INBOX_INTERVAL',0),patch.object(ic,'request_graph',side_effect=[value,
+                ic.GraphError('permission_denied',400,200),{'data':[message()]}]):
+            status,_,body=self.refresh()
+        report=json.loads(body)
+        self.assertEqual(status,200);self.assertEqual(report['status'],'confirmed')
+        self.assertEqual(report['imported'],1);self.assertEqual(report['unavailable_conversations'],1)
+        self.assertEqual(report['fallback_requests'],2);self.assertNotIn(b'PRIVATE',body);self.assertNotIn(b'Texto',body)
+        self.assertEqual(self.server.list_pending(account_id='11111111'),[])
+        with patch.object(ic,'INBOX_INTERVAL',0),patch.object(ic,'request_graph',side_effect=[
+                {'data':[{'id':'PRIVATE_UNAVAILABLE'}]},ic.GraphError('permission_denied',400,200)]):
+            status,_,body=self.refresh()
+        self.assertEqual(json.loads(body)['status'],'error')
+        with self.server.database() as db:self.assertEqual(db.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],1)
 
     def test_long_id_manual_import_then_real_webhook_claim_and_ack(self):
         mid='encoded-message-id-'+('a'*300)

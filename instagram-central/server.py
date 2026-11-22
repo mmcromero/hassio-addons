@@ -42,7 +42,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.34"
+APP_VERSION = "0.1.35"
 _INBOX_LOCK = threading.Lock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
@@ -464,10 +464,15 @@ def refresh_inbox(cfg, credential):
                     (recipient_id,sender_id,message_id,message_text,received_at,source,processed_at)
                     VALUES(?,?,?,?,?,'manual',?)''', (*row, manual_hold))
                 inserted += cursor.rowcount
+        LOGGER.info('Meta manual inbox completed: version=%s conversations=%s scanned=%s stored=%s direct_reads=%s unavailable=%s expansion_shapes=%s unavailable_reasons=%s',
+                    APP_VERSION, report['conversations'], report['scanned'], inserted,
+                    report['fallback_requests'], report['unavailable_conversations'], report['expansion_shapes'], report['unavailable_reasons'])
         return {**report, 'status': 'confirmed', 'imported': inserted,
                 'existing': len(messages) - inserted}
     except instagram_connection.GraphError as exc:
-        LOGGER.info('Meta manual inbox failed: version=%s reason=%s', APP_VERSION, exc.details['reason'])
+        LOGGER.info('Meta manual inbox failed: version=%s reason=%s conversations=%s direct_reads=%s expansion_shapes=%s',
+                    APP_VERSION, exc.details['reason'], exc.details.get('conversations'),
+                    exc.details.get('fallback_requests'), exc.details.get('expansion_shapes'))
         return {'status': 'error', **{k:v for k,v in exc.details.items() if v is not None}}
     except (instagram_connection.ConnectionError, account_registry.RegistryError):
         return {'status': 'error', 'reason': 'configuration_incomplete'}

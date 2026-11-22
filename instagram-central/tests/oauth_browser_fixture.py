@@ -32,7 +32,8 @@ CONFIG = {'instagram_account_id': '11111111', 'panel_password': 'oauth_fixture_p
           'ingress_enabled': False, 'drafts_enabled': False, 'meta_oauth_redirect_uri': ''}
 server.settings = lambda: dict(CONFIG)
 server.LOGGER.addHandler(logging.NullHandler()); server.LOGGER.propagate = False
-state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0, 'routing_reads': 0, 'inbox_reads': 0}
+state = {'kind': 'same_https', 'obs': {}, 'exchanges': 0, 'routing_reads': 0, 'inbox_reads': 0,
+         'inbox_mode': 'normal', 'inbox_direct_reads': 0}
 
 
 def exchange(code, cfg):
@@ -42,6 +43,13 @@ def exchange(code, cfg):
 
 
 server.oauth_meta.exchange_code = exchange
+def inbox_content(account,mid='SYNTHETIC_SHARED_MID'):
+    return [
+        {'id':mid,'message':'SYNTHETIC '+account+' <script>not_script()</script>',
+         'created_time':'2026-11-21T23:00:00-03:00','from':{'id':'99999999'},'to':{'data':[{'id':account}]}},
+        {'id':'SYNTHETIC_OUT','message':'OUTGOING_NEVER_IMPORTED',
+         'created_time':'2026-11-21T23:01:00-03:00','from':{'id':account},'to':{'data':[{'id':'99999999'}]}}
+    ]
 def graph(version, path, token, **kwargs):
     if '--inbox' in sys.argv and state.get('reject_token'):
         raise server.instagram_connection.GraphError('token_invalid', 400, 190)
@@ -49,12 +57,18 @@ def graph(version, path, token, **kwargs):
             and kwargs.get('fields') == server.instagram_connection.INBOX_FIELDS):
         state['inbox_reads'] += 1
         account = path.split('/')[1]
-        return {'data': [{'id': 'PRIVATE_CONVERSATION', 'messages': {'data': [
-            {'id': 'SYNTHETIC_SHARED_MID', 'message': 'SYNTHETIC ' + account + ' <script>not_script()</script>',
-             'created_time': '2026-11-21T23:00:00-03:00', 'from': {'id': '99999999'}, 'to': {'data': [{'id': account}]}},
-            {'id': 'SYNTHETIC_OUT', 'message': 'OUTGOING_NEVER_IMPORTED',
-             'created_time': '2026-11-21T23:01:00-03:00', 'from': {'id': account}, 'to': {'data': [{'id': '99999999'}]}}
-        ]}}]}
+        if state['inbox_mode']=='normal':
+            return {'data':[{'id':'PRIVATE_CONVERSATION','messages':{'data':inbox_content(account)}}]}
+        rows=[{'id':'PRIVATE_'+account}]
+        if state['inbox_mode']=='partial':rows.insert(0,{'id':'PRIVATE_UNAVAILABLE'})
+        if state['inbox_mode']=='all_unavailable':rows=[{'id':'PRIVATE_UNAVAILABLE'}]
+        return {'data':rows}
+    if '--inbox' in sys.argv and path.startswith('/PRIVATE_') and path.endswith('/messages') and kwargs.get('fields')==server.instagram_connection.MESSAGE_FIELDS:
+        state['inbox_direct_reads']+=1
+        if path=='/PRIVATE_UNAVAILABLE/messages':raise server.instagram_connection.GraphError('permission_denied',400,200)
+        account=path.removeprefix('/PRIVATE_').removesuffix('/messages')
+        if account not in ('11111111','22222222'):raise AssertionError('Unexpected synthetic conversation')
+        return {'data':inbox_content(account,'SYNTHETIC_'+state['inbox_mode']+'_'+account)}
     if path == '/me/assigned_instagram_accounts':
         return {'data':[{'id':'11111111','username':'umdoislab'}, {'id':'22222222','username':'second_review'}, {'id':'33333333','username':'third_review'}]}
     if path == '/me': return {'client_business_id':'44444444'}
@@ -215,9 +229,11 @@ class Control(BaseHTTPRequestHandler):
         elif self.path == '/inbox-reject-token' and '--inbox' in sys.argv:
             state['reject_token'] = True
             data = {}
+        elif self.path in ('/inbox-mode/no_expansion','/inbox-mode/partial','/inbox-mode/all_unavailable') and '--inbox' in sys.argv:
+            state['inbox_mode']=self.path.rsplit('/',1)[1];data={}
         elif self.path == '/inbox-observe' and '--inbox' in sys.argv:
             with server.database() as conn:
-                data = {'inboxReads': state['inbox_reads'],
+                data = {'inboxReads': state['inbox_reads'], 'directReads':state['inbox_direct_reads'],
                         'stored': conn.execute('SELECT COUNT(*) FROM inbound').fetchone()[0],
                         'queued': len(server.list_pending(account_id='11111111'))}
         elif self.path == '/integration-observe' and '--integration' in sys.argv:

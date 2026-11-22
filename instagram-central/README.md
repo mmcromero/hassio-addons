@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.34 (Mobile First, exclusão e fotos)
+# Central Instagram — 0.1.35 (busca manual, Mobile First e editorial)
 
 A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor; sem foto, aparecem as iniciais.
 
@@ -12,7 +12,7 @@ No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para pub
 
 Em **Mensagens → Caixa de entrada → Atualizar mensagens**, o botão agora consulta a Meta com a credencial da conta selecionada e grava os textos recebidos para exibir na caixa. Antes, ele apenas recarregava o banco local. A busca é feita **somente pelo clique**, sem consulta periódica ou resposta automática.
 
-Uma única chamada consulta até **5 conversas recentes e 10 mensagens de cada**, sem seguir paginação. Repetir a busca não duplica registros. Só importa textos de até 2.000 caracteres com remetente/destinatário identificados e destino igual à conta selecionada; saídas, outros destinatários e mídia sem texto não entram. Campo de identidade ausente ou recusa da Meta produz aviso, preservando a caixa existente. Não é importação de todo o histórico nem garante acesso a conteúdo que a Meta não disponibilizar.
+Uma busca consulta até **5 conversas recentes e 10 mensagens de cada**, sem seguir paginação. Se a listagem não incluir as mensagens, consulta diretamente a lista daquela conversa: no máximo seis GETs por clique, espaçados e com orçamento de tempo. Conversa indisponível não oculta as outras que puderem ser lidas; a tela informa **Busca parcial**. Se nenhuma lista puder ser lida, informa erro e preserva a caixa. Se a Meta entregar mais itens que o pedido, somente os primeiros cinco/dez da amostra são processados, com aviso de limite. Repetir a busca não duplica registros. Só importa textos de até 2.000 caracteres com remetente/destinatário identificados e destino igual à conta selecionada; saídas, outros destinatários e mídia sem texto não entram. Campo de identidade ausente ou recusa da Meta produz aviso, preservando a caixa existente. Não é importação de todo o histórico nem garante acesso a conteúdo que a Meta não disponibilizar.
 
 A coluna **Origem** distingue **Consulta manual à Meta** de **Webhook**. As importações ficam fora da fila automática; se o mesmo ID de mensagem chegar depois pelo webhook válido, o registro passa a Webhook e fica elegível uma vez, respeitando o atendimento humano existente. Uma nova busca não reabre mensagem já processada. As contagens de recebimento nas configurações consideram somente webhook. Ver mensagens importadas manualmente **não comprova nem corrige a entrega dos webhooks**.
 

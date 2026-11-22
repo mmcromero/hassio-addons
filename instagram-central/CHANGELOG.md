@@ -1,3 +1,10 @@
+## 0.1.35
+
+- Corrige a interrupção de Atualizar mensagens quando uma conversa não inclui a lista de mensagens na resposta expandida. Usa a leitura direta /CONVERSATION_ID/messages somente para IDs retornados pela consulta da conta verificada. Até seis GETs por clique, espaçados e com orçamento de tempo, sem paginação ou consulta periódica.
+- Continua a busca nas conversas disponíveis quando outra fica inacessível, informando Busca parcial. Se nenhuma lista puder ser lida, mantém o erro e a caixa existente. Token inválido interrompe a leitura sem gravar resultados parciais.
+- Limita localmente a amostra a cinco conversas e dez mensagens de cada se a Meta devolver mais que o solicitado, em vez de rejeitar dados válidos. Mantém confirmação do destinatário, identidade, texto e data, deduplicação e origem manual fora da fila automática.
+- Registra apenas contagens e categorias fixas da estrutura recebida e das falhas, sem textos, IDs privados, tokens ou resposta bruta. Preserva as interfaces Mobile First, fotos e exclusão da 0.1.34. A entrega real de webhooks continua em investigação.
+
 ## 0.1.34
 
 - Acrescenta ao modal Excluir as opções Somente da Central Editorial e Da Central Editorial e do Instagram. A segunda exige confirmação explícita da conta/publicação, verifica permissão e propriedade e só limpa o registro local após sucesso confirmado pela Meta. Recusa e resultado incerto preservam dados; recibos persistentes impedem repetição automática e reimportação indevida do histórico. Carrosséis são excluídos por inteiro.

@@ -10,7 +10,7 @@ import re
 import time
 from datetime import datetime, timezone
 from urllib.error import HTTPError
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit, quote
 from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 
 MAX_GRAPH_RESPONSE = 64 * 1024
@@ -21,6 +21,11 @@ IG_ACCOUNT = re.compile(r"[0-9]{8,30}\Z")
 ROUTING_FIELDS = {'platform': 'instagram', 'fields': 'id,is_owner,updated_time', 'limit': '5'}
 INBOX_FIELDS = {'platform': 'instagram', 'fields':
     'id,messages.limit(10){id,message,created_time,from{id},to{id}}', 'limit': '5'}
+MESSAGE_FIELDS = {'fields': 'id,message,created_time,from{id},to{id}', 'limit': '10'}
+CONVERSATION_ID = re.compile(r'[A-Za-z0-9_:+/=-]{1,1024}\Z')
+MESSAGE_PATH = re.compile(r'/(?:[A-Za-z0-9_-]|%2B|%2F|%3A|%3D){1,1024}/messages\Z')
+INBOX_BUDGET = 18
+INBOX_INTERVAL = .55  # At most two conversation requests per second.
 
 
 class _NoGraphRedirect(HTTPRedirectHandler):
@@ -75,6 +80,9 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     elif re.fullmatch(r"/[0-9]{8,30}/conversations", path) and method == 'GET':
         if fields not in ({'platform': 'instagram', 'fields': 'id', 'limit': '1'}, ROUTING_FIELDS, INBOX_FIELDS):
             raise ConnectionError('Conversation fields not permitted')
+    elif MESSAGE_PATH.fullmatch(path) and method == 'GET':
+        if fields != MESSAGE_FIELDS:
+            raise ConnectionError('Message fields not permitted')
     elif path == '/debug_token' and method == 'GET':
         if (not isinstance(fields, dict) or set(fields) != {'input_token'}
                 or not isinstance(fields['input_token'], str)
@@ -103,7 +111,7 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
         "Authorization": "Bearer " + token,
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded"})
-    response_limit = 512 * 1024 if fields == INBOX_FIELDS else MAX_GRAPH_RESPONSE
+    response_limit = 512 * 1024 if fields in (INBOX_FIELDS, MESSAGE_FIELDS) else MAX_GRAPH_RESPONSE
     try:
         # Never forward a token/app secret to a redirect destination.
         open_request = _GRAPH_OPEN if opener is urlopen else opener
@@ -138,22 +146,62 @@ def read_recent_inbox(cfg, credential):
             or not IG_ACCOUNT.fullmatch(str(cfg.get('instagram_account_id') or ''))):
         raise GraphError('configuration_incomplete')
     account = cfg['instagram_account_id']
+    started = last_request = time.monotonic()
     result = request_graph(cfg.get('meta_graph_version'), '/' + account + '/conversations',
         credential.get('access_token'), fields=dict(INBOX_FIELDS), timeout=8)
     conversations = result.get('data')
-    if not isinstance(conversations, list) or len(conversations) > 5:
+    if not isinstance(conversations, list):
         raise GraphError('inbox_conversations_shape')
+    extra_conversations = len(conversations) > 5
+    conversations = conversations[:5]
     found, seen = [], set()
     scanned = skipped = 0
-    limited = bool(result.get('paging', {}).get('next')) if isinstance(result.get('paging'), dict) else False
+    fallback_requests = usable = 0
+    unavailable = []
+    shapes = dict.fromkeys(('missing','not_object','data_missing','data_not_list','too_many'), 0)
+    conversation_ids = set()
+    limited = extra_conversations or (bool(result.get('paging', {}).get('next')) if isinstance(result.get('paging'), dict) else False)
     for conversation in conversations:
-        if not isinstance(conversation, dict) or not isinstance(conversation.get('id'), str):
+        if (not isinstance(conversation, dict) or not isinstance(conversation.get('id'), str)
+                or not CONVERSATION_ID.fullmatch(conversation['id']) or conversation['id'] in conversation_ids):
             raise GraphError('inbox_conversation_shape')
+        conversation_ids.add(conversation['id'])
         messages = conversation.get('messages')
-        if not isinstance(messages, dict) or not isinstance(messages.get('data'), list) or len(messages['data']) > 10:
-            raise GraphError('inbox_messages_shape')
+        expanded = isinstance(messages,dict) and isinstance(messages.get('data'),list)
+        if not expanded:
+            shape = ('missing' if 'messages' not in conversation else 'not_object' if not isinstance(messages,dict)
+                     else 'data_missing' if 'data' not in messages else 'data_not_list')
+            shapes[shape] += 1
+            # A list of conversations need not include an expanded message edge.
+            # Read that edge only for IDs returned by this bound account query;
+            # never follow provider URLs or accept an ID from the browser.
+            pause = max(0, INBOX_INTERVAL - (time.monotonic() - last_request))
+            remaining = INBOX_BUDGET - (time.monotonic() - started) - pause
+            if remaining <= .25:
+                unavailable.append(GraphError('inbox_read_budget'))
+                continue
+            if pause: time.sleep(pause)
+            last_request = time.monotonic()
+            remaining = INBOX_BUDGET - (last_request - started)
+            if remaining <= .25:
+                unavailable.append(GraphError('inbox_read_budget'))
+                continue
+            fallback_requests += 1
+            try:
+                messages = request_graph(cfg.get('meta_graph_version'), '/' + quote(conversation['id'],safe='') + '/messages',
+                    credential.get('access_token'), fields=dict(MESSAGE_FIELDS), timeout=min(4,remaining))
+                if not isinstance(messages,dict) or not isinstance(messages.get('data'),list):
+                    raise GraphError('inbox_message_edge_shape')
+            except GraphError as error:
+                if error.details['reason']=='token_invalid': raise
+                unavailable.append(error)
+                continue
+        usable += 1
+        if len(messages['data']) > 10:
+            limited = True
+            if expanded: shapes['too_many'] += 1
         limited |= bool(messages.get('paging', {}).get('next')) if isinstance(messages.get('paging'), dict) else False
-        for message in messages['data']:
+        for message in messages['data'][:10]:
             scanned += 1
             if not isinstance(message, dict):
                 raise GraphError('inbox_message_shape')
@@ -187,7 +235,17 @@ def read_recent_inbox(cfg, credential):
             if (sender['id'], mid) not in seen:
                 seen.add((sender['id'], mid))
                 found.append((account, sender['id'], mid, text.strip(), stamp.astimezone(timezone.utc).isoformat()))
-    return found, {'conversations': len(conversations), 'scanned': scanned, 'skipped': skipped,
+    counts = {'conversations': len(conversations), 'unavailable_conversations': len(unavailable),
+              'fallback_requests': fallback_requests, 'expansion_shapes': shapes}
+    counts['unavailable_reasons'] = {}
+    for error in unavailable:
+        reason = error.details['reason']
+        counts['unavailable_reasons'][reason] = counts['unavailable_reasons'].get(reason,0) + 1
+    if conversations and not usable:
+        error = unavailable[0]
+        error.details.update(counts)
+        raise error
+    return found, {**counts, 'scanned': scanned, 'skipped': skipped,
                    'limited': limited, 'checked_at': int(time.time())}
 
 

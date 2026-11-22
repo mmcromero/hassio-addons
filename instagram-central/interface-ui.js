@@ -201,7 +201,7 @@
       let saved=false;
       try{
         const response=await fetch(button.dataset.inboxUrl,{method:'POST',credentials:'same-origin',cache:'no-store',
-          signal:AbortSignal.timeout(15000),headers:{'Content-Type':'application/x-www-form-urlencoded','X-Meta-Inbox':'refresh'},
+          signal:AbortSignal.timeout(25000),headers:{'Content-Type':'application/x-www-form-urlencoded','X-Meta-Inbox':'refresh'},
           body:new URLSearchParams({csrf:button.dataset.inboxCsrf})});
         const raw=await response.text();let report;
         try{if(raw.length<=16384)report=JSON.parse(raw);}catch(_){}
@@ -220,16 +220,22 @@
             inbox_conversations_shape:'A Meta não retornou uma lista válida de conversas (inbox_conversations_shape).',
             inbox_conversation_shape:'A Meta retornou uma conversa sem identificação válida (inbox_conversation_shape).',
             inbox_messages_shape:'A Meta não retornou a lista de mensagens esperada dentro de uma conversa (inbox_messages_shape).',
+            inbox_message_edge_shape:'A consulta direta à conversa também não retornou uma lista válida de mensagens (inbox_message_edge_shape).',
+            inbox_read_budget:'O tempo reservado para esta busca terminou. As conversas restantes não foram consultadas.',
             inbox_message_shape:'A Meta retornou um item de mensagem incompatível (inbox_message_shape).',
             inbox_identity_shape:'O formato de remetente ou destinatário difere do esperado (inbox_identity_shape). Nenhuma identidade foi presumida.',
             inbox_message_id_shape:'O identificador de uma mensagem está ausente ou excede o limite aceito (inbox_message_id_shape).',
             inbox_timestamp_shape:'A data de uma mensagem está ausente, inválida ou à frente do relógio da Central (inbox_timestamp_shape).'};
           const codes=[['HTTP',report.http_status],['código Meta',report.provider_code],['subcódigo',report.provider_subcode]]
             .filter(item=>Number.isInteger(item[1])).map(item=>item[0]+' '+item[1]).join(', ');
-          throw new Error((reasons[report.reason] || 'A busca não foi concluída.')+(codes?' ('+codes+')':''));
+          const summary=Number.isInteger(report.conversations) && report.conversations>0 && report.conversations<=5
+            ?' Conversas listadas: '+report.conversations+'.'+(Number.isInteger(report.fallback_requests) && report.fallback_requests>=0 && report.fallback_requests<=5?' Consultas diretas: '+report.fallback_requests+'.':''):'';
+          throw new Error((reasons[report.reason] || 'A busca não foi concluída.')+(codes?' ('+codes+')':'')+summary);
         }
+        const unavailable=report.unavailable_conversations ?? 0;
         if(![report.imported,report.existing,report.scanned,report.skipped].every(n=>Number.isInteger(n)&&n>=0&&n<=50)
           || !Number.isInteger(report.conversations) || report.conversations<0 || report.conversations>5
+          || !Number.isInteger(unavailable) || unavailable<0 || unavailable>report.conversations
           || typeof report.limited!=='boolean')throw new Error('Não foi possível confirmar o resumo da busca. Recarregue a caixa.');
         saved=true;
         const page=await fetch(location.pathname,{credentials:'same-origin',cache:'no-store',signal:AbortSignal.timeout(12000)});
@@ -240,9 +246,10 @@
         if(!instant())area.animate([{opacity:0},{opacity:1}],{duration:160,easing:'ease-out'});
         const time=Number.isInteger(report.checked_at)?' às '+new Intl.DateTimeFormat('pt-BR',{
           timeStyle:'medium',timeZone:'America/Sao_Paulo'}).format(new Date(report.checked_at*1000))+' (Brasília)':'';
-        feedback.textContent='Busca concluída'+time+': '+report.imported+' mensagem(ns) adicionada(s), '+report.existing+
+        feedback.textContent=(unavailable?'Busca parcial':'Busca concluída')+time+': '+report.imported+' mensagem(ns) adicionada(s), '+report.existing+
           ' já armazenada(s), '+report.skipped+' item(ns) ignorado(s) (saídas, outros destinatários ou sem texto compatível). '+
-          'Consultadas '+report.conversations+' conversa(s). '+(report.limited?'Há mais itens fora desta amostra. ':'')+
+          'Listadas '+report.conversations+' conversa(s). '+(report.limited?'Há mais itens fora desta amostra. ':'')+
+          (unavailable?unavailable+' conversa(s) ficaram indisponíveis para leitura; isso não significa que estejam vazias. ':'')+
           'As mensagens da busca manual ficam fora da fila automática. Isso não confirma entrega de webhook.';
       }catch(error){
         feedback.textContent=saved?'Busca concluída, mas a tela não pôde ser recarregada. Recarregue a página para ver as mensagens armazenadas.':
