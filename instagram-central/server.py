@@ -34,7 +34,44 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.23"
+APP_VERSION = "0.1.24"
+
+META_ACTION_SCRIPT = """(() => {
+  const region = document.getElementById('meta-actions');
+  if (!region) return;
+  const notice = document.getElementById('meta-action-progress');
+  const buttons = Array.from(region.querySelectorAll('button')).map(button =>
+    ({button, text: button.textContent, disabled: button.disabled}));
+  let busy = false;
+  region.addEventListener('submit', event => {
+    if (!(event.target instanceof HTMLFormElement)) return;
+    if (busy) { event.preventDefault(); return; }
+    if (event.defaultPrevented) return;
+    busy = true;
+    region.setAttribute('aria-busy', 'true');
+    buttons.forEach(item => { item.button.disabled = true; });
+    const checking = event.target.getAttribute('action').endsWith('/check');
+    const button = event.submitter || event.target.querySelector('button');
+    if (button) button.textContent = checking ? 'Verificando…' : 'Solicitando assinatura…';
+    notice.textContent = checking ? 'Consultando a Meta. Aguarde a conclusão.' :
+      'Solicitando assinatura na Meta. Aguarde a conclusão.';
+    notice.hidden = false;
+  });
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted) return;
+    busy = false;
+    region.removeAttribute('aria-busy');
+    buttons.forEach(item => {
+      item.button.disabled = item.disabled;
+      item.button.textContent = item.text;
+    });
+    notice.hidden = true;
+    notice.textContent = '';
+  });
+})();"""
+META_ACTION_CSP = ("default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-" +
+                   base64.b64encode(hashlib.sha256(META_ACTION_SCRIPT.encode('utf-8')).digest()).decode('ascii') +
+                   "'; form-action 'self'; base-uri 'none'; object-src 'none'")
 
 
 def settings():
@@ -817,6 +854,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 #meta-actions form{margin:0}
 #meta-actions button{border:1px solid var(--orange);background:var(--orange);color:#161b23;border-radius:10px;padding:10px 15px;font-weight:700}
 #meta-actions button:hover{filter:brightness(1.09)}
+#meta-actions button:disabled{opacity:.65;cursor:progress}
+#meta-action-progress{width:100%;margin:0;color:var(--text)}
 .panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 .table-wrap{width:100%;overflow-x:auto;border:1px solid var(--edge);border-radius:11px}
 table{border-collapse:collapse;min-width:870px;width:100%;table-layout:fixed}
@@ -1222,8 +1261,10 @@ class Handler(BaseHTTPRequestHandler):
                         connection_summary(cfg)["webhookConfigReady"]):
                     controls += '<form method="post" action="panel/meta/subscribe"><input type="hidden" name="csrf" value="' + csrf_subscribe + '"><button>Assinar mensagens na Meta</button></form>'
                 page = page.replace('<div id="meta-actions"></div>',
-                                    '<div id="meta-actions">' + controls + '</div>')
-            return self.respond(200, page, "text/html")
+                                    '<div id="meta-actions">' + controls +
+                                    '<p id="meta-action-progress" role="status" aria-live="polite" hidden></p>' +
+                                    '</div><script>' + META_ACTION_SCRIPT + '</script>')
+            return self.respond(200, page, "text/html", csp=META_ACTION_CSP)
         if self.path == "/bridge/pending":
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
@@ -1246,6 +1287,20 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond(404, {"error": "not found"})
 
     def do_POST(self):
+        if self.path.partition('?')[0] == '/webhook/instagram':
+            raw_length = self.headers.get('Content-Length')
+            try:
+                declared_length = int(raw_length) if raw_length is not None else 0
+                length_state = ('missing' if raw_length is None else
+                                'in_range' if 0 < declared_length <= MAX_BODY else 'out_of_range')
+            except ValueError:
+                length_state = 'invalid'
+            # Arrival is not authenticity: only the later HMAC result verifies Meta.
+            # Never log path/query, signature value, source IP, headers or body.
+            LOGGER.info('Meta webhook request: version=%s exact_path=%s length=%s signature_present=%s transfer_encoding_present=%s',
+                        APP_VERSION, self.path == '/webhook/instagram', length_state,
+                        bool(self.headers.get('X-Hub-Signature-256')),
+                        bool(self.headers.get('Transfer-Encoding')))
         if not self.account_route('POST'):
             return
         route = urlsplit(self.path)

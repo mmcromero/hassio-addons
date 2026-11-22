@@ -1,3 +1,10 @@
+## 0.1.24
+
+- Mostra Verificando… ou Solicitando assinatura… imediatamente ao enviar uma ação Meta, com aviso de espera acessível e bloqueio de novos envios na mesma tela enquanto a navegação está pendente.
+- Preserva POST/CSRF e retorno normal do servidor; restaura controles ao voltar pelo histórico em cache. Script fixo autorizado por hash CSP, sem liberar scripts inline arbitrários.
+- Registra a chegada de POST ao caminho do webhook antes de analisar tamanho, assinatura ou corpo, com categorias e booleanos fixos. Não inclui conteúdo, IP, URL/query, cookies ou assinatura; chegada não equivale a autenticidade.
+- Reduz o build no HA à checagem de sintaxe dos módulos de execução. Testes de comportamento são feitos no desenvolvimento conforme a alteração; a suíte completa deixa de rodar a cada atualização do dispositivo.
+
 ## 0.1.23
 
 - Amplia Verificar acesso Meta com leitura do token já salvo: validade, app emissor e concessão das permissões de perfil/mensagens, sem expor token, segredos ou identificadores pessoais.

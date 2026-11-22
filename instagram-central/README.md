@@ -1,12 +1,22 @@
-# Central Instagram — 0.1.23 (auditoria do token e do webhook)
+# Central Instagram — 0.1.24 (registro de chegada e retorno das ações Meta)
 
 [Política de privacidade](PRIVACY.md) · [Termos de uso](TERMS.md) · [Solicitar exclusão de dados](DATA_DELETION.md)
+
+A **0.1.24** mostra **Verificando…** ou **Solicitando assinatura…** imediatamente após o clique, com aviso de espera e botões Meta desabilitados enquanto a navegação está pendente. A trava vale para a mesma tela; ao voltar pelo histórico em cache, os controles são restaurados.
+
+O receptor passa a registrar **Meta webhook request** na entrada de POSTs para `/webhook/instagram`, inclusive antes das recusas por tamanho ou assinatura. A linha contém somente versão, categorias e booleanos: não inclui conteúdo, IP, parâmetros, cookies ou valor da assinatura. Chegada não prova autenticidade; a validação HMAC posterior continua obrigatória. Ausência dessa linha, sozinha, não distingue falha da Meta, rede ou proxy.
+
+**Para atualizar da 0.1.23:** faça backup e atualize somente a Central, preservando opções e `/data`. Não altere proxy, certificado, credenciais ou modo publicado do app. Confirme a versão na inicialização antes de outro teste de recebimento. As quatro consultas Meta já confirmadas não precisam ser repetidas por rotina. Esta versão melhora a observação da falha; não declara entrega real corrigida.
+
+O build no HA executa somente uma checagem rápida de sintaxe dos módulos de execução, sem repetir a suíte completa no dispositivo. Testes de comportamento são realizados no desenvolvimento conforme a mudança. Publicação não comprova instalação ou funcionamento no Raspberry.
+
+## Auditoria anterior 0.1.23
 
 A **0.1.23** amplia **Verificar acesso Meta** com leituras de metadados do token salvo e da configuração de webhook do aplicativo, quando exposta pela API. O painel mostra validade do token, vínculo com o App ID e concessão de `instagram_basic`/`instagram_manage_messages`. Esses dados não informam o nível Standard/Advanced Access nem comprovam elegibilidade de produção ou entrega de DM.
 
 Se a Meta retornar o objeto Instagram na consulta do app, o diagnóstico mostra ativação, campo `messages`, HTTPS, correspondência do caminho `/webhook/instagram` e somente o domínio/porta de destino. Valores de parâmetros, fragmentos, identificadores de pessoas e respostas privadas são descartados. A consulta genérica pode não expor Instagram: nesse caso aparece **não confirmado**, sem concluir que a assinatura esteja ausente do portal.
 
-**Para atualizar da 0.1.22:** faça backup e atualize somente a Central, preservando opções e `/data`. Não altere proxy, certificado, credenciais ou modo publicado do app. Abra o painel externo e clique uma vez em **Verificar acesso Meta**. Compartilhe somente as novas linhas **Token salvo** e **Webhook do aplicativo**. Não é necessário enviar uma nova DM para obter esse diagnóstico. A atualização acrescenta evidência de configuração; não declara a falha de recebimento corrigida.
+**Resultado real informado pelo operador na 0.1.23:** assinatura da conta com `messages`, acesso às conversas aceito, token válido/do app configurado/com as duas permissões, e webhook do aplicativo Instagram ativo com `messages`, HTTPS, caminho e destino esperados. As consultas não comprovam entrega real nem nível Standard/Advanced Access.
 
 As consultas são GET, com host fixo, timeout e tamanho de resposta limitados. A credencial do aplicativo é formada somente em memória no servidor, sem gerar ou substituir o token OAuth. Redirecionamentos de Graph são recusados para não encaminhar credenciais a outro destino. Nenhum segredo precisa ser copiado para o navegador ou enviado no chat. Nenhuma verificação empresarial, App Review ou assinatura adicional é executada por Verificar acesso Meta.
 
@@ -136,7 +146,7 @@ Resultados/SHAs finais e evidências estão na Issue #1 e no relatório privado 
 - Acrescenta indicadores booleanos de correspondência entre Host público e autoridade do callback configurado, e de `X-Forwarded-Proto=https`.
 - Mantém o cookie restrito a `Path=/oauth/meta/callback`; esse caminho corresponde ao callback. Não amplia para `/`.
 - Não altera NGINX ativo, Ingress, Meta, credenciais, banco, mídias ou opções do HA.
-- **Distribuição:** publicada na `main` do catálogo, somente na pasta `instagram-central/`. O build e a suíte integral do Dockerfile ainda dependem da instalação/atualização autorizada no Supervisor. Esta publicação não altera o Raspberry, NGINX ativo, opções, credenciais ou painel Meta.
+- **Distribuição histórica 0.1.11:** publicada na `main` do catálogo, somente na pasta `instagram-central/`. Naquele pacote o Dockerfile incluía a suíte integral; desde 0.1.24, o build do Supervisor verifica somente sintaxe. Publicação não altera o Raspberry, NGINX ativo, opções, credenciais ou painel Meta.
 
 ## Versão 0.1.11 — correção de redirect_uri e isolamento de credenciais
 
@@ -149,7 +159,7 @@ Resultados/SHAs finais e evidências estão na Issue #1 e no relatório privado 
 
 - Link externo da Meta usa nova aba e `rel="noopener noreferrer"` para não abrir login dentro do iframe do Home Assistant.
 - Logs locais do callback identificam a **etapa** da falha sem exibir URL com `code`, `state`, cookies, credenciais ou dados retornados pela Meta.
-- Inclui teste de regressão dirigido; a suíte integral é verificada pelo Dockerfile no build do Supervisor. Nenhum PASS do Supervisor é declarado antes da atualização real.
+- Inclui teste de regressão dirigido; naquele pacote o Dockerfile verificava a suíte integral. Desde 0.1.24, o build no Supervisor verifica somente sintaxe. Nenhum PASS do Supervisor é declarado antes da atualização real.
 - Sem alterações nos bancos, rascunhos, credenciais existentes ou nas rotas de publicação; não habilita envio ou publicação Meta.
 
 ## Funcionalidades incluídas no código 0.1.7
