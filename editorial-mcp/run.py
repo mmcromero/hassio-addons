@@ -111,6 +111,14 @@ def diagnostics_enabled(options):
     return isinstance(options, dict) and options.get('diagnostics_enabled') is True
 
 
+def daemon_command():
+    # Tailscale v1.104.7 only derives VarRoot from --state when the parent
+    # directory is named tailscale. Explicitly retain this app's private root.
+    return ['tailscaled', '--tun=userspace-networking',
+            '--socket='+str(SOCKET), '--state='+str(STATE/'tailscaled.state'),
+            '--statedir='+str(STATE)]
+
+
 def start():
     os.umask(0o077)
     opts = json.loads(Path('/data/options.json').read_text())
@@ -124,8 +132,7 @@ def start():
         if opts.get('funnel_enabled') is True:
             STATE.mkdir(mode=0o700, parents=True, exist_ok=True)
             RUNTIME.mkdir(mode=0o700, parents=True, exist_ok=True)
-            daemon = subprocess.Popen(['tailscaled', '--tun=userspace-networking',
-                        '--socket='+str(SOCKET), '--state='+str(STATE/'tailscaled.state')],
+            daemon = subprocess.Popen(daemon_command(),
                         stdout=subprocess.PIPE if collect_diagnostics_enabled else subprocess.DEVNULL,
                         stderr=subprocess.STDOUT, text=True, errors='replace')
             if collect_diagnostics_enabled:

@@ -1,3 +1,12 @@
+# Central Editorial MCP universal — 0.1.6 (correção do armazenamento TLS, não homologada)
+
+**Estado em 23/11/2026:** a 0.1.5 instalada responde localmente (HTTP 405 esperado), DNS A/AAAA e JSON do Funnel corretos; TLS externo ainda falha. A 0.1.6 corrige um defeito comprovado na configuração do daemon dedicado: em Tailscale 1.104.7, sem `--statedir`, VarRoot só é derivado de `--state` se a pasta se chamar exatamente tailscale (sem distinção de maiúsculas). No Linux convencional, VarRoot vazio impede o armazenamento de certificados. Agora o daemon recebe `--statedir=/data/editorial-mcp-tailnet`; o arquivo de estado, socket e hostname permanecem idênticos. A sonda tem 8 s para conectar e 75 s para negociar TLS, pois a primeira emissão pode ocorrer durante o handshake. Diagnóstico opt-in distingue ausência de VarRoot. Não remover ou reautorizar o nó por rotina; não repetir reinícios.
+
+Doze testes dirigidos locais aprovados, com servidor HTTP isolado por stub; quatro arquivos Python modificados nessa verificação conferidos por hash. Build integral com 33 testes no Supervisor e TLS real ainda pendentes. OAuth e compatibilidade efetiva do ChatGPT/Claude permanecem pendentes. Não confundir a correção do defeito com homologação.
+
+Fontes: https://github.com/tailscale/tailscale/blob/v1.104.7/cmd/tailscaled/tailscaled.go#L432-L455 ; https://github.com/tailscale/tailscale/blob/v1.104.7/feature/acme/certstore.go#L62-L82 ; https://github.com/tailscale/tailscale/blob/v1.104.7/ipn/ipnlocal/local.go#L6442-L6456 .
+
+## Histórico de 0.1.5 (anterior)
 # Central Editorial MCP universal — 0.1.5 (diagnóstico TLS, não homologada)
 
 **Estado atual:** 0.1.4 instalada e iniciada no ARM64; Funnel aceito, mas sonda MCP n8n reproduziu alerta TLS 80 antes de HTTP. 0.1.5 acrescenta diagnóstico/correção potencial de emissão, não prova resolução. As instruções históricas abaixo podem referir-se a versões anteriores. O build de 0.1.5 executa 32 testes, dos quais oito novos foram executados localmente; build integral e homologação ainda pendentes.

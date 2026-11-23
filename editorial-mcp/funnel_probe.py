@@ -10,6 +10,8 @@ from pathlib import Path
 
 def classify(text):
     s = text.lower()
+    if 'no tailscalevarroot' in s:
+        return 'certificate_storage_missing'
     if any(x in s for x in ('rate limit', 'ratelimit', 'too many certificates', 'too many requests')):
         return 'rate_limit'
     if 'setdns' in s or 'dns-01' in s or 'dns record' in s:
@@ -67,6 +69,8 @@ def probe_http(host, port):
 def probe_tls(host):
     try:
         with socket.create_connection((host, 443), timeout=8) as tcp:
+            # The first handshake may wait for ACME certificate acquisition.
+            tcp.settimeout(75)
             with ssl.create_default_context().wrap_socket(tcp, server_hostname=host):
                 return 'verified'
     except socket.gaierror:

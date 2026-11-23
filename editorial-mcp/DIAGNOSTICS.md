@@ -1,3 +1,6 @@
+## 0.1.6 — correção de VarRoot
+A versão 1.104.7 só deriva VarRoot de --state quando o diretório pai se chama tailscale. O caminho dedicado não atende à regra; portanto declarar --statedir explicitamente no mesmo volume persistente. Não migrar state, não resetar login. A ausência é reconhecida como certificate_storage_missing. O rótulo genérico rate_limit da 0.1.5 não confirma limite ACME (o daemon também limita seus próprios logs). A sonda TLS aguarda até 75 s no handshake; validar depois com sonda externa independente. A correção precisa ser instalada para confirmar emissão e HTTP externo.
+
 ## 0.1.5 — investigação TLS
 - 405 em loopback_http indica rota MCP local acessível; 403 indica rejeição Host/Origin. DNS local não substitui verificação externa.
 - funnel_config mostra HTTPS, publicação e alvo loopback via JSON conhecido de Tailscale v1.104.7.

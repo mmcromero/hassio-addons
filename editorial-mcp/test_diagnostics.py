@@ -34,5 +34,15 @@ class DiagnosticsOptionCompatibility(unittest.TestCase):
         self.assertTrue(run.diagnostics_enabled({'diagnostics_enabled': True}))
 
 
+class DedicatedDaemonConfiguration(unittest.TestCase):
+    def test_explicit_var_root_preserves_existing_node(self):
+        self.assertEqual(run.daemon_command(), [
+            'tailscaled', '--tun=userspace-networking',
+            '--socket=/run/editorial-mcp/tailscaled.sock',
+            '--state=/data/editorial-mcp-tailnet/tailscaled.state',
+            '--statedir=/data/editorial-mcp-tailnet',
+        ])
+
+
 if __name__ == '__main__':
     unittest.main()

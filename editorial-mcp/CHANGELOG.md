@@ -1,3 +1,9 @@
+## 0.1.6 — correção da configuração persistente TLS
+- Configurar explicitamente o diretório privado VarRoot via `--statedir`, preservando estado, socket e identidade existentes.
+- Ajustar timeout de handshake em sonda opt-in (75 s, após conexão de 8 s); classificar ausência de VarRoot sem expor dados.
+- 12 testes locais dirigidos aprovados; build integral de 33 casos e TLS externo pendentes.
+- Não altera autenticação, opções, publicação, Central ou outros serviços.
+
 ## 0.1.5 — diagnóstico TLS dirigido, não homologado
 - Captura sanitizada de eventos do daemon; sonda local, DNS, JSON do Funnel, TLS verificado e certificado dedicado temporário quando necessário.
 - Oito testes novos; nenhum acesso a Meta, Drive ou Central durante os testes locais.

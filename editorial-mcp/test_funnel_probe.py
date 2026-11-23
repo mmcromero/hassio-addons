@@ -21,6 +21,7 @@ class FunnelProbeTests(unittest.TestCase):
 
     def test_classify_known_errors(self):
         self.assertEqual(classify('ACME 429 rate limit'), 'rate_limit')
+        self.assertEqual(classify('getCertPEM: no TailscaleVarRoot'), 'certificate_storage_missing')
         self.assertEqual(classify('certificate not allowed'), 'certificate_policy')
         self.assertEqual(classify('secret'), 'unclassified')
 
@@ -50,6 +51,7 @@ class FunnelProbeTests(unittest.TestCase):
         context.return_value.wrap_socket.side_effect = ssl.SSLError('secret')
         self.assertEqual(probe_tls(HOST), 'tls_handshake_error')
         self.assertEqual(context.return_value.wrap_socket.call_args.kwargs['server_hostname'], HOST)
+        connect.return_value.__enter__.return_value.settimeout.assert_called_once_with(75)
 
     def test_certificate_error_safe_and_files_removed(self):
         paths = []
