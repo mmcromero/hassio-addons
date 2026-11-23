@@ -132,12 +132,12 @@ Responsável: Infraestrutura, com autorização do proprietário para intervenç
 
 ### 6.2. Processo túnel encerrado com Core ativo
 
-O supervisor do processo atualiza o estado para exited quando o subprocesso termina, mas não implementa loop permanente de reinício automático após saída inesperada.
+O supervisor do processo atualiza o estado para exited quando o subprocesso termina, mas não implementa loop permanente de reinício automático após saída inesperada. Esse comportamento está no watcher ([tunnel.py, linhas 313–332](https://github.com/norpol/hass-codex-tunnel-mcp/blob/a56e5a5/custom_components/hass_codex_tunnel_mcp/tunnel.py#L313-L332)).
 
 1. Verificar Tunnel process state, Tunnel ready, Tunnel control plane e Tunnel MCP errors da entrada afetada.
 2. Consultar logs sanitizados e verificar se o endpoint MCP local está disponível.
 3. Corrigir a causa demonstrada antes de reiniciar.
-4. Usar Restart tunnel ou o serviço hass_codex_tunnel_mcp.restart_tunnel com entry_id explícito. Sem entry_id, o serviço pode atingir todas as entradas; não omitir o alvo quando a intenção for reiniciar somente uma.
+4. Usar Restart tunnel ou o serviço hass_codex_tunnel_mcp.restart_tunnel com entry_id explícito. O handler percorre os runtimes e reinicia todos quando entry_id não é informado ([__init__.py, linhas 191–203](https://github.com/norpol/hass-codex-tunnel-mcp/blob/a56e5a5/custom_components/hass_codex_tunnel_mcp/__init__.py#L191-L203)); não omitir o alvo quando a intenção for reiniciar somente uma.
 5. Executar restart pela UI/API local do Home Assistant, nunca pelo túnel que está sendo reiniciado.
 6. Confirmar Ready + Healthy + Control Plane OK + chamada MCP real com contador incrementado e sem erros.
 
