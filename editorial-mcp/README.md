@@ -1,15 +1,27 @@
-# Central Editorial MCP universal — 0.1.7 (compatibilidade Claude via x-api-key, candidata)
+# Central Editorial MCP universal — 0.1.8 (identidade visual padronizada; candidata)
 
-**Estado real em 23/11/2026:** a versão 0.1.6 está instalada no Home Assistant ARM64. TLS externo validado; n8n completou Streamable HTTP, autenticação, initialize e tools/list. A ferramenta `consultar_conexao` confirmou `account=umdoislab` e `publishingAvailable=false`. Uma transferência real de story foi confirmada pelo MCP como `status=draft`, `published=false`, `publicationAuthorized=false`; o proprietário confirmou visualmente o rascunho na Central. Nenhuma publicação ocorreu. O plugin original 1.1.1 permanece preservado.
+**Estado real em 23/11/2026:** a versão 0.1.7 está instalada no Home Assistant ARM64, com estado `started`. O Supervisor concluiu o build e o app iniciou. O endpoint HTTPS externo foi verificado; o n8n concluiu Streamable HTTP autenticado, `initialize` e `tools/list`. A consulta real `consultar_conexao` confirmou `account=umdoislab` e `publishingAvailable=false`.
 
-## Candidata 0.1.7 — autenticação padrão para Claude
+O teste manual do workflow n8n foi somente leitura. Uma transferência real anterior (0.1.6) criou um rascunho de story; o MCP retornou `status=draft`, `published=false` e `publicationAuthorized=false`, e o proprietário confirmou o rascunho na Central. Nenhuma publicação ocorreu.
 
-- O servidor aceita a chave editorial pelo cabeçalho `X-Editorial-Key` (compatibilidade existente do n8n) **ou** pelo cabeçalho padrão `X-API-Key` (compatibilidade planejada para Claude Custom Connector).
-- Os dois cabeçalhos usam exatamente o mesmo token `cei1...`, a mesma validação de formato e a mesma validação account-scoped na API da Central. Não há bypass nem autenticação anônima.
-- Se os dois cabeçalhos forem enviados juntos, ou se houver valores repetidos, a requisição é recusada (403).
-- No n8n, manter a credencial atual `X-Editorial-Key`; nenhuma alteração necessária.
-- No Claude, após instalar/homologar a 0.1.7, configurar Custom Connector com autenticação **No sign-in** e Request header padrão `x-api-key`, usando chave exclusiva da conta autorizada. A Anthropic documenta `x-api-key` como cabeçalho padrão; cabeçalhos personalizados exigem aprovação da Anthropic. Fonte: https://claude.com/docs/connectors/custom/add-unlisted.
-- Estado da 0.1.7: alteração de código e testes adicionados; execução local/Supervisor, publicação, instalação e conexão real Claude ainda pendentes. Não tratar esta candidata como homologada.
+O plugin ChatGPT original 1.1.1 informa as contas Umdoislab e Tudo é 3D conectadas, com permissões apenas de transferência para revisão e leitura dos próprios recibos. Isso não equivale a uma conexão MCP independente para a segunda conta.
+
+## Candidata 0.1.8 — identidade visual
+
+- Adiciona `icon.png` e `logo.png` iguais aos arquivos oficiais já usados pelos outros apps do catálogo Home Assistant.
+- Atualiza a versão do pacote e do handshake MCP para 0.1.8 e ajusta a asserção do teste.
+- Não altera autenticação, permissões, isolamento por conta, API da Central, opções, Tailscale, n8n ou plugin ChatGPT.
+- Os blobs de identidade são os mesmos já publicados para os outros apps: icon `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo `7e500016222b0a5bf395be8ed17447edeb3e2af9`.
+- A construção real e as suítes serão verificadas pelo Supervisor na atualização do Home Assistant. A conexão real do cliente Claude ainda precisa de homologação.
+
+## Versão 0.1.7 — autenticação padrão para Claude
+
+- O servidor aceita `X-Editorial-Key` (compatibilidade existente do n8n) ou `X-API-Key` (cabeçalho padrão para Claude Custom Connector).
+- Os dois cabeçalhos usam o mesmo token editorial `cei1...`, a mesma validação de formato e a validação account-scoped na API da Central.
+- Requisições com ambos os cabeçalhos ou valores repetidos são recusadas. Não existe autenticação anônima nem bypass.
+- O build ARM64 do Supervisor concluiu e o app 0.1.7 iniciou. O Dockerfile executa `py_compile` e as suítes de contrato, diagnóstico e ponte de arquivo.
+- O n8n foi validado com a credencial legada `X-Editorial-Key`. A aceitação do cabeçalho `X-API-Key` está coberta pelo teste integrado; a conexão real no Claude ainda não foi executada.
+- Para outra conta, use uma chave própria gerada na Central e um conector separado. Não selecione a conta por argumento e não reutilize a chave do ChatGPT.
 
 ## Evidência de teste real 0.1.6
 
@@ -35,12 +47,12 @@ Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não l
 1. Após publicação autorizada no catálogo, instalar somente **Fábrica de Softwares - Central Editorial MCP**. Configurar `central_url` com a origem HTTPS real já salva na Central (sem `/panel`), deixando `funnel_enabled: false`. Iniciar. Nenhuma porta do host é publicada; servidor HTTP local em 127.0.0.1:8765. Não usar TLS inseguro no upstream.
 2. Para acesso Claude cloud, ativar `funnel_enabled: true` somente neste novo aplicativo e iniciar. O processo usa Tailscale v1.104.7 em userspace, com estado e socket próprios no volume do app. Não modificar o Tailscale existente, nem habilitar compartilhamento do HA. Autorizar o nó **central-editorial-mcp** pelo link de login nos logs do novo app, se solicitado. Não enviar o link de autenticação ao chat. MagicDNS, certificados HTTPS e permissão Funnel para o nó são requisitos do provedor. Se o CLI recusar por política, parar e revisar a autorização limitada ao novo nó; não ampliar globalmente por tentativa. URL HTTPS candidata sai nos logs após o CLI aceitar o Funnel; somente teste externo confirma acesso. A porta pública exigida pelo Claude é 443. Não presumir que o IP/hostname/URL da Central REST é o MCP.
 3. Na Central, selecione a conta, Configurações Meta → Ferramentas → Conectar ferramentas de criação. Crie chave exclusiva (nome Claude ou outra ferramenta), sem publicação direta. A chave de integração expira em 90 dias conforme Central; revogar na Central interrompe acesso. Não copiar em mensagens, URLs, Git, logs nem configurações compartilhadas.
-4. No Claude: Personalizar → Conectores → Adicionar conector personalizado. Nome Central Editorial; URL HTTPS real obtida no passo 2, com `/mcp`. Autenticação **Sem login** (sem OAuth); em Cabeçalhos de requisição, nome padrão `x-api-key`, valor a chave `cei1` recém-criada. O servidor 0.1.7 aceita esse cabeçalho padrão e mantém `X-Editorial-Key` para clientes n8n. O servidor continua exigindo autenticação pelo cabeçalho. Para outra conta, crie outra chave/conector; não escolha conta por argumento nem reutilize chave de produção do ChatGPT. Se o aplicativo não aceitar o cabeçalho personalizado, registrar impedimento e usar cliente HTTP/SDK compatível; não expor o servidor sem chave.
+4. No Claude: Personalizar → Conectores → Adicionar conector personalizado. Nome Central Editorial; URL HTTPS real obtida no passo 2, com `/mcp`. Autenticação **Sem login** (sem OAuth); em Cabeçalhos de requisição, nome padrão `x-api-key`, valor a chave `cei1` recém-criada. O servidor 0.1.8 aceita esse cabeçalho padrão e mantém `X-Editorial-Key` para clientes n8n. O servidor continua exigindo autenticação pelo cabeçalho. Para outra conta, crie outra chave/conector; não escolha conta por argumento nem reutilize chave de produção do ChatGPT. Se o aplicativo não aceitar o cabeçalho personalizado, registrar impedimento e usar cliente HTTP/SDK compatível; não expor o servidor sem chave.
 5. Primeiro, peça `consultar_conexao`. Confirme a conta retornada. Nenhuma transferência. Após autorização específica, testar envio de pequena mídia de diagnóstico e legenda para revisão; consultar `consultar_envio` pelo mesmo requestId e conferir o rascunho. Não publicar. Somente depois testar arquivo real do chatbot e ativar iniciar com o sistema, se desejado.
 
 ## Contrato MCP
 
-Streamable HTTP `/mcp`, JSON-RPC, handshake `initialize`/`notifications/initialized`, `tools/list`/`tools/call`; sem SSE persistente ou sessão. Protocolos suportados neste lote: 2025-03-26, 2025-06-18 e 2025-11-25. Clientes dual-era podem negociar a revisão anterior; cliente exclusivamente 2026-07-28 não é suportado. Compatibilidade Claude via `x-api-key` depende da homologação real da candidata 0.1.7. GET não abre stream (405); POST autenticado. Host e Origin validados. Chave não é um parâmetro de ferramenta. Cada POST confirma a chave pelo recibo reservado sem mutação, depois encaminha somente operações da API fixa; não há armazenamento de chaves no adaptador.
+Streamable HTTP `/mcp`, JSON-RPC, handshake `initialize`/`notifications/initialized`, `tools/list`/`tools/call`; sem SSE persistente ou sessão. Protocolos suportados neste lote: 2025-03-26, 2025-06-18 e 2025-11-25. Clientes dual-era podem negociar a revisão anterior; cliente exclusivamente 2026-07-28 não é suportado. Compatibilidade Claude via `x-api-key` depende da homologação real da candidata 0.1.8. GET não abre stream (405); POST autenticado. Host e Origin validados. Chave não é um parâmetro de ferramenta. Cada POST confirma a chave pelo recibo reservado sem mutação, depois encaminha somente operações da API fixa; não há armazenamento de chaves no adaptador.
 
 - `consultar_conexao`: conta derivada da chave após validação pela Central; publicação indisponível pelo MCP.
 - `consultar_envio`: `requestId` estável, 16–100 caracteres alfanuméricos/underscore/hífen.

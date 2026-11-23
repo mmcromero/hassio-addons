@@ -1,9 +1,16 @@
+## 0.1.8 — identidade visual padronizada (candidata)
+- Inclui `icon.png` e `logo.png` com os mesmos blobs oficiais já usados pelos demais apps do catálogo: icon `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo `7e500016222b0a5bf395be8ed17447edeb3e2af9`.
+- Atualiza `config.yaml`, `serverInfo.version` e o teste de contrato para 0.1.8.
+- Preserva integralmente a autenticação 0.1.7: `X-Editorial-Key` para clientes existentes e `X-API-Key` padrão para Claude; sem mudança de permissões ou isolamento.
+- Não altera opções, estado Tailscale, Central, plugin, n8n, credenciais ou dados persistentes.
+- Gate seguinte: build do Supervisor na atualização do Home Assistant e conexão real do Claude; não declarar homologação de cliente antes do teste.
+
 ## 0.1.7 — compatibilidade Claude via cabeçalho padrão (candidata)
 - Aceita a chave editorial pelo cabeçalho original `X-Editorial-Key` ou pelo cabeçalho padrão `X-API-Key`, preservando o mesmo formato `cei1...` e a validação por conta na Central.
 - Rejeita requisições com ambos os cabeçalhos ou valores repetidos; nenhuma rota de autenticação alternativa sem chave foi criada.
 - Mantém compatibilidade do n8n sem alteração de sua credencial atual; permite Claude Custom Connector usar `x-api-key`, cabeçalho padrão aceito pela Anthropic sem depender da aprovação de cabeçalho personalizado.
 - Adiciona testes de aceitação do cabeçalho padrão, recusa de duplicidade e recusa de chave malformada antes da validação upstream.
-- Fonte candidata: teste de parser/HTTP dirigido pendente; build Supervisor ARM64 e conexão real Claude ainda pendentes. Não declarar a 0.1.7 homologada.
+- O build ARM64 do Supervisor concluiu e o app 0.1.7 iniciou no Home Assistant. O Dockerfile executou `py_compile` e as suítes integradas; a conexão real pelo cliente Claude continua pendente.
 
 ## 0.1.6 — correção da configuração persistente TLS
 - Configurar explicitamente o diretório privado VarRoot via `--statedir`, preservando estado, socket e identidade existentes.

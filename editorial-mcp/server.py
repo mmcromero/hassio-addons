@@ -11,7 +11,7 @@ from urllib.parse import urlsplit, parse_qs, unquote
 from datetime import datetime, timezone, timedelta
 from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHandler
 
-VERSION = '0.1.7'
+VERSION = '0.1.8'
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 KEY = re.compile(r'cei1\.([a-z][a-z0-9_-]{1,39})\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
 RID = re.compile(r'[A-Za-z0-9_-]{16,100}\Z')
