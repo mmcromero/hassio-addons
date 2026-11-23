@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0-dev.33",
+  "stage": "offline-catalog",
+  "distributions": [
+    "home-assistant",
+    "debian"
+  ],
+  "schemaVersions": {
+    "tenant": 11,
+    "control": 5,
+    "interest": 2,
+    "support": 2,
+    "legal": 3
+  }
+}

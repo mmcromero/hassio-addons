@@ -1,0 +1,45 @@
+name: "Fábrica de Softwares - Artesão Digital"
+version: "0.2.0-dev.33"
+slug: artesaos_piloto
+description: "Contingência temporária com acionamento manual; Forja 01 é o servidor principal. Recuperação e transferência de dados entre ambientes ainda não concluídas. Sem sincronização automática de bancos."
+arch:
+  - aarch64
+startup: application
+boot: manual
+backup: cold
+stage: experimental
+ingress: false
+webui: "https://[HOST]:[PORT:8443]/artesaos-piloto/login"
+ports:
+  8099/tcp: null
+ports_description:
+  8099/tcp: "Não expor no host. Acesso HTTPS somente pelo Nginx."
+options:
+  admin_emails: []
+  public_url: ""
+  google_client_id: ""
+  google_client_secret: ""
+  smtp_host: ""
+  smtp_port: ""
+  smtp_user: ""
+  smtp_password: ""
+  smtp_from: ""
+  mercadopago_access_token: ""
+schema:
+  admin_emails:
+    - str
+  public_url: str
+  google_client_id: str
+  google_client_secret: password
+  smtp_host: str
+  smtp_port: str
+  smtp_user: str
+  smtp_password: password
+  smtp_from: str
+  mercadopago_access_token: password
+environment:
+  ARTESAO_DISTRIBUTION: "home-assistant"
+  HOST: "0.0.0.0"
+  PORT: "8099"
+  DATA_DIR: /data
+  PILOT_OPTIONS_FILE: /data/options.json
