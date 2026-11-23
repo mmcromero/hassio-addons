@@ -1,0 +1,7 @@
+/* Only surfaces using SectionTabs opt into these styles. No PDV selectors. */
+.section-tabs .section-tab-list{display:grid;grid-template-columns:repeat(var(--section-count),minmax(0,1fr));gap:4px;margin:12px 0}
+.section-tabs .section-tab-list>button{box-sizing:border-box;min-width:0;min-height:44px;margin:0;padding:8px 2px;border:1px solid #789483;border-radius:8px;background:#fff;color:#205e47;font:inherit;font-size:0.875rem;overflow-wrap:anywhere}
+.section-tabs .section-tab-list>button[aria-selected=true]{background:#205e47;color:white;font-weight:700;border:2px solid #205e47}
+.section-tabs .section-tab-list>button:focus-visible{outline:3px solid #b66e16;outline-offset:2px}
+.section-tabs .section-tab-panel[hidden]{display:none!important}
+.section-tabs .section-tab-panel{min-width:0;max-width:100%}

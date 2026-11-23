@@ -1,0 +1,9 @@
+/* Scoped to settings; does not change PDV or global layout. */
+.pilot-settings .settings-index{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:16px 0}
+.pilot-settings .settings-index>a{position:relative;display:grid;gap:4px;min-width:0;min-height:44px;box-sizing:border-box;padding:14px 42px 14px 14px;border:1px solid #789483;border-radius:10px;color:#205e47;background:#fff;text-decoration:none;overflow-wrap:anywhere}
+.pilot-settings .settings-index>a>span:not(.settings-index-arrow){font-size:0.9rem;color:#40564a}
+.pilot-settings .settings-index-arrow{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.5rem}
+.pilot-settings .settings-index>a:focus-visible,.pilot-settings .settings-return a:focus-visible{outline:3px solid #b66e16;outline-offset:3px}
+.pilot-settings .settings-return a{display:inline-flex;align-items:center;min-height:44px;white-space:normal}
+.pilot-settings .settings-panel[hidden]{display:none!important}
+@media(min-width:760px){.pilot-settings .settings-index{grid-template-columns:repeat(2,minmax(0,1fr))}}
