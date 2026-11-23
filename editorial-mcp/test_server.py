@@ -74,6 +74,18 @@ class Contract(unittest.TestCase):
         code,_=self.share_api('/share-api/accounts',{},TOKEN)
         self.assertEqual(code,403)
 
+    def test_share_pwa_assets_are_served(self):
+        for path, expected in [('/share','text/html'),('/share.js','text/javascript'),('/manifest.webmanifest','application/manifest+json'),('/sw.js','text/javascript'),('/icon.svg','image/svg+xml')]:
+            conn=HTTPConnection('127.0.0.1',self.http.server_port,timeout=5)
+            try:
+                conn.request('GET',path,headers={'Host':'editorial.example.ts.net'})
+                response=conn.getresponse(); body=response.read()
+                self.assertEqual(response.status,200,path)
+                self.assertTrue(response.getheader('Content-Type').startswith(expected),path)
+                self.assertTrue(body,path)
+                if path=='/sw.js': self.assertEqual(response.getheader('Service-Worker-Allowed'),'/')
+            finally: conn.close()
+
     def test_lifecycle_and_tools(self):
         code,body=self.request('initialize',{'protocolVersion':'2025-11-25'}); self.assertEqual(code,200)
         self.assertEqual(body['result']['protocolVersion'],'2025-11-25')
