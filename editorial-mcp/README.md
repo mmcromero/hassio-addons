@@ -1,4 +1,4 @@
-# Central Editorial MCP universal — 0.1.1 (candidata)
+# Central Editorial MCP universal — 0.1.2 (candidata)
 
 Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não lê o banco da Central, não altera OAuth/Meta, não usa o n8n e não expõe Supervisor. A Central continua responsável por autenticação, isolamento, validade/revogação da chave, cotas, normalização, rascunhos e recibos. Não existe ferramenta de publicação, exclusão ou leitura geral do acervo.
 
@@ -21,7 +21,24 @@ Streamable HTTP `/mcp`, JSON-RPC, handshake `initialize`/`notifications/initiali
 **Limitação importante:** MCP não dá automaticamente acesso aos bytes de anexos ou imagens geradas em um chatbot. Base64 é uma interface inicial para clientes capazes de obter os bytes reais, não prova de upload pelo Claude no celular. O transporte privado de arquivos (ex.: Drive, com credencial e escopo próprios) é etapa separada; não usar links públicos, não tentar ler o Drive inteiro. A integração ChatGPT/Drive existente não é tocada.
 
 
-## Diagnóstico opt-in da candidata 0.1.1
+
+## Transferência por referência temporária do host ChatGPT
+
+Além do envio Base64 para clientes que já possuem os bytes, a candidata 0.1.2 oferece `enviar_arquivo_temporario_para_revisao` para o fluxo ChatGPT + conector Google Drive:
+
+1. O conector Google Drive lê o arquivo privado com `fetch(download_raw_file=true, include_base64=false)`.
+2. O host entrega `file_uri.download_url`, uma URL assinada e temporária do próprio host ChatGPT. Não é um link público do Drive.
+3. O cliente envia ao MCP somente URL temporária, MIME, tamanho e SHA-256 aprovados.
+4. O Worker aceita apenas HTTPS em subdomínio `oaiusercontent.com`, caminho `/files/`, permissão de leitura, assinatura e validade curta. Recusa redirecionamentos e hosts externos.
+5. O Worker baixa em memória, limita a leitura ao tamanho declarado, confere assinatura do formato e SHA-256 e só então usa o fluxo existente `import_upload` + `import_commit` da Central.
+
+A URL é um segredo bearer de curta duração: não deve ser gravada, registrada em logs, reutilizada ou persistida. O Worker não grava a imagem em disco. O limite inicial permanece 4 MiB agregados por transferência. O arquivo original continua privado no Drive; o Worker não recebe credencial Google nem acesso geral ao Drive.
+
+**Limitação:** a URL temporária é específica do host ChatGPT. Outros clientes MCP continuam usando `enviar_para_revisao` com bytes Base64 reais. Não aceitar URLs arbitrárias nem links de compartilhamento do Drive.
+
+**Prova na PoC isolada 0.1.3:** o Worker recebeu 1.977.007 bytes, SHA-256 idêntico ao arquivo privado, confirmou o recibo R2 e não persistiu imagem (`imagePersisted=false`). Essa prova valida o transporte do host para o Worker; não é ainda homologação desta implementação no add-on nem transferência à Central.
+
+## Diagnóstico opt-in da candidata 0.1.2
 
 A opção `diagnostics_enabled` vem desativada por padrão. Quando habilitada, o app registra apenas linhas `DIAG` locais após o CLI aceitar o Funnel:
 
@@ -39,7 +56,7 @@ Sem privilégios de host, portas mapeadas, Supervisor API, credencial Meta, shel
 
 ## Verificação e fontes
 
-O build do Supervisor executa `python3 -m py_compile` e as suítes `python3 -m unittest -v test_server test_run_diagnostics`, com API simulada e sem rede externa. Isso não comprova build ARM64 real, acesso público HTTPS, cliente Claude ou transferência de mídia real. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
+O build do Supervisor executa `python3 -m py_compile` e as suítes `python3 -m unittest -v test_server test_run_diagnostics test_host_file_bridge`, com API simulada e sem rede externa. Os testes de download usam HTTP simulado; não acessam o Drive ou a internet. Isso não comprova build ARM64 real, acesso público HTTPS, cliente Claude ou transferência de mídia real. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
 
 - https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp
 - https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
