@@ -32,4 +32,5 @@
 - 15/15 arquivos passaram por varredura textual de padrões conhecidos de segredos (PEM, GitHub, Google API/OAuth, Slack, bearer e credenciais cei1/cei2): nenhuma ocorrência. Isso não substitui auditoria integral.
 - `py3-google-auth` foi confirmado no índice Alpine v3.24 para aarch64; dependências e build final precisam ser confirmados pelo Supervisor.
 - Credencial Google permanece vazia; não há conexão real ao Drive homologada. Sem publicação direta no Instagram, sem mudança Meta, n8n, Tailscale ou NGINX.
-- Estado ao publicar: **candidata no catálogo; instalação e homologação pendentes**. Preservar dados e opções persistentes. Não promover a main privada antes de PASS.
+- Commit público de distribuição: `119944fcc6da374feb017241af6eb49e16fe9738` (`hassio-addons:main`). A atualização alterou somente os diretórios `instagram-central/` e `editorial-mcp/`; `repository.yaml`, workflows, registry e demais add-ons foram preservados. Commit usa `[skip ci]`, conforme exigência de não executar Actions.
+- Estado: **PUBLICADO NO CATÁLOGO; NÃO INSTALADO/HOMOLOGADO**. A instalação requer atualização pelo Supervisor/operador; o conector HA disponível está em modo somente leitura. Preservar dados e opções persistentes. Não promover a main privada antes de PASS.

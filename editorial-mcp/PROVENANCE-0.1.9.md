@@ -23,4 +23,5 @@
 - Dockerfile executa `py_compile` e as suítes `test_server`, `test_multi_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` durante o build do Supervisor.
 - 7/7 arquivos passaram por varredura textual de padrões conhecidos de segredos: nenhuma ocorrência. Isso não substitui auditoria integral.
 - Chave `cei1` permanece legada e restrita; `cei2` suporta escopo multi-conta sem publicação. Nenhuma chave real foi incluída.
-- Estado ao publicar: **candidata no catálogo; instalação e homologação pendentes**. Não promover a main privada antes de PASS.
+- Commit público de distribuição: `119944fcc6da374feb017241af6eb49e16fe9738` (`hassio-addons:main`). A atualização alterou somente os diretórios `instagram-central/` e `editorial-mcp/`; `repository.yaml`, workflows, registry e demais add-ons foram preservados. Commit usa `[skip ci]`, conforme exigência de não executar Actions.
+- Estado: **PUBLICADO NO CATÁLOGO; NÃO INSTALADO/HOMOLOGADO**. A instalação requer atualização pelo Supervisor/operador; o conector HA disponível está em modo somente leitura. Não promover a main privada antes de PASS.
