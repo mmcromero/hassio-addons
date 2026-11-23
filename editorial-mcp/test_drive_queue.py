@@ -107,3 +107,24 @@ class TestDiagnostics(unittest.TestCase):
         self.assertEqual(diagnostic(Reject('ACL_MISMATCH')), 'ACL_MISMATCH')
         self.assertEqual(diagnostic(Reject('private secret text')), 'INVALID')
         self.assertEqual(diagnostic(HTTPError('https://example.invalid/private',403,'secret',{},None)), 'HTTP_403')
+
+class TestReaderACL(unittest.TestCase):
+    def test_exact_ids(self):
+        from drive_queue import private_item
+        d=FakeDrive(); item=d.metadata(ROOT)
+        item['owners'][0]['permissionId']='owner_1234567890'
+        item['permissionIds']=['owner_1234567890','reader_1234567890']
+        item['capabilities']={'canEdit':False,'canShare':False}
+        with patch.object(d,'permissions',side_effect=Reject('PERMISSIONS_HTTP_403')), patch.object(d,'identity_id',return_value='reader_1234567890',create=True):
+            private_item(d,item,OWNER)
+            for ids in [None,[],['owner_1234567890','reader_1234567890','third_1234567890']]:
+                item['permissionIds']=ids
+                with self.assertRaises(Reject): private_item(d,item,OWNER)
+            item['permissionIds']=['owner_1234567890','reader_1234567890']
+            item['capabilities']['canEdit']=True
+            with self.assertRaises(Reject): private_item(d,item,OWNER)
+    def test_other_http_fails_closed(self):
+        from drive_queue import private_item
+        d=FakeDrive()
+        with patch.object(d,'permissions',side_effect=Reject('PERMISSIONS_HTTP_500')):
+            with self.assertRaises(Reject): private_item(d,d.metadata(ROOT),OWNER)

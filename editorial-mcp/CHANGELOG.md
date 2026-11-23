@@ -1,3 +1,8 @@
+# 0.1.13 — ACL de leitura Drive
+
+- Quando permissions.list devolve 403, exige permissionIds exatos do dono e da identidade autenticada via about.user, sem capacidade de editar ou compartilhar. Dados ausentes ou terceiros bloqueiam. Sem ampliação de privilégios.
+- Testes negativos incluídos. Homologação real pendente.
+
 # 0.1.12 — diagnóstico sanitizado da fila Drive
 
 - Identifica estágio e código de recusa sem imprimir valores de configuração ou respostas Google. Mantém controles e fila existentes.

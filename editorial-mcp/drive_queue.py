@@ -17,7 +17,7 @@ MAX_ORDER = 65536
 SCOPE = 'https://www.googleapis.com/auth/drive.readonly'
 TOKEN_URL = 'https://oauth2.googleapis.com/token'
 API = 'https://www.googleapis.com/drive/v3/'
-FIELDS = 'id,name,mimeType,parents,trashed,size,createdTime,version,owners(emailAddress),driveId'
+FIELDS = 'id,name,mimeType,parents,trashed,size,createdTime,version,owners(emailAddress,permissionId),permissionIds,capabilities(canEdit,canShare),driveId'
 
 
 class Reject(ValueError):
@@ -95,6 +95,7 @@ class Drive:
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
         self.token = ''
         self.expiry = 0
+        self.reader_id = None
 
     def read(self, request, limit):
         with self.opener.open(request, timeout=20) as response:
@@ -151,6 +152,13 @@ class Drive:
     def metadata(self, file_id):
         return self.get('files/'+identifier(file_id),{'fields':FIELDS})
 
+    def identity_id(self):
+        if self.reader_id is None:
+            user = self.get('about', {'fields':'user(emailAddress,permissionId)'}).get('user', {})
+            require(user.get('emailAddress','').lower() == self.email, 'READER_IDENTITY_MISMATCH')
+            self.reader_id = identifier(user.get('permissionId'))
+        return self.reader_id
+
     def permissions(self, file_id):
         return self.pages('files/'+identifier(file_id)+'/permissions',{'fields':'nextPageToken,permissions(type,role,emailAddress,deleted)','pageSize':100},'permissions')
 
@@ -167,7 +175,21 @@ def private_item(drive, item, owner, parent=None):
     require([x.get('emailAddress','').lower() for x in item.get('owners',[])] == [owner], 'OWNER_MISMATCH')
     if parent is not None:
         require(item.get('parents') == [parent], 'PARENT_MISMATCH')
-    perms = drive.permissions(item['id'])
+    try:
+        perms = drive.permissions(item['id'])
+    except Reject as exc:
+        if str(exc) != 'PERMISSIONS_HTTP_403':
+            raise
+        # My Drive readers may not list ACLs. Google files.permissionIds lists
+        # identities with access; require exact owner + authenticated reader IDs.
+        # Missing metadata is a denial, not evidence of privacy.
+        owner_id = identifier(item['owners'][0].get('permissionId'))
+        reader_id = drive.identity_id()
+        ids = item.get('permissionIds')
+        require(owner_id != reader_id and isinstance(ids,list) and len(ids)==2 and set(ids)=={owner_id,reader_id}, 'ACL_IDS_MISMATCH')
+        caps = item.get('capabilities',{})
+        require(caps.get('canEdit') is False and caps.get('canShare') is False, 'READER_CAPABILITIES_MISMATCH')
+        return
     actual = {(p.get('type'),p.get('role'),p.get('emailAddress','').lower()) for p in perms if not p.get('deleted')}
     require(actual == {('user','owner',owner),('user','reader',drive.email)}, 'ACL_MISMATCH')
 
