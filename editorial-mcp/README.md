@@ -1,4 +1,4 @@
-# Central Editorial MCP universal — 0.1.0 (candidata)
+# Central Editorial MCP universal — 0.1.2 (candidata; não homologada)
 
 Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não lê o banco da Central, não altera OAuth/Meta, não usa o n8n e não expõe Supervisor. A Central continua responsável por autenticação, isolamento, validade/revogação da chave, cotas, normalização, rascunhos e recibos. Não existe ferramenta de publicação, exclusão ou leitura geral do acervo.
 
@@ -26,7 +26,7 @@ Sem privilégios de host, portas mapeadas, Supervisor API, credencial Meta, shel
 
 ## Verificação e fontes
 
-`python3 -m unittest -v test_server` usa HTTP local e Central simulada; não faz rede externa. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
+`python3 -m py_compile server.py run.py test_server.py test_diagnostics.py test_host_file_bridge.py` e `python3 -m unittest -v test_server test_diagnostics test_host_file_bridge` são os gates do build. As suítes usam HTTP local, Central simulada e download HTTP simulado; não acessam Drive, Meta ou internet real. Cobrem autenticação, isolamento de conta, autorização, recibos, Host/Origin, ausência de publicação, sanitização de diagnóstico e ponte de arquivo temporário. As 24 verificações são executadas pelo próprio Dockerfile durante o build do Supervisor: 9 testes de contrato MCP, 3 de diagnóstico/compatibilidade e 12 da ponte temporária, precedidos por `py_compile`. Não há runner externo, QEMU ou GitHub Actions como pré-requisito. O resultado só será PASS após a construção real da candidata no Home Assistant. Tailscale/Funnel, TLS e conexão de cliente em ambiente real exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
 
 - https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp
 - https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
@@ -35,3 +35,43 @@ Sem privilégios de host, portas mapeadas, Supervisor API, credencial Meta, shel
 - https://tailscale.com/docs/reference/tailscale-cli/funnel
 - https://tailscale.com/docs/reference/tailscale-cli/up
 - https://tailscale.com/docs/features/containers/docker/docker-params
+
+
+## Diagnóstico local opt-in — candidata 0.1.1
+
+A versão 0.1.1 acrescenta `diagnostics_enabled`, opcional e desativada por padrão. A chave não tem valor padrão obrigatório no manifesto; quando ausente em instalações antigas, o código a interpreta como `false`. Quando habilitada, o app grava no log local apenas estados sanitizados de versão, identidade/estado do nó, contagem de peers de ingresso, resumo Funnel/Serve e conectividade grosseira. Não imprime JSON bruto, nomes/IPs de peers, endereços, tokens, chaves, state file ou URL de login. Não cria rota HTTP de diagnóstico, não executa bugreport e não envia dados externamente. A coleta é somente leitura.
+
+O teste `test_diagnostics.py` verifica que IP, porta e região não aparecem no resumo do netcheck. A execução automatizada desse teste ocorre junto às demais suítes no build do Supervisor. O código preparado, por si só, não comprova a causa da falha TLS.
+
+
+## Ponte privada de arquivos do host ChatGPT — candidata 0.1.2
+
+A candidata 0.1.2 acrescenta duas ferramentas para o fluxo ChatGPT + conector Google Drive, sem credencial Google no add-on e sem link público do Drive:
+
+- `validar_arquivo_temporario`: baixa uma referência temporária em memória e retorna apenas MIME, tamanho e SHA-256. Não faz upload/commit de mídia à Central, não transfere conteúdo nem persiste a imagem. A autenticação MCP continua usando a consulta de recibo de prova já existente.
+- `enviar_arquivo_temporario_para_revisao`: após solicitação explícita do usuário, valida e envia o arquivo ao fluxo existente de importação da Central, criando apenas o rascunho de revisão. Não publica.
+
+### Fluxo
+
+1. O conector Google Drive autenticado lê o arquivo privado com `fetch(download_raw_file=true, include_base64=false)`.
+2. O host ChatGPT disponibiliza `file_uri.download_url`, referência assinada e temporária; não é URL pública do Drive.
+3. A chamada MCP envia a referência temporária, MIME, tamanho e SHA-256 esperado.
+4. O Worker aceita somente HTTPS em subdomínio `oaiusercontent.com`, caminho `/files/`, escopo de leitura exato (`sp=r`), assinatura e validade restante de até 24 horas (compatível com a validade observada na referência real do host). Recusa host externo, links do Drive, caminhos com traversal e redirecionamentos.
+5. O Worker baixa em memória, limita o tamanho, confere assinatura do formato e SHA-256 antes de usar `import_upload` e `import_commit` da Central.
+
+A referência temporária é um segredo bearer: trafega somente no payload privado da chamada MCP, não deve ser copiada para canais públicos e não é gravada em logs, recibos ou disco pelo add-on. O arquivo não é persistido pelo Worker. Limite inicial agregado: 4 MiB por transferência. O original permanece privado no Drive.
+
+### Limites e evidências
+
+- O caminho comprovado na PoC é Drive privado → conector autenticado ChatGPT → URL temporária do host → Worker. O Worker não acessa a API do Google Drive diretamente.
+- A PoC isolada 0.1.3 recebeu 1.977.007 bytes, confirmou SHA-256 e recibo R2 e não persistiu a imagem. Isso prova o transporte host→Worker, não a integração 0.1.2 instalada nem a transferência à Central.
+- A reutilização da mesma referência após o prazo `se` falhou fechada (`HOST_DOWNLOAD_UNAVAILABLE`), sem receber bytes ou persistir mídia.
+- Outros clientes MCP continuam usando `enviar_para_revisao` com bytes Base64 reais.
+- Esta candidata preserva os diagnósticos opt-in 0.1.1 de Tailscale/Funnel. O teste `test_diagnostics.py` permanece parte obrigatória da suíte.
+
+### Validação ainda necessária
+
+O código foi integrado à fonte privada `instagram-automacoes:desenvolvimento`. A revisão estática encontrou uma divergência no bloco de ferramentas da cópia de distribuição anterior; por isso, aquela cópia não é fonte confiável para gerar pacote. A implementação fonte foi recomposta sobre a base 0.1.1, preservando os diagnósticos e corrigindo o contrato MCP.
+
+Ainda não foram executados nesta retomada o conjunto completo de testes, o build ARM64, o teste da ferramenta no add-on instalado, a sonda HTTPS externa ou a transferência real à Central. Não declarar PASS até obter essas evidências. A candidata 0.1.2 está congelada na branch privada `release-candidate`; ainda não foi publicada no catálogo, instalada ou homologada no Home Assistant.
+

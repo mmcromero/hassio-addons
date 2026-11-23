@@ -52,9 +52,10 @@ class Contract(unittest.TestCase):
     def test_lifecycle_and_tools(self):
         code,body=self.request('initialize',{'protocolVersion':'2025-11-25'}); self.assertEqual(code,200)
         self.assertEqual(body['result']['protocolVersion'],'2025-11-25')
+        self.assertEqual(body['result']['serverInfo']['version'],'0.1.2')
         self.assertEqual(self.request('notifications/initialized',notification=True),(202,None))
         code,body=self.request(); self.assertEqual(code,200)
-        self.assertEqual([t['name'] for t in body['result']['tools']],['consultar_conexao','consultar_envio','enviar_para_revisao'])
+        self.assertEqual([t['name'] for t in body['result']['tools']],['consultar_conexao','consultar_envio','enviar_para_revisao','validar_arquivo_temporario','enviar_arquivo_temporario_para_revisao'])
         self.assertEqual(self.request(verb='GET')[0],405)
         self.assertEqual(self.request(headers={'MCP-Protocol-Version':'2026-07-28'})[0],400)
     def test_no_key_denied(self):
