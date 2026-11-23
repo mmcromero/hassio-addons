@@ -66,10 +66,10 @@
       "directory": "artesaos-piloto",
       "slug": "artesaos_piloto",
       "architectures": [
-        "aarch64",
-        "amd64"
+        "aarch64"
       ],
-      "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos"
+      "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos",
+      "arm64_build_job": "build-artesao-arm64"
     }
   ]
 }
