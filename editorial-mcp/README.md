@@ -23,6 +23,8 @@ Streamable HTTP `/mcp`, JSON-RPC, handshake `initialize`/`notifications/initiali
 
 
 ## Transferência por referência temporária do host ChatGPT
+Antes de transferir, `validar_arquivo_temporario` permite testar no próprio add-on se a URL ainda é acessível e se MIME, tamanho e SHA-256 conferem. Essa ferramenta somente lê em memória e retorna metadados; não chama upload/commit da Central e não persiste a imagem.
+
 
 Além do envio Base64 para clientes que já possuem os bytes, a candidata 0.1.2 oferece `enviar_arquivo_temporario_para_revisao` para o fluxo ChatGPT + conector Google Drive:
 
