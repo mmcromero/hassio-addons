@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);let queue=[];
 const status=t=>$('#status').textContent=t;
 async function db(){return new Promise((ok,no)=>{const r=indexedDB.open('editorial-share',1);r.onupgradeneeded=()=>r.result.createObjectStore('inbox',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
-async function loadQueue(){const d=await db();queue=await new Promise((ok,no)=>{const r=d.transaction('inbox').objectStore('inbox').getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});render()}
+async function loadQueue(){const d=await db();queue=await new Promise((ok,no)=>{const r=d.transaction('inbox').objectStore('inbox').getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});const cutoff=Date.now()-24*60*60*1000;const stale=queue.filter(x=>!x.created||x.created<cutoff);if(stale.length){const tx=d.transaction('inbox','readwrite');for(const x of stale)tx.objectStore('inbox').delete(x.id);queue=queue.filter(x=>!stale.includes(x))}render()}
 function render(){$('#files').innerHTML='';queue.forEach((x,i)=>{const el=document.createElement('div');el.className='file';el.textContent=(i+1)+'. '+(x.file.name||'imagem compartilhada')+' — '+Math.round(x.file.size/1024)+' KB';$('#files').append(el)})}
 $('#pick').addEventListener('change',e=>{for(const file of e.target.files)queue.push({file});render()});
 async function api(path,body){return fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':$('#key').value},body:JSON.stringify(body)})}
