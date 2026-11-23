@@ -14,6 +14,7 @@ on:
           - pager-virtual
           - evolution-api
           - factory-runner
+          - artesaos-piloto
 permissions:
   contents: read
 concurrency:
@@ -174,3 +175,19 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: Build restricted Factory Runner ARM64 (no publish)
         run: docker buildx build --platform linux/arm64 --progress plain --load -t factory-runner:rc-test factory-runner/
+
+  build-artesao-arm64:
+    # Build ARM64 sob acionamento manual; sem publicação de imagem.
+    if: github.event_name == 'workflow_dispatch' && inputs.addon == 'artesaos-piloto'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: syntax
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Compilar Artesão Digital ARM64 (sem publicação)
+        run: docker buildx build --platform linux/arm64 --progress plain --load -t artesaos-piloto:ci artesaos-piloto/
+      - name: Confirmar arquitetura da imagem
+        run: |
+          test "$(docker image inspect artesaos-piloto:ci --format '{{.Architecture}}')" = "arm64"
