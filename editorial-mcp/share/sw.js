@@ -1,0 +1,6 @@
+const DB='editorial-share';const STORE='inbox';
+function openDB(){return new Promise((ok,no)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})}
+async function save(item){const db=await openDB();return new Promise((ok,no)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(item);tx.oncomplete=()=>ok();tx.onerror=()=>no(tx.error)})}
+self.addEventListener('install',e=>e.waitUntil(self.skipWaiting()));
+self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method==='POST'&&u.pathname==='/share-inbox'){e.respondWith((async()=>{const f=await e.request.formData();const files=f.getAll('files').filter(x=>x instanceof File);if(!files.length)return Response.redirect('/share?error=no-file',303);for(const file of files){if(!['image/jpeg','image/png','video/mp4'].includes(file.type)||file.size>4*1024*1024)continue;await save({file,title:String(f.get('title')||''),text:String(f.get('text')||''),url:String(f.get('url')||''),created:Date.now()})}return Response.redirect('/share?received=1',303)})())}});
