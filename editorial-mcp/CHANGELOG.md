@@ -1,3 +1,11 @@
+# 0.1.10 — receptor de compartilhamento Android (candidata)
+
+- Adiciona PWA instalável com Web Share Target para receber arquivos JPEG/PNG/MP4 compartilhados pelo sistema Android.
+- Adiciona API autenticada por chave cei2 para listar contas e transferir mídia selecionada para revisão, com destino validado pela Central.
+- Arquivos recebidos ficam temporariamente no IndexedDB do navegador; itens antigos são removidos na próxima abertura após 24 horas. Chave não é persistida no navegador.
+- Mantém o fluxo MCP 0.1.9, a autenticação existente, o slug e a configuração do Funnel. Nenhuma publicação automática.
+- Testes de contrato adicionados; build Supervisor e homologação real Android/ChatGPT/Claude ainda pendentes.
+
 # 0.1.9 — conexão multi-conta e Drive privado
 
 - Preserva contrato cei1. Nova chave cei2 requer Central Instagram 0.1.39; listagem dinâmica, destino explícito, teste Drive somente leitura e transferência por IDs. Sem publicação direta ou exclusão Drive. Slug, ícone, logo e túnel preservados. Provisionamento e teste real Drive pendentes.

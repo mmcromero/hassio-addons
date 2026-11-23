@@ -7,6 +7,7 @@ from server import make_server, Refused, PROBE, Central
 
 TOKEN = 'cei1.umdoislab.'+'a'*32+'.'+'b'*43
 SECOND = 'cei1.secondary.'+'c'*32+'.'+'d'*43
+MULTI = 'cei2.'+'e'*32+'.'+'f'*43
 RID = 'test_transfer_0001'
 
 class FakeCentral:
@@ -14,7 +15,9 @@ class FakeCentral:
         self.calls = []
         self.records = {}
     def call(self, token, action, data, **kw):
-        if token not in (TOKEN, SECOND): raise Refused('denied')
+        if token not in (TOKEN, SECOND, MULTI): raise Refused('denied')
+        if action == 'accounts': return {'accounts':[{'id':'umdoislab','name':'Umdoislab'},{'id':'ig_8397ce6ba41e3a45','name':'Tudo é 3D'}],'publishingAvailable':False}
+        if action == 'resolve': return {'connected':True,'account':'ig_8397ce6ba41e3a45','publishingAvailable':False}
         self.calls.append((token, action, data, kw))
         if action == 'receipt':
             return self.records.get((token, data['requestId']), {'found':False})
@@ -49,10 +52,44 @@ class Contract(unittest.TestCase):
     def manifest(self):
         return {'requestId':RID,'transferApproved':True,'format':'feed','caption':'Teste',
                 'media':[{'mime':'image/png','base64':base64.b64encode(b'fake-png-bytes').decode()}]}
+    def share_api(self, path, payload, token=MULTI):
+        c=HTTPConnection('127.0.0.1',self.http.server_port,timeout=5)
+        try:
+            c.request('POST',path,json.dumps(payload),{'Content-Type':'application/json','X-API-Key':token,'Host':'editorial.example.ts.net','Origin':'https://editorial.example.ts.net'})
+            resp=c.getresponse(); raw=resp.read()
+            return resp.status,json.loads(raw) if raw else None
+        finally:c.close()
+    def test_share_api_lists_accounts_and_transfers_only_to_selected_account(self):
+        code,body=self.share_api('/share-api/accounts',{})
+        self.assertEqual(code,200)
+        self.assertEqual([a['name'] for a in body['accounts']],['Umdoislab','Tudo é 3D'])
+        payload={'conta':'Tudo é 3D','requestId':'share_transfer_000001','transferApproved':True,'format':'story','caption':'Teste','media':[{'mime':'image/png','base64':base64.b64encode(b'png-data').decode()}]}
+        code,result=self.share_api('/share-api/transfer',payload)
+        self.assertEqual(code,200)
+        self.assertEqual(result['status'],'draft')
+        self.assertFalse(result['published'])
+        self.assertEqual(result['account'],'ig_8397ce6ba41e3a45')
+        self.assertTrue(any(call[1]=='upload' and call[3].get('account')=='ig_8397ce6ba41e3a45' for call in self.fake.calls))
+    def test_share_api_rejects_legacy_single_account_key(self):
+        code,_=self.share_api('/share-api/accounts',{},TOKEN)
+        self.assertEqual(code,403)
+
+    def test_share_pwa_assets_are_served(self):
+        for path, expected in [('/share','text/html'),('/share.js','text/javascript'),('/manifest.webmanifest','application/manifest+json'),('/sw.js','text/javascript'),('/icon.svg','image/svg+xml')]:
+            conn=HTTPConnection('127.0.0.1',self.http.server_port,timeout=5)
+            try:
+                conn.request('GET',path,headers={'Host':'editorial.example.ts.net'})
+                response=conn.getresponse(); body=response.read()
+                self.assertEqual(response.status,200,path)
+                self.assertTrue(response.getheader('Content-Type').startswith(expected),path)
+                self.assertTrue(body,path)
+                if path=='/sw.js': self.assertEqual(response.getheader('Service-Worker-Allowed'),'/')
+            finally: conn.close()
+
     def test_lifecycle_and_tools(self):
         code,body=self.request('initialize',{'protocolVersion':'2025-11-25'}); self.assertEqual(code,200)
         self.assertEqual(body['result']['protocolVersion'],'2025-11-25')
-        self.assertEqual(body['result']['serverInfo']['version'],'0.1.9')
+        self.assertEqual(body['result']['serverInfo']['version'],'0.1.10')
         self.assertEqual(self.request('notifications/initialized',notification=True),(202,None))
         code,body=self.request(); self.assertEqual(code,200)
         self.assertEqual([t['name'] for t in body['result']['tools']],['consultar_conexao','consultar_envio','enviar_para_revisao','validar_arquivo_temporario','enviar_arquivo_temporario_para_revisao'])
