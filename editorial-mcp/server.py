@@ -7,7 +7,7 @@ import socket
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, unquote
 from datetime import datetime, timezone, timedelta
 from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHandler
 
@@ -92,15 +92,16 @@ def _host_file_url(url):
         host = (u.hostname or '').lower()
         port = u.port
         query = parse_qs(u.query, keep_blank_values=True)
+        decoded_path = unquote(u.path)
     except ValueError:
         raise Refused('Referência temporária inválida') from None
     if (u.scheme != 'https' or not host.endswith('.oaiusercontent.com') or
             host == 'oaiusercontent.com' or port not in (None, 443) or
-            u.username or u.password or u.fragment or not u.path.startswith('/files/') or
-            any(part == '..' for part in u.path.split('/'))):
+            u.username or u.password or u.fragment or not decoded_path.startswith('/files/') or
+            '\\\\' in decoded_path or any(part in ('.', '..') for part in decoded_path.split('/'))):
         raise Refused('Somente referências temporárias privadas do host ChatGPT são aceitas')
     if (len(query.get('se', [])) != 1 or len(query.get('sig', [])) != 1 or
-            not query['sig'][0] or len(query.get('sp', [])) != 1 or 'r' not in query['sp'][0] or
+            not query['sig'][0] or len(query.get('sp', [])) != 1 or query['sp'][0] != 'r' or
             len(query.get('sr', [])) != 1 or query['sr'][0] != 'b'):
         raise Refused('A referência não é uma URL temporária de leitura')
     try:
