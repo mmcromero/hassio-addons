@@ -1,0 +1,5 @@
+/* Scope: Financeiro only; never change PDV controls. */
+.products-screen .finance-area-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0}
+.products-screen .finance-area-nav>button{min-height:44px;min-width:0;margin:0;padding:8px;overflow-wrap:anywhere;background:#fff;color:#205e47;border:1px solid #789483;border-radius:8px}
+.products-screen .finance-area-nav>button[aria-pressed=true]{background:#205e47;color:#fff;font-weight:700}
+@media(min-width:600px){.products-screen .finance-area-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}
