@@ -1,8 +1,8 @@
-# Diagnóstico seguro do Funnel — candidata 0.1.1
+# Diagnóstico seguro do Funnel — candidata 0.1.2
 
 ## Motivo
 
-A versão 0.1.0 inicia o `tailscaled` dedicado com stdout/stderr descartados e valida apenas `BackendState`/hostname. O Funnel CLI pode dizer `Success` mesmo quando o tráfego público fecha durante TLS. A versão 0.1.1 adiciona coleta de evidências somente leitura, sem endpoint HTTP novo.
+A versão 0.1.0 inicia o `tailscaled` dedicado com stdout/stderr descartados e valida apenas `BackendState`/hostname. O Funnel CLI pode dizer `Success` mesmo quando o tráfego público fecha durante TLS. A versão 0.1.2 adiciona coleta de evidências somente leitura, sem endpoint HTTP novo.
 
 ## Ativação
 
@@ -28,4 +28,4 @@ Nenhum JSON bruto, peer identity, IP, chave, state file, token, URL de login, co
 
 ## Estado
 
-Branch `diag/editorial-mcp-funnel-001`. Não mergeada, não publicada e não instalada. A ativação depende de autorização para publicar/instalar a candidata 0.1.1 e habilitar a opção `diagnostics_enabled`.
+Branch `diag/editorial-mcp-funnel-001`. Não mergeada, não publicada e não instalada. A candidata 0.1.2 também acrescenta os tools de validação/transporte por URL temporária do host ChatGPT; veja README.md. A ativação depende de autorização para publicar/instalar a candidata 0.1.2 e habilitar a opção `diagnostics_enabled`.
