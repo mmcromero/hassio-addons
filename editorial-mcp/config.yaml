@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Editorial MCP"
-version: "0.1.4"
+version: "0.1.5"
 slug: editorial_mcp_universal
 description: "Adaptador MCP independente para revisão editorial. Túnel dedicado opcional."
 arch:

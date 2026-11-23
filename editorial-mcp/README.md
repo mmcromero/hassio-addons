@@ -1,4 +1,11 @@
-# Central Editorial MCP universal — 0.1.3 (correção de build; não homologada)
+# Central Editorial MCP universal — 0.1.5 (diagnóstico TLS, não homologada)
+
+**Estado atual:** 0.1.4 instalada e iniciada no ARM64; Funnel aceito, mas sonda MCP n8n reproduziu alerta TLS 80 antes de HTTP. 0.1.5 acrescenta diagnóstico/correção potencial de emissão, não prova resolução. As instruções históricas abaixo podem referir-se a versões anteriores. O build de 0.1.5 executa 32 testes, dos quais oito novos foram executados localmente; build integral e homologação ainda pendentes.
+
+**Compatibilidade:** Claude documenta cabeçalho personalizado; ChatGPT remoto não suporta chave API personalizada e exige OAuth 2.1 para operações privadas. Não desativar segurança. Plugin ChatGPT 1.1.1 preservado e confirmado para as duas contas. OAuth universal requer provedor e associação autenticada com conta/chave editorial, não simplesmente aceitar tokens sem validação. Fonte: https://developers.openai.com/plugins/build/auth e https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp.
+
+**Diagnóstico:** com diagnostics_enabled=true, a saída do daemon é consumida em thread e somente categorias fixas são registradas. O diagnóstico testa GET local (405 esperado), DNS do container, configuração estrutural Funnel, TLS com validação de CA/SNI, e só em erro TLS executa uma tentativa limitada de certificado do nó dedicado em diretório temporário privado, posteriormente removido. Pode solicitar emissão; não repetir reinícios para forçar emissão. Nenhum certificado/chave ou saída bruta aparece nos logs. Não altera outros nós, a Central, OAuth Meta ou o HA.
+
 
 Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não lê o banco da Central, não altera OAuth/Meta, não usa o n8n e não expõe Supervisor. A Central continua responsável por autenticação, isolamento, validade/revogação da chave, cotas, normalização, rascunhos e recibos. Não existe ferramenta de publicação, exclusão ou leitura geral do acervo.
 

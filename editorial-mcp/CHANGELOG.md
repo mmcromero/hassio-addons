@@ -1,3 +1,8 @@
+## 0.1.5 — diagnóstico TLS dirigido, não homologado
+- Captura sanitizada de eventos do daemon; sonda local, DNS, JSON do Funnel, TLS verificado e certificado dedicado temporário quando necessário.
+- Oito testes novos; nenhum acesso a Meta, Drive ou Central durante os testes locais.
+- Identificado requisito OAuth do ChatGPT remoto; não resolvido nesta versão, chave editorial preservada.
+
 ## 0.1.4 — correção dos testes de build (não homologada)
 
 - Corrige importação de `run` em `test_diagnostics.py`, eliminando o `NameError` identificado no build ARM64 real do Supervisor.

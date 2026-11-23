@@ -1,3 +1,9 @@
+## 0.1.5 — investigação TLS
+- 405 em loopback_http indica rota MCP local acessível; 403 indica rejeição Host/Origin. DNS local não substitui verificação externa.
+- funnel_config mostra HTTPS, publicação e alvo loopback via JSON conhecido de Tailscale v1.104.7.
+- external_tls=verified comprova apenas TLS do container; sonda independente n8n continua necessária.
+- certificate_probe=failed_dns_challenge, failed_rate_limit, failed_certificate_policy, failed_certificate_error, timeout ou certificate_key_pair_ok diferenciam causas. Categoria genérica não comprova causa raiz. O certificado e chave temporários são removidos; nenhuma saída bruta é gravada. Evitar reinícios repetidos.
+
 # Diagnóstico seguro do Funnel — candidata 0.1.1
 
 ## Motivo

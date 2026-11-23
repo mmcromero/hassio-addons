@@ -8,6 +8,7 @@ import threading
 import time
 from pathlib import Path
 from server import make_server
+from funnel_probe import drain_daemon, collect_probes
 
 STATE = Path('/data/editorial-mcp-tailnet')
 RUNTIME = Path('/run/editorial-mcp')
@@ -23,7 +24,7 @@ def sanitize_netcheck(output):
     facts = []
     for line in output.splitlines():
         key, sep, value = line.partition(':')
-        key = key.strip()
+        key = key.strip().lstrip('*').strip()
         if not sep or key not in allowed:
             continue
         normalized = value.strip().lower()
@@ -125,7 +126,10 @@ def start():
             RUNTIME.mkdir(mode=0o700, parents=True, exist_ok=True)
             daemon = subprocess.Popen(['tailscaled', '--tun=userspace-networking',
                         '--socket='+str(SOCKET), '--state='+str(STATE/'tailscaled.state')],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        stdout=subprocess.PIPE if collect_diagnostics_enabled else subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT, text=True, errors='replace')
+            if collect_diagnostics_enabled:
+                threading.Thread(target=drain_daemon, args=(daemon.stdout,), daemon=True).start()
             for _ in range(30):
                 if daemon.poll() is not None: raise RuntimeError('Daemon dedicado parou')
                 if SOCKET.exists(): break
@@ -152,6 +156,7 @@ def start():
             print('Funnel aceito pelo CLI; URL candidata (acesso externo ainda não testado): https://'+host+'/mcp', flush=True)
             if collect_diagnostics_enabled:
                 collect_diagnostics()
+                threading.Thread(target=collect_probes, args=(cli, host, PORT), daemon=True).start()
         else:
             print('MCP local iniciado; Funnel desativado. Sem exposição pública.', flush=True)
         while not STOP.wait(1):
