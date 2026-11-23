@@ -28,15 +28,16 @@
 
 ## Verificações
 - 11 testes locais sintéticos da implementação de autorização e Drive: PASS conforme registro da execução na fonte; não equivalem aos testes integrados HTTP/MCP.
-- O Dockerfile executa `py_compile`, testes de concessões, Drive e HTTP integrado durante o build do Supervisor. Esse build ainda precisa ocorrer no HA.
+- O Dockerfile executa `py_compile` e as suítes de concessões, Drive e HTTP integrado como etapas obrigatórias. O build ARM64 do Supervisor foi concluído; essas etapas não bloquearam a imagem.
 - 15/15 arquivos passaram por varredura textual de padrões conhecidos de segredos (PEM, GitHub, Google API/OAuth, Slack, bearer e credenciais cei1/cei2): nenhuma ocorrência. Isso não substitui auditoria integral.
-- `py3-google-auth` foi confirmado no índice Alpine v3.24 para aarch64; dependências e build final precisam ser confirmados pelo Supervisor.
-- Credencial Google permanece vazia; não há conexão real ao Drive homologada. Sem publicação direta no Instagram, sem mudança Meta, n8n, Tailscale ou NGINX.
+- `py3-google-auth` e `py3-requests` foram instalados no build ARM64 concluído pelo Supervisor.
+- H1/H2 foram comprovados em PoC isolada Sites 0.1.3: ChatGPT → Drive privado → URL temporária assinada do host → Worker. O Worker recebeu os bytes e confirmou tamanho/hash, sem persistir mídia e sem transferir à Central. Isso não comprova leitura direta da Google Drive API pelo add-on.
 - Commit público de distribuição: `119944fcc6da374feb017241af6eb49e16fe9738` (`hassio-addons:main`). A atualização alterou somente os diretórios `instagram-central/` e `editorial-mcp/`; `repository.yaml`, workflows, registry e demais add-ons foram preservados. Commit usa `[skip ci]`, conforme exigência de não executar Actions.
 ## Homologação Home Assistant — 23/11/2026
 - Build real `aarch64` concluído pelo Supervisor às 12:08:50 BRT; app iniciado às 12:08:55, versão 0.1.39. Estado `started`, versão disponível igual à instalada, sem update pendente.
 - O Dockerfile executa `py_compile` e os testes `test_editorial_connections.py`, `test_editorial_drive.py` e `test_editorial_multi_http.py` como etapas obrigatórias. O build concluído indica que essas etapas não bloquearam a imagem.
 - Log de runtime: `Central internal HTTP ready: port=8099 version=0.1.39`. Erros `BrokenPipeError`/tracebacks encontrados no histórico pertencem a inicializações anteriores (0.1.33 ou anteriores); não aparecem depois do início 0.1.39 no recorte verificado.
 - O conector ChatGPT existente listou Umdoislab e Tudo é 3D; consultas individuais retornaram `connected=true` para ambas. É uma validação da API Central pelo conector existente (adapterVersion 1.1.1), não do MCP 0.1.9.
-- A opção `drive_service_account_json` permanece vazia. A leitura real do Drive não foi testada; falta provisionar a identidade técnica Google e a pasta privada por conexão.
-- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; HOMOLOGAÇÃO DRIVE PENDENTE**. Não promover a main privada antes de PASS.
+- A rota direta Drive API da Central 0.1.39 exige `drive_service_account_json` e uma pasta-raiz privada por conexão, com subpastas por conta. A opção está vazia e essa modalidade permanece pendente. Ela é separada do fluxo temporário do host e não bloqueia a validação desse fluxo.
+- H3 (transferir um arquivo escolhido para rascunho da Central, conferir recibo e limpeza individual) ainda não foi executado. Nenhuma mídia foi enviada à Central ou publicada.
+- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; H1/H2 PASS NA PoC; H3 PENDENTE; DRIVE API DIRETA NÃO CONFIGURADA**. Não promover a main privada antes de PASS.

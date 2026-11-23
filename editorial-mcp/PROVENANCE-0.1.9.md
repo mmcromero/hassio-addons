@@ -19,7 +19,7 @@
 | `test_server.py` | `1c772b953b945ddac1591e9c43ba78f9c4865128` |
 
 ## Verificações
-- Testes locais de concessões/Drive sintéticos: 11 PASS no conjunto da Central. Os testes integrados MCP adicionais estão no Dockerfile e aguardam build real.
+- Testes locais sintéticos de concessões/Drive: 11 PASS no conjunto da Central. As suítes integradas MCP também foram executadas como etapas obrigatórias do build ARM64 concluído pelo Supervisor.
 - Dockerfile executa `py_compile` e as suítes `test_server`, `test_multi_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` durante o build do Supervisor.
 - 7/7 arquivos passaram por varredura textual de padrões conhecidos de segredos: nenhuma ocorrência. Isso não substitui auditoria integral.
 - Chave `cei1` permanece legada e restrita; `cei2` suporta escopo multi-conta sem publicação. Nenhuma chave real foi incluída.
@@ -28,6 +28,9 @@
 - Build real `aarch64` concluído pelo Supervisor às 12:07:55 BRT; app iniciado às 12:07:58, versão 0.1.9. Estado `started`, versão disponível igual à instalada, sem update pendente.
 - O Dockerfile executa `py_compile` e as suítes `test_server`, `test_multi_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` como etapas obrigatórias. O build concluído indica que essas etapas não bloquearam a imagem.
 - Diagnóstico de inicialização: GET local em `/mcp` retorna 405 (esperado; o protocolo aceita POST); DNS A/AAAA confirmado; Funnel configurado para HTTPS 443 público com destino `127.0.0.1:8765`; handshake TLS externo verificado.
-- Ressalva: a última amostra Tailscale mostrou `BackendState=Running`, porém `self_online=false` e zero peers ingress. Eventos anteriores TLS/certificado/rate-limit permanecem no histórico. Por isso, o endpoint público e o POST MCP autenticado ainda não estão homologados.
-- Não foi provisionada uma chave `cei2` para cliente externo; nenhuma chave real foi criada ou exibida nesta etapa.
-- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; FUNNEL ONLINE ESTÁVEL E MCP AUTENTICADO PENDENTES**. Não promover a main privada antes de PASS.
+- Ressalva: uma amostra local mostrou `self_online=false` e zero peers ingress, mas o Tailscale Admin Console consultado em modo somente leitura mostra o dispositivo `central-editorial-mcp` como **Connected** e com marcador **Funnel**. O diagnóstico local é inconsistente e não deve ser tratado isoladamente como desconexão. O probe local também confirmou DNS A/AAAA, configuração Funnel HTTPS 443 para loopback e TLS externo verificado. Ainda falta uma chamada MCP externa autenticada.
+- Não foi provisionada uma chave `cei2` para cliente externo; nenhuma chave real foi criada ou exibida nesta etapa. O registro anterior indica Claude Custom Connector ligado a Umdoislab e limite de um conector no plano Free; preservar o conector atual até validar a troca de chave.
+- H2 foi comprovado na PoC Sites 0.1.3 com URL temporária assinada do host ChatGPT. O MCP 0.1.9 implementa `validar_arquivo_temporario` (somente leitura) e `enviar_arquivo_temporario_para_revisao` (exige autorização explícita, nunca publica, 4 MiB agregado); o build ARM64 executou a suíte `test_host_file_bridge`. A chamada real autenticada desses tools no MCP 0.1.9 ainda não foi executada.
+- O MCP também contém a rota direta `validar_arquivo_drive`/`enviar_arquivo_drive_para_revisao`, mas depende de identidade de serviço Google `drive.readonly` e pasta-raiz privada por conexão; a opção está vazia e essa modalidade permanece não configurada. Não é requisito para o caminho de URL temporária.
+- H3 (transferência real à Central, recibo e limpeza) permanece pendente; nenhuma mídia foi enviada ou publicada.
+- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; TAILSCALE CONNECTED/FUNNEL; H2 PASS NA PoC; MCP AUTENTICADO E H3 PENDENTES**. Não promover a main privada antes de PASS.
