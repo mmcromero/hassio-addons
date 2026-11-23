@@ -47,7 +47,7 @@ O app usa processo Tailscale, estado e socket próprios. Não modifica o Tailsca
 
 ## Build e testes
 
-O Dockerfile executa `py_compile` e as suítes `test_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` durante o build do Supervisor. Para builds locais, use Python 3 e as mesmas suítes. O build real na arquitetura de destino deve ser confirmado durante a instalação/atualização no Home Assistant.
+O Dockerfile executa `py_compile` e as suítes `test_server`, `test_multi_server`, `test_diagnostics`, `test_host_file_bridge`, `test_funnel_probe` e `test_share_pwa` durante o build do Supervisor. Para builds locais, use Python 3 e as mesmas suítes. O build real na arquitetura de destino é executado/confirmado durante a instalação ou atualização no Home Assistant.
 
 ## Alterações da versão 0.1.8
 
@@ -69,8 +69,8 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 - Depois, em ChatGPT ou Claude, use o recurso de compartilhar/salvar a imagem e escolha **Central Editorial** na folha de compartilhamento do Android. O suporte depende de o aplicativo de origem expor o arquivo ao compartilhamento do sistema.
 - A PWA recebe JPEG/PNG/MP4 via Web Share Target, mantém o arquivo localmente no IndexedDB e mostra a fila para conferência.
 - Informe a chave multi-conta `cei2`, carregue as contas, escolha explicitamente Umdoislab ou Tudo é 3D e toque em **Enviar para revisão**.
-- A chave fica somente na memória da página; não é gravada em localStorage/sessionStorage. A arquivos compartilhados são removidos na próxima abertura do app após 24 horas. O envio exige ação explícita e usa a API de rascunhos existente; nunca publica.
+- A chave fica somente na memória da página; não é gravada em localStorage/sessionStorage. Arquivos compartilhados antigos são removidos na próxima abertura do app após 24 horas; a fila também pode ser limpa manualmente. O envio exige ação explícita e usa a API de rascunhos existente; nunca publica.
 - Limite atual: 4 MiB agregados por transferência. A PWA não depende de URL temporária do host ChatGPT nem de Google Drive.
 - Rotas novas: `GET /share`, `POST /share-api/accounts`, `POST /share-api/transfer`. A API exige chave `cei2` e valida o destino na Central. As rotas MCP existentes permanecem disponíveis.
 
-**Estado da candidata:** código e testes adicionados na branch `feature/editorial-share-pwa-chatgpt-claude`; ainda não executados em build real do Supervisor nem testados com compartilhamento real no Android. Não declarar homologado até executar esses gates.
+**Estado:** versão 0.1.10 publicada no catálogo. Build e homologação no Home Assistant e compartilhamento real no Android são verificados separadamente; publicação no Git não equivale a instalação ou homologação.
