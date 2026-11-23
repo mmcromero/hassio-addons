@@ -1,3 +1,8 @@
+# 0.1.12 — diagnóstico sanitizado da fila Drive
+
+- Identifica estágio e código de recusa sem imprimir valores de configuração ou respostas Google. Mantém controles e fila existentes.
+- Teste de diagnóstico incluído no build; homologação real pendente.
+
 # 0.1.11 — candidata de fila privada Drive
 
 - Processador opcional de ordens JSON, desativado por padrão; usa identidade Google read-only e conexão cei2 dedicada, com escopo explícito.

@@ -99,3 +99,11 @@ class TestQueue(unittest.TestCase):
             with self.assertRaises(Reject): drive.children(ROOT)
 
 if __name__=='__main__': unittest.main()
+
+class TestDiagnostics(unittest.TestCase):
+    def test_safe_codes(self):
+        from drive_queue import diagnostic, Reject
+        from urllib.error import HTTPError
+        self.assertEqual(diagnostic(Reject('ACL_MISMATCH')), 'ACL_MISMATCH')
+        self.assertEqual(diagnostic(Reject('private secret text')), 'INVALID')
+        self.assertEqual(diagnostic(HTTPError('https://example.invalid/private',403,'secret',{},None)), 'HTTP_403')

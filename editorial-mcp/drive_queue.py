@@ -6,6 +6,7 @@ import sqlite3
 import time
 from datetime import datetime
 from urllib.parse import urlencode
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, build_opener, ProxyHandler, HTTPRedirectHandler
 
 ID = re.compile(r'[A-Za-z0-9_-]{10,200}\Z')
@@ -28,9 +29,20 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def require(condition):
+def require(condition, code='INVALID'):
     if not condition:
-        raise Reject('Ordem ou autorização inválida')
+        raise Reject(code)
+
+
+def diagnostic(exc):
+    if isinstance(exc, HTTPError):
+        return 'HTTP_'+str(exc.code)
+    if isinstance(exc, URLError):
+        return 'NETWORK_'+type(exc.reason).__name__
+    if isinstance(exc, Reject):
+        code = str(exc)
+        return code if re.fullmatch(r'[A-Za-z0-9_]{1,80}', code) else 'INVALID'
+    return type(exc).__name__
 
 
 def identifier(value, pattern=ID):
@@ -102,7 +114,10 @@ class Drive:
         body = encode(b'{"alg":"RS256","typ":"JWT"}') + b'.' + encode(json.dumps(claims).encode())
         signature = self.key.sign(body, padding.PKCS1v15(), hashes.SHA256())
         payload = urlencode({'grant_type':'urn:ietf:params:oauth:grant-type:jwt-bearer','assertion':(body+b'.'+encode(signature)).decode()}).encode()
-        result = json.loads(self.read(Request(TOKEN_URL,payload,{'Content-Type':'application/x-www-form-urlencoded'}),MAX_ORDER))
+        try:
+            result = json.loads(self.read(Request(TOKEN_URL,payload,{'Content-Type':'application/x-www-form-urlencoded'}),MAX_ORDER))
+        except (HTTPError, URLError) as exc:
+            raise Reject('TOKEN_'+diagnostic(exc)) from None
         require(isinstance(result.get('access_token'), str) and result.get('token_type','').lower() == 'bearer')
         self.token = result['access_token']
         self.expiry = now + max(0,min(300,int(result['expires_in'])-60))
@@ -110,7 +125,11 @@ class Drive:
 
     def get(self, path, params, *, raw=False):
         req = Request(API+path+'?'+urlencode(params),headers={'Authorization':'Bearer '+self.access_token()})
-        data = self.read(req, MAX_ORDER if raw else 1048576)
+        try:
+            data = self.read(req, MAX_ORDER if raw else 1048576)
+        except (HTTPError, URLError) as exc:
+            stage = 'PERMISSIONS' if path.endswith('/permissions') else ('LIST' if path == 'files' else 'FILE')
+            raise Reject(stage+'_'+diagnostic(exc)) from None
         return data if raw else json.loads(data)
 
     def pages(self, path, params, field):
@@ -144,13 +163,13 @@ class Drive:
 
 
 def private_item(drive, item, owner, parent=None):
-    require(item.get('trashed') is False and not item.get('driveId'))
-    require([x.get('emailAddress','').lower() for x in item.get('owners',[])] == [owner])
+    require(item.get('trashed') is False and not item.get('driveId'), 'TRASH_OR_SHARED_DRIVE')
+    require([x.get('emailAddress','').lower() for x in item.get('owners',[])] == [owner], 'OWNER_MISMATCH')
     if parent is not None:
-        require(item.get('parents') == [parent])
+        require(item.get('parents') == [parent], 'PARENT_MISMATCH')
     perms = drive.permissions(item['id'])
     actual = {(p.get('type'),p.get('role'),p.get('emailAddress','').lower()) for p in perms if not p.get('deleted')}
-    require(actual == {('user','owner',owner),('user','reader',drive.email)})
+    require(actual == {('user','owner',owner),('user','reader',drive.email)}, 'ACL_MISMATCH')
 
 
 class Queue:
@@ -208,13 +227,13 @@ class Queue:
                 raise RuntimeError('Recibo não confirmado')
             self.record(file_id,'done',confirmed)
             print('Drive queue PASS requestId='+args['requestId']+' account='+account+' id='+str(confirmed.get('id')),flush=True)
-        except Reject:
+        except Reject as exc:
             self.record(file_id,'rejected',attempts=attempts+1)
-            print('Drive queue REJECT',flush=True)
-        except Exception:
+            print('Drive queue REJECT '+diagnostic(exc),flush=True)
+        except Exception as exc:
             # Ambiguous transport: retry with the SAME requestId; Central checks receipt first.
             self.record(file_id,'retry',attempts=attempts+1,retry_after=now+min(900,30*2**min(attempts,5)))
-            print('Drive queue RETRY',flush=True)
+            print('Drive queue RETRY '+diagnostic(exc),flush=True)
 
     def poll(self):
         now = int(time.time())
@@ -225,8 +244,8 @@ class Queue:
         for account in sorted(self.accounts):
             try:
                 self.poll_account(children,account,now)
-            except Exception:
-                print('Drive queue account blocked: '+account,flush=True)
+            except Exception as exc:
+                print('Drive queue account blocked: '+account+' '+diagnostic(exc),flush=True)
 
     def poll_account(self, children, account, now):
         matches = [x for x in children if x.get('name') == account]
@@ -250,11 +269,11 @@ def run_queue(raw_config, origin, stop, db_path='/data/drive-queue.sqlite3'):
         while not stop.is_set():
             try:
                 queue.poll()
-            except Exception:
-                print('Drive queue blocked; check private inbox configuration',flush=True)
+            except Exception as exc:
+                print('Drive queue blocked: '+diagnostic(exc),flush=True)
             stop.wait(30)
-    except Exception:
-        print('Drive queue disabled: invalid configuration',flush=True)
+    except Exception as exc:
+        print('Drive queue disabled: '+diagnostic(exc),flush=True)
     finally:
         if queue:
             queue.close()
