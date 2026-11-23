@@ -65,7 +65,7 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 
 ## Receptor de compartilhamento Android — 0.1.10
 
-- Abra `https://<hostname-publico-do-Funnel>/share` no Chrome Android e instale/adicone à tela inicial.
+- Abra `https://<hostname-publico-do-Funnel>/share` no Chrome Android e instale/adicionar à tela inicial.
 - Depois, em ChatGPT ou Claude, use o recurso de compartilhar/salvar a imagem e escolha **Central Editorial** na folha de compartilhamento do Android. O suporte depende de o aplicativo de origem expor o arquivo ao compartilhamento do sistema.
 - A PWA recebe JPEG/PNG/MP4 via Web Share Target, mantém o arquivo localmente no IndexedDB e mostra a fila para conferência.
 - Informe a chave multi-conta `cei2`, carregue as contas, escolha explicitamente Umdoislab ou Tudo é 3D e toque em **Enviar para revisão**.
