@@ -271,7 +271,7 @@ TOOLS = [
             'sha256':{'type':'string','pattern':'^[0-9a-f]{64}$'}},
             ['mime','url','bytes','sha256'])}},
         ['requestId','transferApproved','format','caption','media']),
-     'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':False}},
+     'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
 ]
 
 def dispatch(central, token, request):
