@@ -471,23 +471,27 @@ class Handler(BaseHTTPRequestHandler):
         self.request.settimeout(20)
         super().setup()
 
-    def reply(self, status, body=None):
-        raw = b'' if body is None else json.dumps(body, ensure_ascii=False).encode()
+    def reply(self, status, body=None, content_type='application/json', extra_headers=None):
+        raw = b'' if body is None else (body if isinstance(body, bytes) else json.dumps(body, ensure_ascii=False).encode())
         self.send_response(status)
-        self.send_header('Content-Type','application/json')
-        self.send_header('Content-Length',str(len(raw)))
-        self.send_header('Cache-Control','no-store')
-        self.send_header('X-Content-Type-Options','nosniff')
-        self.send_header('Connection','close')
+        self.send_header('Content-Type', content_type)
+        self.send_header('Content-Length', str(len(raw)))
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.send_header('Connection', 'close')
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
         if status == 405:
-            self.send_header('Allow','POST')
+            self.send_header('Allow', 'GET, POST')
         self.end_headers()
         self.close_connection = True
         if raw:
             self.wfile.write(raw)
 
-    def valid_route(self):
-        if self.path != '/mcp':
+    def valid_route(self, routes):
+        if self.path not in routes:
             self.reply(404); return False
         hosts = self.headers.get_all('Host', [])
         origins = self.headers.get_all('Origin', [])
@@ -496,47 +500,86 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(403); return False
         return True
 
+    def serve_asset(self, name, mime, extra=None):
+        try:
+            with open('/app/share/' + name, 'rb') as f:
+                data = f.read(256 * 1024 + 1)
+            if len(data) > 256 * 1024:
+                raise OSError('asset too large')
+        except OSError:
+            return self.reply(404)
+        self.reply(200, data, mime, extra)
+
     def do_GET(self):
-        if self.valid_route(): self.reply(405)
-    do_DELETE = do_GET
+        routes = {'/share', '/share.js', '/manifest.webmanifest', '/sw.js'}
+        if not self.valid_route(routes): return
+        if self.path == '/share':
+            return self.serve_asset('index.html', 'text/html; charset=utf-8',
+                {'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"})
+        if self.path == '/share.js':
+            return self.serve_asset('app.js', 'text/javascript; charset=utf-8')
+        if self.path == '/manifest.webmanifest':
+            return self.serve_asset('manifest.webmanifest', 'application/manifest+json')
+        return self.serve_asset('sw.js', 'text/javascript; charset=utf-8',
+            {'Service-Worker-Allowed': '/'})
 
     def do_POST(self):
-        if not self.valid_route(): return
+        routes = {'/mcp', '/share-api/accounts', '/share-api/transfer'}
+        if not self.valid_route(routes): return
         keys = (self.headers.get_all('X-Editorial-Key', []) +
                 self.headers.get_all('X-API-Key', []))
         if len(keys) != 1 or not (KEY.fullmatch(keys[0]) or MULTI_KEY.fullmatch(keys[0])):
-            return self.reply(403)
-        protocol = self.headers.get('MCP-Protocol-Version')
-        if protocol is not None and protocol not in PROTOCOLS: return self.reply(400)
+            return self.reply(403, {'error': 'Chave inválida'})
         lengths = self.headers.get_all('Content-Length', [])
         if self.headers.get('Transfer-Encoding') or len(lengths) != 1 or not re.fullmatch(r'[0-9]{1,8}', lengths[0]):
-            return self.reply(400)
+            return self.reply(400, {'error': 'Tamanho da requisição inválido'})
         length = int(lengths[0])
-        if not 0 < length <= MAX_BODY: return self.reply(413)
-        if self.headers.get_content_type() != 'application/json': return self.reply(415)
+        if not 0 < length <= MAX_BODY: return self.reply(413, {'error': 'Limite de 6 MiB excedido'})
+        if self.headers.get_content_type() != 'application/json':
+            return self.reply(415, {'error': 'Use application/json'})
+        if self.path != '/mcp' and not MULTI_KEY.fullmatch(keys[0]):
+            return self.reply(403, {'error': 'A interface de compartilhamento exige chave multi-conta cei2'})
         try:
-            # Authenticate every operation through the original account-scoped API.
             if MULTI_KEY.fullmatch(keys[0]):
                 self.server.central.call(keys[0], 'accounts', {})
             else:
                 receipt(self.server.central, keys[0], PROBE)
         except Refused:
-            return self.reply(403)
+            return self.reply(403, {'error': 'Central recusou a autenticação'})
         try:
             raw = self.rfile.read(length)
-            if len(raw) != length: return self.reply(400)
+            if len(raw) != length: return self.reply(400, {'error': 'Corpo incompleto'})
             request = json.loads(raw)
+            if not isinstance(request, dict): return self.reply(400, {'error': 'JSON inválido'})
         except (ValueError, UnicodeError, RecursionError, socket.timeout):
-            return self.reply(400)
+            return self.reply(400, {'error': 'JSON inválido'})
+        if self.path == '/share-api/accounts':
+            if request:
+                return self.reply(400, {'error': 'Argumentos inesperados'})
+            try:
+                result = self.server.central.call(keys[0], 'accounts', {})
+                accounts = result.get('accounts')
+                if not isinstance(accounts, list):
+                    raise Refused('Lista de contas inválida')
+                return self.reply(200, {'accounts': accounts, 'publishingAvailable': False})
+            except Refused as exc:
+                return self.reply(502, {'error': str(exc)})
+        if self.path == '/share-api/transfer':
+            try:
+                result = multi_call(self.server.central, keys[0], 'enviar_para_revisao', request)
+                return self.reply(200, result)
+            except Refused as exc:
+                return self.reply(422, {'error': str(exc)})
+        protocol = self.headers.get('MCP-Protocol-Version')
+        if protocol is not None and protocol not in PROTOCOLS: return self.reply(400, {'error': 'Versão MCP inválida'})
         try:
             status, result = dispatch(self.server.central, keys[0], request)
         except (TypeError, ValueError, OverflowError, RecursionError):
-            return self.reply(400)
+            return self.reply(400, {'error': 'Requisição MCP inválida'})
         self.reply(status, result)
 
     def log_message(self, *args):
         pass
-
 
 def make_server(origin, host='127.0.0.1', port=8765, public_host=''):
     server = Server((host, port), Handler)
