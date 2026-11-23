@@ -27,7 +27,7 @@ class FakeDrive:
         created=datetime.now(timezone.utc).isoformat()
         self.data={}
         for id_, parent, name, mime, size in [(ROOT,None,'root','application/vnd.google-apps.folder',0),(FOLDER,ROOT,ACCOUNT,'application/vnd.google-apps.folder',0),(FILE,FOLDER,'ordem-'+REQUEST+'.json','application/json',len(self.raw)),(MEDIA,FOLDER,'image.png','image/png',12)]:
-            self.data[id_]={'id':id_,'name':name,'mimeType':mime,'parents':[parent] if parent else [],'trashed':False,'owners':[{'emailAddress':OWNER}],'size':str(size),'version':'1','createdTime':created}
+            self.data[id_]={'id':id_,'name':name,'mimeType':mime,'parents':[parent] if parent else [],'trashed':False,'owners':[{'emailAddress':OWNER,'permissionId':'owner_1234567890'}],'lastModifyingUser':{'emailAddress':OWNER,'permissionId':'owner_1234567890'},'size':str(size),'version':'1','createdTime':created}
         self.extra={}
     def metadata(self,id_): return copy.deepcopy(self.data[id_])
     def permissions(self,id_): return [{'type':'user','role':'owner','emailAddress':OWNER},{'type':'user','role':'reader','emailAddress':READER}]+self.extra.get(id_,[])
@@ -117,7 +117,10 @@ class TestReaderACL(unittest.TestCase):
         item['capabilities']={'canEdit':False,'canShare':False}
         with patch.object(d,'permissions',side_effect=Reject('PERMISSIONS_HTTP_403')), patch.object(d,'identity_id',return_value='reader_1234567890',create=True):
             private_item(d,item,OWNER)
-            for ids in [None,[],['owner_1234567890','reader_1234567890','third_1234567890']]:
+            for ids in [None,[],['reader_1234567890']]:
+                item['permissionIds']=ids
+                private_item(d,item,OWNER)
+            for ids in [['owner_1234567890','reader_1234567890','third_1234567890']]:
                 item['permissionIds']=ids
                 with self.assertRaises(Reject): private_item(d,item,OWNER)
             item['permissionIds']=['owner_1234567890','reader_1234567890']
@@ -128,3 +131,14 @@ class TestReaderACL(unittest.TestCase):
         d=FakeDrive()
         with patch.object(d,'permissions',side_effect=Reject('PERMISSIONS_HTTP_500')):
             with self.assertRaises(Reject): private_item(d,d.metadata(ROOT),OWNER)
+
+class TestOwnerAuth(TestQueue):
+    def test_third_party_author_rejected(self):
+        self.drive.data[FILE]['lastModifyingUser']={'emailAddress':'other@example.invalid','permissionId':'other_1234567890'}
+        self.queue.poll(); self.assertEqual(self.state(),('rejected',)); self.assertFalse(self.calls)
+    def test_missing_author_rejected(self):
+        self.drive.data[FILE].pop('lastModifyingUser')
+        self.queue.poll(); self.assertEqual(self.state(),('rejected',)); self.assertFalse(self.calls)
+    def test_order_hash_rejected(self):
+        self.drive.data[FILE]['sha256Checksum']='f'*64
+        self.queue.poll(); self.assertEqual(self.state(),('rejected',)); self.assertFalse(self.calls)

@@ -1,5 +1,6 @@
 """Optional private Drive inbox. Drive is read-only; review via existing MCP contract."""
 import base64
+import hashlib
 import json
 import re
 import sqlite3
@@ -17,7 +18,7 @@ MAX_ORDER = 65536
 SCOPE = 'https://www.googleapis.com/auth/drive.readonly'
 TOKEN_URL = 'https://oauth2.googleapis.com/token'
 API = 'https://www.googleapis.com/drive/v3/'
-FIELDS = 'id,name,mimeType,parents,trashed,size,createdTime,version,owners(emailAddress,permissionId),permissionIds,capabilities(canEdit,canShare),driveId'
+FIELDS = 'id,name,mimeType,parents,trashed,size,createdTime,version,owners(emailAddress,permissionId),permissionIds,permissions(type,role,emailAddress,deleted),lastModifyingUser(emailAddress,permissionId),sha256Checksum,capabilities(canEdit,canShare),driveId'
 
 
 class Reject(ValueError):
@@ -180,18 +181,38 @@ def private_item(drive, item, owner, parent=None):
     except Reject as exc:
         if str(exc) != 'PERMISSIONS_HTTP_403':
             raise
-        # My Drive readers may not list ACLs. Google files.permissionIds lists
-        # identities with access; require exact owner + authenticated reader IDs.
-        # Missing metadata is a denial, not evidence of privacy.
+        # Google does not disclose complete ACLs to readers. Do not infer
+        # privacy from missing entries. The authenticated owner-client audits
+        # the ACL before submitting; this worker authenticates the actual
+        # order author using Google-controlled metadata, not a JSON assertion.
         owner_id = identifier(item['owners'][0].get('permissionId'))
         reader_id = drive.identity_id()
         ids = item.get('permissionIds')
-        require(owner_id != reader_id and isinstance(ids,list) and len(ids)==2 and set(ids)=={owner_id,reader_id}, 'ACL_IDS_MISMATCH')
+        require(owner_id != reader_id, 'READER_IS_OWNER')
+        if ids is not None:
+            require(isinstance(ids,list) and all(x in {owner_id,reader_id} for x in ids), 'ACL_IDS_MISMATCH')
+        for permission in item.get('permissions',[]):
+            if not permission.get('deleted'):
+                require(permission.get('type') == 'user' and
+                        permission.get('role') in ('owner','reader'), 'VISIBLE_ACL_MISMATCH')
+                email = permission.get('emailAddress','').lower()
+                require(not email or (permission['role'],email) in {('owner',owner),('reader',drive.email)}, 'VISIBLE_ACL_MISMATCH')
         caps = item.get('capabilities',{})
         require(caps.get('canEdit') is False and caps.get('canShare') is False, 'READER_CAPABILITIES_MISMATCH')
         return
     actual = {(p.get('type'),p.get('role'),p.get('emailAddress','').lower()) for p in perms if not p.get('deleted')}
     require(actual == {('user','owner',owner),('user','reader',drive.email)}, 'ACL_MISMATCH')
+
+
+def owner_authored(item, owner):
+    author = item.get('lastModifyingUser', {})
+    owner_id = item.get('owners',[{}])[0].get('permissionId')
+    require(isinstance(author,dict), 'AUTHOR_UNVERIFIED')
+    author_id = author.get('permissionId')
+    author_email = author.get('emailAddress','').lower()
+    require((author_id and owner_id and author_id == owner_id) or author_email == owner, 'AUTHOR_UNVERIFIED')
+    require(not author_email or author_email == owner, 'AUTHOR_MISMATCH')
+    require(not (author_id and owner_id) or author_id == owner_id, 'AUTHOR_MISMATCH')
 
 
 class Queue:
@@ -224,19 +245,23 @@ class Queue:
         attempts = previous[1] if previous else 0
         try:
             private_item(self.drive,item,self.owner,folder['id'])
+            owner_authored(item,self.owner)
             require(item.get('mimeType') == 'application/json' and 0 < int(item.get('size',0)) <= MAX_ORDER)
             created = datetime.fromisoformat(item['createdTime'].replace('Z','+00:00')).timestamp()
             require(-60 <= now-created <= 86400)
             raw = self.drive.content(file_id)
             require(len(raw) == int(item['size']))
+            checksum = item.get('sha256Checksum')
+            require(checksum is None or checksum == hashlib.sha256(raw).hexdigest(), 'ORDER_HASH_MISMATCH')
             args = parse_order(raw,account,file_id)
             require(item['name'] == 'ordem-'+args['requestId']+'.json')
             # Verify source manifest is unmodified and access has not changed before transfer.
             current = self.drive.metadata(file_id)
-            require(item.get('version') and current.get('version') == item['version'])
+            require(item.get('version') and current == item, 'ORDER_CHANGED')
             private_item(self.drive,self.drive.metadata(self.root),self.owner)
             private_item(self.drive,self.drive.metadata(folder['id']),self.owner,self.root)
             private_item(self.drive,current,self.owner,folder['id'])
+            owner_authored(current,self.owner)
             for part in args['media']:
                 private_item(self.drive,self.drive.metadata(part['fileId']),self.owner,folder['id'])
             result = self.call(self.central,self.key,'enviar_arquivo_drive_para_revisao',args)

@@ -1,3 +1,8 @@
+# 0.1.14 — autoria autenticada da ordem Drive
+
+- Google não expõe ACL integral ao leitor (403 e metadados parciais observados no HA). O cliente autenticado como proprietário confere ACL antes de escrever; o servidor exige autor proprietário nos metadados Google da ordem, escopo e pasta corretos, versão estável, hash quando fornecido, rejeição de permissões externas visíveis e capacidades somente leitura. Não afirma privacidade por omissão. Nenhuma chave ou ACL alterada.
+- Tests de autoria ausente/terceiro e hash divergente. Homologação real pendente.
+
 # 0.1.13 — ACL de leitura Drive
 
 - Quando permissions.list devolve 403, exige permissionIds exatos do dono e da identidade autenticada via about.user, sem capacidade de editar ou compartilhar. Dados ausentes ou terceiros bloqueiam. Sem ampliação de privilégios.
