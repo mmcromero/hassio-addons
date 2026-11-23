@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Editorial MCP"
-version: "0.1.14"
+version: "0.1.15"
 slug: editorial_mcp_universal
 description: "Adaptador MCP e receptor de compartilhamento Android para revisão editorial."
 arch:

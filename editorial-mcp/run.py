@@ -8,6 +8,7 @@ import threading
 import time
 from pathlib import Path
 from server import make_server
+from oauth_bridge import OAuth
 from funnel_probe import drain_daemon, collect_probes
 
 STATE = Path('/data/editorial-mcp-tailnet')
@@ -155,6 +156,7 @@ def start():
                 raise RuntimeError('Identidade dedicada ou nome HTTPS não confirmados')
             http.allowed_hosts.update({host, host+':443'})
             http.allowed_origins.add('https://'+host)
+            http.oauth = OAuth('https://'+host)
         worker = threading.Thread(target=http.serve_forever, daemon=True)
         worker.start()
         if daemon:

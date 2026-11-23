@@ -79,3 +79,6 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 ## Fila privada Drive (candidata 0.1.11)
 
 Leia [DRIVE-QUEUE-001.md](DRIVE-QUEUE-001.md). Desativada por padrão; nenhuma configuração ou permissão é alterada automaticamente. O fluxo somente cria rascunhos para revisão.
+
+## OAuth ChatGPT 0.1.15 — candidata
+URL /mcp-oauth, autenticação OAuth, cliente CIMD oficial https://chatgpt.com/oauth/client.json e retorno fixo https://chatgpt.com/connector_platform_oauth_redirect. Autorize com chave cei2 exclusiva, preferencialmente delegada às contas necessárias, apenas na página HTTPS do MCP. A Central valida a chave em cada chamada; revogação mantém efeito. Sem publicação. Tokens e chave ficam somente em memória; expiram (sessão máxima 7 dias), reinício exige nova autorização. Não use /mcp antigo para OAuth. Documentação oficial: https://developers.openai.com/plugins/build/auth . Não há garantia de transferência de arquivo no Free até ensaio real. Não altere chaves existentes.

@@ -1,3 +1,7 @@
+# 0.1.15 — OAuth ChatGPT (candidata)
+
+- Endpoint separado /mcp-oauth com descoberta OAuth, CIMD do ChatGPT, PKCE S256, recurso e escopo fixos, autorização por chave Central cei2, tokens opacos em memória, expiração e rotação. Requer nova autorização após reinício; nenhum segredo persistido. Endpoint legado e fila Drive preservados. Homologação real pendente.
+
 # 0.1.14 — autoria autenticada da ordem Drive
 
 - Google não expõe ACL integral ao leitor (403 e metadados parciais observados no HA). O cliente autenticado como proprietário confere ACL antes de escrever; o servidor exige autor proprietário nos metadados Google da ordem, escopo e pasta corretos, versão estável, hash quando fornecido, rejeição de permissões externas visíveis e capacidades somente leitura. Não afirma privacidade por omissão. Nenhuma chave ou ACL alterada.

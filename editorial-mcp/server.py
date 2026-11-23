@@ -5,13 +5,14 @@ import json
 import re
 import socket
 import threading
+import oauth_bridge
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, parse_qs, unquote
 from datetime import datetime, timezone, timedelta
 from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHandler
 
-VERSION = '0.1.14'
+VERSION = '0.1.15'
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 KEY = re.compile(r'cei1\.([a-z][a-z0-9_-]{1,39})\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
 MULTI_KEY = re.compile(r'cei2\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
@@ -484,7 +485,7 @@ class Handler(BaseHTTPRequestHandler):
         for key, value in (extra_headers or {}).items():
             self.send_header(key, value)
         if status == 405:
-            self.send_header('Allow', 'POST' if urlsplit(self.path).path == '/mcp' else 'GET, POST')
+            self.send_header('Allow', 'POST' if urlsplit(self.path).path in ('/mcp','/mcp-oauth') else 'GET, POST')
         self.end_headers()
         self.close_connection = True
         if raw:
@@ -493,7 +494,7 @@ class Handler(BaseHTTPRequestHandler):
     def valid_route(self, routes):
         parsed = urlsplit(self.path)
         route = parsed.path
-        if route not in routes or (route == '/mcp' and parsed.query):
+        if route not in routes or (route in ('/mcp','/mcp-oauth') and parsed.query):
             self.reply(404); return False
         hosts = self.headers.get_all('Host', [])
         origins = self.headers.get_all('Origin', [])
@@ -512,7 +513,51 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404)
         self.reply(200, data, mime, extra)
 
+    def oauth_get(self, route):
+        oauth = self.server.oauth
+        if not oauth: return self.reply(404)
+        if route in ('/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/mcp-oauth'):
+            return self.reply(200, oauth.resource_metadata())
+        if route == '/.well-known/oauth-authorization-server':
+            return self.reply(200, oauth.metadata())
+        if route == '/mcp-oauth': return self.reply(405, extra_headers=oauth.challenge())
+        try:
+            body=oauth.begin(oauth_bridge.params(urlsplit(self.path).query))
+            return self.reply(200,body,'text/html; charset=utf-8',{'Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'"})
+        except oauth_bridge.Denied:
+            return self.reply(400,{'error':'invalid_request'})
+
+    def oauth_post(self, route):
+        oauth=self.server.oauth
+        if not oauth: return self.reply(404)
+        lengths=self.headers.get_all('Content-Length',[])
+        if (self.headers.get('Transfer-Encoding') or len(lengths)!=1 or not re.fullmatch(r'[0-9]{1,5}',lengths[0]) or
+            not 0<int(lengths[0])<=8192 or self.headers.get_content_type()!='application/x-www-form-urlencoded' or
+            urlsplit(self.path).query or self.headers.get('Authorization')):
+            return self.reply(400,{'error':'invalid_request'})
+        try:
+            raw=self.rfile.read(int(lengths[0]))
+            if len(raw)!=int(lengths[0]): raise oauth_bridge.Denied('invalid_request')
+            p=oauth_bridge.params(raw.decode('ascii'))
+            if route=='/oauth/token':
+                return self.reply(200,oauth.token(p),extra_headers={'Pragma':'no-cache'})
+            if self.headers.get('Origin') != oauth.issuer:
+                raise oauth_bridge.Denied('invalid_request')
+            def validate(key):
+                if not MULTI_KEY.fullmatch(key): raise oauth_bridge.Denied('invalid_grant')
+                result=self.server.central.call(key,'accounts',{})
+                if not result.get('accounts') or result.get('publishingAvailable') is not False:
+                    raise oauth_bridge.Denied('invalid_grant')
+            return self.reply(303,extra_headers={'Location':oauth.authorize(p,validate)})
+        except (oauth_bridge.Denied,Refused,ValueError,UnicodeError,socket.timeout):
+            return self.reply(400,{'error':'invalid_grant'})
+
     def do_GET(self):
+        oauth_routes={'/.well-known/oauth-protected-resource','/.well-known/oauth-protected-resource/mcp-oauth','/.well-known/oauth-authorization-server','/oauth/authorize','/mcp-oauth'}
+        route=urlsplit(self.path).path
+        if route in oauth_routes:
+            if self.valid_route(oauth_routes): return self.oauth_get(route)
+            return
         routes = {'/mcp', '/share', '/share.js', '/manifest.webmanifest', '/sw.js', '/icon.svg'}
         if not self.valid_route(routes): return
         route = urlsplit(self.path).path
@@ -531,12 +576,24 @@ class Handler(BaseHTTPRequestHandler):
             {'Service-Worker-Allowed': '/'})
 
     def do_POST(self):
-        routes = {'/mcp', '/share-api/accounts', '/share-api/transfer'}
+        routes = {'/mcp', '/mcp-oauth', '/oauth/authorize', '/oauth/token', '/share-api/accounts', '/share-api/transfer'}
         if not self.valid_route(routes): return
         route = urlsplit(self.path).path
+        if route in ('/oauth/authorize','/oauth/token'): return self.oauth_post(route)
         keys = (self.headers.get_all('X-Editorial-Key', []) +
                 self.headers.get_all('X-API-Key', []))
-        if len(keys) != 1 or not (KEY.fullmatch(keys[0]) or MULTI_KEY.fullmatch(keys[0])):
+        is_oauth=route=='/mcp-oauth'
+        if is_oauth:
+            oauth=self.server.oauth
+            if not oauth: return self.reply(404)
+            headers=self.headers.get_all('Authorization',[])
+            try:
+                if keys or len(headers)!=1 or not headers[0].startswith('Bearer '):
+                    raise oauth_bridge.Denied('invalid_token')
+                keys=[oauth.resolve(headers[0][7:])]
+            except oauth_bridge.Denied:
+                return self.reply(401,{'error':'invalid_token'},extra_headers=oauth.challenge())
+        elif len(keys) != 1 or not (KEY.fullmatch(keys[0]) or MULTI_KEY.fullmatch(keys[0])):
             return self.reply(403, {'error': 'Chave inválida'})
         lengths = self.headers.get_all('Content-Length', [])
         if self.headers.get('Transfer-Encoding') or len(lengths) != 1 or not re.fullmatch(r'[0-9]{1,8}', lengths[0]):
@@ -553,6 +610,7 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 receipt(self.server.central, keys[0], PROBE)
         except Refused:
+            if is_oauth: return self.reply(401,{'error':'invalid_token'},extra_headers=oauth.challenge())
             return self.reply(403, {'error': 'Central recusou a autenticação'})
         try:
             raw = self.rfile.read(length)
@@ -584,6 +642,9 @@ class Handler(BaseHTTPRequestHandler):
             status, result = dispatch(self.server.central, keys[0], request)
         except (TypeError, ValueError, OverflowError, RecursionError):
             return self.reply(400, {'error': 'Requisição MCP inválida'})
+        if is_oauth and request.get('method')=='tools/list' and status==200:
+            for tool in result.get('result',{}).get('tools',[]):
+                tool['securitySchemes']=[{'type':'oauth2','scopes':[oauth_bridge.SCOPE]}]
         self.reply(status, result)
 
     def log_message(self, *args):
@@ -594,9 +655,11 @@ def make_server(origin, host='127.0.0.1', port=8765, public_host=''):
     server.central = Central(origin)
     server.allowed_hosts = {'127.0.0.1:'+str(server.server_port), 'localhost:'+str(server.server_port), '127.0.0.1', 'localhost'}
     server.allowed_origins = set()
+    server.oauth = None
     if public_host:
         if not re.fullmatch(r'[a-z0-9.-]+\.ts\.net', public_host):
             server.server_close(); raise ValueError('Hostname do nó dedicado inválido')
         server.allowed_hosts.update({public_host, public_host+':443'})
         server.allowed_origins.add('https://'+public_host)
+        server.oauth = oauth_bridge.OAuth('https://'+public_host)
     return server
