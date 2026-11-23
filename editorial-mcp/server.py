@@ -491,8 +491,9 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(raw)
 
     def valid_route(self, routes):
-        route = urlsplit(self.path).path
-        if route not in routes:
+        parsed = urlsplit(self.path)
+        route = parsed.path
+        if route not in routes or (route == '/mcp' and parsed.query):
             self.reply(404); return False
         hosts = self.headers.get_all('Host', [])
         origins = self.headers.get_all('Origin', [])
