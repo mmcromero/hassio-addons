@@ -1,0 +1,30 @@
+{
+  "name": "Central Editorial — Enviar mídia",
+  "short_name": "Editorial",
+  "start_url": "/share",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101827",
+  "theme_color": "#101827",
+  "icons": [],
+  "share_target": {
+    "action": "/share-inbox",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "image/jpeg",
+            "image/png",
+            "video/mp4"
+          ]
+        }
+      ]
+    }
+  }
+}
