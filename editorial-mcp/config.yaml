@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Editorial MCP"
-version: "0.1.0"
+version: "0.1.1"
 slug: editorial_mcp_universal
 description: "Adaptador MCP independente para revisão editorial. Túnel dedicado opcional."
 arch:
@@ -14,6 +14,8 @@ backup: cold
 options:
   central_url: ""
   funnel_enabled: false
+  diagnostics_enabled: false
 schema:
   central_url: str
   funnel_enabled: bool
+  diagnostics_enabled: bool
