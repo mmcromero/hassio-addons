@@ -33,4 +33,10 @@
 - `py3-google-auth` foi confirmado no índice Alpine v3.24 para aarch64; dependências e build final precisam ser confirmados pelo Supervisor.
 - Credencial Google permanece vazia; não há conexão real ao Drive homologada. Sem publicação direta no Instagram, sem mudança Meta, n8n, Tailscale ou NGINX.
 - Commit público de distribuição: `119944fcc6da374feb017241af6eb49e16fe9738` (`hassio-addons:main`). A atualização alterou somente os diretórios `instagram-central/` e `editorial-mcp/`; `repository.yaml`, workflows, registry e demais add-ons foram preservados. Commit usa `[skip ci]`, conforme exigência de não executar Actions.
-- Estado: **PUBLICADO NO CATÁLOGO; NÃO INSTALADO/HOMOLOGADO**. A instalação requer atualização pelo Supervisor/operador; o conector HA disponível está em modo somente leitura. Preservar dados e opções persistentes. Não promover a main privada antes de PASS.
+## Homologação Home Assistant — 23/11/2026
+- Build real `aarch64` concluído pelo Supervisor às 12:08:50 BRT; app iniciado às 12:08:55, versão 0.1.39. Estado `started`, versão disponível igual à instalada, sem update pendente.
+- O Dockerfile executa `py_compile` e os testes `test_editorial_connections.py`, `test_editorial_drive.py` e `test_editorial_multi_http.py` como etapas obrigatórias. O build concluído indica que essas etapas não bloquearam a imagem.
+- Log de runtime: `Central internal HTTP ready: port=8099 version=0.1.39`. Erros `BrokenPipeError`/tracebacks encontrados no histórico pertencem a inicializações anteriores (0.1.33 ou anteriores); não aparecem depois do início 0.1.39 no recorte verificado.
+- O conector ChatGPT existente listou Umdoislab e Tudo é 3D; consultas individuais retornaram `connected=true` para ambas. É uma validação da API Central pelo conector existente (adapterVersion 1.1.1), não do MCP 0.1.9.
+- A opção `drive_service_account_json` permanece vazia. A leitura real do Drive não foi testada; falta provisionar a identidade técnica Google e a pasta privada por conexão.
+- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; HOMOLOGAÇÃO DRIVE PENDENTE**. Não promover a main privada antes de PASS.

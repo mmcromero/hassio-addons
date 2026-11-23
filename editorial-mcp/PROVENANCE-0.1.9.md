@@ -24,4 +24,10 @@
 - 7/7 arquivos passaram por varredura textual de padrões conhecidos de segredos: nenhuma ocorrência. Isso não substitui auditoria integral.
 - Chave `cei1` permanece legada e restrita; `cei2` suporta escopo multi-conta sem publicação. Nenhuma chave real foi incluída.
 - Commit público de distribuição: `119944fcc6da374feb017241af6eb49e16fe9738` (`hassio-addons:main`). A atualização alterou somente os diretórios `instagram-central/` e `editorial-mcp/`; `repository.yaml`, workflows, registry e demais add-ons foram preservados. Commit usa `[skip ci]`, conforme exigência de não executar Actions.
-- Estado: **PUBLICADO NO CATÁLOGO; NÃO INSTALADO/HOMOLOGADO**. A instalação requer atualização pelo Supervisor/operador; o conector HA disponível está em modo somente leitura. Não promover a main privada antes de PASS.
+## Homologação Home Assistant — 23/11/2026
+- Build real `aarch64` concluído pelo Supervisor às 12:07:55 BRT; app iniciado às 12:07:58, versão 0.1.9. Estado `started`, versão disponível igual à instalada, sem update pendente.
+- O Dockerfile executa `py_compile` e as suítes `test_server`, `test_multi_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` como etapas obrigatórias. O build concluído indica que essas etapas não bloquearam a imagem.
+- Diagnóstico de inicialização: GET local em `/mcp` retorna 405 (esperado; o protocolo aceita POST); DNS A/AAAA confirmado; Funnel configurado para HTTPS 443 público com destino `127.0.0.1:8765`; handshake TLS externo verificado.
+- Ressalva: a última amostra Tailscale mostrou `BackendState=Running`, porém `self_online=false` e zero peers ingress. Eventos anteriores TLS/certificado/rate-limit permanecem no histórico. Por isso, o endpoint público e o POST MCP autenticado ainda não estão homologados.
+- Não foi provisionada uma chave `cei2` para cliente externo; nenhuma chave real foi criada ou exibida nesta etapa.
+- Estado: **CATÁLOGO + BUILD ARM64 + INSTALAÇÃO + STARTUP PASS; FUNNEL ONLINE ESTÁVEL E MCP AUTENTICADO PENDENTES**. Não promover a main privada antes de PASS.
