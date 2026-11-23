@@ -1,0 +1,197 @@
+{
+  "version": "0.2.0-dev.33",
+  "stage": "offline-catalog",
+  "distributions": [
+    "home-assistant",
+    "debian"
+  ],
+  "schemaVersions": {
+    "tenant": 11,
+    "control": 5,
+    "interest": 2,
+    "support": 2,
+    "legal": 3
+  },
+  "releaseVersion": "0.2.0-dev.33",
+  "sourceCommit": "75697d56d8a838c704b1f1377a8fb657602b0dae",
+  "distribution": "home-assistant",
+  "packageKind": "source-addon",
+  "architecture": "linux/arm64",
+  "supervisorArch": "aarch64",
+  "addonSlug": "artesaos_piloto",
+  "repositoryPath": "artesaos-piloto",
+  "baseVersion": "0.1.23",
+  "metadataVersion": 1,
+  "preparedAt": "2026-11-23T01:39:40.704Z",
+  "builtAt": null,
+  "businessSourceSha256": "0348367ed380d1ed02422d73a0ec8eecf125dc398130af4e7d5ae0a8a5346b80",
+  "validation": {
+    "sourceCommit": "75697d56d8a838c704b1f1377a8fb657602b0dae",
+    "status": "pending-supervisor",
+    "directedChecks": [
+      {
+        "name": "source-scope-review",
+        "status": "passed",
+        "evidence": "Diff da candidata dev.33 revisado. Alterações restritas à interface PDV, identidade visual e apresentação do login Google; sem mudança de schema, dependências, endpoints OAuth, API de vendas, estoque, sessões, pagamentos ou contratos. server/pilot/entry.ts é template de apresentação pública; allowlist específica e teste de fixture adicionados ao exportador."
+      },
+      {
+        "name": "store-identity-and-config",
+        "status": "passed",
+        "evidence": "Nome oficial Fábrica de Softwares - Artesão Digital; slug artesaos_piloto; opções e volume preservados. icon.png/logo.png seguem os blobs oficiais do catálogo 8666d9ab6c2967985e5160afc4aaeedf145dba71."
+      }
+    ],
+    "build": "not-performed",
+    "physicalValidation": "not-performed",
+    "browserJourneys": "pending",
+    "exportMethod": "GitHub Git Data API: blobs da fonte congelada, transformação de Dockerfile/config, revisão de escopo e SHA256SUMS; script Python não executado em checkout local."
+  },
+  "schemaChecksums": {
+    "tenant": [
+      {
+        "version": 1,
+        "name": "fundacao-operacoes",
+        "checksum": "6cc52beab75f7d98147a22370196ec4e7d223cbecadb0d5a7c7297fcc5874824"
+      },
+      {
+        "version": 2,
+        "name": "consolidacao-legada",
+        "checksum": "65293ba874c2d4b2321ee6acff45b37117cbf47e32fe17d79b314fa587416a97"
+      },
+      {
+        "version": 3,
+        "name": "materiais-compras",
+        "checksum": "b994b7d9b7c8457557c7b0442fb95e494a65ed329ed63ab18f08fea8ab4bbc7a"
+      },
+      {
+        "version": 4,
+        "name": "estoque-produtos-fabricacao",
+        "checksum": "b049a1c8ee2e44e450a29bac9b98119efe7d594f9d54bdd9c811a117856adca9"
+      },
+      {
+        "version": 5,
+        "name": "pedidos-reservas",
+        "checksum": "efa5e7debdd81656a05fe907807c244f36bcb89bd9ecb7d39828b0c011bb9981"
+      },
+      {
+        "version": 6,
+        "name": "financeiro-liquidacoes",
+        "checksum": "549992dd711563a1d2fb09650d3ee4fbc07c8b149196af468cf06601f70e132e"
+      },
+      {
+        "version": 7,
+        "name": "vendas-cupons-divergencias",
+        "checksum": "01db8cc455d5b72da558cfd65cf5217c3bd85c98c566293193d635d533de481e"
+      },
+      {
+        "version": 8,
+        "name": "sessoes-consignacoes",
+        "checksum": "de04c32bb3f21be213c20481e43063977b43329eab0bcc6796ecb1253e47d74b"
+      },
+      {
+        "version": 9,
+        "name": "central-pendencias",
+        "checksum": "0dac0b67b8ab4231a3e0bd64bac57e3c1bbc2daa70286a608370dae6d38c4c40"
+      },
+      {
+        "version": 10,
+        "name": "preparo-expedicao",
+        "checksum": "259932bc64f39b1e24551280bc938738a0da5004fdb95f1af0c24ad49b02339f"
+      },
+      {
+        "version": 11,
+        "name": "clientes-visitantes-rastreabilidade",
+        "checksum": "f66a30267f66acb43b483473e36f7afe7ec5bdb39512130c2e9c65651020dce6"
+      }
+    ],
+    "control": [
+      {
+        "version": 1,
+        "name": "fundacao-controle",
+        "checksum": "0d24231e562e3040c0a9c6bd142c9581e8faf768d648538747cba445d41cda62"
+      },
+      {
+        "version": 2,
+        "name": "administracao-local-debian",
+        "checksum": "ad791f81c932d64195d5ef6cd71a82fe6217cc89be82f2b75de637c5279078ae"
+      },
+      {
+        "version": 3,
+        "name": "consolidacao-legada",
+        "checksum": "a3498923f965e477e9ac60152628619e4843db7dc86933b1f6c9c849792b7913"
+      },
+      {
+        "version": 4,
+        "name": "interessados-convites-rastreaveis",
+        "checksum": "74d9d1c01605f7110f0ec516bb34e402ce2b5e992408655b5c37f8c45fe6da6e"
+      },
+      {
+        "version": 5,
+        "name": "liberacao-modulos-piloto",
+        "checksum": "4d456eb622efc378f3d0989b64355f94405ec27effe1d5cef32e6d5a06398a29"
+      }
+    ],
+    "interest": [
+      {
+        "version": 1,
+        "name": "fundacao-interesses",
+        "checksum": "a3e7bc68fbdf3721c9ef29cffedf8f88857a67198a39e7df835dc0e59f4f8d47"
+      },
+      {
+        "version": 2,
+        "name": "consolidacao-legada",
+        "checksum": "6170c605b609813d6e8c68b9bca7f4906afcd2eacd319997d84ed04bfef45e36"
+      }
+    ],
+    "support": [
+      {
+        "version": 1,
+        "name": "fundacao-suporte",
+        "checksum": "c81ce0b8aaca065eb90b863b74a6b3c81d8d18f7e69f220f913ac9f5db5db130"
+      },
+      {
+        "version": 2,
+        "name": "consolidacao-legada",
+        "checksum": "9da3c84bceacac3265ab05326e449454092fa9d6286206f76a3c7c111fb4dc7e"
+      }
+    ],
+    "legal": [
+      {
+        "version": 1,
+        "name": "fundacao-legal",
+        "checksum": "3c71da20c357d6e4fb21113c909f8eefc4276f2b8569ec4d77527161dd95b69d"
+      },
+      {
+        "version": 2,
+        "name": "consolidacao-legada",
+        "checksum": "d169244c0ff79e1c98903a734d23ab8ddb3205e76c88626b794b558ed844d3e8"
+      },
+      {
+        "version": 3,
+        "name": "documentos-manuais-contribuicao",
+        "checksum": "e81beb3d4d43f5fa87b6baecc01c1fe54df6b51a7f434b08d08d7aa553f1a3f4"
+      }
+    ]
+  },
+  "schemaEvidence": {
+    "mode": "unchanged-from-validated-source",
+    "sourceCommit": "e6b48ed1149a0e06fb74c268acfd20253306035c",
+    "publishedCommit": "0ed4a368cdbbe706e239f2845473336b54285ea9",
+    "supervisorCheck": "pending"
+  },
+  "compatibility": {
+    "policy": "same-schema-only",
+    "migrationAuthorizationRequired": true
+  },
+  "stable": false,
+  "physicalValidation": "pending",
+  "publicationReady": false,
+  "storeBranding": {
+    "name": "Fábrica de Softwares - Artesão Digital",
+    "catalogRepository": "mmcromero/hassio-addons",
+    "catalogCommit": "8666d9ab6c2967985e5160afc4aaeedf145dba71",
+    "gitBlobs": {
+      "icon.png": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a",
+      "logo.png": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
+    }
+  }
+}

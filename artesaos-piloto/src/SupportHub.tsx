@@ -1,0 +1,52 @@
+import ActionButton from './ActionButton';
+import Contribution from './Contribution';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import AreaNav from './AreaNav';
+import BrandIcon from './BrandIcon';
+import ModalClose from './ModalClose';
+import ValidatedForm from './FormValidation';
+import {supportKinds,supportStatuses,type SupportKind,type SupportStatus,type SupportDetail,type SupportList} from '../server/pilot/support-model';
+async function request(path:string,init:RequestInit={}){
+ let response:Response;try{response=await fetch(new URL('api/support'+path,document.baseURI),{...init,headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(15000)});}catch{throw Error('Não foi possível confirmar a operação. Verifique sua conexão e tente novamente.');}
+ const data=await response.json();if(!response.ok)throw Error(data.message||'Não foi possível consultar o suporte.');return data;
+}
+export default function SupportHub({embedded=false}:{embedded?:boolean}){
+ const [list,setList]=useState<SupportList|null>(null),[page,setPage]=useState(1),[status,setStatus]=useState(''),[kindFilter,setKindFilter]=useState(''),[notice,setNotice]=useState(''),[error,setError]=useState(false),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
+ const [ticket,setTicket]=useState<SupportDetail|null>(null),[reply,setReply]=useState('');
+ const [compose,setCompose]=useState(false),[kind,setKind]=useState<SupportKind|''>(''),[subject,setSubject]=useState(''),[body,setBody]=useState(''),[composeError,setComposeError]=useState('');
+ const conversationTitle=useRef<HTMLHeadingElement>(null),listTitle=useRef<HTMLParagraphElement>(null),ticketTrigger=useRef<HTMLElement|null>(null);
+ const dialog=useRef<HTMLDialogElement>(null),createKey=useRef({signature:'',key:''}),replyKey=useRef({signature:'',key:''}),generation=useRef(0),detailGeneration=useRef(0),trigger=useRef<HTMLElement|null>(null);
+ const load=useCallback(async()=>{const id=++generation.current;setLoading(true);try{const query=new URLSearchParams({page:String(page)});if(status)query.set('status',status);if(kindFilter)query.set('kind',kindFilter);const result=await request('?'+query);if(id!==generation.current)return;setList(result);setError(false);}catch(reason){if(id===generation.current){setError(true);setNotice(reason instanceof Error?reason.message:'Não foi possível carregar.');}}finally{if(id===generation.current)setLoading(false);}},[page,status,kindFilter]);
+ useEffect(()=>{void load();},[load]);
+ useEffect(()=>{if(compose&&!dialog.current?.open)dialog.current?.showModal();},[compose]);
+ function clearComposeUrl(){const url=new URL(location.href);if(url.searchParams.has('novo')){url.searchParams.delete('novo');history.replaceState(null,'',url);}}
+ function close(){if(busy)return;if((subject.trim()||body.trim())&&!confirm('Descartar o chamado ainda não enviado?'))return;dialog.current?.close();setCompose(false);setComposeError('');setSubject('');setBody('');setKind('');createKey.current={signature:'',key:''};clearComposeUrl();trigger.current?.focus({preventScroll:true});}
+ function returnToTickets(){if(busy||(reply.trim()&&!confirm('Descartar a mensagem ainda não enviada?')))return;detailGeneration.current++;setTicket(null);setReply('');replyKey.current={signature:'',key:''};requestAnimationFrame(()=>{const target=ticketTrigger.current?.isConnected?ticketTrigger.current:listTitle.current;target?.focus({preventScroll:true});target?.scrollIntoView({block:'nearest'});});}
+ useEffect(()=>{if(ticket)conversationTitle.current?.focus({preventScroll:false});},[ticket?.id]);
+ async function openTicket(id:number){
+  if(busy)return;if(ticket?.id!==id&&reply.trim()&&!confirm('Descartar a mensagem ainda não enviada?'))return;
+  const current=++detailGeneration.current;setBusy(true);try{const result=await request('/'+id);if(current!==detailGeneration.current)return;if(ticket?.id!==id)setReply('');setTicket(result);setError(false);setNotice('');}catch(reason){setError(true);setNotice(reason instanceof Error?reason.message:'Não foi possível abrir o chamado.');}finally{if(current===detailGeneration.current)setBusy(false);}
+ }
+ async function create(){
+  setBusy(true);setComposeError('');const signature=JSON.stringify([kind,subject,body]);if(createKey.current.signature!==signature)createKey.current={signature,key:crypto.randomUUID()};
+  try{const result=await request('',{method:'POST',body:JSON.stringify({kind,subject,body,requestKey:createKey.current.key})});setTicket(result);setReply('');setSubject('');setBody('');setKind('');createKey.current={signature:'',key:''};dialog.current?.close();setCompose(false);clearComposeUrl();setError(false);setNotice('Chamado #'+result.id+' aberto. Acompanhe as respostas nesta área.');await load();trigger.current?.focus({preventScroll:true});}catch(reason){setComposeError(reason instanceof Error?reason.message:'Não foi possível abrir o chamado.');}finally{setBusy(false);}
+ }
+ async function respond(){
+  if(!ticket)return;setBusy(true);const signature=JSON.stringify([ticket.id,reply]);if(replyKey.current.signature!==signature)replyKey.current={signature,key:crypto.randomUUID()};
+  try{const result=await request('/'+ticket.id+'/messages',{method:'POST',body:JSON.stringify({body:reply,expectedRevision:ticket.revision,requestKey:replyKey.current.key})});setTicket(result);setReply('');replyKey.current={signature:'',key:''};setNotice('Mensagem enviada. O chamado está em aberto para atendimento.');setError(false);await load();}catch(reason){setError(true);setNotice(reason instanceof Error?reason.message:'Não foi possível enviar.');}finally{setBusy(false);}
+ }
+ const Wrapper=embedded?'div':'main';
+ return <Wrapper className={embedded?'support-hub':'products-screen support-hub'}>{!embedded&&<><AreaNav active="configuracoes"/><h1>Suporte técnico</h1></>}
+  <p ref={listTitle} tabIndex={-1}>Envie uma dúvida de uso ou relate um erro. As respostas e mudanças de status ficam registradas aqui.</p>
+  {!ticket&&<ActionButton type="button" disabled={busy} onClick={()=>{trigger.current=document.activeElement as HTMLElement;setCompose(true);setComposeError('');}}><BrandIcon name="plus"/>Abrir chamado</ActionButton>}
+  <p role={error?'alert':'status'} aria-live="polite">{notice}</p>
+  {!ticket&&<><div className="support-filters"><label>Status<select aria-label="Filtrar chamados por status" value={status} onChange={event=>{setStatus(event.target.value);setPage(1);}}><option value="">Todos os status</option>{Object.entries(supportStatuses).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><label>Tipo<select aria-label="Filtrar chamados por tipo" value={kindFilter} onChange={event=>{setKindFilter(event.target.value);setPage(1);}}><option value="">Todos os tipos</option>{Object.entries(supportKinds).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><ActionButton type="button" disabled={loading||busy} onClick={()=>load()}>Atualizar chamados</ActionButton></div>
+  <p>{loading?'Carregando chamados…':`${list?.total??0} chamado(s)`}</p>
+  <div className="support-list" role="group" aria-label="Meus chamados enviados">{list?.items.map(item=><article key={item.id}><ActionButton type="button" disabled={busy} onClick={()=>{ticketTrigger.current=document.activeElement as HTMLElement;return openTicket(item.id);}}>#{item.id} — {item.subject}</ActionButton><p>{supportKinds[item.kind]} · <span className="support-badge">{supportStatuses[item.status]}</span></p><small>Atualizado em {new Date(item.updatedAt).toLocaleString('pt-BR')}</small></article>)}</div>
+  {!loading&&list?.total===0&&<p>Nenhum chamado encontrado.</p>}
+  {list&&list.pages>1&&<nav className="quote-pagination" aria-label="Paginação de chamados"><ActionButton disabled={loading||list.page<=1} onClick={()=>setPage(list.page-1)}>Anterior</ActionButton><span>Página {list.page} de {list.pages}</span><ActionButton disabled={loading||list.page>=list.pages} onClick={()=>setPage(list.page+1)}>Próxima</ActionButton></nav>}</>}
+  {ticket&&<section className="support-conversation" aria-labelledby="support-conversation-title"><ActionButton type="button" disabled={busy} onClick={returnToTickets}>Voltar aos chamados</ActionButton><h2 ref={conversationTitle} tabIndex={-1} id="support-conversation-title">Chamado #{ticket.id} — {ticket.subject}</h2><p>{supportKinds[ticket.kind]} · <strong>{supportStatuses[ticket.status]}</strong></p><ActionButton type="button" disabled={busy} onClick={()=>openTicket(ticket.id)}>Atualizar conversa</ActionButton><ol className="support-events">{ticket.events.map(event=><li key={event.id}><strong>{event.role==='admin'?'Equipe de suporte':'Você'}</strong><small>{new Date(event.createdAt).toLocaleString('pt-BR')} · {supportStatuses[event.status]}</small><p>{event.body||`Status atualizado para ${supportStatuses[event.status]}.`}</p></li>)}</ol><ValidatedForm onSubmit={()=>respond()}><fieldset disabled={busy}><label>Sua mensagem<textarea required rows={5} maxLength={6000} value={reply} onChange={event=>setReply(event.target.value)}/></label><ActionButton>{ticket.status==='closed'?'Enviar mensagem e reabrir chamado':'Enviar mensagem'}</ActionButton></fieldset></ValidatedForm></section>}
+  {compose&&<dialog ref={dialog} className="support-compose" aria-labelledby="support-compose-title" onCancel={event=>{event.preventDefault();close();}}><ModalClose onClose={close} disabled={busy}/><h2 id="support-compose-title">Abrir chamado de suporte</h2><p>Descreva sua dúvida ou o erro encontrado. Não inclua senhas ou credenciais.</p><ValidatedForm onSubmit={()=>create()}><fieldset disabled={busy}><label>Motivo do contato<select required aria-label="Motivo do contato" value={kind} onChange={event=>setKind(event.target.value as SupportKind)}><option value="" disabled>Selecione o motivo</option>{Object.entries(supportKinds).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label><label>Assunto<input required maxLength={160} value={subject} onChange={event=>setSubject(event.target.value)}/></label><label>Descrição da dúvida ou erro<textarea required rows={7} maxLength={6000} value={body} onChange={event=>setBody(event.target.value)}/></label>{composeError.trim()&&<p role="alert">{composeError}</p>}<ActionButton>Enviar chamado</ActionButton><ActionButton type="button" className="support-secondary" onClick={close}>Cancelar</ActionButton></fieldset></ValidatedForm></dialog>}
+  {!ticket&&<Contribution/>}
+ </Wrapper>;
+}

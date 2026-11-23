@@ -1,0 +1,28 @@
+export const distributionSql=`
+CREATE TABLE sales_places(id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,notes TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,revision INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE sales_sessions(id TEXT PRIMARY KEY,place_id TEXT NOT NULL REFERENCES sales_places(id),date_on TEXT NOT NULL,tier TEXT NOT NULL CHECK(tier IN ('wholesale','factory','retail')),stock_control INTEGER NOT NULL,location_id TEXT UNIQUE REFERENCES stock_locations(id),financial_closed_at TEXT,physical_closed_at TEXT,created_at TEXT NOT NULL,revision INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE consigned_items(id TEXT PRIMARY KEY,name TEXT NOT NULL,supplier TEXT NOT NULL,sale_price INTEGER NOT NULL CHECK(sale_price>=0),repass INTEGER NOT NULL CHECK(repass>=0),image_url TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1,revision INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE consigned_receipts(id TEXT PRIMARY KEY,item_id TEXT NOT NULL REFERENCES consigned_items(id),quantity INTEGER NOT NULL CHECK(quantity>0),repass INTEGER NOT NULL CHECK(repass>=0),received_on TEXT NOT NULL,label TEXT NOT NULL,snapshot TEXT NOT NULL,actor TEXT NOT NULL,registered_at TEXT NOT NULL);
+CREATE TABLE consigned_movements(id INTEGER PRIMARY KEY,item_id TEXT NOT NULL REFERENCES consigned_items(id),receipt_id TEXT REFERENCES consigned_receipts(id),location_id TEXT NOT NULL REFERENCES stock_locations(id),delta INTEGER NOT NULL,before_qty INTEGER NOT NULL,after_qty INTEGER NOT NULL,kind TEXT NOT NULL,source_id TEXT NOT NULL,reason TEXT NOT NULL,actor TEXT NOT NULL,registered_at TEXT NOT NULL);
+CREATE INDEX consigned_balance ON consigned_movements(item_id,location_id,receipt_id);
+CREATE TABLE stock_partners(id TEXT PRIMARY KEY,name TEXT NOT NULL,contact TEXT NOT NULL,phone TEXT NOT NULL,email TEXT NOT NULL,tax_document TEXT NOT NULL,address TEXT NOT NULL,notes TEXT NOT NULL,location_id TEXT NOT NULL UNIQUE REFERENCES stock_locations(id),active INTEGER NOT NULL DEFAULT 1,revision INTEGER NOT NULL DEFAULT 1);
+CREATE TABLE partner_agreements(partner_id TEXT NOT NULL REFERENCES stock_partners(id),product_id INTEGER NOT NULL REFERENCES products(id),repass INTEGER NOT NULL CHECK(repass>=0),PRIMARY KEY(partner_id,product_id));
+CREATE TABLE partner_remittances(id TEXT PRIMARY KEY,partner_id TEXT NOT NULL REFERENCES stock_partners(id),sent_on TEXT NOT NULL,snapshot TEXT NOT NULL,actor TEXT NOT NULL,registered_at TEXT NOT NULL);
+CREATE TABLE partner_remittance_lines(id TEXT PRIMARY KEY,remittance_id TEXT NOT NULL REFERENCES partner_remittances(id),item_id TEXT NOT NULL REFERENCES stock_items(id),quantity INTEGER NOT NULL CHECK(quantity>0),repass INTEGER NOT NULL CHECK(repass>=0),snapshot TEXT NOT NULL);
+CREATE TABLE partner_events(id TEXT PRIMARY KEY,line_id TEXT NOT NULL REFERENCES partner_remittance_lines(id),kind TEXT NOT NULL CHECK(kind IN ('sale','return')),quantity INTEGER NOT NULL CHECK(quantity>0),title_id TEXT REFERENCES finance_titles(id),reason TEXT NOT NULL,actor TEXT NOT NULL,registered_at TEXT NOT NULL);
+CREATE TABLE client_destinations(id TEXT PRIMARY KEY,item_id TEXT NOT NULL REFERENCES stock_items(id),kind TEXT NOT NULL CHECK(kind IN ('discard','convert')),quantity INTEGER NOT NULL CHECK(quantity>0),target_product_id INTEGER REFERENCES products(id),reason TEXT NOT NULL,actor TEXT NOT NULL,registered_at TEXT NOT NULL);
+CREATE TABLE operational_preferences(id INTEGER PRIMARY KEY CHECK(id=1),home_view TEXT NOT NULL,prioritize_sales INTEGER NOT NULL,revision INTEGER NOT NULL DEFAULT 1);
+INSERT INTO operational_preferences VALUES(1,'produtos',0,1);
+CREATE TRIGGER consigned_movements_no_update BEFORE UPDATE ON consigned_movements BEGIN SELECT RAISE(ABORT,'Movimento consignado imutável'); END;
+CREATE TRIGGER consigned_movements_no_delete BEFORE DELETE ON consigned_movements BEGIN SELECT RAISE(ABORT,'Movimento consignado imutável'); END;
+CREATE TRIGGER consigned_receipts_no_update BEFORE UPDATE ON consigned_receipts BEGIN SELECT RAISE(ABORT,'Recebimento consignado imutável'); END;
+CREATE TRIGGER consigned_receipts_no_delete BEFORE DELETE ON consigned_receipts BEGIN SELECT RAISE(ABORT,'Recebimento consignado imutável'); END;
+CREATE TRIGGER partner_remittances_no_update BEFORE UPDATE ON partner_remittances BEGIN SELECT RAISE(ABORT,'Remessa imutável'); END;
+CREATE TRIGGER partner_remittances_no_delete BEFORE DELETE ON partner_remittances BEGIN SELECT RAISE(ABORT,'Remessa imutável'); END;
+CREATE TRIGGER partner_lines_no_update BEFORE UPDATE ON partner_remittance_lines BEGIN SELECT RAISE(ABORT,'Acordo histórico imutável'); END;
+CREATE TRIGGER partner_lines_no_delete BEFORE DELETE ON partner_remittance_lines BEGIN SELECT RAISE(ABORT,'Acordo histórico imutável'); END;
+CREATE TRIGGER partner_events_no_update BEFORE UPDATE ON partner_events BEGIN SELECT RAISE(ABORT,'Histórico do parceiro imutável'); END;
+CREATE TRIGGER partner_events_no_delete BEFORE DELETE ON partner_events BEGIN SELECT RAISE(ABORT,'Histórico do parceiro imutável'); END;
+CREATE TRIGGER client_destinations_no_update BEFORE UPDATE ON client_destinations BEGIN SELECT RAISE(ABORT,'Destinação imutável'); END;
+CREATE TRIGGER client_destinations_no_delete BEFORE DELETE ON client_destinations BEGIN SELECT RAISE(ABORT,'Destinação imutável'); END;
+`;

@@ -43,3 +43,13 @@ Não versionar `options.json`, tokens, senhas, bancos, sessões, backups, mídia
 - [GOV-STD-001](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md)
 - [GOV-BLK-002](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_BLK_002.md)
 - [Avisaqui — rotina específica](https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/ROTINA-DO-DESENVOLVEDOR.md)
+
+
+## Artesão Digital — esteira específica
+
+- Fonte privada: `mmcromero/fabricacao_e_orcamentos`.
+- Distribuição única Home Assistant: pasta raiz `artesaos-piloto/` neste repositório.
+- Identidade do add-on: nome `Fábrica de Softwares - Artesão Digital`; slug `artesaos_piloto`; manter `icon.png` e `logo.png` oficiais na raiz da pasta.
+- A pasta do add-on deve conter o pacote completo exportado da fonte aprovada, sem misturar documentação privada, credenciais, bancos, opções ou dados de runtime.
+- Seguir `docs/operacao/AD_ESTEIRA_RAPIDA_001.md` no repositório de fonte para corte de versão, revisão de escopo, exportação e proveniência. Publicar somente `artesaos-piloto/` na `main` deste catálogo.
+- O Supervisor do Home Assistant executa o build local quando o add-on usa Dockerfile sem `image`; build ARM64 externo, Actions e Factory Runner não são pré-requisitos genéricos. Instalação e homologação no HA permanecem etapas distintas da publicação Git.

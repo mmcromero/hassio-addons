@@ -1,0 +1,2 @@
+/* Scoped to the inventory wrapper; retain state when changing area. */
+.products-screen .stock-material-pane[hidden]{display:none!important}

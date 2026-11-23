@@ -26,6 +26,12 @@ hassio-addons/
 ├── CONTRIBUTING.md
 ├── .gitignore
 ├── .github/workflows/validate-addons.yml
+├── artesaos-piloto/
+│   ├── config.yaml
+│   ├── Dockerfile
+│   ├── icon.png
+│   ├── logo.png
+│   └── aplicação e documentação
 └── evolution-api/
     ├── config.yaml
     ├── Dockerfile
@@ -37,23 +43,25 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo publicado na `main` — manifests conferidos em 20/11/2026
+## Catálogo publicado na `main` — manifests conferidos em 22/11/2026
 
 | Diretório | Nome na loja | Versão | Arquitetura |
 |---|---|---|---|
 | `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
-| `pager-virtual/` | Pager Virtual | 0.1.20-rc.11 | aarch64, amd64 |
-| `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.1 | aarch64 |
+| `pager-virtual/` | Fábrica de Softwares - Avisaqui | 0.1.20-rc.12 | aarch64, amd64 |
+| `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.3 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.19 | aarch64, amd64 |
-| `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.6 | aarch64 |
+| `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.38 | aarch64 |
+| `editorial-mcp/` | Fábrica de Softwares - Central Editorial MCP | 0.1.0 | aarch64, amd64 |
+| `artesaos-piloto/` | Fábrica de Softwares - Artesão Digital | 0.2.0-dev.33 | aarch64 |
 
-O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **cinco** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
+O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **sete** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
 
 **Central WhatsApp original:** a distribuição `0.5.0-rc.1` foi publicada no [commit `45d7ec6`](https://github.com/mmcromero/hassio-addons/commit/45d7ec6e28f60ec6f1ef1e3ebc86baf8b44cfbe3), preservando o `slug: umdoislab_central`. **Não equivale à atualização do app instalado no Raspberry.** A homologação depende do Supervisor.
 
 **Duplicação corrigida no catálogo:** a candidata experimental `umdoislab-central-lab/` (`umdoislab_central_lab`) foi retirada da lista pública, conforme a decisão de manter um só aplicativo. O histórico permanece no Git; esta operação **não desinstala add-ons nem remove dados no Home Assistant**, cuja instalação atual não foi comprovada nesta revisão.
 
-**Fora deste catálogo:** Artesão Digital usa `mmcromero/fabricacao-e-orcamentos-ha`; Kanban usa `mmcromero/fabrica-de-ideias-kanban`. Não remova essas lojas do Home Assistant sem verificar instalação, versões e preservação dos dados. O catálogo Git não mostra quais lojas estão cadastradas no Raspberry.
+**Fora deste catálogo:** Kanban usa `mmcromero/fabrica-de-ideias-kanban`. O Artesão Digital agora integra este catálogo em `artesaos-piloto/`; a fonte de desenvolvimento continua em `mmcromero/fabricacao_e_orcamentos`.
 
 ## Continuidade e arquitetura de automações
 
@@ -75,7 +83,7 @@ Atualize esses documentos quando uma etapa for **confirmada por evidências** ou
 - Preferir tags fixas em vez de `:latest`.
 - A CI **não instala nem publica** add-ons no HA; quando a configuração usa Dockerfile sem imagem pré-compilada, o Supervisor pode compilar no dispositivo-alvo durante a instalação/atualização. O procedimento universal define os testes e exceções. Ausência de emulação ARM64 não constitui, por si só, impedimento técnico.
 - Segredos, bancos e sessões nunca entram no Git.
-- Não migrar os add-ons antigos para este repositório sem uma decisão específica.
+- Migrações entre repositórios exigem decisão explícita do proprietário, preservação integral do pacote e atualização do registro do catálogo.
 
 Veja [CONTRIBUTING.md](CONTRIBUTING.md) e o guia individual da Evolution API.
 

@@ -1,0 +1,42 @@
+{
+  "name": "umdoislab",
+  "version": "0.1.23",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && vite build && tsc -p tsconfig.server.json && node scripts/prepare-pilot-brand.mjs && node scripts/verify-foundation.mjs",
+    "start": "node dist-server/index.js",
+    "test": "node --import tsx --test test/*.test.ts",
+    "verify:runtime": "node scripts/verify-runtime.mjs",
+    "start:pilot": "node dist-server/pilot/index.js",
+    "pilot:admin": "node dist-server/pilot/admin.js",
+    "debian:admin": "node dist-server/pilot/local-admin-console.js",
+    "prebuild": "node scripts/prepare-pilot-metadata.mjs",
+    "pretest": "node scripts/prepare-pilot-metadata.mjs"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.8",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "fastify": "^5.0.0",
+    "nodemailer": "^10.3.1",
+    "openid-client": "6.8.8",
+    "pdf-lib": "^1.17.1",
+    "pngjs": "^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "qrcode-generator": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0"
+  }
+}

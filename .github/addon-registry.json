@@ -60,6 +60,15 @@
         "amd64"
       ],
       "source_repo": "https://github.com/mmcromero/instagram-automacoes"
+    },
+    {
+      "id": "artesaos-piloto",
+      "directory": "artesaos-piloto",
+      "slug": "artesaos_piloto",
+      "architectures": [
+        "aarch64"
+      ],
+      "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos"
     }
   ]
 }

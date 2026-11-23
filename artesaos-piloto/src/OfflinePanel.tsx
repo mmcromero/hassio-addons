@@ -1,0 +1,8 @@
+import {useEffect,useState} from 'react';
+import ActionButton from './ActionButton';
+import {currentPreparation,prepareCatalog} from './offline-catalog';
+export default function OfflinePanel(){
+ const [date,setDate]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(false);
+ useEffect(()=>{let active=true;currentPreparation().then(head=>{if(active)setDate(head?.preparedAt??'');}).catch(()=>{if(active){setError(true);setMessage('Consulta offline indisponível: confira as permissões de armazenamento. O uso online continua disponível.');}});return()=>{active=false;};},[]);
+ return <section aria-label="Consulta offline"><h2>Produtos sem internet</h2><p>{date?'Última preparação: '+new Date(date).toLocaleString('pt-BR'):'Nenhuma preparação confirmada para esta conta e negócio.'}</p><p>Prepare todos os produtos e fotos internas neste navegador. Sair da conta bloqueia a consulta sem apagar a cópia; entrar com a mesma conta permite recuperá-la.</p><ActionButton type="button" onClick={async()=>{setError(false);try{const result=await prepareCatalog(setMessage);setDate(result.preparedAt);setMessage(`Preparação concluída: ${result.products.length} produto(s). ${result.persistent?'':'O navegador ainda pode limpar o armazenamento; a cópia local não substitui os dados do servidor.'}`);}catch(e){setError(true);setMessage(e instanceof Error?e.message:'Não foi possível preparar. A cópia anterior foi preservada.');}}}>Preparar para uso offline</ActionButton>{date&&<a href="offline">Consultar cópia preparada</a>}{message&&<p role={error?'alert':'status'}>{message}</p>}</section>;
+}
