@@ -52,7 +52,7 @@ Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` 
 | `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.3 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.19 | aarch64, amd64 |
 | `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.38 | aarch64 |
-| `editorial-mcp/` | Fábrica de Softwares - Central Editorial MCP | 0.1.0 | aarch64, amd64 |
+| `editorial-mcp/` | Fábrica de Softwares - Central Editorial MCP | 0.1.3 | aarch64, amd64 |
 | `artesaos-piloto/` | Fábrica de Softwares - Artesão Digital | 0.2.0-dev.33 | aarch64 |
 
 O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **sete** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
