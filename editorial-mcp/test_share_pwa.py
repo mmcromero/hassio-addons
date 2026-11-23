@@ -28,8 +28,9 @@ class SharePwaTests(unittest.TestCase):
         self.assertIn("'/share-api/accounts'", client)
         self.assertIn("'/share-api/transfer'", client)
         self.assertIn("'X-API-Key'", client)
-        self.assertNotIn('localStorage', client)
-        self.assertNotIn('sessionStorage', client)
+        self.assertNotIn("localStorage.setItem('editorial-api-key'", client)
+        self.assertNotIn("localStorage.setItem('cei2'", client)
+        self.assertIn("editorial-pending-transfer", client)
 
     def test_share_ui_exposes_destination_format_and_explicit_send(self):
         page = (ROOT / 'index.html').read_text()
