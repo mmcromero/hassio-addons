@@ -262,7 +262,7 @@ TOOLS = [
         'media':{'type':'array','minItems':1,'maxItems':20,'items':schema({'mime':{'type':'string','enum':list(MIMES)},
             'base64':{'type':'string','maxLength':5592408}},['mime','base64'])}},
         ['requestId','transferApproved','format','caption','media']),
-     'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}}
+     'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
     {'name':'enviar_arquivo_temporario_para_revisao','description':'Após pedido explícito do usuário para enviar o conteúdo escolhido à revisão. Aceita somente URL temporária, assinada e de leitura gerada pelo host ChatGPT para arquivo do conector (subdomínio oaiusercontent.com); não aceita link público do Drive nem URL arbitrária. O Worker baixa em memória, confere tamanho, MIME e SHA-256 e não armazena a imagem. Nunca publica. Não registre nem reutilize a URL temporária. Máximo 4 MiB agregado.',
      'inputSchema':schema({'requestId':REQUEST,'transferApproved':{'type':'boolean','const':True},
         'format':{'type':'string','enum':list(FORMATS)},'caption':{'type':'string','maxLength':2200},
