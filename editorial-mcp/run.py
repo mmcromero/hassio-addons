@@ -166,6 +166,9 @@ def start():
                 threading.Thread(target=collect_probes, args=(cli, host, PORT), daemon=True).start()
         else:
             print('MCP local iniciado; Funnel desativado. Sem exposição pública.', flush=True)
+        if opts.get("drive_queue_enabled") is True:
+            from drive_queue import run_queue
+            threading.Thread(target=run_queue, args=(opts.get("drive_queue_config", ""), origin, STOP), daemon=True).start()
         while not STOP.wait(1):
             if not worker.is_alive() or (daemon and daemon.poll() is not None):
                 raise RuntimeError('Processo dedicado interrompido')

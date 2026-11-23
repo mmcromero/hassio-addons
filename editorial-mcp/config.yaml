@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Editorial MCP"
-version: "0.1.10"
+version: "0.1.11"
 slug: editorial_mcp_universal
 description: "Adaptador MCP e receptor de compartilhamento Android para revisão editorial."
 arch:
@@ -14,7 +14,11 @@ backup: cold
 options:
   central_url: ""
   funnel_enabled: false
+  drive_queue_enabled: false
+  drive_queue_config: ""
 schema:
   central_url: str
   funnel_enabled: bool
+  drive_queue_enabled: bool
+  drive_queue_config: password
   diagnostics_enabled: bool?

@@ -1,3 +1,10 @@
+# 0.1.11 — candidata de fila privada Drive
+
+- Processador opcional de ordens JSON, desativado por padrão; usa identidade Google read-only e conexão cei2 dedicada, com escopo explícito.
+- Revalida proprietário, permissões, pasta, conta, aprovação, manifesto, limites e recibo. Reutiliza a importação Drive já homologada por chamada autenticada via Claude; processamento automático ainda não homologado.
+- Sem alteração na Central Instagram, n8n, credenciais existentes, publicação Meta ou exclusão de arquivos.
+- 16 testes Python locais com Drive/Central simulados; build ARM64 e teste real após instalação e provisionamento. Free pendente, não bloqueia o Plus.
+
 # 0.1.10 — receptor de compartilhamento Android
 
 - Adiciona PWA instalável com Web Share Target para receber arquivos JPEG/PNG/MP4 compartilhados pelo sistema Android.

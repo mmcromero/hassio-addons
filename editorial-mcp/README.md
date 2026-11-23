@@ -75,3 +75,7 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 - Rotas novas: `GET /share`, `POST /share-api/accounts`, `POST /share-api/transfer`. A API exige chave `cei2` e valida o destino na Central. As rotas MCP existentes permanecem disponíveis.
 
 **Estado:** versão 0.1.10 publicada, instalada e em execução no Home Assistant ARM64. O build executou `py_compile` e 45 testes automatizados com sucesso. A homologação do compartilhamento real a partir dos apps ChatGPT/Claude em Android ainda depende de ensaio em aparelho físico.
+
+## Fila privada Drive (candidata 0.1.11)
+
+Leia [DRIVE-QUEUE-001.md](DRIVE-QUEUE-001.md). Desativada por padrão; nenhuma configuração ou permissão é alterada automaticamente. O fluxo somente cria rascunhos para revisão.
