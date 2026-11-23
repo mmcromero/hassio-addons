@@ -154,6 +154,14 @@ def fetch_host_file(url, mime, expected_size, expected_sha256):
     return raw
 
 
+def validate_host_file(args):
+    keys = {'mime', 'url', 'bytes', 'sha256'}
+    if not isinstance(args, dict) or set(args) != keys:
+        raise Refused('Referência ou metadados de mídia inválidos')
+    raw = fetch_host_file(args['url'], args['mime'], args['bytes'], args['sha256'])
+    return {'verified': True, 'mime': args['mime'], 'bytes': len(raw),
+            'sha256': hashlib.sha256(raw).hexdigest(), 'persisted': False}
+
 def transfer_host_files(central, token, args):
     keys = {'requestId', 'transferApproved', 'format', 'caption', 'media'}
     if set(args) != keys or args['transferApproved'] is not True:
@@ -262,6 +270,164 @@ TOOLS = [
             'base64':{'type':'string','maxLength':5592408}},['mime','base64'])}},
         ['requestId','transferApproved','format','caption','media']),
      'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
+    {'name':'validar_arquivo_temporario','description':'Leitura somente para testar acesso e integridade do arquivo temporário. Baixa em memória, valida MIME, tamanho e SHA-256, retorna apenas metadados e não transfere à Central, não persiste nem publica. Aceita somente URL assinada temporária do host ChatGPT em subdomínio oaiusercontent.com; não aceita URL arbitrária ou link público do Drive.',
+     'inputSchema':schema({'mime':{'type':'string','enum':list(MIMES)},'url':{'type':'string','maxLength':8192},
+        'bytes':{'type':'integer','minimum':1,'maximum':MAX_MEDIA},
+        'sha256':{'type':'string','pattern':'^[0-9a-f]{64},'description':'Após pedido explícito do usuário para enviar o conteúdo escolhido à revisão. Aceita somente URL temporária, assinada e de leitura gerada pelo host ChatGPT para arquivo do conector (subdomínio oaiusercontent.com); não aceita link público do Drive nem URL arbitrária. O Worker baixa em memória, confere tamanho, MIME e SHA-256 e não armazena a imagem. Nunca publica. Não registre nem reutilize a URL temporária. Máximo 4 MiB agregado.',
+     'inputSchema':schema({'requestId':REQUEST,'transferApproved':{'type':'boolean','const':True},
+        'format':{'type':'string','enum':list(FORMATS)},'caption':{'type':'string','maxLength':2200},
+        'media':{'type':'array','minItems':1,'maxItems':20,'items':schema({
+            'mime':{'type':'string','enum':list(MIMES)},'url':{'type':'string','maxLength':8192},
+            'bytes':{'type':'integer','minimum':1,'maximum':MAX_MEDIA},
+            'sha256':{'type':'string','pattern':'^[0-9a-f]{64}$'}},
+            ['mime','url','bytes','sha256'])}},
+        ['requestId','transferApproved','format','caption','media']),
+     'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
+]
+
+def dispatch(central, token, request):
+    if not isinstance(request, dict) or request.get('jsonrpc') != '2.0' or not isinstance(request.get('method'), str):
+        return 400, {'jsonrpc':'2.0','id':None,'error':{'code':-32600,'message':'Invalid Request'}}
+    method, params = request['method'], request.get('params', {})
+    if 'id' not in request:
+        return (202, None) if method.startswith('notifications/') else (400, None)
+    ident = request['id']
+    if type(ident) not in (str, int) or not isinstance(params, dict):
+        return 400, {'jsonrpc':'2.0','id':None,'error':{'code':-32600,'message':'Invalid Request'}}
+    response = {'jsonrpc':'2.0','id':ident}
+    if method == 'initialize':
+        version = params.get('protocolVersion')
+        response['result'] = {'protocolVersion':version if version in PROTOCOLS else PROTOCOLS[0],
+            'capabilities':{'tools':{}},'serverInfo':{'name':'central-editorial-universal','version':VERSION}}
+    elif method == 'ping':
+        response['result'] = {}
+    elif method == 'tools/list':
+        response['result'] = {'tools':TOOLS}
+    elif method == 'tools/call':
+        args, name = params.get('arguments', {}), params.get('name')
+        try:
+            if not isinstance(args, dict):
+                raise Refused('Argumentos inválidos')
+            if name == 'consultar_conexao' and not args:
+                result = {'connected':True,'account':KEY.fullmatch(token)[1],'publishingAvailable':False}
+            elif name == 'consultar_envio' and set(args) == {'requestId'}:
+                result = safe_receipt(receipt(central, token, args['requestId']))
+            elif name == 'enviar_para_revisao':
+                result = transfer(central, token, args)
+            elif name == 'validar_arquivo_temporario':
+                result = validate_host_file(args)
+            elif name == 'enviar_arquivo_temporario_para_revisao':
+                result = transfer_host_files(central, token, args)
+            else:
+                raise Refused('Ferramenta ou argumentos inválidos')
+            response['result'] = {'content':[{'type':'text','text':json.dumps(result, ensure_ascii=False)}]}
+        except Refused as exc:
+            response['result'] = {'content':[{'type':'text','text':str(exc)}],'isError':True}
+    else:
+        response['error'] = {'code':-32601,'message':'Method not found'}
+    return 200, response
+
+
+class Server(ThreadingHTTPServer):
+    daemon_threads = True
+    slots = threading.BoundedSemaphore(4)
+    def process_request(self, request, address):
+        if not self.slots.acquire(False):
+            self.shutdown_request(request)
+            return
+        try:
+            super().process_request(request, address)
+        except BaseException:
+            self.slots.release()
+            raise
+    def process_request_thread(self, request, address):
+        try:
+            super().process_request_thread(request, address)
+        finally:
+            self.slots.release()
+
+
+class Handler(BaseHTTPRequestHandler):
+    def setup(self):
+        self.request.settimeout(20)
+        super().setup()
+
+    def reply(self, status, body=None):
+        raw = b'' if body is None else json.dumps(body, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Content-Type','application/json')
+        self.send_header('Content-Length',str(len(raw)))
+        self.send_header('Cache-Control','no-store')
+        self.send_header('X-Content-Type-Options','nosniff')
+        self.send_header('Connection','close')
+        if status == 405:
+            self.send_header('Allow','POST')
+        self.end_headers()
+        self.close_connection = True
+        if raw:
+            self.wfile.write(raw)
+
+    def valid_route(self):
+        if self.path != '/mcp':
+            self.reply(404); return False
+        hosts = self.headers.get_all('Host', [])
+        origins = self.headers.get_all('Origin', [])
+        if (len(hosts) != 1 or hosts[0].lower() not in self.server.allowed_hosts or
+                len(origins) > 1 or origins and origins[0] not in self.server.allowed_origins):
+            self.reply(403); return False
+        return True
+
+    def do_GET(self):
+        if self.valid_route(): self.reply(405)
+    do_DELETE = do_GET
+
+    def do_POST(self):
+        if not self.valid_route(): return
+        keys = self.headers.get_all('X-Editorial-Key', [])
+        if len(keys) != 1 or not KEY.fullmatch(keys[0]):
+            return self.reply(403)
+        protocol = self.headers.get('MCP-Protocol-Version')
+        if protocol is not None and protocol not in PROTOCOLS: return self.reply(400)
+        lengths = self.headers.get_all('Content-Length', [])
+        if self.headers.get('Transfer-Encoding') or len(lengths) != 1 or not re.fullmatch(r'[0-9]{1,8}', lengths[0]):
+            return self.reply(400)
+        length = int(lengths[0])
+        if not 0 < length <= MAX_BODY: return self.reply(413)
+        if self.headers.get_content_type() != 'application/json': return self.reply(415)
+        try:
+            # Authenticate every operation through the original account-scoped API.
+            receipt(self.server.central, keys[0], PROBE)
+        except Refused:
+            return self.reply(403)
+        try:
+            raw = self.rfile.read(length)
+            if len(raw) != length: return self.reply(400)
+            request = json.loads(raw)
+        except (ValueError, UnicodeError, RecursionError, socket.timeout):
+            return self.reply(400)
+        try:
+            status, result = dispatch(self.server.central, keys[0], request)
+        except (TypeError, ValueError, OverflowError, RecursionError):
+            return self.reply(400)
+        self.reply(status, result)
+
+    def log_message(self, *args):
+        pass
+
+
+def make_server(origin, host='127.0.0.1', port=8765, public_host=''):
+    server = Server((host, port), Handler)
+    server.central = Central(origin)
+    server.allowed_hosts = {'127.0.0.1:'+str(server.server_port), 'localhost:'+str(server.server_port), '127.0.0.1', 'localhost'}
+    server.allowed_origins = set()
+    if public_host:
+        if not re.fullmatch(r'[a-z0-9.-]+\.ts\.net', public_host):
+            server.server_close(); raise ValueError('Hostname do nó dedicado inválido')
+        server.allowed_hosts.update({public_host, public_host+':443'})
+        server.allowed_origins.add('https://'+public_host)
+    return server
+}},['mime','url','bytes','sha256']),
+     'annotations':{'readOnlyHint':True,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
     {'name':'enviar_arquivo_temporario_para_revisao','description':'Após pedido explícito do usuário para enviar o conteúdo escolhido à revisão. Aceita somente URL temporária, assinada e de leitura gerada pelo host ChatGPT para arquivo do conector (subdomínio oaiusercontent.com); não aceita link público do Drive nem URL arbitrária. O Worker baixa em memória, confere tamanho, MIME e SHA-256 e não armazena a imagem. Nunca publica. Não registre nem reutilize a URL temporária. Máximo 4 MiB agregado.',
      'inputSchema':schema({'requestId':REQUEST,'transferApproved':{'type':'boolean','const':True},
         'format':{'type':'string','enum':list(FORMATS)},'caption':{'type':'string','maxLength':2200},
