@@ -19,7 +19,7 @@
   "architecture": "linux/arm64",
   "supervisorArch": "aarch64",
   "addonSlug": "artesaos_piloto",
-  "repositoryPath": "apps/artesaos-piloto",
+  "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
   "preparedAt": "2026-11-23T01:39:40.704Z",

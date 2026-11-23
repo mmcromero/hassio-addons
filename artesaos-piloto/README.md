@@ -1,3 +1,9 @@
-# Artesão Digital — Contingência
+# Artesão Digital — Home Assistant
 
-Forja 01 é o servidor principal. Acionamento manual no Home Assistant; recuperação e transferência de dados ainda não concluídas. Sem sincronização automática entre ambientes. Base 0.1.23. Leia DOCS.md antes de iniciar.
+Add-on experimental para Home Assistant. O Supervisor compila a imagem a partir do código-fonte durante a instalação ou atualização.
+
+- Slug: `artesaos_piloto`
+- Arquitetura: `aarch64`
+- Dados persistentes: `/data`
+
+A instalação, a atualização e a homologação são etapas distintas. Não desinstale o add-on para atualizar.
