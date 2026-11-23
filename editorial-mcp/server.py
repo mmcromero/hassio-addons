@@ -11,7 +11,7 @@ from urllib.parse import urlsplit, parse_qs, unquote
 from datetime import datetime, timezone, timedelta
 from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHandler
 
-VERSION = '0.1.9'
+VERSION = '0.1.10'
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 KEY = re.compile(r'cei1\.([a-z][a-z0-9_-]{1,39})\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
 MULTI_KEY = re.compile(r'cei2\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
@@ -511,7 +511,7 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, data, mime, extra)
 
     def do_GET(self):
-        routes = {'/share', '/share.js', '/manifest.webmanifest', '/sw.js'}
+        routes = {'/share', '/share.js', '/manifest.webmanifest', '/sw.js', '/icon.svg'}
         if not self.valid_route(routes): return
         if self.path == '/share':
             return self.serve_asset('index.html', 'text/html; charset=utf-8',
@@ -520,6 +520,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.serve_asset('app.js', 'text/javascript; charset=utf-8')
         if self.path == '/manifest.webmanifest':
             return self.serve_asset('manifest.webmanifest', 'application/manifest+json')
+        if self.path == '/icon.svg':
+            return self.serve_asset('icon.svg', 'image/svg+xml')
         return self.serve_asset('sw.js', 'text/javascript; charset=utf-8',
             {'Service-Worker-Allowed': '/'})
 
