@@ -1,3 +1,13 @@
+## 0.1.2 — candidata de transporte privado de arquivos
+
+- Novo tool `enviar_arquivo_temporario_para_revisao` para referências temporárias assinadas emitidas pelo host ChatGPT após leitura de arquivos pelo conector.
+- Allowlist HTTPS de subdomínios `oaiusercontent.com`, caminho `/files/`, assinatura de leitura, validade máxima de 15 minutos e redirects recusados.
+- Download em memória com limite de 4 MiB agregado, validação de MIME/magic, tamanho e SHA-256; URL nunca é registrada nem persistida.
+- Mantém envio Base64 para outros clientes MCP; não aceita URL pública do Drive ou URL arbitrária.
+- Testes sem rede para allowlist, expiração, redirects, hash, tamanho, idempotência e ausência de publicação.
+- Mantém diagnósticos Tailscale/Funnel locais opt-in; nenhuma alteração no Tailscale principal.
+- A prova positiva foi executada na PoC isolada, não no add-on. O build ARM64 e a homologação MCP/cliente ainda estão pendentes.
+
 ## 0.1.1 — candidata de diagnóstico
 
 - Inclui diagnóstico local opt-in para investigar Tailscale/Funnel sem criar endpoint público.
