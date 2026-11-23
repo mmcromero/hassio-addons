@@ -43,16 +43,17 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo publicado na `main` — manifests conferidos em 20/11/2026
+## Catálogo publicado na `main` — manifests conferidos em 22/11/2026
 
 | Diretório | Nome na loja | Versão | Arquitetura |
 |---|---|---|---|
 | `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
-| `pager-virtual/` | Pager Virtual | 0.1.20-rc.11 | aarch64, amd64 |
-| `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.1 | aarch64 |
+| `pager-virtual/` | Fábrica de Softwares - Avisaqui | 0.1.20-rc.12 | aarch64, amd64 |
+| `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.3 | aarch64 |
 | `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.19 | aarch64, amd64 |
 | `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.38 | aarch64 |
-| `artesaos-piloto/` | Fábrica de Softwares - Artesão Digital | 0.2.0-dev.33 | aarch64, amd64 |
+| `editorial-mcp/` | Fábrica de Softwares - Central Editorial MCP | 0.1.0 | aarch64, amd64 |
+| `artesaos-piloto/` | Fábrica de Softwares - Artesão Digital | 0.2.0-dev.33 | aarch64 |
 
 O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **sete** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
 
