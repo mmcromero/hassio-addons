@@ -68,8 +68,7 @@
       "architectures": [
         "aarch64"
       ],
-      "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos",
-      "arm64_build_job": "build-artesao-arm64"
+      "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos"
     }
   ]
 }
