@@ -491,7 +491,8 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(raw)
 
     def valid_route(self, routes):
-        if self.path not in routes:
+        route = urlsplit(self.path).path
+        if route not in routes:
             self.reply(404); return False
         hosts = self.headers.get_all('Host', [])
         origins = self.headers.get_all('Origin', [])
@@ -513,14 +514,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         routes = {'/share', '/share.js', '/manifest.webmanifest', '/sw.js', '/icon.svg'}
         if not self.valid_route(routes): return
-        if self.path == '/share':
+        route = urlsplit(self.path).path
+        if route == '/share':
             return self.serve_asset('index.html', 'text/html; charset=utf-8',
                 {'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"})
-        if self.path == '/share.js':
+        if route == '/share.js':
             return self.serve_asset('app.js', 'text/javascript; charset=utf-8')
-        if self.path == '/manifest.webmanifest':
+        if route == '/manifest.webmanifest':
             return self.serve_asset('manifest.webmanifest', 'application/manifest+json')
-        if self.path == '/icon.svg':
+        if route == '/icon.svg':
             return self.serve_asset('icon.svg', 'image/svg+xml')
         return self.serve_asset('sw.js', 'text/javascript; charset=utf-8',
             {'Service-Worker-Allowed': '/'})
@@ -528,6 +530,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         routes = {'/mcp', '/share-api/accounts', '/share-api/transfer'}
         if not self.valid_route(routes): return
+        route = urlsplit(self.path).path
         keys = (self.headers.get_all('X-Editorial-Key', []) +
                 self.headers.get_all('X-API-Key', []))
         if len(keys) != 1 or not (KEY.fullmatch(keys[0]) or MULTI_KEY.fullmatch(keys[0])):
@@ -539,7 +542,7 @@ class Handler(BaseHTTPRequestHandler):
         if not 0 < length <= MAX_BODY: return self.reply(413, {'error': 'Limite de 6 MiB excedido'})
         if self.headers.get_content_type() != 'application/json':
             return self.reply(415, {'error': 'Use application/json'})
-        if self.path != '/mcp' and not MULTI_KEY.fullmatch(keys[0]):
+        if route != '/mcp' and not MULTI_KEY.fullmatch(keys[0]):
             return self.reply(403, {'error': 'A interface de compartilhamento exige chave multi-conta cei2'})
         try:
             if MULTI_KEY.fullmatch(keys[0]):
@@ -555,7 +558,7 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(request, dict): return self.reply(400, {'error': 'JSON inválido'})
         except (ValueError, UnicodeError, RecursionError, socket.timeout):
             return self.reply(400, {'error': 'JSON inválido'})
-        if self.path == '/share-api/accounts':
+        if route == '/share-api/accounts':
             if request:
                 return self.reply(400, {'error': 'Argumentos inesperados'})
             try:
@@ -566,7 +569,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, {'accounts': accounts, 'publishingAvailable': False})
             except Refused as exc:
                 return self.reply(502, {'error': str(exc)})
-        if self.path == '/share-api/transfer':
+        if route == '/share-api/transfer':
             try:
                 result = multi_call(self.server.central, keys[0], 'enviar_para_revisao', request)
                 return self.reply(200, result)
