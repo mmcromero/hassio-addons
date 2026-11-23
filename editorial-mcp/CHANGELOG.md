@@ -1,3 +1,12 @@
+## 0.1.1 — candidata de diagnóstico
+
+- Inclui diagnóstico local opt-in para investigar Tailscale/Funnel sem criar endpoint público.
+- Captura do CLI em modo texto e parsing explícito; sem saída bruta, IPs, identidade de peers, links de login ou segredos.
+- Testes sem rede para parsing e sanitização dos diagnósticos.
+- Build do Supervisor executa as suítes do adaptador e do diagnóstico.
+- `diagnostics_enabled` permanece false por padrão; nenhuma alteração no Tailscale principal.
+- Não inclui integração Google Drive; H2 permanece pendente.
+
 ## 0.1.0 — candidata
 
 - Adaptador MCP Streamable HTTP, sem sessão, versões 2025-03-26/06-18/11-25.
