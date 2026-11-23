@@ -1,6 +1,6 @@
 # Central Editorial MCP universal
 
-**Versão do pacote:** 0.1.8  
+**Versão do pacote:** 0.1.9  
 **Slug Home Assistant:** `editorial_mcp_universal`  
 **Arquiteturas:** `aarch64`, `amd64`
 
@@ -20,9 +20,9 @@ Adaptador MCP independente para a Central Editorial. Recebe solicitações de cl
 - `X-API-Key`: cabeçalho padrão para clientes como Claude Custom Connector.
 - `X-Editorial-Key`: cabeçalho legado, mantido para compatibilidade com clientes existentes.
 - Envie exatamente um dos cabeçalhos. Requisições sem chave, com chave inválida, com valores repetidos ou com os dois cabeçalhos são recusadas.
-- A chave é emitida pela Central Editorial e validada pela API da Central. A conta é derivada da chave; não é escolhida por argumento da ferramenta.
-- Use uma chave e um conector separados para cada conta autorizada. Nunca compartilhe chaves entre contas.
-- No Claude Custom Connector, use autenticação **No sign-in** com o cabeçalho padrão `x-api-key` e a chave exclusiva da conta.
+- A chave `cei1` legada continua vinculada a uma conta. A nova chave `cei2` recebe escopo definido na Central; o MCP lista somente as contas autorizadas e exige destino explícito quando houver mais de uma.
+- Um único conector pode usar a chave `cei2` multi-conta. Escopo, destino e recibos são validados pela Central; as chaves `cei1` permanecem isoladas.
+- No Claude Custom Connector, use autenticação **No sign-in** com o cabeçalho padrão `x-api-key` e a chave `cei2` emitida pela Central.
 - Clientes que usam `X-Editorial-Key` não precisam alterar sua configuração.
 
 ## Configuração
@@ -54,3 +54,10 @@ O Dockerfile executa `py_compile` e as suítes `test_server`, `test_diagnostics`
 - Adiciona `icon.png` e `logo.png), usando os mesmos arquivos oficiais dos demais apps do catálogo.
 - Atualiza a versão do pacote e do handshake MCP para 0.1.8.
 - Preserva autenticação, permissões, ferramentas, opções e compatibilidade da versão 0.1.7.
+
+
+## Conexão multi-conta (0.1.9)
+
+Requer Central Instagram 0.1.39. Crie uma conexão na aba Ferramentas e guarde a chave cei2 somente no cliente (X-API-Key ou X-Editorial-Key). O escopo de proprietário inclui novas contas operacionais autorizadas; o delegado recebe somente a seleção explícita. O painel ainda tem sessão administrativa compartilhada, não identidade individual. Chaves cei1 continuam restritas. `listar_contas` retorna destinos autorizados; informe `conta` por nome, @ ou ID e confirme o destino quando houver várias opções.
+
+Para Drive, configure identidade técnica exclusiva de leitura, sem delegação de domínio, com acesso apenas à pasta privada autorizada. Vincule uma raiz exclusiva à conexão; os arquivos ficam em subpastas filhas diretas cujo nome é o ID canônico da conta. `validar_arquivo_drive` confirma o tamanho e SHA-256 sem armazenar; `enviar_arquivo_drive_para_revisao` exige autorização explícita, limite agregado de 4 MiB e requestId estável. Somente revisão. Não use links públicos, caminhos locais ou tokens em argumentos. Nenhuma exclusão automática. O acesso real ainda precisa ser homologado.

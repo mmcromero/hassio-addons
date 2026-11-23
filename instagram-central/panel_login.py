@@ -25,7 +25,7 @@ _ADMIN_ACTIONS = frozenset(("check", "subscribe", "routing", "inbox_refresh")) |
 
 def _valid_action(action):
     return (isinstance(action, str) and (action in _ADMIN_ACTIONS or action == 'accounts:create' or
-            re.fullmatch(r'(?:editorial:[a-z][a-z0-9_-]{1,39}:(?:upload|draft|approve|schedule|cancel|check|publish|activate|reset|reconcile|retry|delete_post|delete_remote|delete_media|metrics|history_start|history_cancel|integration_list|integration_create|integration_revoke)|meta:[a-z][a-z0-9_-]{1,39}:(?:check|subscribe|routing|inbox_refresh))', action) is not None))
+            re.fullmatch(r'(?:editorial:[a-z][a-z0-9_-]{1,39}:(?:upload|draft|approve|schedule|cancel|check|publish|activate|reset|reconcile|retry|delete_post|delete_remote|delete_media|metrics|history_start|history_cancel|integration_list|integration_create|integration_revoke|integration_multi_list|integration_multi_create|integration_multi_revoke|integration_multi_drive|integration_multi_grants)|meta:[a-z][a-z0-9_-]{1,39}:(?:check|subscribe|routing|inbox_refresh))', action) is not None))
 
 
 def _valid_password(password):

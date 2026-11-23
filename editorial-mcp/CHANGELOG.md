@@ -1,3 +1,7 @@
+# 0.1.9 — conexão multi-conta e Drive privado
+
+- Preserva contrato cei1. Nova chave cei2 requer Central Instagram 0.1.39; listagem dinâmica, destino explícito, teste Drive somente leitura e transferência por IDs. Sem publicação direta ou exclusão Drive. Slug, ícone, logo e túnel preservados. Provisionamento e teste real Drive pendentes.
+
 ## 0.1.8 — identidade visual padronizada (candidata)
 - Inclui `icon.png` e `logo.png` com os mesmos blobs oficiais já usados pelos demais apps do catálogo: icon `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; logo `7e500016222b0a5bf395be8ed17447edeb3e2af9`.
 - Atualiza `config.yaml`, `serverInfo.version` e o teste de contrato para 0.1.8.

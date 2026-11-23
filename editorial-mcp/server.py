@@ -11,9 +11,10 @@ from urllib.parse import urlsplit, parse_qs, unquote
 from datetime import datetime, timezone, timedelta
 from urllib.request import Request, build_opener, HTTPRedirectHandler, ProxyHandler
 
-VERSION = '0.1.8'
+VERSION = '0.1.9'
 PROTOCOLS = ('2025-11-25', '2025-06-18', '2025-03-26')
 KEY = re.compile(r'cei1\.([a-z][a-z0-9_-]{1,39})\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
+MULTI_KEY = re.compile(r'cei2\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}\Z')
 RID = re.compile(r'[A-Za-z0-9_-]{16,100}\Z')
 MAX_MEDIA = 4 * 1024 * 1024
 MAX_BODY = 6 * 1024 * 1024
@@ -40,19 +41,23 @@ class Central:
         self.origin = origin.rstrip('/')
         self.opener = build_opener(ProxyHandler({}), NoRedirect())
 
-    def call(self, token, action, data, *, request_id=None, index=None, mime=None):
-        if action not in ('receipt', 'upload', 'commit'):
+    def call(self, token, action, data, *, request_id=None, index=None, mime=None, account=None):
+        if action not in ('receipt', 'upload', 'commit', 'accounts', 'resolve', 'drive_stage', 'drive_validate'):
             raise Refused('Operação não permitida')
         upload = action == 'upload'
         headers = {'Authorization': 'Bearer ' + token,
                    'X-Editorial-Action': 'import_' + action,
                    'Content-Type': mime if upload else 'application/json'}
+        if account is not None:
+            if not isinstance(account, str) or not re.fullmatch(r'[a-z][a-z0-9_-]{1,39}', account):
+                raise Refused('Destino inválido')
+            headers['X-Editorial-Account'] = account
         if upload:
             headers.update({'X-Import-Id': request_id, 'X-Media-Index': str(index)})
         path = '/editorial/api/' + ('media' if upload else 'drafts')
         body = data if upload else json.dumps(data).encode()
         try:
-            with self.opener.open(Request(self.origin + path, body, headers, method='POST'), timeout=18) as res:
+            with self.opener.open(Request(self.origin + path, body, headers, method='POST'), timeout=27 if action in ('drive_stage','drive_validate') else 18) as res:
                 raw = res.read(65537)
             if len(raw) > 65536:
                 raise Refused('Resposta da Central inválida')
@@ -284,6 +289,119 @@ TOOLS = [
      'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}},
 ]
 
+def _multi_tools():
+    import copy
+    result = copy.deepcopy(TOOLS)
+    for tool in result:
+        tool['inputSchema']['properties']['conta'] = {'type':'string','maxLength':160,'description':'Conta autorizada (ID, nome ou @). Se houver várias, pergunte ao usuário antes do envio.'}
+        tool['description'] = tool['description'].replace('conta vinculada à chave deste conector', 'conta autorizada selecionada').replace('conta vinculada', 'conta autorizada selecionada')
+    result.insert(0, {'name':'listar_contas','description':'Lista dinamicamente apenas perfis autorizados para esta conexão. Se houver várias contas e o pedido não indicar qual, pergunte o destino antes de transferir. Inclui ID da pasta privada de entrada, quando configurada; a subpasta deve ter o ID canônico da conta.',
+                      'inputSchema':schema({},[]),'annotations':{'readOnlyHint':True}})
+    result.append({'name':'validar_arquivo_drive','description':'Teste somente de leitura. Confirma acesso aos bytes reais no Drive e manifesto, na subpasta da conta autorizada. Não cria rascunho, não armazena, não publica. Use apenas arquivo escolhido pelo usuário.',
+                   'inputSchema':schema({'conta':{'type':'string','maxLength':160},'fileId':{'type':'string','pattern':'^[A-Za-z0-9_-]{10,200}$'},
+                       'mime':{'type':'string','enum':list(MIMES)},'bytes':{'type':'integer','minimum':1,'maximum':MAX_MEDIA},
+                       'sha256':{'type':'string','pattern':'^[0-9a-f]{64}$'}},['fileId','mime','bytes','sha256']),
+                   'annotations':{'readOnlyHint':True,'idempotentHint':True}})
+    result.append({'name':'enviar_arquivo_drive_para_revisao','description':'Após pedido explícito de transferência para revisão, use o ID do arquivo binário já salvo pelo conector oficial Drive na subpasta da conta autorizada, dentro da pasta privada indicada em listar_contas. Forneça tamanho e SHA-256 reais; não invente. Nunca publica nem altera o Drive. Máximo 4 MiB no total.',
+                   'inputSchema':schema({'conta':{'type':'string','maxLength':160},'requestId':REQUEST,
+                       'transferApproved':{'type':'boolean','const':True},'format':{'type':'string','enum':list(FORMATS)},
+                       'caption':{'type':'string','maxLength':2200},'media':{'type':'array','minItems':1,'maxItems':20,
+                           'items':schema({'fileId':{'type':'string','pattern':'^[A-Za-z0-9_-]{10,200}$'},
+                                           'mime':{'type':'string','enum':list(MIMES)},'bytes':{'type':'integer','minimum':1,'maximum':MAX_MEDIA},
+                                           'sha256':{'type':'string','pattern':'^[0-9a-f]{64}$'}},['fileId','mime','bytes','sha256'])}},
+                       ['requestId','transferApproved','format','caption','media']),
+                   'annotations':{'readOnlyHint':False,'destructiveHint':False,'idempotentHint':True,'openWorldHint':True}})
+    return result
+
+
+class BoundCentral:
+    """Pin the canonical account to every upstream call, never a mutable alias."""
+    def __init__(self, central, account):
+        self.central, self.account = central, account
+    def call(self, token, action, data, **kwargs):
+        return self.central.call(token, action, data, account=self.account, **kwargs)
+
+
+def drive_transfer(central, token, args):
+    if set(args) != {'requestId','transferApproved','format','caption','media'} or args['transferApproved'] is not True:
+        raise Refused('Confirme explicitamente o envio para revisão')
+    request, fmt, caption, media = (args[k] for k in ('requestId','format','caption','media'))
+    if (not isinstance(request,str) or not RID.fullmatch(request) or request == PROBE or fmt not in FORMATS
+            or not isinstance(caption,str) or len(caption)>2200 or not isinstance(media,list)
+            or not (2 <= len(media) <= 20 if fmt=='carousel' else len(media)==1)):
+        raise Refused('Manifesto inválido')
+    total = 0
+    metadata = []
+    for item in media:
+        if (not isinstance(item,dict) or set(item)!={'fileId','mime','bytes','sha256'} or item['mime'] not in MIMES
+                or not isinstance(item['fileId'],str) or not re.fullmatch(r'[A-Za-z0-9_-]{10,200}',item['fileId'])
+                or type(item['bytes']) is not int or not 1 <= item['bytes'] <= MAX_MEDIA
+                or not isinstance(item['sha256'],str) or not re.fullmatch(r'[0-9a-f]{64}',item['sha256'])):
+            raise Refused('Manifesto de arquivo Drive inválido')
+        total += item['bytes']
+        if total > MAX_MEDIA: raise Refused('Limite inicial de 4 MiB de mídia por transferência')
+        metadata.append({'sha256':item['sha256'],'mime':item['mime']})
+    digest = hashlib.sha256(json.dumps({'format':fmt,'caption':caption,'files':metadata},sort_keys=True).encode()).hexdigest()
+    previous = receipt(central,token,request)
+    if previous['found']:
+        if previous.get('contentDigest') != digest or previous.get('status')=='deleted':
+            raise Refused('Recibo em conflito ou excluído; não recriar automaticamente')
+        return safe_receipt(previous)
+    ids = []
+    for index,item in enumerate(media):
+        staged = central.call(token,'drive_stage',{'requestId':request,'index':index,'media':item})
+        mid = staged.get('id')
+        if not isinstance(mid,str) or not re.fullmatch(r'[0-9a-f]{32}',mid):
+            raise Refused('Upload não confirmado; consulte o mesmo recibo antes de repetir')
+        ids.append(mid)
+    result = central.call(token,'commit',{'schemaVersion':1,'requestId':request,'transferApproved':True,
+                                          'format':fmt,'caption':caption,'mediaIds':ids,'contentDigest':digest})
+    if result.get('found') is not True or result.get('contentDigest') != digest:
+        raise Refused('Commit não confirmado; consulte o mesmo recibo antes de repetir')
+    return safe_receipt(result)
+
+
+def multi_call(central, token, name, args):
+    if name == 'listar_contas':
+        if args: raise Refused('Argumentos inválidos')
+        return central.call(token, 'accounts', {})
+    allowed = ('consultar_conexao','consultar_envio','enviar_para_revisao','validar_arquivo_temporario',
+               'enviar_arquivo_temporario_para_revisao','enviar_arquivo_drive_para_revisao','validar_arquivo_drive')
+    if name not in allowed: raise Refused('Ferramenta não autorizada')
+    args = dict(args)
+    destination = args.pop('conta', None)
+    if destination is not None and (not isinstance(destination,str) or not destination.strip() or len(destination)>160):
+        raise Refused('Destino inválido')
+    try:
+        chosen = central.call(token, 'resolve', {'destination':destination})
+    except Refused:
+        raise Refused('Escolha uma conta autorizada inequívoca usando listar_contas. Não envie se houver dúvida.') from None
+    account = chosen.get('account')
+    if chosen.get('connected') is not True or chosen.get('publishingAvailable') is not False or not isinstance(account,str) or not re.fullmatch(r'[a-z][a-z0-9_-]{1,39}',account):
+        raise Refused('Conta não confirmada')
+    bound = BoundCentral(central,account)
+    if name == 'consultar_conexao' and not args:
+        result = chosen
+    elif name == 'consultar_envio' and set(args) == {'requestId'}:
+        result = safe_receipt(receipt(bound,token,args['requestId']))
+    elif name == 'enviar_para_revisao':
+        result = transfer(bound,token,args)
+    elif name == 'validar_arquivo_temporario':
+        result = validate_host_file(args)
+    elif name == 'enviar_arquivo_temporario_para_revisao':
+        result = transfer_host_files(bound,token,args)
+    elif name == 'validar_arquivo_drive' and set(args) == {'fileId','mime','bytes','sha256'}:
+        result = bound.call(token,'drive_validate',args)
+        if (result.get('verified') is not True or result.get('persisted') is not False
+                or any(result.get(k) != args[k] for k in ('mime','bytes','sha256'))):
+            raise Refused('Validação Drive não confirmada')
+    elif name == 'enviar_arquivo_drive_para_revisao':
+        result = drive_transfer(bound,token,args)
+    else:
+        raise Refused('Argumentos inválidos')
+    return {**result,'account':account}
+
+
 def dispatch(central, token, request):
     if not isinstance(request, dict) or request.get('jsonrpc') != '2.0' or not isinstance(request.get('method'), str):
         return 400, {'jsonrpc':'2.0','id':None,'error':{'code':-32600,'message':'Invalid Request'}}
@@ -301,13 +419,15 @@ def dispatch(central, token, request):
     elif method == 'ping':
         response['result'] = {}
     elif method == 'tools/list':
-        response['result'] = {'tools':TOOLS}
+        response['result'] = {'tools':_multi_tools() if MULTI_KEY.fullmatch(token) else TOOLS}
     elif method == 'tools/call':
         args, name = params.get('arguments', {}), params.get('name')
         try:
             if not isinstance(args, dict):
                 raise Refused('Argumentos inválidos')
-            if name == 'consultar_conexao' and not args:
+            if MULTI_KEY.fullmatch(token):
+                result = multi_call(central, token, name, args)
+            elif name == 'consultar_conexao' and not args:
                 result = {'connected':True,'account':KEY.fullmatch(token)[1],'publishingAvailable':False}
             elif name == 'consultar_envio' and set(args) == {'requestId'}:
                 result = safe_receipt(receipt(central, token, args['requestId']))
@@ -384,7 +504,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.valid_route(): return
         keys = (self.headers.get_all('X-Editorial-Key', []) +
                 self.headers.get_all('X-API-Key', []))
-        if len(keys) != 1 or not KEY.fullmatch(keys[0]):
+        if len(keys) != 1 or not (KEY.fullmatch(keys[0]) or MULTI_KEY.fullmatch(keys[0])):
             return self.reply(403)
         protocol = self.headers.get('MCP-Protocol-Version')
         if protocol is not None and protocol not in PROTOCOLS: return self.reply(400)
@@ -396,7 +516,10 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get_content_type() != 'application/json': return self.reply(415)
         try:
             # Authenticate every operation through the original account-scoped API.
-            receipt(self.server.central, keys[0], PROBE)
+            if MULTI_KEY.fullmatch(keys[0]):
+                self.server.central.call(keys[0], 'accounts', {})
+            else:
+                receipt(self.server.central, keys[0], PROBE)
         except Refused:
             return self.reply(403)
         try:

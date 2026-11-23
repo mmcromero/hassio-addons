@@ -1,3 +1,8 @@
+# 0.1.39 — autorização editorial multi-conta e Drive privado
+
+- Chaves cei2 emitidas pelo administrador com escopo escolhido; listagem dinâmica, autorização transacional, recibos próprios por conta e conexão. Preserva cei1. Sem publicação direta nas novas conexões.
+- Pasta exclusiva por conexão e subpasta por conta, Google Auth somente leitura, hash, tamanho, MIME, validação sem armazenar e transferência idempotente. Credenciais reais ainda não provisionadas. Testes específicos incluídos no build.
+
 ## 0.1.38 (candidata)
 
 - Identificação visual dos remetentes: foto circular de 48 px, nome e @username quando disponibilizados pela Meta. ID técnico preservado nos detalhes e como fallback.

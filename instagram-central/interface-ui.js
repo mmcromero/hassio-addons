@@ -361,6 +361,13 @@
     const find=id=>section.querySelector('#integration-'+id),feedback=find('feedback');
     let busy=false;
     const say=text=>{feedback.textContent=text;announce(text);};
+    const multi=()=>find('scope').value!=='legacy';
+    const syncScope=()=>{
+      find('grants').hidden=find('scope').value!=='selected';
+      find('drive-fields').hidden=!multi();
+      find('publish-row').hidden=multi();
+      if(multi())find('publish').checked=false;
+    };
     const hide=()=>{find('token').value='';find('secret').hidden=true;};
     addEventListener('pagehide',hide);
     const api=async(action,data={})=>{
@@ -384,7 +391,7 @@
     const run=async(button,label,operation)=>{
       if(busy)return;busy=true;
       const done=hold(button,label),progress=start(label);
-      const controls=[...section.querySelectorAll('button,input')].filter(node=>node!==button);
+      const controls=[...section.querySelectorAll('button,input,select')].filter(node=>node!==button);
       const saved=controls.map(node=>node.disabled);controls.forEach(node=>node.disabled=true);
       try{await operation();}catch(error){
         say(error instanceof TypeError || ['AbortError','TimeoutError'].includes(error.name)
@@ -392,35 +399,59 @@
       }finally{controls.forEach((node,index)=>node.disabled=saved[index]);done();progress.end();busy=false;}
     };
     const list=async()=>{
-      const result=await api('integration_list');
+      const result=await api(multi()?'integration_multi_list':'integration_list');
       if(!Array.isArray(result.connections))throw new Error('Não foi possível carregar as conexões. Tente novamente.');
       const target=find('connections');target.replaceChildren();
       for(const item of result.connections){
         const row=make('div','integration-row');
         const expiry=new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeZone:'America/Sao_Paulo'}).format(new Date(item.expires*1000));
         const status=item.revoked?'Revogada':item.expires*1000<Date.now()?'Expirada':item.canPublish?'Transferência e publicação direta':'Somente transferência';
-        row.append(make('span','',item.label+' · '+status+' · validade: '+expiry));
+        row.append(make('span','',item.label+' · '+status+' · validade: '+expiry+(item.scope?' · '+(item.scope==='owner_all'?'Todas as contas atuais e futuras':'Contas selecionadas')+(item.scope==='selected'?' · '+(JSON.parse(item.grants).join(', ')):'')+(item.drive_root?' · Drive configurado':' · Drive não configurado'):'')));
         if(!item.revoked){
           const revoke=make('button','btn quiet','Revogar');revoke.type='button';
           revoke.setAttribute('aria-label','Revogar conexão '+item.label);
           revoke.addEventListener('click',()=>{
             if(busy || !confirm('Revogar a conexão '+item.label+'?'))return;
-            run(revoke,'Revogando…',async()=>{await api('integration_revoke',{id:item.id});await list();say('Conexão revogada.');});
+            run(revoke,'Revogando…',async()=>{await api(item.scope?'integration_multi_revoke':'integration_revoke',{id:item.id});await list();say('Conexão revogada.');});
           });row.append(revoke);
+          if(item.scope){
+            const edit=make('button','btn quiet','Vincular pasta Drive');edit.type='button';
+            edit.addEventListener('click',()=>{
+              if(busy)return;
+              const root=find('drive').value.trim();
+              if(!root){say('Informe o ID da pasta privada da conexão no campo acima.');find('drive').focus();return;}
+              run(edit,'Vinculando…',async()=>{await api('integration_multi_drive',{id:item.id,driveRootId:root});await list();say('Pasta Drive vinculada.');});
+            });row.append(edit);
+            if(item.scope==='selected' && find('scope').value==='selected'){
+              const change=make('button','btn quiet','Atualizar contas selecionadas');change.type='button';
+              change.addEventListener('click',()=>{
+                if(busy)return;
+                const grants=[...section.querySelectorAll('input[name="multi-account"]:checked')].map(n=>n.value);
+                if(!grants.length){say('Selecione as contas que esta conexão deve acessar.');return;}
+                if(!confirm('Substituir as permissões desta conexão pelas contas selecionadas?'))return;
+                run(change,'Atualizando…',async()=>{await api('integration_multi_grants',{id:item.id,grants});await list();say('Permissões atualizadas. A chave permanece a mesma.');});
+              });row.append(change);
+            }
+          }
         }
         target.append(row);
       }
-      if(!result.connections.length)target.textContent='Nenhuma conexão criada para esta conta.';
+      if(!result.connections.length)target.textContent='Nenhuma conexão neste escopo.';
     };
+    syncScope();
+    find('scope').addEventListener('change',()=>{hide();syncScope();find('connections').replaceChildren();});
     find('list').addEventListener('click',()=>run(find('list'),'Carregando conexões…',async()=>{await list();say('Lista de conexões atualizada.');}));
     find('create').addEventListener('click',()=>{
       if(busy)return;
       const label=find('label').value.trim(),canPublish=find('publish').checked;
       if(!label){say('Informe o nome da ferramenta.');find('label').focus();return;}
-      if(canPublish && !confirm('Permitir que esta ferramenta publique nesta conta quando você autorizar uma publicação direta?'))return;
+      if(!multi() && canPublish && !confirm('Permitir que esta ferramenta publique nesta conta quando você autorizar uma publicação direta?'))return;
+      const scope=find('scope').value, grants=[...section.querySelectorAll('input[name="multi-account"]:checked')].map(n=>n.value);
+      if(scope==='selected' && !grants.length){say('Selecione pelo menos uma conta.');return;}
+      if(scope==='owner_all' && !confirm('Autorizar esta ferramenta a acessar todas as contas atuais e futuras, somente para revisão?'))return;
       run(find('create'),'Criando conexão…',async()=>{
-        hide();const result=await api('integration_create',{label,canPublish});
-        if(typeof result.token!=='string' || !/^cei1\.[a-z][a-z0-9_-]{1,39}\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$/.test(result.token))throw new Error('Não foi possível confirmar a chave. Confira as conexões antes de repetir.');
+        hide();const result=multi()?await api('integration_multi_create',{label,scope,grants:scope==='selected'?grants:[],driveRootId:find('drive').value.trim()}):await api('integration_create',{label,canPublish});
+        if(typeof result.token!=='string' || !(multi()?/^cei2\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$/:/^cei1\.[a-z][a-z0-9_-]{1,39}\.[0-9a-f]{32}\.[A-Za-z0-9_-]{43}$/).test(result.token))throw new Error('Não foi possível confirmar a chave. Confira as conexões antes de repetir.');
         find('token').value=result.token;find('secret').hidden=false;
         try{await list();say('Conexão criada. Guarde a chave na configuração privada da ferramenta.');}
         catch(_){say('Conexão criada e chave exibida. Não foi possível atualizar a lista; use Ver conexões.');}

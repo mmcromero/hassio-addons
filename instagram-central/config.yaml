@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Central Instagram"
-version: "0.1.38"
+version: "0.1.39"
 slug: umdoislab_instagram
 description: "Central Instagram: múltiplas contas e publicação editorial (respostas automáticas desativadas)"
 arch:
@@ -27,6 +27,7 @@ options:
   meta_login_config_id: ""
   meta_oauth_redirect_uri: ""
   meta_graph_version: "v27.0"
+  drive_service_account_json: ""
 schema:
   public_base_url: str?
   certfile: str
@@ -43,3 +44,4 @@ schema:
   meta_login_config_id: str?
   meta_oauth_redirect_uri: str?
   meta_graph_version: str
+  drive_service_account_json: password
