@@ -1,7 +1,7 @@
 name: "Fábrica de Softwares - Central Editorial MCP"
-version: "0.1.9"
+version: "0.1.10"
 slug: editorial_mcp_universal
-description: "Adaptador MCP independente para revisão editorial. Túnel dedicado opcional."
+description: "Adaptador MCP e receptor de compartilhamento Android para revisão editorial."
 arch:
   - aarch64
   - amd64
