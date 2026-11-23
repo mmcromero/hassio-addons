@@ -31,10 +31,73 @@ def status():
         return {}
 
 
+def diagnostic(label, *args):
+    """Emit only allowlisted health facts; never dump raw CLI output or peer identities."""
+    try:
+        result = cli(*args, capture_output=True, text=True, timeout=15)
+        stdout = result.stdout or ''
+        stderr = result.stderr or ''
+        if label == 'version':
+            match = re.search(r'([0-9]+\\.[0-9]+\\.[0-9]+)', stdout)
+            print('DIAG version='+ (match.group(1) if match else 'unparsed') +
+                  ' rc='+str(result.returncode), flush=True)
+        elif label == 'status':
+            try:
+                data = json.loads(stdout)
+            except (ValueError, TypeError):
+                data = {}
+            self_info = data.get('Self') or {}
+            peers = data.get('Peer') or {}
+            ingress = [p for p in peers.values()
+                       if 'tag:ingress' in (p.get('Tags') or [])]
+            online = sum(1 for p in ingress if p.get('Online') is True)
+            capmap = data.get('Self', {}).get('CapMap') or {}
+            print('DIAG status rc='+str(result.returncode)+
+                  ' backend='+str(data.get('BackendState', 'unknown'))+
+                  ' self_online='+str(self_info.get('Online', 'unknown'))+
+                  ' self_name_ok='+str(self_info.get('HostName') == NODE)+
+                  ' funnel_cap='+str('funnel' in capmap)+
+                  ' ingress_peers='+str(len(ingress))+
+                  ' ingress_online='+str(online), flush=True)
+        elif label in ('funnel', 'serve'):
+            low = stdout.lower()
+            print('DIAG '+label+' rc='+str(result.returncode)+
+                  ' output_present='+str(bool(stdout.strip()))+
+                  ' says_funnel_on='+str('funnel on' in low)+
+                  ' mentions_443='+str('443' in stdout)+
+                  ' stderr_present='+str(bool(stderr.strip())), flush=True)
+        elif label == 'netcheck':
+            allowed = ('UDP', 'IPv4', 'IPv6', 'MappingVariesByDestIP',
+                       'PortMapping', 'Nearest DERP')
+            facts = []
+            for line in stdout.splitlines():
+                key, sep, value = line.partition(':')
+                if sep and key.strip() in allowed:
+                    value = value.strip()
+                    if key.strip() in ('IPv4', 'IPv6'):
+                        value = value.split(',', 1)[0].strip().lower()
+                    if key.strip() == 'Nearest DERP':
+                        value = re.sub(r'[^A-Za-z0-9 _-]', '', value)[:40]
+                    facts.append(key.strip()+'='+value[:48])
+            print('DIAG netcheck rc='+str(result.returncode)+
+                  ' '+(' '.join(facts) if facts else 'facts=unavailable'), flush=True)
+    except Exception as exc:
+        print('DIAG '+label+' error='+type(exc).__name__, flush=True)
+
+
+def collect_diagnostics():
+    diagnostic('version', 'version')
+    diagnostic('status', 'status', '--json')
+    diagnostic('funnel', 'funnel', 'status', '--json')
+    diagnostic('serve', 'serve', 'status', '--json')
+    diagnostic('netcheck', 'netcheck')
+
+
 def start():
     os.umask(0o077)
     opts = json.loads(Path('/data/options.json').read_text())
     origin = opts.get('central_url', '')
+    diagnostics_enabled = opts.get('diagnostics_enabled') is True
     # Validate before starting any tunnel. No host ports or Supervisor access.
     http = make_server(origin, port=PORT)
     daemon = None
@@ -60,7 +123,7 @@ def start():
             self_info = current.get('Self') or {}
             host = str(self_info.get('DNSName','')).rstrip('.').lower()
             if (current.get('BackendState') != 'Running' or self_info.get('HostName') != NODE or
-                    not re.fullmatch(r'[a-z0-9.-]+\.ts\.net', host)):
+                    not re.fullmatch(r'[a-z0-9.-]+\\.ts\\.net', host)):
                 raise RuntimeError('Identidade dedicada ou nome HTTPS não confirmados')
             http.allowed_hosts.update({host, host+':443'})
             http.allowed_origins.add('https://'+host)
@@ -70,6 +133,8 @@ def start():
             print('Ativando Funnel somente no nó dedicado, porta 443, destino loopback 8765.', flush=True)
             cli('funnel', '--bg', '--https=443', str(PORT), timeout=120, check=True)
             print('Funnel aceito pelo CLI; URL candidata (acesso externo ainda não testado): https://'+host+'/mcp', flush=True)
+            if diagnostics_enabled:
+                collect_diagnostics()
         else:
             print('MCP local iniciado; Funnel desativado. Sem exposição pública.', flush=True)
         while not STOP.wait(1):
