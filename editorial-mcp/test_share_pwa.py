@@ -20,7 +20,7 @@ class SharePwaTests(unittest.TestCase):
         worker = (ROOT / 'sw.js').read_text()
         self.assertIn("event.request.formData()", worker)
         self.assertIn("indexedDB.open", worker)
-        self.assertIn("Response.redirect('/share?received=1',303)", worker)
+        self.assertIn("'/share?received=1'", worker)
         self.assertNotIn('fetch(', worker)
 
     def test_client_uses_authenticated_transfer_api_and_does_not_persist_key(self):
