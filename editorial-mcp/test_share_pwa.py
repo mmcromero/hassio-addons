@@ -18,7 +18,7 @@ class SharePwaTests(unittest.TestCase):
 
     def test_service_worker_stashes_shared_files_locally(self):
         worker = (ROOT / 'sw.js').read_text()
-        self.assertIn("event.request.formData()", worker)
+        self.assertIn("e.request.formData()", worker)
         self.assertIn("indexedDB.open", worker)
         self.assertIn("'/share?received=1'", worker)
         self.assertNotIn('fetch(', worker)
