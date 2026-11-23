@@ -1,4 +1,4 @@
-# 0.1.10 — receptor de compartilhamento Android (candidata)
+# 0.1.10 — receptor de compartilhamento Android
 
 - Adiciona PWA instalável com Web Share Target para receber arquivos JPEG/PNG/MP4 compartilhados pelo sistema Android.
 - Adiciona API autenticada por chave cei2 para listar contas e transferir mídia selecionada para revisão, com destino validado pela Central.
