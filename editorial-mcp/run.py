@@ -38,7 +38,7 @@ def diagnostic(label, *args):
         stdout = result.stdout or ''
         stderr = result.stderr or ''
         if label == 'version':
-            match = re.search(r'([0-9]+\\.[0-9]+\\.[0-9]+)', stdout)
+            match = re.search(r'([0-9]+\.[0-9]+\.[0-9]+)', stdout)
             print('DIAG version='+ (match.group(1) if match else 'unparsed') +
                   ' rc='+str(result.returncode), flush=True)
         elif label == 'status':
@@ -51,7 +51,7 @@ def diagnostic(label, *args):
             ingress = [p for p in peers.values()
                        if 'tag:ingress' in (p.get('Tags') or [])]
             online = sum(1 for p in ingress if p.get('Online') is True)
-            capmap = data.get('Self', {}).get('CapMap') or {}
+            capmap = self_info.get('CapMap') or {}
             print('DIAG status rc='+str(result.returncode)+
                   ' backend='+str(data.get('BackendState', 'unknown'))+
                   ' self_online='+str(self_info.get('Online', 'unknown'))+
@@ -123,7 +123,7 @@ def start():
             self_info = current.get('Self') or {}
             host = str(self_info.get('DNSName','')).rstrip('.').lower()
             if (current.get('BackendState') != 'Running' or self_info.get('HostName') != NODE or
-                    not re.fullmatch(r'[a-z0-9.-]+\\.ts\\.net', host)):
+                    not re.fullmatch(r'[a-z0-9.-]+\.ts\.net', host)):
                 raise RuntimeError('Identidade dedicada ou nome HTTPS não confirmados')
             http.allowed_hosts.update({host, host+':443'})
             http.allowed_origins.add('https://'+host)
