@@ -130,6 +130,23 @@ Responsável: Infraestrutura, com autorização do proprietário para intervenç
 - O n8n publica a porta interna 80/tcp na porta 5678 do host; o MCP HTTP usa /mcp-server/http. Obter o hostname privado atual pelo Supervisor, sem assumir que um alias local sempre resolve.
 - A recuperação após reinício do Core/host é esperada pelo ciclo de setup das config entries, mas ainda não foi comprovada por reinício controlado nesta instalação. Não reiniciar apenas para produzir evidência.
 
+### 6.6. Validação oportunística no próximo reinício natural — decisão de 22/11/2026
+
+**Decisão do proprietário:** não provocar, agendar ou antecipar um reinício do Home Assistant/Core/host exclusivamente para homologar a recuperação dos túneis. A operação atual está funcionando e não deve ser perturbada apenas para produzir evidência.
+
+A pendência H09/N07 permanece registrada, mas será tratada no próximo reinício natural que ocorrer por necessidade normal de manutenção ou uso:
+
+1. Após esse reinício, o proprietário informa o resultado, sem precisar executar um roteiro de teste preventivo.
+2. Se tudo voltar normalmente, registrar **recuperação operacional observada após reinício natural (relato do proprietário)**. Isso é evidência operacional útil, mas não deve ser descrito retroativamente como reinício controlado ou teste instrumentado. Não forçar outro reinício para obter esse tipo de evidência.
+3. Se qualquer túnel, conector ou serviço não voltar, o proprietário solicitará ajuda. A equipe deverá então investigar a falha e, durante a própria resolução, executar os testes direcionados necessários para identificar a causa, comprovar a recuperação e registrar evidências.
+4. Na investigação, verificar separadamente as entradas HA-MCP e n8n, o endpoint MCP local correspondente, estado do processo, Ready/Healthy, Control Plane e logs sanitizados. Preservar Tunnel IDs, entradas, workflows, credenciais e isolamento de rede. Não reinstalar, recriar túneis ou rotacionar credenciais sem causa demonstrada e autorização aplicável.
+
+Frases de acionamento acordadas:
+- **“Tudo certo, voltou normalmente.”** — registrar observação de recuperação natural, sem declarar teste controlado.
+- **“Socorro, o túnel não voltou!”** — iniciar diagnóstico e testes direcionados durante a correção.
+
+Até esse evento, o estado permanece **PENDENTE — aguardando próximo reinício natural; nenhuma ação imediata solicitada ao proprietário**.
+
 ### 6.2. Processo túnel encerrado com Core ativo
 
 O supervisor do processo atualiza o estado para exited quando o subprocesso termina, mas não implementa loop permanente de reinício automático após saída inesperada. Esse comportamento está no watcher ([tunnel.py, linhas 313–332](https://github.com/norpol/hass-codex-tunnel-mcp/blob/a56e5a5/custom_components/hass_codex_tunnel_mcp/tunnel.py#L313-L332)).
