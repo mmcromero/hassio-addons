@@ -1,0 +1,12 @@
+*{box-sizing:border-box}body{margin:0;background:#f3f5f1;color:#20352e;font:16px/1.6 system-ui,sans-serif}main{max-width:860px;margin:auto;padding:32px 20px 60px}header{display:flex;gap:16px;align-items:center;flex-wrap:wrap}.brand{font-size:24px;font-weight:750}.badge{font-size:13px;padding:4px 12px;border:1px solid #a7bcb0;border-radius:20px}h1{font-size:clamp(30px,6vw,46px);line-height:1.2;margin-top:44px}h2{font-size:21px}section{background:white;border:1px solid #dce3db;border-radius:16px;padding:24px;margin-top:24px}dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}dt{color:#55665d}dd{margin:0;font-weight:650}label{display:block;font-weight:600}textarea{width:100%;min-height:100px;padding:12px;border:1px solid #789483;border-radius:8px;font:inherit}button{background:#205e47;color:white;border:0;border-radius:8px;padding:12px 20px;font:inherit;cursor:pointer;margin-top:12px}button:disabled{opacity:.5;cursor:wait}:focus-visible{outline:3px solid #b66e16;outline-offset:3px}@media(max-width:480px){section{padding:18px}dl{grid-template-columns:1fr}}
+
+#root{padding-top:24px}
+.app-version{position:fixed;top:4px;right:8px;z-index:4;font-size:11px;line-height:1.4;color:#55665d;background:#f3f5f1;border-radius:4px;padding:2px 5px;pointer-events:none}
+
+button[aria-busy="true"]{cursor:progress}.action-wait-mark{display:inline-block;margin-right:.35em;font-weight:700}.field-error[role="alert"]{overflow-wrap:anywhere}
+
+.offline-review button,.offline-review a,.offline-review select,.offline-review input[type=checkbox],.offline-review input[type=radio]{opacity:.55;cursor:not-allowed}
+
+.offline-review [data-offline-review] button{opacity:1;cursor:pointer}
+
+html[data-offline-mode="local"] #pilot-shell,html[data-offline-mode="locked"] #pilot-shell{display:none!important}
