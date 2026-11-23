@@ -1,3 +1,4 @@
+import ModuleHeading from './ModuleHeading';
 import {moduleEnabled} from './module-access';
 import {useEffect,useRef,useState,type MouseEvent,type ReactNode} from 'react';
 import OperationalPreferences from './OperationalPreferences';
@@ -57,10 +58,10 @@ export default function PilotSettings(){
   target?.focus({preventScroll:true});target?.scrollIntoView({block:'nearest'});
  },[active]);
  const href=(group:SettingsGroup|null)=>settingsUrl(new URL(location.href),group).href;
- return <main className="products-screen pilot-settings">
+ return <main className="products-screen pilot-settings ad-module-screen">
   <AreaNav active="configuracoes"/>
-  <h1 ref={indexTitle} tabIndex={-1}>Configurações</h1>
-  {!active&&<><p>Escolha a categoria que deseja configurar.</p><nav aria-label="Grupos de configurações" className="settings-index">
+  <ModuleHeading headingRef={indexTitle} symbol="configuracoes" title="Configurações" description={!active?'Escolha a categoria que deseja configurar.':undefined}/>
+  {!active&&<><nav aria-label="Grupos de configurações" className="settings-index">
    {groups.map(group=><a key={group.id} ref={node=>{indexLinks.current[group.id]=node;}} href={href(group.id)} aria-label={group.title} aria-describedby={"settings-description-"+group.id} onClick={event=>select(event,group.id)}><strong>{group.title}</strong><span id={"settings-description-"+group.id}>{group.description}</span><span aria-hidden="true" className="settings-index-arrow">›</span></a>)}
   </nav></>}
   {active&&<nav className="settings-return" aria-label="Navegação de configurações"><a href={href(null)} onClick={event=>select(event,null)}>‹ Todas as configurações</a></nav>}

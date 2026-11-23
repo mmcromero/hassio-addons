@@ -12,11 +12,10 @@
  --pdv-border: #d4dcd5;
  --pdv-muted: #46554b;
  --pdv-text: #17241b;
- width:100%;max-width:1200px;min-width:0;height:auto;margin:0 auto;
+ min-width:0;height:auto;
  overflow:visible;color:var(--pdv-text);color-scheme:light;
 }
-.products-screen.pdv h1, .products-screen.pdv h2, .products-screen.pdv h3, .products-screen.pdv h4 { color: inherit; font: inherit; font-weight: 700; margin: 0; }
-.products-screen.pdv h1 { font-size: 22px; line-height: 1.25; margin-top: 3px; }
+.products-screen.pdv h2, .products-screen.pdv h3, .products-screen.pdv h4 { color: inherit; font: inherit; font-weight: 700; margin: 0; }
 .products-screen.pdv h3 { font-size: 15px; }
 .products-screen.pdv p { margin: 0; }
 .products-screen.pdv a { color: var(--pdv-highlight); }
@@ -221,8 +220,7 @@
 
 /* Original desktop palette: dark catalog against warm cart and checkout surfaces. */
 @media(min-width:1180px){
- body:has(.pdv-desktop-workspace){background:#0b160f!important}
- .products-screen.pdv:has(.pdv-desktop-workspace){--pdv-text:#f8f2e4;--pdv-card:#f5edda;--pdv-border:#d2c5a6;color:var(--pdv-text)}
+ .products-screen.pdv:has(.pdv-desktop-workspace){--pdv-card:#f5edda;--pdv-border:#d2c5a6}
  .pdv-desktop-panel{color:#1b2b20}
  .products-screen.pdv .pdv-desktop-panel.pdv-panel-catalog{background:#102719;color:#f8f2e4;border-color:#526d59}
  .products-screen.pdv .pdv-panel-catalog .pdv-card{background:#1a3023;color:#f8f2e4;border-color:#526d59}

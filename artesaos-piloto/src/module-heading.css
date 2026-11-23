@@ -1,0 +1,44 @@
+/* UX-HEADER-001: shared authenticated shell, independent of module CSS order. */
+html body #root main.ad-module-screen {
+ width:100%;max-width:1200px;min-width:0;margin:0 auto;padding:24px 20px 64px;
+}
+html body #root .ad-module-heading-row {
+ display:flex;align-items:flex-start;justify-content:space-between;gap:14px;
+ margin:0 0 16px;padding:0;min-width:0;
+}
+html body #root .ad-module-heading {
+ display:grid;gap:7px;flex:1;min-width:0;margin:0;padding:0;border:0;
+ box-shadow:none;background:transparent;
+}
+html body #root .ad-module-heading h1.ad-module-title {
+ display:flex;align-items:flex-start;gap:12px;margin:0;padding:0;min-height:33px;
+ font:700 22px/1.2 system-ui,sans-serif;letter-spacing:normal;color:#161d17;
+}
+html body #root .ad-module-title-text {min-width:0;overflow-wrap:anywhere;padding-top:3.3px}
+html body #root .ad-module-heading h1.ad-module-title>.pilot-icon {
+ width:33px;height:33px;margin:0;color:#126638;flex:none;
+}
+html body #root .ad-module-heading p.ad-module-description {
+ font:400 14px/1.45 system-ui,sans-serif;color:#50645a;margin:0 0 0 45px;
+ overflow-wrap:anywhere;
+}
+html body #root .ad-module-heading-action {flex:none;max-width:100%;min-width:0}
+html body #root .ad-module-heading-action button {margin:0;min-height:44px;max-width:100%}
+html body.pilot-session-active:has(.ad-module-screen) {
+ display:flex;flex-direction:column;min-height:100dvh;padding-bottom:0!important;box-sizing:border-box;
+}
+html body.pilot-session-active:has(.ad-module-screen) #root {flex:1 0 auto;min-width:0;width:100%}
+html body.pilot-session-active:has(.ad-module-screen) #pilot-build-info {
+ position:static!important;flex-shrink:0;width:100%;margin-top:auto;font-size:14px;
+}
+@media(min-width:768px) {
+ html body #root .ad-module-heading h1.ad-module-title {font-size:30px;min-height:36px}
+ html body #root .ad-module-title-text {padding-top:0}
+ html body #root .ad-module-heading h1.ad-module-title>.pilot-icon {margin-top:1.5px}
+ html body #root .ad-module-heading p.ad-module-description {font-size:16px}
+ html body #root .ad-module-heading-row {margin-bottom:24px}
+}
+@media(max-width:575px) {
+ html body #root .ad-module-heading-row {flex-direction:column;align-items:stretch}
+ html body #root .ad-module-heading-action {align-self:flex-start}
+}

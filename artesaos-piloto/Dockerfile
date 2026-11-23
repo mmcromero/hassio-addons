@@ -9,9 +9,9 @@ RUN npm run build && node scripts/verify-ha-source-schema.mjs && npm prune --omi
     chmod a+r /app/package.json /app/pilot-build.json
 
 FROM node:24.19.0-bookworm-slim
-LABEL org.opencontainers.image.revision="75697d56d8a838c704b1f1377a8fb657602b0dae" \
-      org.opencontainers.image.version="0.2.0-dev.33" \
-      org.opencontainers.image.created="2026-11-23T01:39:40.704Z" \
+LABEL org.opencontainers.image.revision="2ec9fc84fc14e383e770d322243abe0b114cfba8" \
+      org.opencontainers.image.version="0.2.0-dev.34" \
+      org.opencontainers.image.created="2026-11-23T23:30:00+00:00" \
       org.opencontainers.image.source="https://github.com/mmcromero/fabricacao_e_orcamentos" \
       dev.artesao.distribution="home-assistant"
 WORKDIR /app

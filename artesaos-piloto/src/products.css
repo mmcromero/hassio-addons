@@ -215,19 +215,6 @@
 .products-screen .product-offline-group>summary{cursor:pointer;min-height:44px;align-content:center}
 @media(max-width:600px){.products-screen .product-filter-toolbar:has(.product-batch-toggle){flex-wrap:wrap}.products-screen .product-filter-toolbar:has(.product-batch-toggle) .product-filter-search{flex:1 0 100%}.products-screen .product-filter-toolbar:has(.product-batch-toggle) .product-filter-actions{flex:1 0 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.products-screen .product-filter-actions>button{min-width:0;margin:0;white-space:normal}}
 
-/* UX-HEADER-001 and UX-FLOW-004: same geometry in Products and PDV. */
-.ad-module-heading-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin:3px 0 16px;min-width:0}
-.ad-module-heading{display:grid;gap:7px;flex:1;min-width:0;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;background:transparent!important}
-.products-screen .ad-module-heading h1.ad-module-title{display:flex;align-items:center;gap:12px;margin:0;font:700 22px/1.2 system-ui,sans-serif;color:#161d17}
-.ad-module-heading .ad-module-title .pilot-icon{width:33px;height:33px;margin:0;color:#126638;flex:none}
-.products-screen .ad-module-heading p.ad-module-description{font:400 14px/1.45 system-ui,sans-serif;color:#50645a;margin:0 0 0 45px}
-.ad-module-heading-action{flex:none;max-width:100%}.products-screen .ad-module-heading-action button{margin:0;min-height:44px}
-html body.pilot-session-active:has(.ad-module-screen){display:flex;flex-direction:column;min-height:100dvh;padding-bottom:0!important;box-sizing:border-box}
-html body.pilot-session-active:has(.ad-module-screen) #root{flex:1 0 auto;min-width:0}
-html body.pilot-session-active:has(.ad-module-screen) #pilot-build-info{position:static!important;flex-shrink:0;width:100%;margin-top:auto;font-size:14px}
-@media(min-width:768px){.products-screen .ad-module-heading h1.ad-module-title{font-size:30px}.products-screen .ad-module-heading p.ad-module-description{font-size:16px}.ad-module-heading-row{margin-bottom:24px}}
-@media(max-width:575px){.ad-module-heading-row{flex-direction:column;align-items:stretch}.ad-module-heading-action{align-self:flex-start}}
-
 /* Original PDV logo condition: hide the official identity only after the registered client image loads. */
 :root #pilot-shell .pilot-account-title:has(>.ad-company-identity[data-ready="true"])>:not(.ad-company-identity){display:none!important}
 :root #pilot-shell .ad-company-identity[data-ready="false"]{position:absolute;visibility:hidden;width:0;height:0;min-height:0;overflow:hidden}

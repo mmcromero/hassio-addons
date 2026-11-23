@@ -31,6 +31,7 @@ export default function Welcome(){
    const result=await saved.json();if(!saved.ok)throw Error(result.message||'Não foi possível salvar seu cadastro.');setRevision(result.revision);
    const completed=await fetch(new URL('api/onboarding/complete',document.baseURI),{method:'POST'});const status=await completed.json();if(!completed.ok)throw Error(status.message||'Não foi possível concluir seu cadastro.');
    try{sessionStorage.removeItem(draftKey);}catch{}
+   window.dispatchEvent(new Event('artesao-onboarding-saved'));
    location.replace(new URL(destination,document.baseURI).href);
   }catch(e){setError(e instanceof Error?e.message:'Não foi possível salvar. Tente novamente.');}finally{setBusy(false);}
  }

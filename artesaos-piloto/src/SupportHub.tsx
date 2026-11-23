@@ -1,3 +1,4 @@
+import ModuleHeading from './ModuleHeading';
 import ActionButton from './ActionButton';
 import Contribution from './Contribution';
 import {useCallback,useEffect,useRef,useState} from 'react';
@@ -36,7 +37,7 @@ export default function SupportHub({embedded=false}:{embedded?:boolean}){
   try{const result=await request('/'+ticket.id+'/messages',{method:'POST',body:JSON.stringify({body:reply,expectedRevision:ticket.revision,requestKey:replyKey.current.key})});setTicket(result);setReply('');replyKey.current={signature:'',key:''};setNotice('Mensagem enviada. O chamado está em aberto para atendimento.');setError(false);await load();}catch(reason){setError(true);setNotice(reason instanceof Error?reason.message:'Não foi possível enviar.');}finally{setBusy(false);}
  }
  const Wrapper=embedded?'div':'main';
- return <Wrapper className={embedded?'support-hub':'products-screen support-hub'}>{!embedded&&<><AreaNav active="configuracoes"/><h1>Suporte técnico</h1></>}
+ return <Wrapper className={embedded?'support-hub':'products-screen support-hub ad-module-screen'}>{!embedded&&<><AreaNav active="configuracoes"/><ModuleHeading symbol="ajuda" title="Suporte técnico"/></>}
   <p ref={listTitle} tabIndex={-1}>Envie uma dúvida de uso ou relate um erro. As respostas e mudanças de status ficam registradas aqui.</p>
   {!ticket&&<ActionButton type="button" disabled={busy} onClick={()=>{trigger.current=document.activeElement as HTMLElement;setCompose(true);setComposeError('');}}><BrandIcon name="plus"/>Abrir chamado</ActionButton>}
   <p role={error?'alert':'status'} aria-live="polite">{notice}</p>
