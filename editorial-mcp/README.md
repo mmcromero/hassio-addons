@@ -69,7 +69,7 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 - Depois, em ChatGPT ou Claude, use o recurso de compartilhar/salvar a imagem e escolha **Central Editorial** na folha de compartilhamento do Android. O suporte depende de o aplicativo de origem expor o arquivo ao compartilhamento do sistema.
 - A PWA recebe JPEG/PNG/MP4 via Web Share Target, mantém o arquivo localmente no IndexedDB e mostra a fila para conferência.
 - Informe a chave multi-conta `cei2`, carregue as contas, escolha explicitamente Umdoislab ou Tudo é 3D e toque em **Enviar para revisão**.
-- A chave fica somente na memória da página; não é gravada em localStorage/sessionStorage. A fila local expira após 24 horas. O envio exige ação explícita e usa a API de rascunhos existente; nunca publica.
+- A chave fica somente na memória da página; não é gravada em localStorage/sessionStorage. A arquivos compartilhados são removidos na próxima abertura do app após 24 horas. O envio exige ação explícita e usa a API de rascunhos existente; nunca publica.
 - Limite atual: 4 MiB agregados por transferência. A PWA não depende de URL temporária do host ChatGPT nem de Google Drive.
 - Rotas novas: `GET /share`, `POST /share-api/accounts`, `POST /share-api/transfer`. A API exige chave `cei2` e valida o destino na Central. As rotas MCP existentes permanecem disponíveis.
 
