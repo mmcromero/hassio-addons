@@ -98,7 +98,7 @@ def _host_file_url(url):
     if (u.scheme != 'https' or not host.endswith('.oaiusercontent.com') or
             host == 'oaiusercontent.com' or port not in (None, 443) or
             u.username or u.password or u.fragment or not decoded_path.startswith('/files/') or
-            '\\\\' in decoded_path or any(part in ('.', '..') for part in decoded_path.split('/'))):
+            chr(92) in decoded_path or any(part in ('.', '..') for part in decoded_path.split('/'))):
         raise Refused('Somente referências temporárias privadas do host ChatGPT são aceitas')
     if (len(query.get('se', [])) != 1 or len(query.get('sig', [])) != 1 or
             not query['sig'][0] or len(query.get('sp', [])) != 1 or query['sp'][0] != 'r' or
