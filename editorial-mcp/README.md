@@ -1,4 +1,4 @@
-# Central Editorial MCP universal — 0.1.0 (candidata)
+# Central Editorial MCP universal — 0.1.1 (candidata)
 
 Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não lê o banco da Central, não altera OAuth/Meta, não usa o n8n e não expõe Supervisor. A Central continua responsável por autenticação, isolamento, validade/revogação da chave, cotas, normalização, rascunhos e recibos. Não existe ferramenta de publicação, exclusão ou leitura geral do acervo.
 
@@ -20,13 +20,26 @@ Streamable HTTP `/mcp`, JSON-RPC, handshake `initialize`/`notifications/initiali
 
 **Limitação importante:** MCP não dá automaticamente acesso aos bytes de anexos ou imagens geradas em um chatbot. Base64 é uma interface inicial para clientes capazes de obter os bytes reais, não prova de upload pelo Claude no celular. O transporte privado de arquivos (ex.: Drive, com credencial e escopo próprios) é etapa separada; não usar links públicos, não tentar ler o Drive inteiro. A integração ChatGPT/Drive existente não é tocada.
 
+
+## Diagnóstico opt-in da candidata 0.1.1
+
+A opção `diagnostics_enabled` vem desativada por padrão. Quando habilitada, o app registra apenas linhas `DIAG` locais após o CLI aceitar o Funnel:
+
+- versão Tailscale;
+- estado do backend, online/offline, correspondência do hostname esperado, presença da capacidade Funnel e contagem de peers de ingresso (sem identidades);
+- resumo de `funnel status` e `serve status`, sem despejar a saída bruta;
+- campos allowlisted de `netcheck`, sem endereço IP;
+- falhas reduzidas ao nome da classe de exceção.
+
+A saída do CLI é capturada como texto para parsing explícito. Não cria endpoint HTTP de diagnóstico, não envia logs ao Tailscale, não executa `bugreport`, não altera Funnel/Serve/ACL e não coleta token, URL de login, IP ou identidade de peers. A evidência local não substitui uma sonda HTTPS externa.
+
 ## Segurança e reversão
 
 Sem privilégios de host, portas mapeadas, Supervisor API, credencial Meta, shell remoto ou chave persistida pelo adaptador. Ficheiro de estado do nó em /data e socket próprio. Desativar `funnel_enabled` e reiniciar este app ou pará-lo encerra seu acesso; nenhuma mudança no Tailscale principal. Para revogar chave, use a Central; para remover nó dedicado, peça autorização separada, confirme o nome exato no painel Tailscale. Não use reset ou logout no nó existente. Logs do adaptador não mostram corpo, chave ou arquivos; logs do CLI de primeira autorização devem ficar privados. Nenhuma dependência de GitHub Actions.
 
 ## Verificação e fontes
 
-`python3 -m unittest -v test_server` usa HTTP local e Central simulada; não faz rede externa. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
+O build do Supervisor executa `python3 -m py_compile` e as suítes `python3 -m unittest -v test_server test_run_diagnostics`, com API simulada e sem rede externa. Isso não comprova build ARM64 real, acesso público HTTPS, cliente Claude ou transferência de mídia real. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
 
 - https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp
 - https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
