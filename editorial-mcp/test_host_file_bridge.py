@@ -197,6 +197,23 @@ class HostFileBridgeTests(unittest.TestCase):
             server.transfer_host_files(central, TOKEN, args)
         self.assertEqual(central.calls, [])
 
+    def test_read_only_validation_tool_never_calls_central(self):
+        central = FakeCentral()
+        args = manifest()
+        opener = FakeOpener(PNG)
+        payload = {'jsonrpc': '2.0', 'id': 1, 'method': 'tools/call', 'params': {
+            'name': 'validar_arquivo_temporario', 'arguments': {
+                'mime': 'image/png', 'url': args['media'][0]['url'],
+                'bytes': len(PNG), 'sha256': hashlib.sha256(PNG).hexdigest()}}}
+        with patch('server.build_opener', return_value=opener):
+            status, response = server.dispatch(central, TOKEN, payload)
+        self.assertEqual(status, 200)
+        result = json.loads(response['result']['content'][0]['text'])
+        self.assertTrue(result['verified'])
+        self.assertFalse(result['persisted'])
+        self.assertEqual(result['bytes'], len(PNG))
+        self.assertEqual(result['sha256'], hashlib.sha256(PNG).hexdigest())
+        self.assertEqual(central.calls, [])
     def test_new_mcp_tool_is_listed(self):
         status, response = server.dispatch(FakeCentral(), TOKEN, {
             'jsonrpc': '2.0', 'id': 1, 'method': 'tools/list', 'params': {}
@@ -204,6 +221,7 @@ class HostFileBridgeTests(unittest.TestCase):
         self.assertEqual(status, 200)
         names = [item['name'] for item in response['result']['tools']]
         self.assertIn('enviar_arquivo_temporario_para_revisao', names)
+        self.assertIn('validar_arquivo_temporario', names)
 
 
 if __name__ == '__main__':
