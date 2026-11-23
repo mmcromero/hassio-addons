@@ -1,3 +1,10 @@
+## 0.1.3 — correção de build (não homologada)
+
+- Remove bloco MCP duplicado e truncado que ficou após `make_server()` e causava `SyntaxError: unmatched '}'` na linha 428.
+- Preserva o bloco `TOOLS` e a função `dispatch` válidos, incluindo as cinco ferramentas previstas para a integração Google Drive/ChatGPT.
+- Mantém o build do Supervisor como gate: `py_compile` seguido pelas 24 verificações automatizadas.
+- Build anterior 0.1.2 falhou antes dos testes; 0.1.3 ainda não foi construída nem homologada.
+
 ## 0.1.2 — candidata de transporte privado de arquivos (não homologada)
 
 - Acrescenta `validar_arquivo_temporario`, ferramenta somente leitura que baixa em memória e valida MIME, tamanho e SHA-256 sem transferir à Central.
