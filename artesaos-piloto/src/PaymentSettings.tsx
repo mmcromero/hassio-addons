@@ -1,0 +1,13 @@
+import {useEffect,useState} from 'react';
+import AreaNav from './AreaNav';
+import ActionButton from './ActionButton';
+import ValidatedForm from './FormValidation';
+async function api(path:string,method='GET',body?:unknown){const r=await fetch(new URL('api/finance/'+path,document.baseURI),{method,headers:{'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});const data=await r.json();if(!r.ok)throw Error(data.message||'Não foi possível salvar.');return data;}
+/** Only payment setup used by PDV; no financial titles, reports or settlements. */
+export default function PaymentSettings(){
+ const [accounts,setAccounts]=useState<any[]>([]),[methods,setMethods]=useState<any[]>([]),[name,setName]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ async function load(){const [a,m]=await Promise.all([api('accounts'),api('methods')]);setAccounts(a);setMethods(m);}
+ useEffect(()=>{void load().catch(e=>setMessage(e.message));},[]);
+ async function run(work:()=>Promise<unknown>){setBusy(true);try{await work();await load();setMessage('Configuração salva.');}catch(e){setMessage((e as Error).message);}finally{setBusy(false);}}
+ return <main className="products-screen"><AreaNav/><h1>Contas e formas de pagamento do PDV</h1><p role="status">{message}</p><section><h2>Contas</h2>{accounts.map(a=><p key={a.id}>{a.name} — {a.active?'Ativa':'Inativa'}</p>)}<ValidatedForm onSubmit={()=>run(async()=>{await api('accounts','POST',{name,active:true,requestKey:crypto.randomUUID()});setName('');})}><label>Nome da nova conta<input required maxLength={100} value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label><ActionButton disabled={busy}>Cadastrar conta</ActionButton></ValidatedForm></section><section><h2>Formas de pagamento</h2>{methods.map(m=><ValidatedForm key={m.id+':'+m.revision} onSubmit={event=>{const form=new FormData(event.currentTarget as HTMLFormElement);return run(()=>api('methods/'+encodeURIComponent(m.id),'PUT',{expectedRevision:m.revision,feeBps:Math.round(Number(form.get('fee'))*100),fixedFee:Math.round(Number(form.get('fixed'))*100),delayDays:Number(form.get('delay')),requestKey:crypto.randomUUID()}));}}><fieldset disabled={busy}><legend>{m.name}</legend><label>Taxa (%)<input name="fee" type="number" min="0" max="100" step="0.01" required defaultValue={m.fee_bps/100}/></label><label>Taxa fixa (R$)<input name="fixed" type="number" min="0" step="0.01" required defaultValue={m.fixed_fee/100}/></label><label>Prazo (dias)<input name="delay" type="number" min="0" max="365" required defaultValue={m.delay_days}/></label><ActionButton>Salvar forma de pagamento</ActionButton></fieldset></ValidatedForm>)}</section></main>;
+}
