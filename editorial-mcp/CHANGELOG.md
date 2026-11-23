@@ -2,7 +2,7 @@
 
 - Adiciona PWA instalável com Web Share Target para receber arquivos JPEG/PNG/MP4 compartilhados pelo sistema Android.
 - Adiciona API autenticada por chave cei2 para listar contas e transferir mídia selecionada para revisão, com destino validado pela Central.
-- Arquivos recebidos ficam temporariamente no IndexedDB do navegador; fila expira em 24 horas. Chave não é persistida no navegador.
+- Arquivos recebidos ficam temporariamente no IndexedDB do navegador; itens antigos são removidos na próxima abertura após 24 horas. Chave não é persistida no navegador.
 - Mantém o fluxo MCP 0.1.9, a autenticação existente, o slug e a configuração do Funnel. Nenhuma publicação automática.
 - Testes de contrato adicionados; build Supervisor e homologação real Android/ChatGPT/Claude ainda pendentes.
 
