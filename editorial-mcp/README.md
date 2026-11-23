@@ -56,6 +56,14 @@ A saída do CLI é capturada como texto para parsing explícito. Não cria endpo
 
 Sem privilégios de host, portas mapeadas, Supervisor API, credencial Meta, shell remoto ou chave persistida pelo adaptador. Ficheiro de estado do nó em /data e socket próprio. Desativar `funnel_enabled` e reiniciar este app ou pará-lo encerra seu acesso; nenhuma mudança no Tailscale principal. Para revogar chave, use a Central; para remover nó dedicado, peça autorização separada, confirme o nome exato no painel Tailscale. Não use reset ou logout no nó existente. Logs do adaptador não mostram corpo, chave ou arquivos; logs do CLI de primeira autorização devem ficar privados. Nenhuma dependência de GitHub Actions.
 
+
+## Estado de validação desta revisão
+
+- GitHub Actions run **#342**: validação de manifests, cadastro/seleção do add-on e scripts concluída com sucesso. Os jobs ARM64 foram `skipped`; isso não executa o Dockerfile nem as suítes Python incluídas no build.
+- Harness local isolado: 5 testes de diagnóstico Tailscale e 10 cenários da ponte temporária aprovados. A suíte original `test_server` ainda não foi executada nesta sessão.
+- Acesso HTTPS público do Funnel ainda não confirmado; a tentativa de abertura externa disponível não conseguiu acessar o hostname. Não classificar como falha TLS confirmada.
+- A candidata 0.1.2 permanece em PR draft #69; não mergeada, não publicada e não instalada.
+
 ## Verificação e fontes
 
 O build do Supervisor executa `python3 -m py_compile` e as suítes `python3 -m unittest -v test_server test_run_diagnostics test_host_file_bridge`, com API simulada e sem rede externa. Os testes de download usam HTTP simulado; não acessam o Drive ou a internet. Isso não comprova build ARM64 real, acesso público HTTPS, cliente Claude ou transferência de mídia real. Verificar os casos de autenticação, conta, autorização, conflito, recibo, Host/Origin e ausência de publicação. Build no Supervisor, Tailscale/Funnel, TLS e conexão Claude em ambiente real ainda exigem homologação. Não declarar compatibilidade de cliente nem mídia real sem evidência.
