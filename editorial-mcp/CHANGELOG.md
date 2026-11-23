@@ -1,3 +1,10 @@
+## 0.1.7 — compatibilidade Claude via cabeçalho padrão (candidata)
+- Aceita a chave editorial pelo cabeçalho original `X-Editorial-Key` ou pelo cabeçalho padrão `X-API-Key`, preservando o mesmo formato `cei1...` e a validação por conta na Central.
+- Rejeita requisições com ambos os cabeçalhos ou valores repetidos; nenhuma rota de autenticação alternativa sem chave foi criada.
+- Mantém compatibilidade do n8n sem alteração de sua credencial atual; permite Claude Custom Connector usar `x-api-key`, cabeçalho padrão aceito pela Anthropic sem depender da aprovação de cabeçalho personalizado.
+- Adiciona testes de aceitação do cabeçalho padrão, recusa de duplicidade e recusa de chave malformada antes da validação upstream.
+- Fonte candidata: teste de parser/HTTP dirigido pendente; build Supervisor ARM64 e conexão real Claude ainda pendentes. Não declarar a 0.1.7 homologada.
+
 ## 0.1.6 — correção da configuração persistente TLS
 - Configurar explicitamente o diretório privado VarRoot via `--statedir`, preservando estado, socket e identidade existentes.
 - Ajustar timeout de handshake em sonda opt-in (75 s, após conexão de 8 s); classificar ausência de VarRoot sem expor dados.

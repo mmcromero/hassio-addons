@@ -52,7 +52,7 @@ class Contract(unittest.TestCase):
     def test_lifecycle_and_tools(self):
         code,body=self.request('initialize',{'protocolVersion':'2025-11-25'}); self.assertEqual(code,200)
         self.assertEqual(body['result']['protocolVersion'],'2025-11-25')
-        self.assertEqual(body['result']['serverInfo']['version'],'0.1.6')
+        self.assertEqual(body['result']['serverInfo']['version'],'0.1.7')
         self.assertEqual(self.request('notifications/initialized',notification=True),(202,None))
         code,body=self.request(); self.assertEqual(code,200)
         self.assertEqual([t['name'] for t in body['result']['tools']],['consultar_conexao','consultar_envio','enviar_para_revisao','validar_arquivo_temporario','enviar_arquivo_temporario_para_revisao'])
@@ -62,6 +62,17 @@ class Contract(unittest.TestCase):
         self.assertEqual(self.request(token=None)[0],403)
         self.assertEqual(self.request(token=TOKEN[:-1]+'z')[0],403)
         self.assertEqual(self.fake.calls,[])
+    def test_standard_x_api_key_header(self):
+        code,body=self.request('initialize',{'protocolVersion':'2025-11-25'},
+                               token=None,headers={'x-api-key':TOKEN})
+        self.assertEqual(code,200)
+        self.assertEqual(body['result']['serverInfo']['version'],'0.1.7')
+        self.assertEqual(self.fake.calls[0][0],TOKEN)
+        # Supplying both supported headers is ambiguous and must be rejected.
+        self.assertEqual(self.request(token=TOKEN,headers={'x-api-key':TOKEN})[0],403)
+        # A malformed key on the standard header is rejected before upstream access.
+        self.assertEqual(self.request(token=None,headers={'X-API-Key':TOKEN[:-1]})[0],403)
+        self.assertEqual(len(self.fake.calls),1)
     def test_origin_host_path(self):
         self.assertEqual(self.request(headers={'Origin':'https://evil.test'})[0],403)
         self.assertEqual(self.request(headers={'Host':'evil.test'})[0],403)
