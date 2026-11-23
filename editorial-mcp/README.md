@@ -1,4 +1,4 @@
-# Central Editorial MCP universal — 0.1.2 (candidata; não homologada)
+# Central Editorial MCP universal — 0.1.3 (correção de build; não homologada)
 
 Este aplicativo é independente da Central Instagram e de plugins OpenAI. Não lê o banco da Central, não altera OAuth/Meta, não usa o n8n e não expõe Supervisor. A Central continua responsável por autenticação, isolamento, validade/revogação da chave, cotas, normalização, rascunhos e recibos. Não existe ferramenta de publicação, exclusão ou leitura geral do acervo.
 
