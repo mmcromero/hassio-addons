@@ -1,4 +1,5 @@
 import unittest
+import run
 from run import sanitize_netcheck
 
 
