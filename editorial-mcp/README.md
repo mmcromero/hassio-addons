@@ -1,6 +1,6 @@
 # Central Editorial MCP universal
 
-**Versão do pacote:** 0.1.10 (publicada no catálogo Home Assistant; instalação pendente)  
+**Versão do pacote:** 0.1.10 (instalada e em execução no Home Assistant ARM64)  
 **Slug Home Assistant:** `editorial_mcp_universal`  
 **Arquiteturas:** `aarch64`, `amd64`
 
@@ -12,7 +12,8 @@ Adaptador MCP independente para a Central Editorial. Recebe solicitações de cl
 - Consultar recibos próprios por `requestId`.
 - Enviar mídia e legenda para revisão, somente após autorização explícita.
 - Validar um arquivo temporário do host ChatGPT por MIME, tamanho e SHA-256.
-- Enviar arquivo temporário validado para revisão, sem persistir a mídia no adaptador.\n- Receptor PWA Android: compartilhar imagem de ChatGPT, Claude ou outro app pela folha Compartilhar do Android; selecionar conta e formato e enviar para revisão.
+- Enviar arquivo temporário validado para revisão, sem persistir a mídia no adaptador.
+- Receptor PWA Android: compartilhar imagem de ChatGPT, Claude ou outro app pela folha Compartilhar do Android; selecionar conta e formato e enviar para revisão.
 
 ## Transporte e autenticação
 
@@ -73,4 +74,4 @@ Para Drive, configure identidade técnica exclusiva de leitura, sem delegação 
 - Limite atual: 4 MiB agregados por transferência. A PWA não depende de URL temporária do host ChatGPT nem de Google Drive.
 - Rotas novas: `GET /share`, `POST /share-api/accounts`, `POST /share-api/transfer`. A API exige chave `cei2` e valida o destino na Central. As rotas MCP existentes permanecem disponíveis.
 
-**Estado:** versão 0.1.10 publicada no catálogo. Build e homologação no Home Assistant e compartilhamento real no Android são verificados separadamente; publicação no Git não equivale a instalação ou homologação.
+**Estado:** versão 0.1.10 publicada, instalada e em execução no Home Assistant ARM64. O build executou `py_compile` e 45 testes automatizados com sucesso. A homologação do compartilhamento real a partir dos apps ChatGPT/Claude em Android ainda depende de ensaio em aparelho físico.
