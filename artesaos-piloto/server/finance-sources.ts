@@ -1,0 +1,18 @@
+import {financialAttention} from './attention.js';
+import type {DatabaseSync} from 'node:sqlite';
+import {randomUUID} from 'node:crypto';
+export function financeEnabled(db:DatabaseSync){return !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='finance_titles'").get();}
+/** Projeção de uma obrigação já existente; não duplica o compromisso ou liquida. */
+export function syncPurchaseFinance(db:DatabaseSync,purchaseId:number){if(!financeEnabled(db))return;const row=db.prepare("SELECT f.*,p.supplier,p.actor FROM financial_obligations f JOIN material_purchases p ON p.id=f.origin_id WHERE f.origin='material_purchase' AND p.id=?").get(purchaseId);if(!row)return;const materialIds=db.prepare('SELECT material_id FROM material_purchase_lines WHERE purchase_id=?').all(purchaseId).map(r=>Number(r.material_id));db.prepare('INSERT INTO finance_titles(id,direction,origin,origin_id,amount_cents,due_on,description,metadata,created_at) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(origin,origin_id) DO NOTHING').run('purchase:'+purchaseId,'out','material_purchase',String(purchaseId),row.amount_cents,row.due_on,'Compra de materiais '+purchaseId,JSON.stringify({obligationId:row.id,purchaseId,materialIds,supplier:row.supplier}),row.registered_at);financialAttention(db,String(row.actor),'purchase:'+purchaseId);}
+export function syncOrderFinance(db:DatabaseSync,orderId:string,actor:string){if(!financeEnabled(db))return;const order=db.prepare('SELECT * FROM orders WHERE id=?').get(orderId);if(!order)return;const titleId='order:'+orderId,before=db.prepare('SELECT * FROM finance_titles WHERE id=?').get(titleId),amount=order.status==='cancelled'?0:Number(order.total_cents),now=new Date().toISOString();const productIds=db.prepare('SELECT product_id FROM order_lines WHERE order_id=? AND active=1 AND product_id IS NOT NULL').all(orderId).map(r=>Number(r.product_id)),metadata=JSON.stringify({orderId,productIds});
+ if(!before)db.prepare('INSERT INTO finance_titles(id,direction,origin,origin_id,amount_cents,due_on,client_id,description,metadata,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)').run(titleId,'in','order',orderId,amount,order.due_on,order.client_id,'Pedido '+orderId,metadata,now);
+ else if(before.amount_cents!==amount||before.due_on!==order.due_on||before.client_id!==order.client_id||before.metadata!==metadata){db.prepare('UPDATE finance_titles SET amount_cents=?,due_on=?,client_id=?,metadata=?,revision=revision+1 WHERE id=?').run(amount,order.due_on,order.client_id,metadata,titleId);db.prepare('INSERT INTO finance_entries VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run(randomUUID(),titleId,null,0,0,0,'title-change',randomUUID(),null,JSON.stringify({before,after:{amount,dueOn:order.due_on,clientId:order.client_id},reason:'Alteração auditada do pedido; pagamentos preservados'}),actor,now);}
+ financialAttention(db,actor,titleId);
+}
+
+export function purchaseFinanceState(db:DatabaseSync,purchaseId:number,amount:number){
+ if(!financeEnabled(db))return {financialTitleId:null,settledCents:0,remainingCents:amount,paymentStatus:'pending'};
+ const titleId='purchase:'+purchaseId,t=db.prepare('SELECT amount_cents FROM finance_titles WHERE id=?').get(titleId);if(!t)return {financialTitleId:null,settledCents:0,remainingCents:amount,paymentStatus:'pending'};
+ const paid=Number(db.prepare('SELECT COALESCE(SUM(allocation_cents),0) n FROM finance_entries WHERE title_id=?').get(titleId)!.n),remaining=Number(t.amount_cents)-paid;
+ return {financialTitleId:titleId,settledCents:paid,remainingCents:remaining,paymentStatus:remaining<0?'excess':remaining===0?'paid':paid>0?'partial':'pending'};
+}
