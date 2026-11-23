@@ -26,6 +26,12 @@ hassio-addons/
 ├── CONTRIBUTING.md
 ├── .gitignore
 ├── .github/workflows/validate-addons.yml
+├── artesaos-piloto/
+│   ├── config.yaml
+│   ├── Dockerfile
+│   ├── icon.png
+│   ├── logo.png
+│   └── aplicação e documentação
 └── evolution-api/
     ├── config.yaml
     ├── Dockerfile
