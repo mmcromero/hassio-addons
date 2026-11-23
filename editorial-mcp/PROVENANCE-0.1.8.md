@@ -1,20 +1,20 @@
 # Proveniência — Central Editorial MCP 0.1.8
 
 **Fonte canônica:** `mmcromero/instagram-automacoes`.
-**Branch de trabalho:** `desenvolvimento`.
+**Branch:** `release-candidate`.
 **Commit do pacote:** `212ccc9b79df12a62fa786e9f6cb83dcc896ea25`.
 **Árvore do pacote:** `48884d86dfb628564ff17a15ee8575d56801f990`.
 **Versão:** `0.1.8`. **Slug:** `editorial_mcp_universal`.
 **Arquiteturas declaradas:** `aarch64`, `amd64`.
-**Estado:** candidata privada preparada; ainda não exportada ao catálogo nem homologada no Home Assistant.
+**Estado:** publicada no catálogo público; atualização e homologação no Home Assistant pendentes.
 
 ## Escopo da 0.1.8
 
-- Adiciona `icon.png` e `logo.png`, cópias binárias exatas da identidade oficial já usada por `instagram-central` no catálogo.
+- Adiciona `icon.png` e `logo.png`, cópias binárias exatas da identidade oficial já usada por outros apps do catálogo.
 - Atualiza `config.yaml`, `serverInfo.version` e as duas expectativas de versão no teste de contrato.
-- Preserva o contrato de autenticação da 0.1.7: `X-Editorial-Key` e `X-API-Key`, com a mesma validação account-scoped.
-- Não altera permissões, ferramentas, API da Central, opções, estado Tailscale, plugin ChatGPT, n8n, contas, banco ou dados persistentes.
-- Nenhum segredo, token, arquivo de mídia, option real ou dado pessoal foi adicionado.
+- Preserva o contrato de autenticação 0.1.7: `X-Editorial-Key` e `X-API-Key`, com a mesma validação account-scoped.
+- Não altera permissões, ferramentas, API da Central, opções, estado Tailscale, plugin, n8n, banco ou dados persistentes.
+- Nenhum segredo, token, arquivo de mídia, opção real ou dado pessoal foi adicionado.
 
 ## Identidade visual
 
@@ -22,8 +22,6 @@
 |---|---|---|---:|
 | `icon.png` | `hassio-addons/main/instagram-central/icon.png` | `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` | 111228 bytes |
 | `logo.png` | `hassio-addons/main/instagram-central/logo.png` | `7e500016222b0a5bf395be8ed17447edeb3e2af9` | 194750 bytes |
-
-Os hashes são idênticos aos arquivos já usados pelos outros apps do catálogo.
 
 ## Manifesto do pacote
 
@@ -47,16 +45,17 @@ Os hashes são idênticos aos arquivos já usados pelos outros apps do catálogo
 
 ## Testes e homologação
 
-- Revisão estática: concluída para os arquivos alterados. O diff contém apenas os dois assets, bump de versão/handshake, expectativas do teste e documentação.
-- Teste local 0.1.8: não executado neste ambiente.
-- O Dockerfile executa `py_compile` e as suítes `test_server`, `test_diagnostics`, `test_host_file_bridge` e `test_funnel_probe` durante o build do Supervisor.
-- A 0.1.7 foi construída no Supervisor ARM64 e iniciou corretamente. Isso não substitui o build da 0.1.8.
-- A 0.1.8 só será homologada após o operador atualizar o app, o Supervisor concluir o build e os logs/funcionamento serem conferidos.
-- A conexão real do Claude e a conexão MCP independente da conta Tudo é 3D ainda estão pendentes. O n8n foi validado com a credencial legada da conta Umdoislab.
-- Nenhuma GitHub Actions, Codex ou runner externo foi usado.
+- Revisão estática do diff: concluída. A alteração de código limita-se ao número de versão; os dois assets foram conferidos por hash.
+- A 0.1.7 foi construída no Supervisor ARM64 e iniciou corretamente. O Dockerfile executou `py_compile` e as quatro suítes.
+- A 0.1.8 ainda não foi construída no Supervisor. O mesmo gate será executado na instalação/atualização.
+- A aceitação de `X-API-Key` está coberta pelo teste integrado da 0.1.7; a conexão real de um cliente Claude continua pendente.
+- Não foram incluídos nomes de contas, chaves, tokens, URLs privadas, mídia, IDs pessoais ou logs operacionais.
 
-## Fluxo
+## Publicação
 
-- Próximo passo: promover o SHA integral da fonte para `release-candidate`.
-- Exportar somente `editorial-mcp/` para `mmcromero/hassio-addons:main/editorial-mcp/`, preservando todo o restante do catálogo e os manifests históricos.
-- Não promover a `main` privada antes de homologação PASS.
+- Commit do pacote privado: `212ccc9b79df12a62fa786e9f6cb83dcc896ea25`.
+- HEAD da RC no corte: `b4a6eb449f3140b359b04203ba89962db0373f5d`.
+- Catálogo público `mmcromero/hassio-addons:main`: commit `f7b1270734c5fb0dd352c120f02e1e155e57f6f9`.
+- O diff público contém somente oito caminhos em `editorial-mcp/`; os manifestos históricos e todos os demais apps/arquivos foram preservados.
+- O índice do Supervisor ainda retorna 0.1.7. A recarga da loja via MCP foi bloqueada por Read Only Mode; nenhuma ação foi executada no Home Assistant. O operador deve recarregar a loja pela interface e atualizar somente este app.
+- Estado: **PUBLICADO NO CATÁLOGO; NÃO INSTALADO/HOMOLOGADO**. Não promover a `main` privada antes de homologação PASS.
