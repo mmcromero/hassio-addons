@@ -1,6 +1,6 @@
 ## 0.1.2 — candidata de transporte privado de arquivos
 
-- Novo tool `enviar_arquivo_temporario_para_revisao` para referências temporárias assinadas emitidas pelo host ChatGPT após leitura de arquivos pelo conector.
+- Novos tools `validar_arquivo_temporario` (somente leitura, sem transferência) e `enviar_arquivo_temporario_para_revisao` (transferência após aprovação explícita). para referências temporárias assinadas emitidas pelo host ChatGPT após leitura de arquivos pelo conector.
 - Allowlist HTTPS de subdomínios `oaiusercontent.com`, caminho `/files/`, assinatura de leitura, validade máxima de 15 minutos e redirects recusados.
 - Download em memória com limite de 4 MiB agregado, validação de MIME/magic, tamanho e SHA-256; URL nunca é registrada nem persistida.
 - Mantém envio Base64 para outros clientes MCP; não aceita URL pública do Drive ou URL arbitrária.
