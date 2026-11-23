@@ -4,7 +4,7 @@
 - Adiciona API autenticada por chave cei2 para listar contas e transferir mídia selecionada para revisão, com destino validado pela Central.
 - Arquivos recebidos ficam temporariamente no IndexedDB do navegador; itens antigos são removidos na próxima abertura após 24 horas. Chave não é persistida no navegador.
 - Mantém o fluxo MCP 0.1.9, a autenticação existente, o slug e a configuração do Funnel. Nenhuma publicação automática.
-- Testes de contrato adicionados; build Supervisor e homologação real Android/ChatGPT/Claude ainda pendentes.
+- Build ARM64 executado pelo Supervisor no Raspberry Pi; `py_compile` e 45 testes automatizados passaram. App 0.1.10 instalado e iniciado; opções `central_url`, `funnel_enabled` e `diagnostics_enabled` preservadas.\n- Homologação do compartilhamento real a partir de ChatGPT/Claude em aparelho Android ainda pendente.
 
 # 0.1.9 — conexão multi-conta e Drive privado
 
