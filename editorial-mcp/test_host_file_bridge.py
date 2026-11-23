@@ -100,7 +100,7 @@ class HostFileBridgeTests(unittest.TestCase):
             'https://drive.google.com/files/a/raw?se=x&sp=r&sr=b&sig=x',
             signed_url(host='evil.example'),
             signed_url().replace('&sp=r&', '&sp=rw&'),
-            'https://sdmntprbrazilsouth.oaiusercontent.com/files/%2e%2e/other/raw?se=2026-11-23T02%3A43%3A17Z&sp=r&sr=b&sig=x',
+            signed_url().replace('/files/fixture/raw', '/files/%2e%2e/other/raw'),
             'http://sdmntprbrazilsouth.oaiusercontent.com/files/a/raw?se=x&sp=r&sr=b&sig=x',
             signed_url(expiry=datetime.now(timezone.utc) - timedelta(minutes=1)),
             'https://sdmntprbrazilsouth.oaiusercontent.com/files/a/raw?sp=r&sr=b'
