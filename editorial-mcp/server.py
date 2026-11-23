@@ -484,7 +484,7 @@ class Handler(BaseHTTPRequestHandler):
         for key, value in (extra_headers or {}).items():
             self.send_header(key, value)
         if status == 405:
-            self.send_header('Allow', 'GET, POST')
+            self.send_header('Allow', 'POST' if urlsplit(self.path).path == '/mcp' else 'GET, POST')
         self.end_headers()
         self.close_connection = True
         if raw:
@@ -513,9 +513,11 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(200, data, mime, extra)
 
     def do_GET(self):
-        routes = {'/share', '/share.js', '/manifest.webmanifest', '/sw.js', '/icon.svg'}
+        routes = {'/mcp', '/share', '/share.js', '/manifest.webmanifest', '/sw.js', '/icon.svg'}
         if not self.valid_route(routes): return
         route = urlsplit(self.path).path
+        if route == '/mcp':
+            return self.reply(405)
         if route == '/share':
             return self.serve_asset('index.html', 'text/html; charset=utf-8',
                 {'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"})
