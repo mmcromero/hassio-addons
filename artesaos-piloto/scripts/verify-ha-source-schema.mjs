@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+import {migrations} from '../dist-server/foundation/migrations.js';
+const release=JSON.parse(readFileSync(new URL('../release.json',import.meta.url),'utf8'));
+assert.equal(release.packageKind,'source-addon');
+assert.equal(release.distribution,'home-assistant');
+const actual=Object.fromEntries(Object.entries(migrations).map(([scope,rows])=>[scope,rows.map(m=>({version:m.version,name:m.name,checksum:createHash('sha256').update(JSON.stringify(m.up?[m.version,m.name,m.sql,m.upId]:[m.version,m.name,m.sql])).digest('hex')}))]));
+assert.deepEqual(actual,release.schemaChecksums,'Schemas executáveis divergem da versão validada. Build HA interrompido.');
+console.log('Checksums dos schemas HA conferidos, sem abrir bancos.');
