@@ -1,3 +1,10 @@
+## 0.1.4 — correção dos testes de build (não homologada)
+
+- Corrige importação de `run` em `test_diagnostics.py`, eliminando o `NameError` identificado no build ARM64 real do Supervisor.
+- Atualiza o contrato de versão em `test_server.py` para conferir `serverInfo.version = 0.1.4`.
+- Atualiza `config.yaml` e `server.py` para a versão 0.1.4, evitando reutilizar a tag de build 0.1.3 que falhou.
+- Evidência do Supervisor: 22 dos 24 testes passaram; 1 falhou por expectativa de versão antiga e 1 erro por import ausente. Nenhum teste de integração real foi homologado.
+
 ## 0.1.3 — correção de build (não homologada)
 
 - Remove bloco MCP duplicado e truncado que ficou após `make_server()` e causava `SyntaxError: unmatched '}'` na linha 428.
