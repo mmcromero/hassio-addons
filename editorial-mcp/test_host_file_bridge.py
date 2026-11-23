@@ -132,10 +132,12 @@ class HostFileBridgeTests(unittest.TestCase):
             with self.assertRaisesRegex(server.Refused, 'SHA-256'):
                 server.fetch_host_file(args['media'][0]['url'], 'image/png',
                                        len(PNG), '0' * 64)
-            with self.assertRaisesRegex(server.Refused, 'Assinatura PNG'):
-                server.fetch_host_file(args['media'][0]['url'], 'image/png',
-                                       len(PNG), hashlib.sha256(PNG).hexdigest()) if False else server.fetch_host_file(
-                    args['media'][0]['url'], 'image/png', len(PNG), hashlib.sha256(b'other').hexdigest())
+            bad = b'not-a-png-file'
+            bad_opener = FakeOpener(bad)
+            with patch('server.build_opener', return_value=bad_opener):
+                with self.assertRaisesRegex(server.Refused, 'Assinatura PNG'):
+                    server.fetch_host_file(args['media'][0]['url'], 'image/png',
+                                           len(bad), hashlib.sha256(bad).hexdigest())
 
     def test_transfer_uploads_only_after_verified_download_and_never_publishes(self):
         central = FakeCentral()
