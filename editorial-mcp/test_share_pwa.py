@@ -33,7 +33,7 @@ class SharePwaTests(unittest.TestCase):
 
     def test_share_ui_exposes_destination_format_and_explicit_send(self):
         page = (ROOT / 'index.html').read_text()
-        for value in ('id="account"', 'id="format"', 'id="caption"', 'id="send"'):
+        for value in ('id="account"', 'id="format"', 'id="caption"', 'id="send"', 'id="clear'):
             self.assertIn(value, page)
 
 
