@@ -32,7 +32,7 @@ Além do envio Base64 para clientes que já possuem os bytes, a candidata 0.1.2 
 4. O Worker aceita apenas HTTPS em subdomínio `oaiusercontent.com`, caminho `/files/`, permissão de leitura, assinatura e validade curta. Recusa redirecionamentos e hosts externos.
 5. O Worker baixa em memória, limita a leitura ao tamanho declarado, confere assinatura do formato e SHA-256 e só então usa o fluxo existente `import_upload` + `import_commit` da Central.
 
-A URL é um segredo bearer de curta duração: não deve ser gravada, registrada em logs, reutilizada ou persistida. O Worker não grava a imagem em disco. O limite inicial permanece 4 MiB agregados por transferência. O arquivo original continua privado no Drive; o Worker não recebe credencial Google nem acesso geral ao Drive.
+A URL é um segredo bearer de curta duração. Ela trafega no payload da chamada MCP desta conversa privada; o add-on não a grava em logs, recibos ou disco, e não a reutiliza. Não copie a URL para canais públicos. O Worker não grava a imagem em disco. O limite inicial permanece 4 MiB agregados por transferência. O arquivo original continua privado no Drive; o Worker não recebe credencial Google nem acesso geral ao Drive.
 
 **Limitação:** a URL temporária é específica do host ChatGPT. Outros clientes MCP continuam usando `enviar_para_revisao` com bytes Base64 reais. Não aceitar URLs arbitrárias nem links de compartilhamento do Drive.
 
