@@ -170,16 +170,10 @@ class ApprovalIssuer:
         self.db.execute('UPDATE throttle SET failures=0,locked=0 WHERE id=1')
 
     @serialized
-    def consent(self,proposal,password,consent_digest,confirmation):
-        # Persist authentication throttling independently. Issuing a grant is
-        # a second atomic transaction: missing audit must roll the grant back.
-        self.db.execute('BEGIN IMMEDIATE')
-        try:
-            self._authenticate(password)
-            self.db.execute('COMMIT')
-        except Exception:
-            if self.db.in_transaction:self.db.execute('COMMIT')
-            raise
+    def consent(self,proposal,consent_digest,confirmation):
+        # The trusted HA Ingress adapter has already verified the owner's HA
+        # identity, Origin, one-use CSRF and session. Each proposal still needs
+        # an explicit PUBLICAR act; the owner password is not re-entered here.
         self.db.execute('BEGIN IMMEDIATE')
         try:
             view=self.view(proposal)
@@ -192,7 +186,7 @@ class ApprovalIssuer:
                      'issued_at':now,'expires_at':min(view['expires_at'],now+300)}
             grant={'payload':payload,'signature':cryptographic_operation(self.key,payload)}
             self.db.execute('UPDATE proposals SET nonce=?,grant=? WHERE id=?',(nonce,canonical(grant).decode(),proposal))
-            self.event(proposal,'owner_reauthenticated_and_consented')
+            self.event(proposal,'owner_identity_verified_and_consented')
             self.db.execute('COMMIT');return grant
         except Exception:
             if self.db.in_transaction:self.db.execute('ROLLBACK')
