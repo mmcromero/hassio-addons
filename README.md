@@ -43,7 +43,9 @@ hassio-addons/
 
 Cada futuro add-on ganha uma **pasta na raiz**, com `config.yaml`, `Dockerfile` (para build local), documentação e versão independentes. Não crie outro `repository.yaml` em subpastas.
 
-## Catálogo publicado na `main` — manifests conferidos em 22/11/2026
+## Catálogo publicado na `main` — snapshot histórico de manifests conferidos em 22/11/2026
+
+A tabela abaixo é um snapshot de 22/11/2026, não um indicador ao vivo. Para a versão atual, leia o config.yaml de cada pasta; para versão instalada, consulte o Supervisor.
 
 | Diretório | Nome na loja | Versão | Arquitetura |
 |---|---|---|---|
