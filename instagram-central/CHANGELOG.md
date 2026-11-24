@@ -1,3 +1,10 @@
+# 0.1.46 — corrigir escopo das asserções do token Meta
+
+- Move as asserções do `debug_token` para o teste de envio pela Send API, onde a consulta realmente ocorre.
+- Remove referências indevidas ao resultado `debug` do teste de assinatura de webhook, que não consulta permissões.
+- Mantém a verificação do Page Access Token como `input_token` e o app access token no cabeçalho de autorização.
+- Mantém a correção CSRF da política de atendimento e o ajuste UX responsivo da caixa de entrada.
+
 # 0.1.45 — corrigir sintaxe das regressões de versão
 
 - Corrige três asserções de versão em `tests/test_http.py` que ficaram com aspas incompletas na atualização anterior.
