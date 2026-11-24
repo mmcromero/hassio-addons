@@ -1,3 +1,11 @@
+# 0.1.50 — alinhar testes HTTP à versão do pacote
+
+- Atualiza as três asserções de versão em `tests/test_http.py` para 0.1.50. O build real 0.1.49 revelou que os testes de health e interface ainda esperavam 0.1.47.
+- Alinha `APP_VERSION` e o manifesto para 0.1.50.
+- Preserva a correção POST-only do proxy, os blocos NGINX com quebras de linha reais e a regressão do arquivo distribuído.
+- Nenhuma alteração em dados, opções, credenciais, Meta, webhook, n8n ou política de atendimento.
+- A build anterior 0.1.49 falhou no estágio de testes; a suíte da 0.1.50 precisa ser executada novamente no Supervisor.
+
 # 0.1.49 — alinhar versão interna com o pacote
 
 - Alinha `APP_VERSION` da aplicação com a versão do manifesto após a revisão da instalação revelar identificação interna ainda em 0.1.47.
