@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.54"
+APP_VERSION = "0.1.55"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -340,7 +340,6 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                 conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
                     WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
                     (completed, account, profile, mid, token))
-            set_handoff({"accountId": account, "senderId": profile, "state": "pending"}, reason="meta_send_failed")
             return {"status": "failed", "reason": reason}
         with database() as conn:
             conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,updated_at=?
@@ -1247,7 +1246,7 @@ def render_automation_settings(cfg, result='', messaging_ready=False):
 def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_result=''):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
-    rows, message_count, audits = [], 0, {}
+    rows, message_count, audits, failures = [], 0, {}, {}
     if not settings_page:
         with database() as conn:
             account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
@@ -1264,12 +1263,15 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
               ORDER BY i.received_at DESC, i.rowid DESC""", (account_id,)).fetchall()
             for sender, changed, actor, reason in conn.execute("""SELECT sender_id, changed_at, actor, reason FROM handoff_audit WHERE recipient_id=? ORDER BY id DESC""", (account_id,)):
                 audits.setdefault(sender, []).append((changed, actor, reason))
+            for sender, reason, stamp in conn.execute("""SELECT sender_id,error_reason,updated_at FROM automation_sends
+              WHERE recipient_id=? AND status='failed' ORDER BY updated_at DESC""", (account_id,)):
+                failures.setdefault(sender, (reason, stamp))
     groups = {}
     for row in rows:
         groups.setdefault(row[1], []).append(row)
     entries = []
     cfg = cfg or {}
-    for messages in sorted(groups.values(), key=lambda group: group[0][5] not in ('pending','human')):
+    for messages in sorted(groups.values(), key=lambda group: group[0][5] not in ('pending','human') and group[0][1] not in failures):
         account, sender, message, received, processed, state, draft, draft_status, source = messages[0]
         queue = 'Fora da fila automática' if source == 'manual' else 'Processada' if processed else 'Pendente'
         origin = 'Consulta manual à Meta' if source == 'manual' else 'Webhook'
@@ -1308,6 +1310,13 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
         status = ('Bot bloqueado — ' if state != 'bot' else '') + control
         detail = ('<p role="status"><strong>' + html.escape(status) + '</strong><br>' +
                   (audit_label(audit[0]) if audit else 'Motivo não registrado') + '</p>') if state != 'bot' else '<p><strong>Automação selecionada</strong></p>'
+        if sender in failures:
+            failure, stamp = failures[sender]
+            failure_label = {'configuration_incomplete':'Configuração de envio Meta incompleta',
+                             'permission_denied':'Permissão de envio recusada',
+                             'token_invalid':'Token Meta inválido',
+                             'transport_error':'Falha de comunicação com a Meta'}.get(failure, 'Falha de envio à Meta')
+            detail += '<p role="status"><strong>Falha de envio registrada</strong> — ' + html.escape(failure_label + ' · ' + inbox_received_label(stamp)[1]) + '</p>'
         entries.append('<li><article class="inbox-message"><header class="inbox-message-head">' +
             sender_profiles.identity_html(account_management.prefix(cfg.get('business_id', 'umdoislab')), sender) +
             '<time' + date_attr + ' title="Horário de Brasília">' + html.escape(date) + '</time></header>' +
@@ -1320,6 +1329,7 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
     overview = '<section class="inbox-message" aria-label="Controle de atendimento"><h2>Controle de atendimento</h2><div class="inbox-message-status">' + ''.join(
         '<span>' + label + ': <strong>' + str(sum(group[0][5] == state for group in groups.values())) + '</strong></span>' for state, label in
         (('pending','Aguardando ação'),('human','Atendimento humano'),('bot','Automação selecionada'),('done','Concluídas'))) + '</div></section>'
+    overview += '<p role="status">Conversas com falhas de envio registradas: ' + str(len(failures)) + '</p>'
     body = overview + (('<ul class="inbox-message-list" aria-label="Conversas desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>')
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
     count_label = ('Nenhuma mensagem' if message_count == 0 else

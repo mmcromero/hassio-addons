@@ -349,6 +349,18 @@ class InstagramIngressTests(unittest.TestCase):
         self.assertIn("2 mensagens", page)
         self.assertIn("Voltar ao bot", page)
 
+    def test_delivery_failure_visible_without_handoff(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        with server.database() as conn:
+            conn.execute("""INSERT INTO automation_sends
+              (recipient_id,sender_id,message_id,status,error_reason,created_at,updated_at)
+              VALUES(?,?,?,'failed','configuration_incomplete',?,?)""",
+              ('business-1','12345678','message-1','2026-11-24T12:00:00+00:00','2026-11-24T12:00:00+00:00'))
+        page = server.render_panel()
+        self.assertIn("Falha de envio registrada", page)
+        self.assertIn("Automação selecionada", page)
+        self.assertNotIn("Bot bloqueado", page)
+
     def test_panel_forms_have_scoped_csrf(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         page = server.render_panel({"panel_password": "strong-test-password-12345"})

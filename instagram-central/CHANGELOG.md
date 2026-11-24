@@ -1,3 +1,7 @@
+# 0.1.55 — Falhas de envio
+
+- Exibe falhas de entrega sem transferir controle para atendimento humano.
+
 # 0.1.54 — Controle de atendimento
 
 - Agrupa mensagens por conta e remetente, destaca bloqueios e exibe histórico de controle.
