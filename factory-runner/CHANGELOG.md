@@ -6,6 +6,7 @@
 - Testes de bootstrap cobrem os novos diretórios e os caminhos dos três serviços foram atualizados. Suíte completa ainda pendente do build de validação no Supervisor.
 - M021: teste de permissões com UIDs/GIDs fixos e prova de leitura/escrita cruzada; teste de regressão confirma que Approval, Publisher e Owner UI iniciam com ambiente limpo.
 - SEC-M020: `run.sh` não transmite `RUNNER_AUTH_TOKEN` nem `RUNNER_GITHUB_READ_TOKEN` aos três serviços de autoridade. Execução da suíte e nova revisão independente ainda pendentes.
+- M027: regressões corrigidas para cache de workflow por vínculo, contrato de socket Publisher, endpoint de publicação protegido e resposta UTF-8 da página de status. Probe E2E passa a registrar status HTTP e erro sanitizado em falha.
 
 - Declara HA Ingress na configuração do add-on. O serviço apresenta uma página estática de status por padrão; cadastro e consentimento permanecem desligados (owner_ingress_enabled=false).
 - A página de status aceita somente conexões do Supervisor (172.30.32.2) e não oferece POST, sessão, IPC, credenciais ou ação de publicação.
