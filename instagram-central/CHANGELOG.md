@@ -1,3 +1,45 @@
+# 0.1.59 — contrato da Central com o núcleo conversacional compartilhado — 24/11/2026
+
+- Alinha a Central ao contrato do adapter: `/bridge/claim` devolve `messageAt` com o timestamp original do evento Meta; eventos sem timestamp continuam falhando fechados para automação.
+- Disponibiliza `POST /bridge/context`, autenticado pela credencial da ponte e limitado a claim ativo, conta/remetente correspondentes, perfil autorizado em Testes, origem webhook, janela de 24 horas e ausência de handoff humano.
+- Retorna até oito turnos da mesma conversa em ordem temporal, com `role`, `text` e `createdAt`. Não mistura remetentes nem contas; mensagens importadas manualmente não entram no contexto automático.
+- Persiste `reply_text` somente após envio Meta confirmado e mantém até oito textos recentes para contexto, sem apagar recibos de envio nem enfraquecer idempotência. A migração SQLite é aditiva (`ALTER TABLE ... ADD COLUMN`) e preserva os registros existentes.
+- A política local deixa de bloquear mensagens livres por regex semântica. Texto estruturalmente válido e autorizado segue ao núcleo compartilhado; a Central continua impondo allowlist Testes, exclusões, handoff, janela, claim, conta, origem webhook e idempotência.
+- Acrescenta regressões para segredo da ponte, isolamento de conta/remetente, claim expirado, contexto e timestamp Meta. O build agora executa também `test_policy.py`.
+- O Dockerfile mantém testes sintéticos e HTTP local; o gate não chama Meta, n8n ou serviços externos.
+- Esta versão altera somente a Central Instagram. Não ativa workflows, não altera WhatsApp, Gemini, Gateway, núcleo n8n, credenciais ou configurações Meta.
+
+# Implementação inicial do núcleo compartilhado — 24/11/2026
+
+- Criado workflow n8n [SHARED] Umdoislab — Núcleo Conversacional, ID 71LrWsU2wdIfT7Hs, 7 nós, inativo e sem envio.
+- O núcleo usa o mesmo prompt comercial e lógica WooCommerce do WhatsApp de referência, com chamada Gemini gemini-2.5-flash e parâmetros equivalentes ao nó original.
+- Caller allowlist limitada aos adapters Instagram XkIn9QnqW6Tml5Ld e WhatsApp Comercial k4cBDh9pZcTCqKIu. Retenção de dados de execução desativada.
+- Teste sintético n8n 3561 passou com mensagem livre teste 2 e nós WooCommerce/Gemini fixados; sem chamada externa e sem envio.
+- policy.py agora permite texto livre estruturalmente válido chegar ao núcleo; a Central mantém as guardas de autorização e envio.
+- server.py adiciona POST /bridge/context e persiste até oito textos de respostas automáticas recentes por conversa para contexto, sem apagar recibos de idempotência.
+- 5/5 testes de policy.py passaram localmente. Testes de server.py para envio/contexto adicionados, suíte completa ainda pendente.
+- Adapters ainda não conectados, Central instalada não atualizada, workflows ativos preservados. Sem publicação, ativação ou instalação.
+
+# Correção de direção arquitetural — 24/11/2026
+
+- Decisão aprovada: WhatsApp e Instagram devem usar o mesmo núcleo conversacional para mensagens comuns, com classificação, contexto, regras comerciais, prompt, Gemini, validação e handoff compartilhados.
+- O Gemini Gateway sozinho não cumpre essa decisão. O PR #27 original foi limitado à chamada do provedor e precisa ser ampliado para um núcleo conversacional real.
+- A classificação semântica local em policy.py não pode bloquear mensagens livres somente no Instagram. A Central mantém allowlist Testes, exclusões, handoff humano, janela, claim, origem webhook, conta correta e idempotência.
+- Rotas específicas do WhatsApp (Avisaqui, comandos do proprietário, eco Evolution e áudio) permanecem no adaptador WhatsApp.
+- Referências: ADR-001 e contrato v1.1 em mmcromero/n8n-plataforma; README e documento de integração n8n atualizados para registrar o desvio atual e o escopo correto.
+- Esta rodada foi documental. Nenhum código de runtime, workflow ativo, credencial, configuração Meta, banco ou serviço foi alterado. Sem publicação/instalação.
+
+# Registro operacional/documental — 24/11/2026 (sem alteração de código)
+
+- Criado [IG-META-SETUP-001](../docs/IG-META-SETUP-001.md): roteiro reproduzível da configuração Meta para mensagens por perfil, incluindo as oito permissões do Login Unificado, o caminho correto de `pages_read_engagement` pelo caso de uso Messenger, a sequência segura de salvamento, OAuth, token de Página e assinatura `messages`.
+- README atualizado com estado real de homologação e separação entre autorização OAuth, Page Token e webhook.
+- Integração n8n atualizada: workflow Instagram ativo em Testes Restritos, Gemini Gateway compartilhado chamado pelo Instagram, roteador WhatsApp ativo com nó Gemini direto; os canais não usam o mesmo workflow completo.
+- Execução real n8n 3275: Gemini `STOP`, Send API HTTP 200/`sent=true`, recebimento confirmado pelo proprietário para a mensagem elegível “Oi”. A execução não comprova classificação/envio da mensagem livre `teste 2`.
+- Registrada como pendência a divergência do classificador local Instagram (`teste 2` → `human_review`, sem chamada ao Gemini), sem criar exceção artificial nem alterar código neste lote documental.
+- Workflow Instagram `XkIn9QnqW6Tml5Ld` permanece ativo em **TESTES RESTRITOS**, versão `d185f9ef-0743-4d75-979c-25719cd27f43`; não é Produção.
+- Limite multiconta: homologação cobre somente Umdoislab; segundo/terceiro perfil exigem OAuth, token de Página e assinatura por conta, além de suporte multi-conta de envio ainda não homologado.
+- Nenhum token, segredo, cookie ou ID pessoal de remetente foi incluído na documentação. Nenhum código de runtime, configuração Meta, credencial, banco ou serviço foi alterado.
+
 # 0.1.58 — Diagnóstico de token de Página e permissões Meta
 
 - A consulta de diagnóstico verifica a Página vinculada à conta Instagram por `/me/accounts`, a tarefa `MESSAGING` e se a Meta retorna um token de Página, sem expor IDs, nomes ou tokens.

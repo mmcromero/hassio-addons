@@ -44,16 +44,28 @@ class BuildSmoke(unittest.TestCase):
         self.assertEqual(server.persist(self.sample(), "business-1"), 1)
         claimed = server.claim_message()
         self.assertEqual(claimed["messageId"], "test-1")
+        self.assertTrue(claimed["messageAt"])
+        self.assertTrue(server.within_messaging_window(claimed["messageAt"]))
         self.assertIsNone(server.claim_message())
         keys = ("accountId", "senderId", "messageId", "claimToken")
         reference = {key: claimed[key] for key in keys}
         decision = server.evaluate_claim(reference)
-        self.assertEqual(decision["action"], "greeting")
+        self.assertEqual(decision["action"], "auto")
         self.assertTrue(decision["maySend"])
         self.assertTrue(decision["testSendAuthorized"])
         self.assertTrue(decision["mayCallGemini"])
         self.assertTrue(server.acknowledge_message(reference))
         self.assertFalse(server.acknowledge_message(reference))
+
+    def test_free_text_reaches_shared_core(self):
+        self.assertEqual(server.persist(self.sample("teste 2"), "business-1"), 1)
+        claimed = server.claim_message()
+        reference = {key: claimed[key] for key in ("accountId", "senderId", "messageId", "claimToken")}
+        decision = server.evaluate_claim(reference)
+        self.assertEqual(decision["action"], "auto")
+        self.assertTrue(decision["mayCallGemini"])
+        self.assertTrue(decision["maySend"])
+        self.assertTrue(decision["testSendAuthorized"])
 
     def test_handoff_blocks_bot(self):
         self.assertEqual(server.persist(self.sample(), "business-1"), 1)

@@ -14,16 +14,14 @@ class PolicyTests(unittest.TestCase):
                 "messageId": "m-1", "messageText": text, "handoffState": state,
                 "claimToken": "test-claim"}
 
-    def test_greeting_without_product(self):
-        for text in ("oi", "Oi!", "olá", "bom dia", "Boa tarde."):
-            self.assertEqual(policy.prepare_decision(self.event(text))["action"], "greeting")
-
-    def test_product_questions_are_distinct(self):
-        self.assertEqual(policy.prepare_decision(
-            self.event("Qual o preço do produto?"))["action"], "commercial_question")
-
-    def test_ambiguous_message_routes_to_human(self):
-        self.assertEqual(policy.prepare_decision(self.event("preciso de ajuda"))["action"], "human_review")
+    def test_all_valid_text_reaches_shared_core_without_semantic_block(self):
+        for text in ("oi", "Olá!", "preço da pracinha", "teste 2",
+                     "preciso de ajuda", "qual o horário?"):
+            with self.subTest(text=text):
+                result = policy.prepare_decision(self.event(text))
+                self.assertEqual(result["action"], "auto")
+                self.assertTrue(result["mayCallGemini"])
+                self.assertFalse(result["maySend"])
 
     def test_handoff_blocks_ai(self):
         result = policy.prepare_decision(self.event("preço", "human"))
@@ -35,15 +33,17 @@ class PolicyTests(unittest.TestCase):
         event["channel"] = "whatsapp"
         self.assertEqual(policy.prepare_decision(event)["action"], "reject")
 
-    def test_only_safe_triage_actions_may_call_gemini(self):
-        greeting = policy.prepare_decision(self.event("oi"))
-        product = policy.prepare_decision(self.event("preço da pracinha"))
-        review = policy.prepare_decision(self.event("preciso de ajuda"))
-        self.assertTrue(greeting["mayCallGemini"])
-        self.assertTrue(product["mayCallGemini"])
-        self.assertFalse(review["mayCallGemini"])
-        for decision in (greeting, product, review):
-            self.assertFalse(decision["maySend"])
+    def test_invalid_or_empty_text_rejected(self):
+        for text in ("", "   ", "x" * 2001, None):
+            event = self.event()
+            event["messageText"] = text
+            self.assertEqual(policy.prepare_decision(event)["action"], "reject")
+
+    def test_missing_claim_or_identity_rejected(self):
+        for key in ("accountId", "senderId", "messageId", "claimToken"):
+            event = self.event()
+            event.pop(key)
+            self.assertEqual(policy.prepare_decision(event)["action"], "reject")
 
 
 if __name__ == "__main__":

@@ -143,6 +143,8 @@ class InstagramIngressTests(unittest.TestCase):
         with server.database() as conn:
             names = {row[1] for row in conn.execute("PRAGMA table_info(inbound)")}
             self.assertTrue({"processed_at", "claim_token", "claim_until", "source", "message_at"}.issubset(names))
+            send_names = {row[1] for row in conn.execute("PRAGMA table_info(automation_sends)")}
+            self.assertIn("reply_text", send_names)
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         with server.database() as conn:
             row = conn.execute("""SELECT message_text, processed_at, claim_token, claim_until
@@ -220,7 +222,7 @@ class InstagramIngressTests(unittest.TestCase):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         item = server.claim_message()
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
-        self.assertEqual(server.evaluate_claim(claim)["action"], "greeting")
+        self.assertEqual(server.evaluate_claim(claim)["action"], "auto")
         self.assertTrue(server.evaluate_claim(claim)["maySend"])
         self.assertTrue(server.evaluate_claim(claim)["testSendAuthorized"])
         self.assertTrue(server.evaluate_claim(claim)["mayCallGemini"])
@@ -242,14 +244,84 @@ class InstagramIngressTests(unittest.TestCase):
         self.assertIsNone(server.evaluate_claim({"accountId": "a", "senderId": "b",
                                                "messageId": "m", "claimToken": "x"*43, "extra": True}))
 
-    def test_decision_separates_product_from_greeting(self):
-        self.assertEqual(server.persist(json.dumps(self.sample(text="Quanto custa o produto?")).encode(),
+    def test_semantic_classification_is_delegated_to_shared_core(self):
+        for mid, text in (("message-price", "Quanto custa o produto?"),
+                          ("message-free", "teste 2")):
+            self.assertEqual(server.persist(json.dumps(self.sample(mid=mid, text=text)).encode(),
+                                            'business-1'), 1)
+            item = server.claim_message()
+            claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+            decision = server.evaluate_claim(claim)
+            self.assertEqual(decision["action"], "auto")
+            self.assertTrue(decision["mayCallGemini"])
+            self.assertTrue(decision["maySend"])
+            self.assertTrue(decision["testSendAuthorized"])
+            self.assertTrue(server.acknowledge_message(claim))
+
+    def test_free_text_send_is_allowed_only_for_authorized_test_contact(self):
+        self.assertEqual(server.persist(json.dumps(self.sample(text="teste 2")).encode(),
                                         'business-1'), 1)
         item = server.claim_message()
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
-        self.assertEqual(server.evaluate_claim(claim)["action"], "commercial_question")
-        self.assertTrue(server.evaluate_claim(claim)["maySend"])
-        self.assertTrue(server.evaluate_claim(claim)["testSendAuthorized"])
+        calls = []
+        def fake_sender(cfg, credential, recipient, text):
+            calls.append((cfg["instagram_account_id"], recipient, text))
+            return {"message_id": "outbound-1"}
+        result = server.send_automatic_reply(
+            {**claim, "text": "Claro! Como posso ajudar?"},
+            {"instagram_account_id": "business-1"}, {}, sender=fake_sender)
+        self.assertEqual(result, {"status": "sent", "messageId": "outbound-1"})
+        self.assertEqual(calls, [("business-1", "12345678", "Claro! Como posso ajudar?")])
+        with server.database() as conn:
+            row = conn.execute("SELECT status,reply_text FROM automation_sends").fetchone()
+        self.assertEqual(row, ("sent", "Claro! Como posso ajudar?"))
+
+    def test_context_returns_same_conversation_turns_in_order(self):
+        self.assertEqual(server.persist(json.dumps(self.sample(text="teste 2")).encode(),
+                                        'business-1'), 1)
+        first = server.claim_message()
+        first_claim = {k: first[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        def fake_sender(cfg, credential, recipient, text):
+            return {"message_id": "outbound-1"}
+        sent = server.send_automatic_reply(
+            {**first_claim, "text": "Vamos conferir isso juntos."},
+            {"instagram_account_id": "business-1"}, {}, sender=fake_sender)
+        self.assertEqual(sent["status"], "sent")
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="message-2", text="E quanto custa?")).encode(),
+                                        'business-1'), 1)
+        # A different sender's text must never enter this conversation context.
+        other = self.sample(mid="other-sender", text="TEXTO DE OUTRA CONVERSA")
+        other["entry"][0]["messaging"][0]["sender"]["id"] = "87654321"
+        self.assertEqual(server.persist(json.dumps(other).encode(), 'business-1'), 1)
+        second = server.claim_message()
+        second_claim = {k: second[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        context = server.conversation_context(second_claim)
+        self.assertIsNotNone(context)
+        self.assertEqual([turn["role"] for turn in context["turns"]],
+                         ["client", "assistant", "client"])
+        self.assertEqual([turn["text"] for turn in context["turns"]],
+                         ["teste 2", "Vamos conferir isso juntos.", "E quanto custa?"])
+        self.assertNotIn("TEXTO DE OUTRA CONVERSA", repr(context))
+
+    def test_context_requires_live_test_claim_and_bot_control(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        self.assertIsNotNone(server.conversation_context(claim))
+        self.assertIsNone(server.conversation_context({**claim, "claimToken": "x" * 43}))
+        self.assertTrue(server.set_handoff({
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
+        self.assertIsNone(server.conversation_context(claim))
+
+    def test_context_rejects_expired_claim(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        with server.database() as conn:
+            conn.execute("""UPDATE inbound SET claim_until=?
+                WHERE recipient_id=? AND sender_id=? AND message_id=?""",
+                ("2000-01-01T00:00:00+00:00", claim["accountId"], claim["senderId"], claim["messageId"]))
+        self.assertIsNone(server.conversation_context(claim))
 
     def test_draft_requires_live_claim_and_never_sends(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)

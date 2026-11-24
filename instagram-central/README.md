@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.58 (diagnóstico Meta)
+# Central Instagram — 0.1.59 (núcleo conversacional compartilhado)
 
 **Diagnóstico do token de Página:** a consulta manual agora distingue a permissão `pages_read_engagement`, o vínculo da Página, a tarefa `MESSAGING`, a disponibilidade do token retornado pela Meta e o armazenamento local. Nenhum ID de Página, nome, token ou texto bruto do provedor é exibido.
 
@@ -18,23 +18,72 @@ Há proteção contra perda de alterações e **Continuar composição** para re
 
 No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para publicações com ID remoto confirmado, **Da Central Editorial e do Instagram**. A opção remota pede confirmação da conta indicada e só remove o registro local após a Meta confirmar a exclusão. Pode exigir incluir `instagram_manage_contents` no aplicativo e na configuração do Login do Facebook para Empresas e usar **Conexão Meta → Atualizar permissões da conta → Renovar autorização da conta**. A permissão e o suporte da conexão são conferidos antes de enviar a exclusão; uma recusa preserva registro e arquivos. Carrosséis são excluídos inteiros, não uma imagem isolada. Em caso de resultado incerto, confira o Instagram antes de autorizar nova tentativa; a Central não repete a exclusão automaticamente. As mídias usadas por outras publicações continuam preservadas.
 
-## Atendimento automático — 0.1.58
+## Atendimento automático — estado operacional em 24/11/2026
 
-A aba **Configurações Meta → Atendimento** controla o modo da conta principal Umdoislab. O padrão é **Testes**, com lista de perfis autorizados vazia; portanto, ninguém recebe resposta automática até que um ID técnico de remetente seja cadastrado. O modo **Produção** aceita todos os remetentes, exceto os da lista de exclusão. Exclusões prevalecem em qualquer modo. Os perfis são identificados pelo ID numérico estável do Instagram, não pelo @.
+O procedimento completo para configurar a Meta, conectar contas e repetir a configuração em novos perfis está em [IG-META-SETUP-001 — Configuração de mensagens Instagram por perfil](../docs/IG-META-SETUP-001.md). Ele registra as oito permissões do Login Unificado, o caminho confirmado para disponibilizar `pages_read_engagement`, a ordem segura para salvar/reabrir a configuração, OAuth, token de Página, assinatura `messages`, evidências reais e desvios de procedimento que não devem ser repetidos.
 
-A política é aplicada na leitura e na reserva da fila e novamente no envio. Mensagens fora da janela conservadora de 24 horas, importações manuais, remetentes excluídos, mensagens de outra conta e conversas assumidas por uma pessoa não chegam ao fluxo automático. Claims são temporários; a janela usa o timestamp original do evento Meta (eventos sem timestamp falham fechados). O envio é idempotente por mensagem e uma tentativa incerta não é repetida automaticamente.
+A aba **Configurações Meta → Atendimento** controla o modo da conta principal Umdoislab. O padrão é **Testes**, com lista de perfis autorizados; exclusões prevalecem em qualquer modo. Os perfis são identificados pelo ID numérico estável do Instagram, não pelo @. A política é aplicada na leitura/reserva da fila e novamente no envio. Mensagens fora da janela conservadora de 24 horas, importações manuais, remetentes excluídos, mensagens de outra conta e conversas assumidas por uma pessoa não podem ser enviadas automaticamente. Claims são temporários e o envio é idempotente por mensagem; uma tentativa de resultado incerto não é repetida automaticamente.
 
-O workflow n8n **Central Instagram — respostas automáticas (somente testes)** foi criado como rascunho inativo. Ele consulta a fila a cada 10 segundos quando ativado, solicita uma decisão local, usa Gemini somente para saudações/perguntas comerciais classificadas e envia apenas pelo endpoint autenticado da Central. A Central obtém o token de Página pelo endpoint `/me/accounts` usando o token de usuário do sistema do Login unificado; essa etapa exige `pages_read_engagement`. A Página retornada precisa estar vinculada à conta Instagram exata e conceder a tarefa `MESSAGING`. Para o Send API, o token de Página precisa das permissões `pages_messaging` e `instagram_manage_messages`. A assinatura `messages` é somente para receber eventos pelo webhook: ela não cria o token de Página. O token de Página é armazenado somente no arquivo de credenciais criptografado em `/data`; nunca no n8n ou Git.
+### Meta: permissões, OAuth, Página e webhook são etapas distintas
 
-**Pré-requisitos antes de ativar o workflow:** configurar no n8n uma credencial própria para o cabeçalho `X-Instagram-Bridge-Secret`, cujo valor deve corresponder ao `bridge_secret` local da Central Instagram; não reutilizar nem alterar a credencial da Central WhatsApp. Confirmar que a configuração do Login concede `pages_read_engagement`, `pages_messaging` e `instagram_manage_messages`, e que a Página vinculada concede a tarefa `MESSAGING`. Cadastrar o ID técnico do proprietário na lista de testes. O workflow permanece inativo até essas condições serem verificadas e a homologação ser autorizada.
+O Login Unificado do aplicativo Meta está configurado com oito permissões: `instagram_basic`, `instagram_content_publish`, `instagram_manage_comments`, `instagram_manage_messages`, `pages_messaging`, `pages_manage_metadata`, `pages_show_list` e `pages_read_engagement`. A última foi disponibilizada por **Casos de uso → Interagir com os clientes no Messenger from Meta → Personalizar → Permissões e recursos → pages_read_engagement → Adicionar**. A confirmação da Meta informou que a permissão também seria adicionada ao caso de uso Instagram. Esse caminho foi confirmado; não orientar o operador a sair do caso de uso Messenger.
 
-A primeira versão não consulta o catálogo WooCommerce, não confirma preços/estoque/pedidos e não responde questões específicas que exigem esses dados. O envio é restrito a texto e usa a janela padrão de 24 horas; mensagens não elegíveis são encaminhadas para atendimento humano local, sem resposta automática fora da janela.
+Ao salvar permissões novas, não atualizar a tela enquanto houver seleções não salvas. Salvar primeiro as sete já selecionadas; depois reabrir/atualizar a configuração, selecionar `pages_read_engagement` e salvar as oito.
+
+Após mudar permissões, renovar o OAuth da conta e executar **Verificar acesso Meta**. O diagnóstico precisa confirmar a Página vinculada à conta Instagram exata, a tarefa `MESSAGING`, o Page Access Token retornado/armazenado e as permissões do token efetivamente usado na Send API. `pages_read_engagement` habilita a obtenção do token de Página via `/me/accounts`; `pages_messaging` e `instagram_manage_messages` são verificadas no token usado para enviar. O token de Página fica cifrado em `/data`, nunca no n8n ou Git.
+
+A assinatura do webhook é independente: **Webhook habilitado** não significa que `messages` esteja assinado, e a assinatura não cria token de Página. Para cada conta, conferir **Assinatura solicitada**. Se estiver **Não**, executar **Assinar mensagens na Meta** e confirmar **Sim**. A assinatura é por conta, via `/{instagram_account_id}/subscribed_apps`, com o campo `messages`. Provar recebimento exige uma DM nova e avanço do contador/última entrada por webhook; consulta manual da caixa não é prova.
+
+### Estado real homologado nesta sessão
+
+- Conta principal Umdoislab: OAuth renovado; identidade verificada.
+- Diagnóstico de envio: Página vinculada encontrada; tarefa `MESSAGING` confirmada; Page Token retornado e armazenado; permissões necessárias confirmadas.
+- Webhook: habilitado e assinatura `messages` solicitada; o diagnóstico registrou sete entradas por webhook.
+- Perfil técnico de teste: já cadastrado antes desta sessão. Credencial n8n **Instagram**: já configurada e recriada nesta sessão; é separada da credencial WhatsApp.
+- Workflow Instagram `XkIn9QnqW6Tml5Ld`: ativo em **TESTES RESTRITOS**, versão `d185f9ef-0743-4d75-979c-25719cd27f43`, gatilho a cada 10 segundos.
+- Execução real n8n **3275**: claim e decisão local aprovados; Gemini Gateway respondeu com `finishReason=STOP`; endpoint autenticado da Central retornou HTTP 200 e `sent=true`; o proprietário confirmou o recebimento da resposta.
+
+**Limite da homologação:** a execução 3275 enviou resposta para uma mensagem elegível antiga “Oi”, não para o texto livre “teste 2” enviado durante a investigação. O envio real pelo Meta está comprovado para a saudação; a classificação de mensagens livres continua pendente.
+
+### Arquitetura vigente e desvio de implementação
+
+A decisão aprovada pelo proprietário em 24/11/2026 exige que WhatsApp e Instagram usem o **mesmo núcleo conversacional** para mensagens comuns de atendimento. Não basta compartilhar a chamada Gemini. A decisão e o contrato estão em [ADR-001 — Núcleo conversacional compartilhado](https://github.com/mmcromero/n8n-plataforma/blob/desenvolvimento/docs/ADR-001-NUCLEO-CONVERSACIONAL-COMPARTILHADO-2026-11-24.md) e [Contrato de canais v1.1](https://github.com/mmcromero/n8n-plataforma/blob/desenvolvimento/docs/CONTRATO-INTEGRACAO-CANAIS-v1.1.md).
+
+O núcleo comum deve concentrar classificação, contexto, regras comerciais, prompt, Gemini, validação de resposta, fallback e decisão de handoff. Os adaptadores mantêm somente as responsabilidades específicas de cada canal: autenticação do provedor, identidade/IDs, autorização por conta, histórico da própria conversa, mídia e envio pela API correspondente.
+
+**Desvio original comprovado:** WhatsApp encaminhava conversas comuns ao workflow Comercial, que contém contexto, consulta WooCommerce, prompt, Gemini, validação e handoff. Instagram usava policy.py semântica local e Gemini Gateway, bloqueando mensagens livres como teste 2.
+
+**Primeira correção em desenvolvimento — ainda não instalada:**
+
+- policy.py foi alterado para não classificar semanticamente nem bloquear texto livre; mensagens estruturalmente válidas seguem para o núcleo compartilhado.
+- A Central continua impondo no servidor allowlist Testes, exclusões, estado humano, janela de 24 horas, claim, origem webhook, conta correta e idempotência. send_automatic_reply não aceita mais uma segunda decisão semântica local.
+- Foi criado o endpoint autenticado POST /bridge/context. Ele devolve até oito turnos da conversa correspondente, combinando mensagens recebidas por webhook e respostas automáticas enviadas.
+- Para compor contexto, automation_sends recebeu a coluna reply_text. A Central armazena texto somente após envio confirmado e mantém no máximo os oito textos de resposta mais recentes por conversa; os registros de envio/idempotência antigos permanecem intactos. A consulta é isolada por conta e remetente e não inclui importações manuais.
+- Foram adicionados testes para texto livre, autorização, contexto ordenado e isolamento de conversas. Os cinco testes unitários de policy.py passaram; os testes completos de server.py ainda precisam ser executados.
+
+**Núcleo n8n criado, mas não conectado:**
+
+- Workflow [SHARED] Umdoislab — Núcleo Conversacional, ID 71LrWsU2wdIfT7Hs, 7 nós, inativo.
+- Contém envelope comum, consulta WooCommerce, seleção de produtos, prompt de referência do WhatsApp, chamada Gemini com o mesmo modelo/configuração do nó WhatsApp e validação de resposta.
+- Retorna send_text/handoff/no_reply; não envia mensagens.
+- Caller allowlist restrita aos workflows Instagram XkIn9QnqW6Tml5Ld e WhatsApp Comercial k4cBDh9pZcTCqKIu. Retenção de dados de execução desativada.
+- Teste sintético n8n 3561 passou com mensagem livre teste 2 e nós WooCommerce/Gemini fixados. Não houve chamadas externas nem envio.
+
+**Estado ainda pendente:** os adapters WhatsApp e Instagram ainda não foram conectados ao núcleo. Os workflows ativos permanecem inalterados; a Central instalada também não recebeu esta candidata. Portanto, a correção ainda não está em funcionamento real nem homologada.
+
+Rotas especiais do WhatsApp (Avisaqui, comandos do proprietário, eco Evolution e áudio) permanecem no adaptador WhatsApp; não devem ser movidas para o núcleo comum.
+
+### Novos perfis: o que repetir
+
+As oito permissões pertencem à configuração do aplicativo Meta e não devem ser adicionadas de novo para cada perfil se for usado o mesmo aplicativo/Login Unificado. Para cada conta nova, repetir individualmente OAuth, verificação de identidade/ativos, obtenção do Page Token e tarefa `MESSAGING`, assinatura `messages` e teste real de webhook.
+
+**Limite multiconta:** a homologação atual cobre somente a conta principal Umdoislab. A implementação de envio ainda valida o `account_id` contra `cfg.instagram_account_id` da instalação. Conectar outro perfil na interface não comprova que o bridge de mensagens automatizadas já suporte esse perfil. Antes de ativar DMs automáticas no segundo/terceiro perfil, concluir e homologar o isolamento multi-conta de tokens, política, allowlist, handoff e idempotência.
 
 ## Mensagens recebidas
 
-A caixa mostra cartões com remetente, data/hora de Brasília, texto completo, controle e origem. Os botões **Assumir, Aguardar, Concluir e Voltar ao bot** mantêm as ações locais de atendimento, com rótulos legíveis e espaço próprio. Rascunhos existentes aparecem no cartão; **Fila e rascunho** reúne os detalhes adicionais. O atendimento automático permanece desativado até configurar o segredo de ponte, cadastrar perfis de teste e ativar o workflow de testes. A fila e o envio são filtrados no servidor; nenhuma resposta é liberada para perfis fora da lista de teste.
+A caixa mostra cartões com remetente, data/hora de Brasília, texto completo, controle e origem. Os botões **Assumir, Aguardar, Concluir e Voltar ao bot** mantêm as ações locais de atendimento. A origem distingue mensagens recebidas por webhook de consultas manuais à Meta. Importações manuais não entram na fila automática; ver uma mensagem importada não comprova entrega de webhook.
 
-O operador confirmou leitura/gravação/exibição de mensagens reais pela busca manual na 0.1.35. Isso não comprova entrega por webhook. Para testar uma DM nova, envie-a e recarregue somente a página (F5): esse GET lê o banco local. **Atualizar mensagens** consulta a Meta e não deve ser usado como prova de webhook.
+O workflow Instagram está atualmente ativo em **Testes Restritos**, não em Produção. A Central revalida a política no envio; remetentes fora da allowlist, excluídos, mensagens manuais, mensagens fora da janela e conversas sob controle humano permanecem bloqueados. Não reutilizar credencial da Central WhatsApp nem repetir cadastro de perfil/credencial já concluídos sem evidência de perda.
 
 ## Busca manual de mensagens
 

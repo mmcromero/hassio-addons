@@ -88,7 +88,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.58")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.59")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -270,7 +270,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.58", body)
+        self.assertIn(b"0.1.59", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -288,7 +288,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.58", body)
+            self.assertIn(b"0.1.59", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -608,7 +608,20 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(self.post_event()[0], 200)
         status, _, data = self.request("/bridge/claim", "POST", headers=self.bridge_header())
         self.assertEqual(status, 200)
-        self.assertEqual(json.loads(data)["message"]["messageId"], "m1")
+        message = json.loads(data)["message"]
+        self.assertEqual(message["messageId"], "m1")
+        self.assertTrue(message["messageAt"])
+        self.assertTrue(server.within_messaging_window(message["messageAt"]))
+
+    def test_bridge_context_requires_secret(self):
+        self.assertEqual(self.request("/bridge/context", "POST", b"{}",
+                                      {"Content-Type": "application/json"})[0], 403)
+
+    def test_bridge_context_rejects_other_account(self):
+        payload = {"accountId": "business-2", "senderId": "12345678",
+                   "messageId": "m1", "claimToken": "x" * 43}
+        self.assertEqual(self.request("/bridge/context", "POST", json.dumps(payload).encode(),
+                                      self.bridge_header())[0], 403)
 
     def test_decision_with_valid_claim_test_send_authorized(self):
         self.assertEqual(self.post_event()[0], 200)
@@ -618,10 +631,27 @@ class HTTPContractTests(unittest.TestCase):
         status, _, data = self.request("/bridge/decision", "POST", json.dumps(claim).encode(), self.bridge_header())
         self.assertEqual(status, 200)
         decision = json.loads(data)["decision"]
-        self.assertEqual(decision["action"], "greeting")
+        self.assertEqual(decision["action"], "auto")
         self.assertTrue(decision["maySend"])
         self.assertTrue(decision["testSendAuthorized"])
         self.assertTrue(decision["mayCallGemini"])
+
+    def test_bridge_context_returns_only_claimed_contact_turns(self):
+        self.assertEqual(self.post_event()[0], 200)
+        status, _, raw = self.request("/bridge/claim", "POST", headers=self.bridge_header())
+        self.assertEqual(status, 200)
+        item = json.loads(raw)["message"]
+        claim = {key: item[key] for key in ("accountId", "senderId", "messageId", "claimToken")}
+        status, _, raw = self.request("/bridge/context", "POST",
+                                      json.dumps(claim).encode(), self.bridge_header())
+        self.assertEqual(status, 200)
+        turns = json.loads(raw)["turns"]
+        self.assertTrue(turns)
+        self.assertEqual(turns[-1]["role"], "client")
+        self.assertEqual(turns[-1]["text"], "oi")
+        invalid = {**claim, "claimToken": "invalid-claim"}
+        self.assertEqual(self.request("/bridge/context", "POST",
+            json.dumps(invalid).encode(), self.bridge_header())[0], 409)
 
     def test_draft_endpoint_disabled_by_default(self):
         self.assertEqual(self.post_event()[0], 200)

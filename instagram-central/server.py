@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.58"
+APP_VERSION = "0.1.59"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -160,6 +160,9 @@ def _open_database():
       updated_at TEXT NOT NULL,
       PRIMARY KEY(recipient_id,sender_id,message_id)
     )""")
+    send_columns = {row[1] for row in conn.execute("PRAGMA table_info(automation_sends)")}
+    if "reply_text" not in send_columns:
+        conn.execute("ALTER TABLE automation_sends ADD COLUMN reply_text TEXT")
     return conn
 
 
@@ -276,7 +279,8 @@ def claim_message(lease_seconds=120, *, account_id=None):
           (token, until_iso, row[0], row[1], row[2]))
     return {"channel": "instagram", "accountId": row[0], "senderId": row[1],
             "messageId": row[2], "messageText": row[3], "receivedAt": row[4],
-            "handoffState": row[6], "claimToken": token, "claimUntil": until_iso}
+            "messageAt": row[5], "handoffState": row[6],
+            "claimToken": token, "claimUntil": until_iso}
 
 
 def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send_text_message):
@@ -305,10 +309,12 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                 AND i.message_at IS NOT NULL
                 AND i.claim_token=? AND i.claim_until>?""",
               (account, profile, mid, token, now_iso)).fetchone()
-            if row is None or row[1] != "bot" or not automation_policy.allowed_test_send(conn, account, profile):
+            # Semantic classification is owned by the shared n8n core.
+            # The Central retains the independent authorization/security gates.
+            if (row is None or row[1] != "bot" or not isinstance(row[2], str)
+                    or not row[2].strip()
+                    or not automation_policy.allowed_test_send(conn, account, profile)):
                 return {"status": "rejected", "reason": "claim_or_policy_invalid"}
-            if prepare_decision({"channel":"instagram","accountId":account,"senderId":profile,"messageId":mid,"claimToken":token,"messageText":row[2],"handoffState":row[1]})["mayCallGemini"] is not True:
-                return {"status": "rejected", "reason": "local_decision_denied"}
             if not within_messaging_window(row[0], now):
                 return {"status": "rejected", "reason": "outside_messaging_window"}
             if conn.execute("""SELECT 1 FROM automation_sends
@@ -342,13 +348,61 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                     (completed, account, profile, mid, token))
             return {"status": "failed", "reason": reason}
         with database() as conn:
-            conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,updated_at=?
+            conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,reply_text=?,updated_at=?
                 WHERE recipient_id=? AND sender_id=? AND message_id=? AND status='sending'""",
-                (result["message_id"], completed, account, profile, mid))
+                (result["message_id"], text.strip(), completed, account, profile, mid))
+            # Keep only the eight most recent bot reply texts for this conversation.
+            # Send receipts remain intact so idempotency is never weakened.
+            conn.execute("""UPDATE automation_sends SET reply_text=NULL
+                WHERE recipient_id=? AND sender_id=? AND status='sent' AND reply_text IS NOT NULL
+                  AND message_id NOT IN (
+                    SELECT message_id FROM automation_sends
+                    WHERE recipient_id=? AND sender_id=? AND status='sent' AND reply_text IS NOT NULL
+                    ORDER BY updated_at DESC LIMIT 8)""",
+                (account, profile, account, profile))
             conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
                 WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
                 (completed, account, profile, mid, token))
         return {"status": "sent", "messageId": result["message_id"]}
+
+
+def conversation_context(data):
+    """Return bounded, account-scoped turns for the shared conversation core."""
+    keys = {"accountId", "senderId", "messageId", "claimToken"}
+    if not isinstance(data, dict) or set(data) != keys:
+        return None
+    account, sender, message_id, claim = (data["accountId"], data["senderId"],
+        data["messageId"], data["claimToken"])
+    if (not _valid_message_identity(account, sender, message_id) or
+            not isinstance(claim, str) or not 32 <= len(claim) <= 256):
+        return None
+    now = _utc_now()
+    with database() as conn:
+        current = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot')
+          FROM inbound i LEFT JOIN handoff h
+            ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
+          WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
+            AND i.source='webhook' AND i.processed_at IS NULL
+            AND i.claim_token=? AND i.claim_until>?""",
+          (account, sender, message_id, claim, now.isoformat())).fetchone()
+        if (current is None or current[1] != "bot" or current[0] is None
+                or not automation_policy.allowed_test_send(conn, account, sender)
+                or not within_messaging_window(current[0], now)):
+            return None
+        inbound_rows = conn.execute("""SELECT message_text,message_at
+          FROM inbound WHERE recipient_id=? AND sender_id=? AND source='webhook'
+            AND message_at IS NOT NULL AND message_text<>''
+          ORDER BY message_at DESC LIMIT 12""", (account, sender)).fetchall()
+        reply_rows = conn.execute("""SELECT reply_text,updated_at
+          FROM automation_sends WHERE recipient_id=? AND sender_id=? AND status='sent'
+            AND reply_text IS NOT NULL AND reply_text<>''
+          ORDER BY updated_at DESC LIMIT 12""", (account, sender)).fetchall()
+    turns = ([{"role": "client", "text": row[0], "createdAt": row[1]}
+              for row in inbound_rows] +
+             [{"role": "assistant", "text": row[0], "createdAt": row[1]}
+              for row in reply_rows])
+    turns.sort(key=lambda turn: turn["createdAt"])
+    return {"turns": turns[-8:]}
 
 
 def acknowledge_message(data):
@@ -2289,7 +2343,7 @@ class Handler(BaseHTTPRequestHandler):
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
             return self.respond(200, {"message": claim_message(account_id=primary_meta_id(cfg))})
-        if self.path in ("/bridge/handoff", "/bridge/ack", "/bridge/decision", "/bridge/draft", "/bridge/reply"):
+        if self.path in ("/bridge/handoff", "/bridge/ack", "/bridge/context", "/bridge/decision", "/bridge/draft", "/bridge/reply"):
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
@@ -2314,6 +2368,11 @@ class Handler(BaseHTTPRequestHandler):
                 if not set_handoff(data, actor="bridge", reason=reason):
                     return self.respond(422, {"error": "invalid handoff"})
                 return self.respond(200, {"saved": True})
+            if self.path == "/bridge/context":
+                context = conversation_context(data)
+                if context is None:
+                    return self.respond(409, {"error": "invalid or expired claim"})
+                return self.respond(200, context)
             if self.path == "/bridge/decision":
                 decision = evaluate_claim(data)
                 if decision is None:
