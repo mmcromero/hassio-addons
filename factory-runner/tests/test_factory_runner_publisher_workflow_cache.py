@@ -38,6 +38,7 @@ class PublisherWorkflowCacheTests(unittest.TestCase):
             "/tmp/source",
             "/tmp/distribution",
         )
+        workflow.side_effect = [object(), object(), object()]
         coordinator = PublisherCoordinator(
             self.config(),
             approval=FakeApproval(),
