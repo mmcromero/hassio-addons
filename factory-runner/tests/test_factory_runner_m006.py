@@ -281,7 +281,7 @@ class M006Tests(unittest.TestCase):
         from owner_bootstrap import provision_layout
         from types import SimpleNamespace
         import stat
-        users = {"approval": 24001, "publisher": 24002, "owner_ui": 24003,
+        users = {"root": 0, "approval": 24001, "publisher": 24002, "owner_ui": 24003,
                  "runner": 24004, "stranger": 24005}
         groups = {"approval": 24101, "publisher": 24102, "owner_ui": 24103,
                   "runner": 24104, "consent_clients": 24105, "publisher_clients": 24106}
