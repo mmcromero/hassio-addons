@@ -1,3 +1,10 @@
+# 0.1.0-rc.39 — corrige regressões do ledger e do probe
+
+- Permite versões numéricas de teste no binding de evidência, mantendo validação estrita do identificador.
+- Corrige a fixture de ledger corrompido para usar o modo privado 0600 exigido pelo armazenamento.
+- Ajusta a regressão do probe para a contagem real de três operações read-only por projeto (preflight, release-plan e execution-plan).
+- RC38 build ARM64 executou 409 testes, mas terminou com 5 erros e 1 falha; RC39 incorpora as correções identificadas. Nova validação completa no Supervisor pendente.
+
 # 0.1.0-rc.38 — FR-EXEC-001: contrato, impacto e plano de testes
 
 - Adiciona contrato FR-EXEC-001/v1 com validação estrita, binding a perfil/repositório/ref/SHA, escopo, operações declaradas, autorização não verificada e limites.
