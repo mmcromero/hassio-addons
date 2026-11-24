@@ -1,4 +1,4 @@
-"""M006: real Ed25519, owner reauthentication, Unix IPC, HTTP API and bare Git.
+"""M006: real Ed25519, owner session consent, Unix IPC, HTTP API and bare Git.
 All credentials and repos are synthetic. No external network or project execution.
 """
 import base64
@@ -134,7 +134,7 @@ class M006Tests(unittest.TestCase):
 
     def grant(self):
         view=self.workflow.propose(self.bundle,self.receipt_digest,self.issuer)
-        return self.issuer.consent(view['proposal_id'],self.password,view['consent_digest'],'PUBLICAR')
+        return self.issuer.consent(view['proposal_id'],view['consent_digest'],'PUBLICAR')
     def publish(self,grant,**kwargs):return self.workflow.publish(self.bundle,self.receipt_digest,grant,**kwargs)
 
     def test_full_http_git_and_independent_owner_consent(self):
@@ -166,21 +166,19 @@ class M006Tests(unittest.TestCase):
             with self.assertRaises(PublicationError):self.publish(body)
         view=self.workflow.propose(self.bundle,self.receipt_digest,self.issuer)
         with self.assertRaisesRegex(PublicationError,'explicit_consent'):
-            self.issuer.consent(view['proposal_id'],self.password,view['consent_digest'],'yes')
+            self.issuer.consent(view['proposal_id'],view['consent_digest'],'yes')
 
-    def test_owner_password_and_persistent_throttle(self):
+    def test_publication_consent_uses_owner_session_without_password_reentry(self):
         view=self.workflow.propose(self.bundle,self.receipt_digest,self.issuer)
-        for _ in range(5):
-            with self.assertRaisesRegex(PublicationError,'authentication_failed'):
-                self.issuer.consent(view['proposal_id'],'invalid password long',view['consent_digest'],'PUBLICAR')
-        restarted=ApprovalIssuer(self.owner_dir,self.private_key,self.owner_record,'fixture-ed25519');self.addCleanup(restarted.close)
-        with self.assertRaisesRegex(PublicationError,'authentication_throttled'):
-            restarted.consent(view['proposal_id'],self.password,view['consent_digest'],'PUBLICAR')
+        grant=self.issuer.consent(view['proposal_id'],view['consent_digest'],'PUBLICAR')
+        self.assertEqual(grant['payload']['proposal_id'],view['proposal_id'])
+        self.assertEqual(grant['payload']['consent_digest'],view['consent_digest'])
+        self.assertEqual(grant['payload']['kind'],'owner-publication-grant-v1')
 
     def test_reconsent_is_not_an_implicit_second_grant(self):
         grant=self.grant()
         with self.assertRaisesRegex(PublicationError,'proposal_already_used'):
-            self.issuer.consent(grant['payload']['proposal_id'],self.password,grant['payload']['consent_digest'],'PUBLICAR')
+            self.issuer.consent(grant['payload']['proposal_id'],grant['payload']['consent_digest'],'PUBLICAR')
 
     def test_each_binding_field_and_owner_identity_fail_closed(self):
         grant=self.grant()
@@ -665,10 +663,10 @@ else:
         view=self.workflow.propose(self.bundle,self.receipt_digest,self.issuer)
         with patch.object(self.issuer,'event',side_effect=RuntimeError('audit unavailable')):
             with self.assertRaises(RuntimeError):
-                self.issuer.consent(view['proposal_id'],self.password,view['consent_digest'],'PUBLICAR')
+                self.issuer.consent(view['proposal_id'],view['consent_digest'],'PUBLICAR')
         row=self.issuer.db.execute('SELECT nonce,grant FROM proposals WHERE id=?',(view['proposal_id'],)).fetchone()
         self.assertEqual(row,(None,None))
-        grant=self.issuer.consent(view['proposal_id'],self.password,view['consent_digest'],'PUBLICAR')
+        grant=self.issuer.consent(view['proposal_id'],view['consent_digest'],'PUBLICAR')
         self.publish(grant)
 
     def test_consistent_payload_and_receipt_forgery_fails_source_reproduction(self):
