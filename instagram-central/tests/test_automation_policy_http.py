@@ -38,6 +38,9 @@ class AutomationPolicyHTTPTests(unittest.TestCase):
     def test_save_policy_and_render_saved_profiles(self):
         csrf = server.panel_login.admin_csrf_token(
             self.cookie, self.fixture.config['panel_password'], 'automation')
+        self.assertTrue(csrf)
+        self.assertTrue(server.panel_login.admin_csrf_valid(
+            self.cookie, self.fixture.config['panel_password'], 'automation', csrf))
         body = urlencode({'csrf': csrf, 'mode': 'tests',
                           'test_ids': '12345678', 'excluded_ids': '87654321'})
         status, headers, _ = self.fixture.request('/panel/automation/policy', 'POST', body,
