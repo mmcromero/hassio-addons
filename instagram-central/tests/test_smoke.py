@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 import server
@@ -15,6 +16,8 @@ class BuildSmoke(unittest.TestCase):
         self.original_db = server.DB_PATH
         server.DATA_DIR = Path(self.tmp.name)
         server.DB_PATH = server.DATA_DIR / "instagram.sqlite3"
+        with server.database() as conn:
+            server.automation_policy.save(conn, "business-1", "tests", "12345678", "")
 
     def tearDown(self):
         server.DATA_DIR = self.original_dir
@@ -24,8 +27,9 @@ class BuildSmoke(unittest.TestCase):
     def sample(self, text="oi"):
         return json.dumps({"object": "instagram", "entry": [{
             "id": "business-1", "messaging": [{
-                "sender": {"id": "customer-1"},
+                "sender": {"id": "12345678"},
                 "recipient": {"id": "business-1"},
+                "timestamp": int(time.time() * 1000),
                 "message": {"mid": "test-1", "text": text}
             }]}]}).encode("utf-8")
 
@@ -46,7 +50,7 @@ class BuildSmoke(unittest.TestCase):
         decision = server.evaluate_claim(reference)
         self.assertEqual(decision["action"], "greeting")
         self.assertFalse(decision["maySend"])
-        self.assertFalse(decision["mayCallGemini"])
+        self.assertTrue(decision["mayCallGemini"])
         self.assertTrue(server.acknowledge_message(reference))
         self.assertFalse(server.acknowledge_message(reference))
 
@@ -54,7 +58,7 @@ class BuildSmoke(unittest.TestCase):
         self.assertEqual(server.persist(self.sample(), "business-1"), 1)
         self.assertTrue(server.set_handoff({
             "accountId": "business-1",
-            "senderId": "customer-1",
+            "senderId": "12345678",
             "state": "human"}))
         self.assertIsNone(server.claim_message())
 
