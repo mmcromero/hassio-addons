@@ -1,15 +1,15 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.35",
+  "version": "0.1.0-rc.36",
   "repository": "mmcromero/factory-runner",
-  "commit": "2d431e0e62d1aee13d7b7343c55dbcd97bd2c612",
-  "catalog_sha": "79610f3c6c68e9f6c6f7642a1378f2bdabfea09f",
-  "previous_source": "9c5df1d913cf9b08bce4b0edaff96daa5d67441d",
-  "reviewed_source": "2d431e0e62d1aee13d7b7343c55dbcd97bd2c612",
-  "publication": "OWNER_AUTHORIZED_RC35_CANDIDATE_DISTRIBUTION",
-  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC35_AUDIT_PERSISTENCE_PROBE",
+  "commit": "365b1210793bc4c3e479ec1f15268b926fc13126",
+  "catalog_sha": "9f9aef67966fd4ddec02be0d08f0b70bbe33714e",
+  "previous_source": "2d431e0e62d1aee13d7b7343c55dbcd97bd2c612",
+  "reviewed_source": "365b1210793bc4c3e479ec1f15268b926fc13126",
+  "publication": "OWNER_AUTHORIZED_RC36_CANDIDATE_DISTRIBUTION",
+  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_INSTALLATION_UPDATE_AUTHORIZATION_20261124",
+  "candidate_distribution": "FACTORY_RUNNER_RC36_BOOT_TIMESTAMP_AUDIT_PROBE_WIRING",
   "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
   "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
   "files": [
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "61f4eea7ba63a7651259cbcfe3e92ddc5f82ea2f",
-      "size": 39263,
+      "git_blob_sha": "6a0352005c1835856b47099ef0ad4adaa1abe122",
+      "size": 39936,
       "mode": "100644"
     },
     {
@@ -149,8 +149,8 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "ddb47fbc61c17891f7df6073ed44ce415a858304",
-      "size": 7151,
+      "git_blob_sha": "04f40eaa238b09cf46b6a872fe74ffbf716ca4a3",
+      "size": 7336,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "95c73d43c5180681228e94815f48b113cc861d6c",
+      "git_blob_sha": "78195543120b33a522c17c97cdcc3a1b15af97d2",
       "size": 1037,
       "mode": "100644"
     },
@@ -415,8 +415,8 @@
     {
       "path": "factory-runner/runtime_api_probe.py",
       "source_path": "factory-runner-add-on/runtime_api_probe.py",
-      "git_blob_sha": "85412a3cd80285e2d266a11303cedda2fb02a7f3",
-      "size": 11266,
+      "git_blob_sha": "ad5ce4315c4a6d515a7159335a6562fd62a35116",
+      "size": 11409,
       "mode": "100644"
     },
     {
@@ -653,8 +653,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_runtime_api_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_runtime_api_probe.py",
-      "git_blob_sha": "285c38929b0117489a2de482081d28ac41396c6f",
-      "size": 5435,
+      "git_blob_sha": "f7b3bab258ad6b8a0cad8050ff625367b4556d4a",
+      "size": 6346,
       "mode": "100644"
     },
     {
@@ -724,15 +724,15 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.35",
+    "version": "0.1.0-rc.36",
     "build": "pending",
     "installation": "pending",
-    "runtime_state": "RC34 started before RC35 update",
+    "runtime_state": "RC35 started before RC36 update",
     "audit_persistence_across_boot": "pending",
     "owner_enrollment": "unchanged",
     "product_publication": "disabled"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC35 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados. RC35 mede eventos de auditoria com timestamp anterior ao boot atual para verificar persistência após atualização/restart normal; build, testes, instalação e resultado ainda pendentes no Supervisor. Não comprova durabilidade contra queda abrupta de energia.",
-  "status": "RC35_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
+  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC36 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados. RC36 corrige a passagem do timestamp de início do boot ao probe e inclui regressão de integração main→run_probe. Build, suíte, instalação e verificação de auditoria entre boots permanecem pendentes no Supervisor; não comprova durabilidade contra queda abrupta de energia.",
+  "status": "RC36_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
 }
