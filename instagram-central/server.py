@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.59"
+APP_VERSION = "0.1.60"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -123,7 +123,7 @@ def _open_database():
     if "processed_at" not in {r[1] for r in conn.execute("PRAGMA table_info(inbound)")}:
         conn.execute("ALTER TABLE inbound ADD COLUMN processed_at TEXT")
     columns = {r[1] for r in conn.execute("PRAGMA table_info(inbound)")}
-    for column in ("claim_token", "claim_until", "message_at"):
+    for column in ("claim_token", "claim_until", "message_at", "resume_skipped_at"):
         if column not in columns:
             conn.execute("ALTER TABLE inbound ADD COLUMN " + column + " TEXT")
     if 'source' not in columns:
@@ -498,6 +498,7 @@ def set_handoff(data, *, actor="system", reason=None):
         state not in ("bot", "pending", "human", "done")):
         return False
     with _AUTOMATION_LOCK, database() as conn:
+        conn.execute("BEGIN IMMEDIATE")
         found = conn.execute("""SELECT 1 FROM inbound WHERE recipient_id=? AND sender_id=? LIMIT 1""",
                              (account, sender)).fetchone()
         if not found:
@@ -507,7 +508,7 @@ def set_handoff(data, *, actor="system", reason=None):
         old_state = prev[0] if prev else "bot"
         if old_state == state:
             return True
-        now = datetime.now(timezone.utc).isoformat()
+        now = _utc_now().isoformat()
         conn.execute("""INSERT INTO handoff VALUES(?,?,?,?)
           ON CONFLICT(recipient_id,sender_id) DO UPDATE SET
           state=excluded.state, updated_at=excluded.updated_at""",
@@ -515,8 +516,15 @@ def set_handoff(data, *, actor="system", reason=None):
         conn.execute("""INSERT INTO handoff_audit
           (recipient_id,sender_id,old_state,new_state,changed_at,actor,reason)
           VALUES(?,?,?,?,?,?,?)""", (account, sender, old_state, state, now, actor, reason))
+        # Resume only on new inbound. Close the historical queue atomically,
+        # retaining the messages and an explicit reason separate from send receipts.
+        if state == "bot":
+            conn.execute("""UPDATE inbound SET processed_at=?, resume_skipped_at=?,
+              claim_token=NULL, claim_until=NULL
+              WHERE recipient_id=? AND sender_id=? AND source='webhook'
+                AND processed_at IS NULL""", (now, now, account, sender))
         # Invalidate any active reservation before handing the conversation to a human.
-        if state != "bot":
+        else:
             conn.execute("""UPDATE inbound SET claim_token=NULL, claim_until=NULL
               WHERE recipient_id=? AND sender_id=? AND processed_at IS NULL""", (account, sender))
     return True
@@ -643,6 +651,7 @@ def persist(body, account_id=None):
     event_times = webhook_message_times(payload, account_id)
     inserted = 0
     with database() as conn:
+        conn.execute("BEGIN IMMEDIATE")
         account_registry.prepare(conn)
         if legacy_messages:
             account_registry.ensure_primary(conn, account_id)
@@ -658,11 +667,24 @@ def persist(body, account_id=None):
                 (recipient_id,sender_id,message_id,message_text,received_at,message_at)
                 VALUES(?,?,?,?,?,?) ON CONFLICT(recipient_id,sender_id,message_id) DO UPDATE SET
                 source='webhook',message_text=excluded.message_text,received_at=excluded.received_at,
-                message_at=excluded.message_at,processed_at=NULL,claim_token=NULL,claim_until=NULL
+                message_at=excluded.message_at,processed_at=NULL,claim_token=NULL,claim_until=NULL,
+                resume_skipped_at=NULL
                 WHERE inbound.source='manual'""",
                 (rid, sid, mid, msg, datetime.now(timezone.utc).isoformat(),
                  event_times.get((rid, sid, mid))))
             inserted += cursor.rowcount
+            # A delayed webhook (including promotion of a manual import) must not
+            # reopen a pre-resume message. The bot handoff timestamp is the cutoff.
+            if cursor.rowcount:
+                conn.execute("""UPDATE inbound SET processed_at=h.updated_at,
+                    resume_skipped_at=h.updated_at,claim_token=NULL,claim_until=NULL
+                    FROM handoff h
+                    WHERE inbound.recipient_id=? AND inbound.sender_id=? AND inbound.message_id=?
+                      AND inbound.recipient_id=h.recipient_id AND inbound.sender_id=h.sender_id
+                      AND h.state='bot' AND inbound.source='webhook' AND inbound.processed_at IS NULL
+                      AND (inbound.message_at IS NULL OR
+                           julianday(inbound.message_at)<=julianday(h.updated_at))""",
+                    (rid, sid, mid))
     return inserted
 
 
@@ -1344,7 +1366,7 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
             message_count = conn.execute('SELECT COUNT(*) FROM inbound WHERE recipient_id=?', (account_id,)).fetchone()[0]
             rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_text,
               i.received_at, i.processed_at, COALESCE(h.state, 'bot'),
-              COALESCE(d.draft_text, ''), COALESCE(d.status, ''), i.source
+              COALESCE(d.draft_text, ''), COALESCE(d.status, ''), i.source, i.resume_skipped_at
               FROM inbound i LEFT JOIN handoff h
                 ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
               LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
@@ -1362,8 +1384,8 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
     entries = []
     cfg = cfg or {}
     for messages in sorted(groups.values(), key=lambda group: group[0][5] not in ('pending','human') and group[0][1] not in failures):
-        account, sender, message, received, processed, state, draft, draft_status, source = messages[0]
-        queue = 'Fora da fila automática' if source == 'manual' else 'Processada' if processed else 'Pendente'
+        account, sender, message, received, processed, state, draft, draft_status, source, resume_skipped = messages[0]
+        queue = 'Fora da fila automática' if source == 'manual' else 'Encerrada na retomada — sem resposta automática' if resume_skipped else 'Processada' if processed else 'Pendente'
         origin = 'Consulta manual à Meta' if source == 'manual' else 'Webhook'
         control = {'bot':'Automação', 'human':'Atendimento humano', 'pending':'Aguardando', 'done':'Concluída'}.get(state,'Não informado')
         iso, date = inbox_received_label(received)
@@ -1382,9 +1404,9 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
                 actions.append('<form method="post" action="panel/handoff">' + inputs +
                                '<button class="btn ' + ('primary' if primary else 'quiet') + '" type="submit">' + label + '</button></form>')
         history = []
-        for _, _, msg, stamp, done, _, saved_draft, saved_status, msg_source in messages:
+        for _, _, msg, stamp, done, _, saved_draft, saved_status, msg_source, skipped in messages:
             _, label = inbox_received_label(stamp)
-            queue_label = 'Fora da fila automática' if msg_source == 'manual' else 'Processada' if done else 'Pendente'
+            queue_label = 'Fora da fila automática' if msg_source == 'manual' else 'Encerrada na retomada — sem resposta automática' if skipped else 'Processada' if done else 'Pendente'
             history.append('<li><time>' + html.escape(label) + '</time><p class="inbox-message-text">' + html.escape(msg) +
                            '</p><small>' + queue_label + '</small>' +
                            ('<p>Rascunho (sem envio): ' + html.escape(saved_draft) + '</p>' if saved_draft else '') + '</li>')

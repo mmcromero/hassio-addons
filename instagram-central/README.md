@@ -1,4 +1,6 @@
-# Central Instagram — 0.1.59 (núcleo conversacional compartilhado)
+# Central Instagram — 0.1.60 (retomada segura do atendimento)
+
+**Voltar ao bot:** encerra a fila anterior da conversa sem enviar respostas retroativas. O histórico mostra quais mensagens foram encerradas sem resposta automática; somente um novo evento posterior à retomada pode entrar na fila. As demais guardas de atendimento permanecem. O operador não precisa apagar o histórico.
 
 **Diagnóstico do token de Página:** a consulta manual agora distingue a permissão `pages_read_engagement`, o vínculo da Página, a tarefa `MESSAGING`, a disponibilidade do token retornado pela Meta e o armazenamento local. Nenhum ID de Página, nome, token ou texto bruto do provedor é exibido.
 

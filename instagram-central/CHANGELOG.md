@@ -1,3 +1,11 @@
+# 0.1.60 — retomada segura do atendimento — 24/11/2026
+
+- Voltar ao bot encerra pendências anteriores daquela conversa sem envio automático; preserva mensagens, auditoria e recibos de envio.
+- Eventos Meta atrasados ou importados antes da retomada não reabrem a fila; transições e gravação de webhook usam transações SQLite serializadas.
+- O histórico identifica mensagens encerradas na retomada, sem confundir com resposta enviada. Migração aditiva, sem apagar dados.
+- Testes dirigidos incluem isolamento, invalidação de claim, redelivery, fronteira temporal e nova mensagem. WhatsApp e n8n não são modificados.
+- Homologação real exige retomar bot sem disparos, depois receber e responder uma nova mensagem de teste.
+
 # 0.1.59 — contrato da Central com o núcleo conversacional compartilhado — 24/11/2026
 
 - Alinha a Central ao contrato do adapter: `/bridge/claim` devolve `messageAt` com o timestamp original do evento Meta; eventos sem timestamp continuam falhando fechados para automação.

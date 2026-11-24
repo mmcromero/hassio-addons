@@ -367,9 +367,78 @@ class InstagramIngressTests(unittest.TestCase):
             "messageId": item["messageId"], "claimToken": item["claimToken"]}))
         self.assertTrue(server.set_handoff({
             "accountId": "business-1", "senderId": "12345678", "state": "bot"}))
-        fresh = server.claim_message()
-        self.assertIsNotNone(fresh)
-        self.assertNotEqual(item["claimToken"], fresh["claimToken"])
+        self.assertIsNone(server.claim_message())
+        with server.database() as conn:
+            row = conn.execute("SELECT processed_at,resume_skipped_at,claim_token,claim_until FROM inbound").fetchone()
+        self.assertIsNotNone(row[0])
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2:], (None, None))
+
+    def test_resume_does_not_replay_history_and_claims_only_new_message(self):
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        resumed = datetime(2026, 11, 24, 22, 30, tzinfo=timezone.utc)
+        def event(mid, stamp, sender="12345678"):
+            payload = self.sample(mid=mid)
+            message = payload["entry"][0]["messaging"][0]
+            message["timestamp"] = int(stamp.timestamp() * 1000)
+            message["sender"]["id"] = sender
+            return json.dumps(payload).encode()
+        conversation = {"accountId": "business-1", "senderId": "12345678"}
+        with patch.object(server, "_utc_now", return_value=resumed):
+            with server.database() as conn:
+                server.automation_policy.save(conn, "business-1", "tests", "12345678\n87654321", "")
+            self.assertEqual(server.persist(event("old", resumed - timedelta(minutes=3)), "business-1"), 1)
+            self.assertTrue(server.set_handoff({**conversation, "state": "pending"}))
+            self.assertEqual(server.persist(event("held", resumed - timedelta(minutes=2)), "business-1"), 1)
+            self.assertTrue(server.set_handoff({**conversation, "state": "bot"}))
+            # Old deliveries, including duplicates and late webhooks, cannot reopen the queue.
+            self.assertEqual(server.persist(event("old", resumed - timedelta(minutes=3)), "business-1"), 0)
+            self.assertEqual(server.persist(event("late", resumed - timedelta(minutes=1)), "business-1"), 1)
+            self.assertEqual(server.persist(event("boundary", resumed), "business-1"), 1)
+            self.assertIsNone(server.claim_message(account_id="business-1"))
+            self.assertIn("Encerrada na retomada", server.render_panel())
+            self.assertEqual(server.persist(event("new", resumed + timedelta(seconds=1)), "business-1"), 1)
+            # Repeating a bot action does not discard new work.
+            self.assertTrue(server.set_handoff({**conversation, "state": "bot"}))
+            item = server.claim_message(account_id="business-1")
+            self.assertEqual(item["messageId"], "new")
+            claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+            self.assertEqual(server.evaluate_claim(claim)["action"], "auto")
+            self.assertTrue(server.acknowledge_message(claim))
+            self.assertIsNone(server.claim_message(account_id="business-1"))
+            # A different sender is not affected by the cutoff.
+            self.assertEqual(server.persist(event("other", resumed - timedelta(minutes=2), "87654321"), "business-1"), 1)
+            self.assertEqual(server.claim_message(account_id="business-1")["messageId"], "other")
+            with server.database() as conn:
+                rows = dict(conn.execute("SELECT message_id,resume_skipped_at FROM inbound"))
+                self.assertEqual(len(rows), 6)
+                self.assertTrue(all(rows[mid] for mid in ("old", "held", "late", "boundary")))
+                self.assertIsNone(rows["new"])
+                self.assertIsNone(rows["other"])
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM automation_sends").fetchone()[0], 0)
+
+    def test_resume_rejects_delayed_promotion_of_manual_import(self):
+        from datetime import datetime, timedelta, timezone
+        from unittest.mock import patch
+        resumed = datetime(2026, 11, 24, 22, 30, tzinfo=timezone.utc)
+        conversation = {"accountId": "business-1", "senderId": "12345678"}
+        with patch.object(server, "_utc_now", return_value=resumed):
+            with server.database() as conn:
+                conn.execute("""INSERT INTO inbound (recipient_id,sender_id,message_id,message_text,received_at,source,processed_at)
+                    VALUES (?,?,?,?,?,'manual',?)""",
+                    ("business-1", "12345678", "manual-old", "oi", resumed.isoformat(), resumed.isoformat()))
+            self.assertTrue(server.set_handoff({**conversation, "state": "human"}))
+            self.assertTrue(server.set_handoff({**conversation, "state": "bot"}))
+            payload = self.sample(mid="manual-old")
+            payload["entry"][0]["messaging"][0]["timestamp"] = int((resumed - timedelta(minutes=1)).timestamp()*1000)
+            self.assertEqual(server.persist(json.dumps(payload).encode(), "business-1"), 1)
+            self.assertIsNone(server.claim_message(account_id="business-1"))
+            with server.database() as conn:
+                row = conn.execute("SELECT source,processed_at,resume_skipped_at FROM inbound WHERE message_id='manual-old'").fetchone()
+            self.assertEqual(row[0], "webhook")
+            self.assertIsNotNone(row[1])
+            self.assertEqual(row[1], row[2])
 
     def test_pending_handoff_blocks_bot_queue(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
