@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.46"
+APP_VERSION = "0.1.47"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -1377,9 +1377,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 <div class="shell">
 """ + interface_ui.sidebar(cfg, active='settings' if settings_page else 'messages') + """
 <main id="principal" class="main">
-""" + interface_ui.header(cfg, page_name) + """
- <div class="content""" + ('' if settings_page else ' ui-inbox-page') + """>
-""" + content + """
+""" + interface_ui.header(cfg, page_name) + '\n<div class="content' + ('' if settings_page else ' ui-inbox-page') + '">' + content + """
   </div>
  </main>
 </div></body></html>""")
