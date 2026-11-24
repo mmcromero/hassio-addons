@@ -1,4 +1,6 @@
-> **HISTÓRICO — SEM EFEITO OPERACIONAL:** esta cópia pertence a um estado anterior do Factory Runner e não é a fonte de desenvolvimento nem a esteira atual. Fonte canônica atual: [mmcromero/factory-runner, branch desenvolvimento](https://github.com/mmcromero/factory-runner/tree/desenvolvimento), especialmente [factory-runner-add-on/RELEASE-PIPELINE.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/factory-runner-add-on/RELEASE-PIPELINE.md) e [docs/CONTINUIDADE-ATIVA.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/docs/CONTINUIDADE-ATIVA.md). Leia a versão atual antes de qualquer decisão; este documento é somente histórico de distribuição.
+> **ESTADO ATUAL — 24/11/2026 / M020:** fonte privada mmcromero/factory-runner:desenvolvimento. A candidata única é 0.1.0-rc.20; RC19 permanece como baseline publicada/instalada. O M020 separou os diretórios root-managed de configuração dos diretórios graváveis pelos serviços. A revisão está atualizada, mas aguarda GO formal de Segurança e Tech Lead. O Supervisor executa build e testes do Dockerfile durante a atualização no HA.
+>
+> HA Ingress está habilitado no manifesto para disponibilizar a porta interna 8099 pelo Supervisor. O serviço oferece somente status por padrão; owner consent exige owner_ingress_enabled=true, ID HA e origem HTTPS. As rotas de publicação permanecem bloqueadas sem ativação root-managed e grant assinado. As notas abaixo são registros históricos de versões anteriores.
 
 # Factory Runner — Worker controlado e pré-verificação multi-projeto
 
