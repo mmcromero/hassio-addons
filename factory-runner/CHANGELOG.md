@@ -1,3 +1,9 @@
+# 0.1.0-rc.34 — importar sys no probe live API
+
+- Corrige a falha de importação da RC33: o probe usa `sys.path` em modo Python isolado e agora importa explicitamente `sys`.
+- Mantém o caminho confiável fixo `/app`, marcador de início e testes de regressão.
+- Nenhuma mudança de endpoint, autorização, rede ou efeito operacional.
+
 # 0.1.0-rc.33 — correção do probe sob Python isolado
 
 - Corrige o caminho de importação do probe interno quando executado com `python -I`, adicionando somente o diretório fixo `/app` ao `sys.path`.

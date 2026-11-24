@@ -260,3 +260,10 @@ O probe aguarda workspace sync/lock, é não bloqueante para o serviço e falha 
 RC32 (`0.1.0-rc.32`) foi instalada/iniciada no Supervisor; build/validação do Dockerfile concluiu. O probe não passou: log `[API-PROBE] BLOCKED: workspace_sync_in_progress`. Diagnóstico: `python3 -I` não inclui `/app` no `sys.path`, então os imports confiáveis `server`/ `workspace_sync` falhavam dentro do retry.
 
 RC33 (`0.1.0-rc.33`), commit `d09aff0a1fc6641ec1e0ad087200acc501d8ed5e`, adiciona somente o caminho fixo `/app` ao `sys.path`, marcador `[API-PROBE] START`, teste de regressão e README vigente. Ainda não publicada/instalada. Próximo passo: promover/publicar RC33 e validar build/testes/probe real no Supervisor. Não abrir porta, não expor Bearer e não ativar Publisher.
+
+
+## M061 — falha de build RC33 e correção RC34
+
+RC33 falhou no build ARM64 do Supervisor (exit code 1) durante a suíte unitária: `runtime_api_probe.py` consultava `sys.path` sem importar `sys`. `py_compile` passou, mas a suíte registrou `FAILED (errors=1, skipped=28)`. RC33 não foi instalada; RC32 permaneceu `started`.
+
+RC34 (`0.1.0-rc.34`), commit `7e95296dd4c92aff36a1deb74d738e23716e845a`, adiciona `import sys`. O teste de regressão de import path permanece. Ainda pendentes promoção, publicação, build/testes no Supervisor e log real `[API-PROBE] PASS`.

@@ -1,9 +1,9 @@
 > **ESTADO VIGENTE — 24/11/2026**
 >
 > - **Roadmap aprovado:** [ROADMAP-CONCLUSAO-001](../docs/ROADMAP-CONCLUSAO-001.md), seis etapas; isolamento de código não confiável é a última etapa de construção, mas continua obrigatório antes de executar código de projetos.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; candidata corrente em preparação: `0.1.0-rc.33`.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; candidata corrente em preparação: `0.1.0-rc.34`.
 > - **Última candidata publicada/instalada antes desta correção:** `0.1.0-rc.32`, catálogo `mmcromero/hassio-addons:main/factory-runner/`, Supervisor `started`.
-> - **Etapa 1:** RC31/RC32 confirmaram startup, dois workspaces, auditoria sanitizada e probe declarativo real PASS. O novo probe HTTP interno da RC32 não gerou marcador `[API-PROBE]`; RC33 corrige o import path sob Python `-I` e adiciona marcador de início. Ainda depende de build/execução no Supervisor.
+> - **Etapa 1:** RC31/RC32 confirmaram startup, dois workspaces, auditoria sanitizada e probe declarativo real PASS. O novo probe HTTP interno da RC32 não gerou marcador `[API-PROBE]`; RC33 falhou no build por ausência do import `sys`; RC34 corrige isso. Build/execução do probe ainda pendentes no Supervisor.
 > - **Publisher:** DORMANT; publicação de produtos permanece desativada. Não ativar nesta etapa.
 > - **Isolamento:** Bubblewrap continua bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed. A exportação declarativa não depende do sandbox.
 > - **Distribuição:** publicar somente a pasta `factory-runner/`; não alterar outros add-ons nem arquivos compartilhados.
