@@ -272,3 +272,5 @@ exigem ambiente/política operacionais; não fecha pacote nem publica.
 - M030: testes E2E de preparação agora rodam como usuário real `runner` no estágio validation; a suíte root os pula e o Dockerfile executa o probe em seguida com UID/GID e permissões reais. Corrige o falso `publisher_snapshot_owner_mismatch` causado por simular `geteuid()` sem trocar o owner dos diretórios.
 
 - M031: fixtures locais de workspace usam `git clone --no-hardlinks`, igualando o comportamento esperado do clone remoto e evitando que a ACL rejeite objetos Git compartilhados por hardlink. A validação agora alcança a suíte E2E não-root.
+
+- M032: fixture Git usa `--no-local --no-hardlinks` para impedir otimização de clone local e garantir que nenhum objeto do snapshot compartilhe inode com o repositório de origem.
