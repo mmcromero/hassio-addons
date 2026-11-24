@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.46 (hierarquia compacta e navegação responsiva)
+# Central Instagram — 0.1.47 (hierarquia compacta e navegação responsiva)
 
 **Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 
@@ -10,7 +10,7 @@ Há proteção contra perda de alterações e **Continuar composição** para re
 
 No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para publicações com ID remoto confirmado, **Da Central Editorial e do Instagram**. A opção remota pede confirmação da conta indicada e só remove o registro local após a Meta confirmar a exclusão. Pode exigir incluir `instagram_manage_contents` no aplicativo e na configuração do Login do Facebook para Empresas e usar **Conexão Meta → Atualizar permissões da conta → Renovar autorização da conta**. A permissão e o suporte da conexão são conferidos antes de enviar a exclusão; uma recusa preserva registro e arquivos. Carrosséis são excluídos inteiros, não uma imagem isolada. Em caso de resultado incerto, confira o Instagram antes de autorizar nova tentativa; a Central não repete a exclusão automaticamente. As mídias usadas por outras publicações continuam preservadas.
 
-## Atendimento automático — 0.1.46
+## Atendimento automático — 0.1.47
 
 A aba **Configurações Meta → Atendimento** controla o modo da conta principal Umdoislab. O padrão é **Testes**, com lista de perfis autorizados vazia; portanto, ninguém recebe resposta automática até que um ID técnico de remetente seja cadastrado. O modo **Produção** aceita todos os remetentes, exceto os da lista de exclusão. Exclusões prevalecem em qualquer modo. Os perfis são identificados pelo ID numérico estável do Instagram, não pelo @.
 
