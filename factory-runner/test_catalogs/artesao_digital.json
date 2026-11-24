@@ -1,0 +1,901 @@
+{
+  "schema_version": 1,
+  "project_id": "artesao_digital",
+  "catalog_version": "1.0.0",
+  "environment_id": "artesao-node22-python3-ha-arm64",
+  "modules": [
+    {
+      "id": "foundation",
+      "path_patterns": [
+        "apps/umdoislab/server/foundation/**",
+        "apps/umdoislab/server/app.ts",
+        "apps/umdoislab/server/index.ts",
+        "apps/umdoislab/package.json"
+      ],
+      "depends_on": [],
+      "risk_tags": [
+        "schema",
+        "transactions"
+      ]
+    },
+    {
+      "id": "manufacturing",
+      "path_patterns": [
+        "apps/umdoislab/server/manufacturing*",
+        "apps/umdoislab/src/Manufactur*"
+      ],
+      "depends_on": [
+        "foundation",
+        "materials",
+        "products"
+      ],
+      "risk_tags": [
+        "manufacturing"
+      ]
+    },
+    {
+      "id": "materials",
+      "path_patterns": [
+        "apps/umdoislab/server/material*",
+        "apps/umdoislab/server/material-ledger*",
+        "apps/umdoislab/src/Material*"
+      ],
+      "depends_on": [
+        "foundation"
+      ],
+      "risk_tags": [
+        "inventory",
+        "ledger"
+      ]
+    },
+    {
+      "id": "products",
+      "path_patterns": [
+        "apps/umdoislab/server/products.ts",
+        "apps/umdoislab/server/product-*",
+        "apps/umdoislab/src/Product*",
+        "apps/umdoislab/src/Catalog*"
+      ],
+      "depends_on": [
+        "foundation"
+      ],
+      "risk_tags": [
+        "catalog",
+        "stock"
+      ]
+    },
+    {
+      "id": "orders",
+      "path_patterns": [
+        "apps/umdoislab/server/orders.ts",
+        "apps/umdoislab/server/quotes.ts",
+        "apps/umdoislab/server/quote-*",
+        "apps/umdoislab/src/Orders.tsx"
+      ],
+      "depends_on": [
+        "foundation",
+        "products"
+      ],
+      "risk_tags": [
+        "orders"
+      ]
+    },
+    {
+      "id": "sales",
+      "path_patterns": [
+        "apps/umdoislab/server/sales.ts",
+        "apps/umdoislab/server/reconciliation.ts",
+        "apps/umdoislab/src/Contribution.tsx"
+      ],
+      "depends_on": [
+        "foundation",
+        "products",
+        "orders"
+      ],
+      "risk_tags": [
+        "sales",
+        "finance"
+      ]
+    },
+    {
+      "id": "finance",
+      "path_patterns": [
+        "apps/umdoislab/server/finance*",
+        "apps/umdoislab/server/pilot/pix*",
+        "apps/umdoislab/src/Finance.tsx",
+        "apps/umdoislab/src/PaymentSettings.tsx"
+      ],
+      "depends_on": [
+        "foundation",
+        "sales"
+      ],
+      "risk_tags": [
+        "financial"
+      ]
+    },
+    {
+      "id": "shipping",
+      "path_patterns": [
+        "apps/umdoislab/server/shipping*",
+        "apps/umdoislab/src/ClientDestination.tsx"
+      ],
+      "depends_on": [
+        "foundation",
+        "orders"
+      ],
+      "risk_tags": [
+        "shipping"
+      ]
+    },
+    {
+      "id": "pilot",
+      "path_patterns": [
+        "apps/umdoislab/server/pilot/**",
+        "apps/umdoislab/src/Pilot*",
+        "apps/umdoislab/src/LegalGate.tsx"
+      ],
+      "depends_on": [
+        "foundation"
+      ],
+      "risk_tags": [
+        "tenant",
+        "access-control"
+      ]
+    },
+    {
+      "id": "offline",
+      "path_patterns": [
+        "apps/umdoislab/server/offline-*",
+        "apps/umdoislab/src/Offline*"
+      ],
+      "depends_on": [
+        "foundation",
+        "orders",
+        "sales"
+      ],
+      "risk_tags": [
+        "offline-sync"
+      ]
+    },
+    {
+      "id": "runtime",
+      "path_patterns": [
+        "apps/umdoislab/Dockerfile",
+        "apps/umdoislab/package*.json",
+        "apps/umdoislab/tsconfig*.json",
+        "apps/umdoislab/scripts/**",
+        "apps/umdoislab/debian/**",
+        "apps/artesaos-piloto/**",
+        "forja-01/**"
+      ],
+      "depends_on": [
+        "foundation"
+      ],
+      "risk_tags": [
+        "build",
+        "distribution"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "artesao.app",
+      "version": "1",
+      "path": "apps/umdoislab/test/app.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.attention",
+      "version": "1",
+      "path": "apps/umdoislab/test/attention.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.catalog-selection",
+      "version": "1",
+      "path": "apps/umdoislab/test/catalog-selection.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.categories",
+      "version": "1",
+      "path": "apps/umdoislab/test/categories.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.client-address",
+      "version": "1",
+      "path": "apps/umdoislab/test/client-address.test.ts",
+      "modules": [
+        "orders"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.contextual-corrections",
+      "version": "1",
+      "path": "apps/umdoislab/test/contextual-corrections.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.distribution",
+      "version": "1",
+      "path": "apps/umdoislab/test/distribution.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.editor-actions",
+      "version": "1",
+      "path": "apps/umdoislab/test/editor-actions.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.evolution",
+      "version": "1",
+      "path": "apps/umdoislab/test/evolution.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.finance",
+      "version": "1",
+      "path": "apps/umdoislab/test/finance.test.ts",
+      "modules": [
+        "finance"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.foundation",
+      "version": "1",
+      "path": "apps/umdoislab/test/foundation.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.ha-dev26-dev28-upgrade",
+      "version": "1",
+      "path": "apps/umdoislab/test/ha-dev26-dev28-upgrade.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.interface-lists",
+      "version": "1",
+      "path": "apps/umdoislab/test/interface-lists.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.legacy-checkpoint",
+      "version": "1",
+      "path": "apps/umdoislab/test/legacy-checkpoint.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.legal-navigation",
+      "version": "1",
+      "path": "apps/umdoislab/test/legal-navigation.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.loading",
+      "version": "1",
+      "path": "apps/umdoislab/test/loading.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.local-admin",
+      "version": "1",
+      "path": "apps/umdoislab/test/local-admin.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.manufacturing-upgrade",
+      "version": "1",
+      "path": "apps/umdoislab/test/manufacturing-upgrade.test.ts",
+      "modules": [
+        "manufacturing",
+        "runtime"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.manufacturing",
+      "version": "1",
+      "path": "apps/umdoislab/test/manufacturing.test.ts",
+      "modules": [
+        "manufacturing"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.material-ledger",
+      "version": "1",
+      "path": "apps/umdoislab/test/material-ledger.test.ts",
+      "modules": [
+        "materials"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.materials",
+      "version": "1",
+      "path": "apps/umdoislab/test/materials.test.ts",
+      "modules": [
+        "materials"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.module-access",
+      "version": "1",
+      "path": "apps/umdoislab/test/module-access.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.offline",
+      "version": "1",
+      "path": "apps/umdoislab/test/offline.test.ts",
+      "modules": [
+        "offline"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.orders",
+      "version": "1",
+      "path": "apps/umdoislab/test/orders.test.ts",
+      "modules": [
+        "orders"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.package-estimate",
+      "version": "1",
+      "path": "apps/umdoislab/test/package-estimate.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.pilot-community",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-community.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-documents",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-documents.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-entry",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-entry.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-google",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-google.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-invitations",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-invitations.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-onboarding",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-onboarding.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-public-origin",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-public-origin.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-support",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-support.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-tenant-cache",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-tenant-cache.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-users",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-users.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot-version",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot-version.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pilot",
+      "version": "1",
+      "path": "apps/umdoislab/test/pilot.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pix-brcode",
+      "version": "1",
+      "path": "apps/umdoislab/test/pix-brcode.test.ts",
+      "modules": [
+        "finance"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pix-mp",
+      "version": "1",
+      "path": "apps/umdoislab/test/pix-mp.test.ts",
+      "modules": [
+        "finance"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.product-photos",
+      "version": "1",
+      "path": "apps/umdoislab/test/product-photos.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.product-stock",
+      "version": "1",
+      "path": "apps/umdoislab/test/product-stock.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.products",
+      "version": "1",
+      "path": "apps/umdoislab/test/products.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.pwa",
+      "version": "1",
+      "path": "apps/umdoislab/test/pwa.test.ts",
+      "modules": [
+        "foundation"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.quote-status",
+      "version": "1",
+      "path": "apps/umdoislab/test/quote-status.test.ts",
+      "modules": [
+        "orders"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.r11-interest",
+      "version": "1",
+      "path": "apps/umdoislab/test/r11-interest.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.reconciliation",
+      "version": "1",
+      "path": "apps/umdoislab/test/reconciliation.test.ts",
+      "modules": [
+        "sales"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.round-pagination-category",
+      "version": "1",
+      "path": "apps/umdoislab/test/round-pagination-category.test.ts",
+      "modules": [
+        "products"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.runtime-portability",
+      "version": "1",
+      "path": "apps/umdoislab/test/runtime-portability.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.sales",
+      "version": "1",
+      "path": "apps/umdoislab/test/sales.test.ts",
+      "modules": [
+        "sales"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.shipping",
+      "version": "1",
+      "path": "apps/umdoislab/test/shipping.test.ts",
+      "modules": [
+        "shipping"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.stabilization",
+      "version": "1",
+      "path": "apps/umdoislab/test/stabilization.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.synthetic-legacy",
+      "version": "1",
+      "path": "apps/umdoislab/test/synthetic-legacy.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "policy",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "artesao.version-guard",
+      "version": "1",
+      "path": "apps/umdoislab/test/version-guard.test.ts",
+      "modules": [
+        "pilot"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "artesao.workflow",
+      "version": "1",
+      "path": "apps/umdoislab/test/workflow.test.ts",
+      "modules": [
+        "runtime"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    }
+  ]
+}
