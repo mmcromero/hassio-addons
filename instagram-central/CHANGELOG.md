@@ -1,3 +1,9 @@
+# 0.1.51 — envio automático exclusivo para testes
+
+- Autoriza envio apenas em modo testes, com perfil explícito e não excluído, claim válido e decisão local favorável.
+- Bloqueia envio automático no modo all; mantém proteções de janela e idempotência.
+- Adaptador n8n exige autorização explícita e resposta Gemini STOP. Homologação real pendente.
+
 # 0.1.50 — alinhar testes HTTP à versão do pacote
 
 - Atualiza as três asserções de versão em `tests/test_http.py` para 0.1.50. O build real 0.1.49 revelou que os testes de health e interface ainda esperavam 0.1.47.

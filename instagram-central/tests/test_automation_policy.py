@@ -153,6 +153,19 @@ class AutomationPolicyTests(unittest.TestCase):
             finally:
                 patcher.stop()
 
+    def test_automatic_reply_refuses_all_mode_even_for_test_contact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            payload, patcher = self.prepare_claim(directory)
+            try:
+                with server.database() as db:
+                    automation_policy.save(db, "business-1", "all", "12345678", "")
+                calls = []
+                result = server.send_automatic_reply(payload, {"instagram_account_id": "business-1"}, {}, sender=lambda *args: calls.append(args))
+                self.assertEqual(result["status"], "rejected")
+                self.assertEqual(calls, [])
+            finally:
+                patcher.stop()
+
     def test_automatic_reply_refuses_messages_outside_24_hours(self):
         with tempfile.TemporaryDirectory() as directory:
             payload, patcher = self.prepare_claim(directory, age_minutes=24 * 60 + 1)

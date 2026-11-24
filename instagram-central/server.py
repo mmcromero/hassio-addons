@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.50"
+APP_VERSION = "0.1.51"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -295,7 +295,7 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
     with _AUTOMATION_LOCK:
         with database() as conn:
             conn.execute("BEGIN IMMEDIATE")
-            row = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot')
+            row = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot'),i.message_text
               FROM inbound i LEFT JOIN handoff h
                 ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
               WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
@@ -303,8 +303,10 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                 AND i.message_at IS NOT NULL
                 AND i.claim_token=? AND i.claim_until>?""",
               (account, profile, mid, token, now_iso)).fetchone()
-            if row is None or row[1] != "bot" or not automation_policy.allowed(conn, account, profile):
+            if row is None or row[1] != "bot" or not automation_policy.allowed_test_send(conn, account, profile):
                 return {"status": "rejected", "reason": "claim_or_policy_invalid"}
+            if prepare_decision({"channel":"instagram","accountId":account,"senderId":profile,"messageId":mid,"claimToken":token,"messageText":row[2],"handoffState":row[1]})["mayCallGemini"] is not True:
+                return {"status": "rejected", "reason": "local_decision_denied"}
             if not within_messaging_window(row[0], now):
                 return {"status": "rejected", "reason": "outside_messaging_window"}
             if conn.execute("""SELECT 1 FROM automation_sends
@@ -388,12 +390,16 @@ def evaluate_claim(data):
                 not automation_policy.allowed(conn, values[0], values[1]) or
                 not within_messaging_window(row[2])):
             return None
+        test_send = automation_policy.allowed_test_send(conn, values[0], values[1])
     if row is None:
         return None
-    return prepare_decision({
+    decision = prepare_decision({
         "channel": "instagram", "accountId": values[0], "senderId": values[1],
         "messageId": values[2], "claimToken": values[3],
         "messageText": row[0], "handoffState": row[1]})
+    decision["maySend"] = test_send and decision["mayCallGemini"] is True
+    decision["testSendAuthorized"] = decision["maySend"]
+    return decision
 
 
 def save_draft(data):

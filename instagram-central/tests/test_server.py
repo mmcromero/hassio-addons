@@ -221,7 +221,8 @@ class InstagramIngressTests(unittest.TestCase):
         item = server.claim_message()
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
         self.assertEqual(server.evaluate_claim(claim)["action"], "greeting")
-        self.assertFalse(server.evaluate_claim(claim)["maySend"])
+        self.assertTrue(server.evaluate_claim(claim)["maySend"])
+        self.assertTrue(server.evaluate_claim(claim)["testSendAuthorized"])
         self.assertTrue(server.evaluate_claim(claim)["mayCallGemini"])
         self.assertIsNone(server.evaluate_claim({**claim, "claimToken": "x" * 43}))
         self.assertTrue(server.acknowledge_message(claim))
@@ -247,7 +248,8 @@ class InstagramIngressTests(unittest.TestCase):
         item = server.claim_message()
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
         self.assertEqual(server.evaluate_claim(claim)["action"], "commercial_question")
-        self.assertFalse(server.evaluate_claim(claim)["maySend"])
+        self.assertTrue(server.evaluate_claim(claim)["maySend"])
+        self.assertTrue(server.evaluate_claim(claim)["testSendAuthorized"])
 
     def test_draft_requires_live_claim_and_never_sends(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)

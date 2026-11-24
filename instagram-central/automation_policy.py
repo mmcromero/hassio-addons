@@ -93,3 +93,11 @@ def save(conn, recipient_id, mode, test_ids, excluded_ids):
        for category, values in (("test", tests), ("excluded", excluded))
        for sender in values])
     return snapshot(conn, recipient_id)
+
+
+def allowed_test_send(conn, recipient_id, sender_id):
+    """Real automatic sends are restricted to explicit test contacts."""
+    if not isinstance(sender_id, str) or not _ID.fullmatch(sender_id) or sender_id == recipient_id:
+        return False
+    policy = snapshot(conn, recipient_id)
+    return policy["mode"] == "tests" and sender_id in policy["test"] and sender_id not in policy["excluded"]
