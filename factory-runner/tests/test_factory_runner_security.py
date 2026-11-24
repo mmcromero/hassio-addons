@@ -619,6 +619,21 @@ class SecurityTests(unittest.TestCase):
         self.assertNotIn("synthetic-read-token", result.stdout)
         self.assertNotIn("synthetic-unrelated-secret", result.stdout)
 
+    def test_audit_record_fsyncs_file_and_new_directory_entry(self):
+        with patch.object(server.os, "fsync") as sync:
+            server.record("workspace_sync:avisaqui", None,
+                          "completed_workspace_sync",
+                          "a" * 8 + "-1234-1234-1234-" + "a" * 12)
+        self.assertEqual(sync.call_count, 2)
+
+    def test_audit_record_fsyncs_each_append(self):
+        server.AUDIT_PATH.write_text("", encoding="utf-8")
+        with patch.object(server.os, "fsync") as sync:
+            server.record("workspace_sync:avisaqui", None,
+                          "completed_workspace_sync",
+                          "b" * 8 + "-1234-1234-1234-" + "b" * 12)
+        self.assertEqual(sync.call_count, 1)
+
     def test_audit_does_not_contain_secret(self):
         self.request("POST", "/api/corrigir-issue", token="Bearer test-secret-not-for-production-0123456789")
         data = server.AUDIT_PATH.read_text(encoding="utf-8")
