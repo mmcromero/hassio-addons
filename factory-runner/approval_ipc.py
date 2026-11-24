@@ -96,7 +96,7 @@ class ApprovalRPCHandler(socketserver.StreamRequestHandler):
             if not isinstance(body,dict) or body.get('action') not in allowed:raise PublicationError('ipc_action_denied')
             action=body.pop('action')
             keys={'propose':{'body','preview','receipt'},'view':{'proposal'},
-                  'consent':{'proposal','password','consent_digest','confirmation'},
+                  'consent':{'proposal','consent_digest','confirmation'},
                   'revoke':{'nonce','password'},'status':{'nonce','challenge','grant_digest','purpose'},
                   'grant':{'proposal'},'public_key':set(),
                   'enroll':{'password','password_confirm','confirmation'},'enrollment_status':set()}
