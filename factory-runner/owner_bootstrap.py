@@ -1,7 +1,7 @@
 """Root-only provisioning of isolated stores and immutable runtime identity config.
 
 It never generates owner credentials, writes GitHub tokens, or enables publishing.
-The owner chooses the password through the verified HA Ingress enrollment screen.
+The owner submits the one-time password in add-on Settings; a separate root-only startup helper sends it over local approval IPC and clears the temporary options.
 """
 from __future__ import annotations
 
@@ -135,7 +135,7 @@ def _write_root_config(path, value, group_name):
 
 
 def configure_from_options(root, options_path="/data/options.json"):
-    """Write immutable root-owned runtime identity config; never enroll secrets."""
+    """Write immutable root-owned identity config; enrollment runs separately."""
     options_path = Path(options_path).absolute()
     if (options_path.resolve() != options_path or options_path.is_symlink()
             or not options_path.is_file()):
