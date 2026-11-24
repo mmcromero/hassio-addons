@@ -1,24 +1,32 @@
-> **HISTÓRICO — SEM EFEITO OPERACIONAL:** esta cópia pertence a um estado anterior do Factory Runner e não é a fonte de desenvolvimento nem a esteira atual. Fonte canônica atual: [mmcromero/factory-runner, branch desenvolvimento](https://github.com/mmcromero/factory-runner/tree/desenvolvimento), especialmente [factory-runner-add-on/RELEASE-PIPELINE.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/factory-runner-add-on/RELEASE-PIPELINE.md) e [docs/CONTINUIDADE-ATIVA.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/docs/CONTINUIDADE-ATIVA.md). Leia a versão atual antes de qualquer decisão; este documento é somente histórico de distribuição.
+# Esteira consolidada — Factory Runner M019 / candidata RC20
 
-# Esteira consolidada — Factory Runner RC18
+> **Estado atual — 24/11/2026:** fonte ativa mmcromero/factory-runner:desenvolvimento; candidata 0.1.0-rc.20. A RC19 é o baseline publicado/instalado. A publicação desta candidata não instala nem reinicia o add-on.
+>
+> O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
+>
+> O owner ingress está disponível via Supervisor na porta interna 8099; a página de status é somente leitura por padrão. Consentimento exige opt-in e identidade HA. As rotas de publicação são protegidas por ativação root-managed e grant independente; o gate permanece fechado por padrão. Não confundir a publicação da RC do Runner com publicação de pacotes dos produtos.
+>
+> O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 
-> Diretriz vigente M006/P0 (20/11/2026): operação exclusivamente no Raspberry
-> Pi 4/add-on HA existente, sem host externo como dependência. Componentes de
-> publicação dormentes e publish=disabled; nenhuma ativação/RC autorizada neste
-> lote. Desenho e limites atuais: [M006-RPI-PIPELINE.md](M006-RPI-PIPELINE.md).
-> Referências históricas a executor externo não definem a arquitetura vigente.
-
-
-Controle: Issue #2 do Orquestrador; fonte privada na branch filha do PR #4.
+Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 Avisaqui e Artesão mantêm políticas, versões e receitas independentes.
 
 ## Operação disponível
 
-A API continua autenticada, em loopback, sem publicador. `/api/prepare` e
+A API operacional permanece autenticada e em loopback. `/api/prepare` e
 `/api/prepare-declarative` usam somente o perfil confiável da imagem, SHA completo,
 política aberta, versão coerente e blob aprovado do exportador. Não executam o
 exportador no caminho declarativo. `/api/release-plan` continua somente leitura;
 `/api/fechar-pacote` continua 403 mesmo com Bearer válido.
+
+O incremento M018/M019 integrou o Publisher isolado e as rotas autenticadas
+`/api/publication-preview`, `/api/publication-propose`, `/api/publish` e
+`/api/publication-reconcile`. Elas encaminham somente payloads fechados ao
+Publisher por IPC Unix. O Publisher valida perfil, recibo, política vigente,
+artefato reproduzido, token de escrita separado, ativação root-managed e grant
+Ed25519 do proprietário. Sem qualquer gate, a escrita retorna bloqueio; Bearer
+operacional não é consentimento. O estado atual permanece sem token de escrita
+e sem ativação root-managed.
 
 Console local, sob a conta confiável do Runner e com os diretórios configurados:
 
@@ -54,7 +62,15 @@ Diretórios e perfis precisam ser exclusivos da conta confiável: hashes não
 substituem isolamento, identidade ou autorização. Não edite recibos reais para
 simular PASS. Fixtures modificam somente evidência sintética em diretórios temporários.
 
-## Publicador separado — somente laboratório Git local
+## Publisher runtime — integração M018/M019
+
+- O serviço Publisher roda sob UID próprio e recebe requisições do Runner por socket Unix com SO_PEERCRED e ACL.
+- Approval, Publisher e Owner UI são iniciados por `env -i` com PATH mínimo antes de `su-exec`; não recebem os tokens do Runner nem variáveis de workspace. O processo Runner/API mantém apenas os tokens necessários; o token de escrita do Publisher continua em arquivo privado separado. Regressão em `tests/test_factory_runner_security.py`.
+- O token GitHub de escrita fica em arquivo privado separado do token de leitura dos workspaces; sem ele, o transporte é somente leitura.
+- A ativação root-managed é uma trava independente. O consentimento do proprietário é por proposta, com reautenticação, grant Ed25519, TTL, nonce e revogação.
+- A rota /api/publish existe, mas o gate de ativação permanece fechado. A publicação do próprio add-on RC20 no catálogo não ativa a publicação de pacotes dos produtos.
+
+## Publicador de referência em laboratório Git local — histórico RC18
 
 `local_publisher.py` é componente de referência para testes, sem rota HTTP e sem
 cópia na imagem final HA. Só escreve em Git **bare dentro do seu diretório de
