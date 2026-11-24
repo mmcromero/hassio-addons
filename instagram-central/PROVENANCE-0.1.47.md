@@ -1,7 +1,7 @@
 # Proveniência — Central Instagram 0.1.47
 
 - Fonte canônica: `mmcromero/instagram-automacoes`, branch `release-candidate`.
-- SHA da candidata: `4adc60d38c0779f4a926f65c51c66e218331883a`.
+- SHA da candidata: `c9cd4887edf8c442e9439a1ec80d1007ab73cd22`.
 - Versão: `0.1.47`; slug `umdoislab_instagram`; arquitetura `aarch64`.
 - Destino: `mmcromero/hassio-addons:main/instagram-central/`.
 - Corrige a marcação HTML do contêiner da caixa de entrada, fechando corretamente o atributo `class`.
