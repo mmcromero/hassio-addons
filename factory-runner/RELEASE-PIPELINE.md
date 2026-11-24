@@ -1,6 +1,6 @@
 # Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado RC31)
 
-> **Estado de código — 24/11/2026 / M056:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; RC31 (`0.1.0-rc.31`) promovida à branch `release-candidate`, publicada somente em `hassio-addons:main/factory-runner/` e instalada/iniciada no Home Assistant. Build/validação do Dockerfile e probe declarativo de workspace real confirmados; homologação funcional ampla ainda pendente. RC30 é estado histórico.
+> **Estado de código — 24/11/2026 / M069:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; candidata RC38 (`0.1.0-rc.38`) em preparação para promoção, publicação e homologação. Última instalação comprovada: RC37 (`0.1.0-rc.37`) em `hassio-addons:main/factory-runner/`, Supervisor `started`, build ARM64, suíte Dockerfile e probe de persistência PASS. RC38 adiciona FR-EXEC-001 somente leitura; build/testes e probe real no Supervisor ainda pendentes. RC31 e anteriores são estados históricos.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
