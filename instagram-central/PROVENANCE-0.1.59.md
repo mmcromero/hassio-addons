@@ -33,3 +33,17 @@
 - Instalação 0.1.59: **pendente**.
 - Homologação funcional: **pendente**.
 - Workflows n8n, credenciais, configuração Meta, WhatsApp e demais add-ons: não alterados nesta publicação.
+
+
+## Resultado da homologação no Home Assistant
+
+- Add-on existente: `45c28620_umdoislab_instagram`.
+- Supervisor ARM64: `Build 45c28620/aarch64-addon-umdoislab_instagram:0.1.59 done` em 24/11/2026 18:18:37 -03.
+- Atualização do Supervisor concluída às 18:18:42 -03; versão instalada/latest `0.1.59`, estado `started`, `update_available=false`.
+- Health check interno `GET /health`: HTTP 200, `ok=true`, `version=0.1.59`.
+- Controle da ponte `POST /bridge/context` sem credencial: HTTP 403 `access denied`, comportamento esperado. A rota existe e exige autenticação.
+- O build ARM64 foi concluído. Como o Dockerfile encadeia as etapas com `&&`, compilação e as 16 suítes declaradas terminaram com código zero. Os logs consultados não expuseram a saída individual de cada suíte; não há contagens por teste registradas.
+- Logs atuais não mostram erro de execução da versão 0.1.59. Registros de `BrokenPipeError` e de build anterior pertencem a versões/eventos anteriores.
+- Adapter n8n Instagram `XkIn9QnqW6Tml5Ld`: atualmente inativo (`active=false`, `activeVersionId=null`), draft `937ca466-c305-4a44-9a43-9bc331a5f6d6`. O núcleo compartilhado `71LrWsU2wdIfT7Hs` está ativo na versão `44e6c678-676f-4faa-8f32-bc2411ac6702`.
+- Não houve teste ponta a ponta de mensagem nem envio externo nesta homologação. Nenhum workflow n8n, credencial, configuração Meta, WhatsApp ou outro add-on foi alterado.
+- Estado final desta publicação: Central 0.1.59 instalada e saudável; integração ponta a ponta depende da autorização separada para publicar/ativar o adapter em TESTES RESTRITOS.
