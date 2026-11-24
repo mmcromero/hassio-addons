@@ -16,9 +16,10 @@ probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 
 class E2EProbeTests(unittest.TestCase):
+    @unittest.skipIf(os.geteuid() == 0, "run in non-root Docker validation")
     def test_full_real_loopback_preflight_and_prepare(self):
         out = io.StringIO()
-        with patch.object(probe.os, "geteuid", return_value=100), contextlib.redirect_stdout(out):
+        with contextlib.redirect_stdout(out):
             result = probe.main()
         self.assertEqual(result, 0, out.getvalue())
         self.assertIn("[E2E] PASS:", out.getvalue())
@@ -33,6 +34,7 @@ class E2EProbeTests(unittest.TestCase):
         self.assertEqual(result, 2)
         self.assertIn("requires non-root", out.getvalue())
 
+    @unittest.skipIf(os.geteuid() == 0, "run in non-root Docker validation")
     def test_fixture_git_has_no_token_or_remote(self):
         original = subprocess.run
         seen = []
@@ -48,12 +50,12 @@ class E2EProbeTests(unittest.TestCase):
                 self.assertNotIn("--upload-pack", args[0])
             return original(*args, **kwargs)
         with patch.dict(os.environ, {"RUNNER_AUTH_TOKEN": "synthetic-secret", "GH_TOKEN":"synthetic-secret"}), (
-             patch.object(probe.os, "geteuid", return_value=100)), (
              patch.object(probe.subprocess, "run", side_effect=guarded)), (
              contextlib.redirect_stdout(io.StringIO())):
             self.assertEqual(probe.main(), 0)
         self.assertGreater(len(seen), 6)
 
+    @unittest.skipIf(os.geteuid() == 0, "run in non-root Docker validation")
     def test_local_http_only(self):
         original = probe.ThreadingHTTPServer
         addresses = []
@@ -61,8 +63,7 @@ class E2EProbeTests(unittest.TestCase):
             addresses.append(address)
             self.assertEqual(address, ("127.0.0.1", 0))
             return original(address, handler)
-        with patch.object(probe.os, "geteuid", return_value=100), (
-             patch.object(probe, "ThreadingHTTPServer", side_effect=checked)), (
+        with patch.object(probe, "ThreadingHTTPServer", side_effect=checked), (
              contextlib.redirect_stdout(io.StringIO())):
             self.assertEqual(probe.main(), 0)
         self.assertEqual(len(addresses), 1)
