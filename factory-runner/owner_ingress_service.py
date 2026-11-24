@@ -1,4 +1,4 @@
-"""HA Ingress status/owner-consent adapter, isolated under owner_ui UID."""
+"""HA Ingress owner-consent adapter, isolated under owner_ui UID; no enrollment endpoint."""
 import grp, json, os, stat, sys
 from pathlib import Path
 from approval_ipc import ApprovalRPCClient
