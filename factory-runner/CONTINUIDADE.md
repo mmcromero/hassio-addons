@@ -1,3 +1,7 @@
+> **ESTADO VIGENTE — 24/11/2026:** a fonte ativa é mmcromero/factory-runner:desenvolvimento. A continuidade válida está em docs/CONTINUIDADE-ATIVA.md. A candidata RC20 inclui a página de status HA Ingress, somente leitura por padrão; owner consent e publicador continuam opt-in e bloqueados. O histórico abaixo foi preservado como registro de versões anteriores; não usar RC3–RC19 como estado atual.
+
+---
+
 # CONTINUIDADE — Factory Runner (19/11/2026)
 
 ### Lote grande — executor externo do Artesão Digital
@@ -94,3 +98,12 @@ O mesmo ramo agora inclui `artesao_isolated_executor.py` e `ARTESAO-BUILDER-002.
 **Situação dos testes físicos da RC3:** STARTUP, worker de diagnóstico e bind local confirmados; API end-to-end não testada, exportador ainda bloqueado por Bubblewrap. RC4 contém apenas diagnóstico adicional em desenvolvimento, sem publicação.
 
 **Políticas canônicas:** `fabricacao_e_orcamentos:main/docs/operacao/GOV_STD_001.md` v0.9, `GOV_BLK_002.md` v0.3, `hassio-addons:main/CONTRIBUTING.md` P0. Históricos e incidentes: [HISTORICO.md](HISTORICO.md), [CONTROLLED-WORKER.md](CONTROLLED-WORKER.md), Issue #2.
+
+
+## Correção M020 — isolamento de diretórios de configuração (24/11/2026)
+
+- Detectado que arquivos 0440 dentro de diretórios graváveis pelo próprio serviço ainda podiam ser removidos/substituídos pelo serviço.
+- Bootstrap cria `approval-config/`, `publisher-config/` e `owner-ui-config/` sob owner root, grupo específico e modo 0750. Arquivos de configuração seguem root-owned/0440.
+- Approval, Owner Ingress, Publisher e `run.sh` usam os caminhos separados. Estado gravável e token GitHub permanecem nos diretórios de serviço.
+- Testes de bootstrap atualizados, incluindo verificação dos modos e caminhos. Nenhuma suíte completa/build ARM64 executada ainda.
+- Correção em `desenvolvimento`; não publicada nem instalada. RC19 preservada.
