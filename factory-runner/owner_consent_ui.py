@@ -1,4 +1,4 @@
-"""HA owner enrollment and per-publication consent UI, independent from API Bearer.
+"""HA owner status and per-publication consent UI, independent from API Bearer.
 
 The separate Ingress service supplies a kernel-verified Supervisor peer and user.
 Request headers never set verified_ingress; this module never starts a listener.
@@ -39,80 +39,17 @@ class OwnerConsentUI:
             raise PublicationError('owner_enrollment_status_unavailable')
         if status.get('enrolled') is False:
             body=('<h1>Factory Runner — proprietário</h1>'
-                  '<p>O cadastro inicial ainda não foi concluído.</p>'
-                  '<p><a href="owner-enroll/">Configurar proprietário</a></p>')
+                  '<p>O cadastro inicial é feito nas Configurações deste add-on no Home Assistant.</p>'
+                  '<p>Preencha a senha e a confirmação, salve as opções e reinicie o add-on. '
+                  'A senha temporária será processada pela autoridade local e removida das opções.</p>')
         else:
             body=('<h1>Factory Runner — proprietário</h1>'
                   '<p>Identidade do proprietário confirmada.</p>'
-                  '<p>Esta tela não publica pacotes. Abra o link de consentimento gerado pelo Runner para revisar uma operação específica.</p>')
+                  '<p>Esta tela não publica pacotes. Abra a proposta pelo Runner para revisar e consentir uma operação específica.</p>')
         return {'html':'<!doctype html><meta charset="utf-8"><title>Factory Runner</title>'+body,
                 'headers':{'Cache-Control':'no-store',
                     'Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
                     'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'}}
-
-    def enroll_view(self,context):
-        owner=self.ingress_verifier(context)
-        if not isinstance(owner,str) or not owner:
-            raise PublicationError('verified_owner_ingress_required')
-        status=self.rpc.enrollment_status()
-        if not isinstance(status,dict) or status.get('enrolled') is not False:
-            raise PublicationError('owner_already_enrolled')
-        csrf=secrets.token_hex(32);session=csrf
-        self.sessions={key:value for key,value in self.sessions.items() if value['expires']>time.time()}
-        if len(self.sessions)>=32:raise PublicationError('owner_session_budget')
-        self.sessions[session]={'owner':owner,'csrf':csrf,'expires':time.time()+120,'kind':'enroll',
-                                'ingress_path':context.get('ingress_path')}
-        print(f"[OWNER-UI] ENROLLMENT FORM ISSUED: pid={os.getpid()} active_sessions={len(self.sessions)}",
-              file=sys.stderr,flush=True)
-        page=('<!doctype html><meta charset="utf-8"><title>Configurar proprietário</title>'
-              '<h1>Cadastro inicial do proprietário</h1>'
-              '<p>Crie uma senha independente. Use pelo menos 16 caracteres. Esta senha será solicitada em cada publicação.</p>'
-              '<p>Por segurança, o formulário expira em 2 minutos. Se expirar, abra novamente o cadastro.</p>'
-              '<form method="post" action="submit">'
-              '<input type="hidden" name="csrf" value="'+csrf+'">'
-              '<label>Nova senha <input type="password" name="password" minlength="16" maxlength="256" required></label>'
-              '<label>Confirme a senha <input type="password" name="password_confirm" minlength="16" maxlength="256" required></label>'
-              '<label>Digite CADASTRAR <input name="confirmation" required></label>'
-              '<button type="submit">Cadastrar proprietário</button></form>')
-        return {'session':session,'html':page,'headers':{
-            'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
-            'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'}}
-
-    def enroll(self,session,body,context,origin):
-        owner=self.ingress_verifier(context)
-        state=self.sessions.pop(session,None)
-        reason=None
-        if not state:
-            reason='session_not_found'
-        elif state.get('kind')!='enroll':
-            reason='session_kind_mismatch'
-        elif not isinstance(state.get('expires'),(int,float)) or state['expires']<=time.time():
-            reason='session_expired'
-        elif owner!=state.get('owner'):
-            reason='owner_identity_mismatch'
-        elif origin!=self.origin:
-            reason='origin_mismatch'
-        elif not state.get('ingress_path'):
-            reason='ingress_binding_missing'
-        elif state.get('ingress_path')!=context.get('ingress_path'):
-            reason='ingress_path_mismatch'
-        elif not isinstance(body,dict) or set(body)!={'csrf','password','password_confirm','confirmation'}:
-            reason='form_shape_invalid'
-        elif not isinstance(state.get('csrf'),str) or not secrets.compare_digest(
-                str(body.get('csrf','')),state['csrf']):
-            reason='csrf_mismatch'
-        if reason:
-            print(f"[OWNER-UI] ENROLLMENT SESSION INVALID: reason={reason} pid={os.getpid()} active_sessions={len(self.sessions)}",
-                  file=sys.stderr,flush=True)
-            raise PublicationError('owner_enrollment_session_invalid')
-        if (not isinstance(body['password'],str) or not isinstance(body['password_confirm'],str)
-                or not 16<=len(body['password'])<=256
-                or not secrets.compare_digest(body['password'].encode('utf-8'),body['password_confirm'].encode('utf-8'))
-                or body['confirmation']!='CADASTRAR'):
-            raise PublicationError('owner_enrollment_input_invalid')
-        return self.rpc.enroll(password=body['password'],
-                               password_confirm=body['password_confirm'],
-                               confirmation=body['confirmation'])
 
     def view(self,proposal,context):
         owner=self.ingress_verifier(context)
@@ -136,8 +73,7 @@ class OwnerConsentUI:
               '<h1>Consentimento por publicação</h1><p>Confira destino, versão, SHAs, escopo e digest.</p>'
               '<pre>'+details+'</pre><form method="post" action="consent">'
               '<input type="hidden" name="csrf" value="'+csrf+'">'
-              '<label>Senha independente do proprietário <input type="password" name="password" autocomplete="current-password" required></label>'
-              '<label>Digite PUBLICAR <input name="confirmation" required></label>'
+              '<label>Confirme a publicação digitando PUBLICAR <input name="confirmation" required></label>'
               '<button type="submit">Autorizar somente este ato</button></form>')
         return {'session':session,'html':page,'headers':{
             'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
@@ -148,8 +84,8 @@ class OwnerConsentUI:
         owner=self.ingress_verifier(context)
         state=self.sessions.pop(session,None)
         if (not state or state.get('kind')!='consent' or state['expires']<=time.time() or owner!=state['owner'] or origin!=self.origin
-                or not isinstance(body,dict) or set(body)!={'csrf','password','confirmation'}
+                or not isinstance(body,dict) or set(body)!={'csrf','confirmation'}
                 or not secrets.compare_digest(str(body.get('csrf','')),state['csrf'])):
             raise PublicationError('owner_csrf_or_session_invalid')
-        return self.rpc.request('consent',proposal=state['proposal'],password=body['password'],
+        return self.rpc.request('consent',proposal=state['proposal'],
                                 consent_digest=state['digest'],confirmation=body['confirmation'])
