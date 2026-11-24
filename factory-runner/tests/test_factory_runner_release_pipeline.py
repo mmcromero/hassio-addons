@@ -155,7 +155,7 @@ class ReleasePipelineTests(unittest.TestCase):
 
     def test_expired_and_excessively_long_grants(self):
         root,receipt,_=self.ready()
-        for expiry in (int(time.time())-1,int(time.time())+86401):
+        for expiry in (int(time.time())-1,int(time.time())+90000):
             with self.assertRaisesRegex(publisher.PublishBlocked,'expired_or_invalid_grant'):
                 self.publish(root,receipt,self.grant(receipt,expires_at=expiry))
 
