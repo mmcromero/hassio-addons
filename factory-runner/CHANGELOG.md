@@ -1,3 +1,11 @@
+# 0.1.0-rc.36 — conecta timestamp de boot ao probe de persistência
+
+- O processo principal do probe agora lê `RUNNER_API_PROBE_BOOT_STARTED_AT` e repassa o instante a `run_probe()`.
+- A contagem de eventos anteriores ao boot deixa de permanecer desconectada do caminho real de inicialização.
+- Inclui regressão de integração que chama `main()` com ambiente sintético e exige que o timestamp chegue a `run_probe()`.
+- Mantém probe somente leitura, sem preparação/publicação, sem mudança de rede, credenciais, opções ou políticas.
+- Build/teste pelo Dockerfile e validação real no Supervisor ainda pendentes; esta RC não está publicada nem instalada.
+
 # 0.1.0-rc.35 — verificação de auditoria persistida entre boots
 
 - O probe captura o instante de início do contêiner e consulta a auditoria antes/depois do preflight.
