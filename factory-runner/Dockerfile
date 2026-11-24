@@ -8,6 +8,7 @@ RUN --mount=type=secret,id=build_ca \
     apk add --no-cache ca-certificates python3 bash jq git bubblewrap su-exec openssl
 WORKDIR /app
 COPY approval_service.py owner_ingress_service.py publisher_service.py publisher_ipc.py publisher_permissions.py publication_contract.py owner_approval.py approval_ipc.py owner_consent_ui.py github_bytes_transport.py publication_workflow.py artesao_artifacts.py release_receipt.py release_console.py local_publisher.py server.py autonomous_dev.py rc_fastlane.py artesao_adapter.py artesao_isolated_executor.py sandbox_export.py declarative_export.py declarative_runtime_probe.py factory_e2e_probe.py workspace_sync.py workspace_askpass.py runtime_probe.py controlled_worker.py landlock_probe.py trusted_export_plan.py ha_ingress_identity.py ha_ingress_server.py owner_bootstrap.py run.sh /app/
+COPY config.yaml /app/config.yaml
 COPY projects/ /app/projects/
 COPY tests/ /app/tests/
 RUN addgroup -S runner && adduser -S -D -H -G runner -s /sbin/nologin runner && addgroup -S publisher && addgroup -S publisher_clients && addgroup runner publisher && addgroup runner publisher_clients
