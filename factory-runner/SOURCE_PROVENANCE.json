@@ -4,14 +4,14 @@
   "version": "0.1.0-rc.31",
   "repository": "mmcromero/factory-runner",
   "commit": "1cd8db2134d4ddae7ab8cb5ee5d483b97df4a9da",
-  "catalog_sha": "741f4588c7b5e6af689f2a7754a0c3c7aeabc6ad",
+  "catalog_sha": "e501c858f7ed9f91746e1418aa40d139fa455dd2",
   "previous_source": "8eb7f7cce7958313b0c28f1d09bb16af8686642b",
   "reviewed_source": "1cd8db2134d4ddae7ab8cb5ee5d483b97df4a9da",
   "publication": "OWNER_AUTHORIZED_RC31_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055",
   "candidate_distribution": "FACTORY_RUNNER_RC31_DECLARATIVE_REAL_WORKSPACE_PROBE",
-  "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
+  "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
+  "review_status": "INSTALLED_PENDING_HOMOLOGATION",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -711,13 +711,15 @@
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
     "version": "0.1.0-rc.31",
-    "build": "pending",
-    "installation": "pending",
-    "runtime_state": "RC30 started before RC31 update",
+    "build": "success",
+    "installation": "success",
+    "runtime_state": "started",
+    "completed_at": "2026-11-24T18:17:22-03:00",
     "owner_enrollment": "unchanged",
-    "product_publication": "disabled"
+    "product_publication": "disabled",
+    "evidence": "Supervisor reports app successfully updated; installed version rc.31 started; no update available; Dockerfile validation RUN chain completed; [DECLARATIVE-REAL-PROBE] PASS for avisaqui"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral gerado da árvore factory-runner-add-on/ no commit de origem indicado. catalog_sha identifica o commit main usado como base CAS anterior à publicação. Os arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados e não integram o payload da fonte. Nenhum teste da RC31 foi declarado PASS; build, instalação e homologação permanecem pendentes no Supervisor.",
-  "status": "RC31_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
+  "provenance_note": "Inventário integral gerado da árvore factory-runner-add-on/ no commit de origem indicado. catalog_sha identifica o commit de publicação da RC31. Os arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados e não integram o payload da fonte. O Supervisor concluiu o build/validação Dockerfile e iniciou RC31; o probe declarativo real passou para Avisaqui. Isso não equivale à homologação funcional completa do produto nem libera publicação de produtos.",
+  "status": "RC31_INSTALLED_STARTED_REAL_WORKSPACE_PROBE_PASS_PENDING_HOMOLOGATION"
 }
