@@ -1,3 +1,9 @@
+> **ESTADO ATUAL — M019 / 24/11/2026:** este documento preserva o desenho M006. A candidata RC20 declara ingress: true para habilitar o proxy interno do Supervisor na porta 8099, mas o serviço padrão é uma página estática de status. owner_ingress_enabled=false continua desligado por padrão; nesse modo não há identidade de proprietário, IPC, consentimento ou publicador ativo. O serviço de status aceita somente o peer Supervisor 172.30.32.2 e rejeita POST.
+>
+> Para habilitar o fluxo completo, o operador configura explicitamente owner_ingress_enabled=true, o ID exato do usuário HA e a origem HTTPS. O bootstrap valida e fixa esses dados; o cadastro do proprietário é único. Após o cadastro, a interface solicita reinício para gerar a configuração pinada do publicador. O publicador permanece read-only sem token e bloqueado até ativação root-managed e grant assinado. A API possui rotas de preview/propose/publish/reconcile, mas o gate continua fechado.
+>
+> A página de status e o consentimento não abrem portas de host. A porta 9876 continua sem mapeamento. A RC19 instalada permanece intacta até autorização de atualização. Build ARM64 e suíte serão executados pelo Supervisor durante a atualização da candidata, conforme P0.
+
 # M006 — Esteira determinística no Raspberry Pi 4 existente
 
 Decisão vigente: Issue #2, comentário 7035036351 e P0 7034806094. Factory Runner
@@ -5,11 +11,14 @@ opera exclusivamente como add-on HA no Pi existente. Outro computador, Forja,
 VM ou nuvem não é dependência do produto. Codex/Docker neste lote são laboratório
 de desenvolvimento; nenhum equipamento/serviço foi provisionado para operação.
 
-Este lote não altera versão RC18, não publica candidata, não instala no HA e não
-ativa publicação. `run.sh` permanece intacto. A imagem contém componentes
-**dormentes** e usuários separados; não inicia emissor, UI de consentimento ou
-publicador. `/api/publication-status` é autenticado e somente leitura. Não há
-`/api/publish`; `/api/fechar-pacote` continua bloqueado por Bearer.
+Registro histórico do lote M006: naquele corte, a RC18 não iniciava os serviços
+de aprovação/consentimento/publicação. O incremento M018/M019 posterior integrou
+os serviços e as rotas `/api/publication-preview`, `/api/publication-propose`,
+`/api/publish` e `/api/publication-reconcile`. Todas exigem Bearer para acesso
+à API e encaminham a operação ao Publisher isolado; o Publisher recusa escrita
+sem ativação root-managed, token de escrita e grant assinado do proprietário.
+`/api/publication-status` continua autenticado e somente leitura. A rota
+`/api/fechar-pacote` continua bloqueada.
 
 ## Fluxo implementado e fronteira de confiança
 
