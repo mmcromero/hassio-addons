@@ -262,3 +262,38 @@ body[data-ui-page]{margin:0;background:var(--bg);color:var(--text);font-size:14p
 @media(max-width:760px){
  .ui-app-header.topbar{flex-wrap:nowrap;min-width:0}
 }
+
+
+/* UX 0.1.44 — inbox hierarchy: one page title, compact metadata, immediate content. */
+.ui-inbox-page{padding:18px 32px 48px}
+.ui-inbox-page .inbox-page-section{max-width:1240px;margin:0 auto}
+.ui-inbox-page .inbox-page-header{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 12px}
+.ui-inbox-page .inbox-page-title{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-width:0}
+.ui-inbox-page .inbox-page-title h1{margin:0;font-size:clamp(22px,2vw,28px);line-height:1.2;letter-spacing:-.025em}
+.ui-inbox-page .inbox-count{color:var(--muted,#a3b5c5);font-size:13px;font-weight:600;white-space:nowrap}
+.ui-inbox-page #refresh-inbox{min-height:44px;white-space:nowrap}
+.ui-inbox-page .inbox-source-note{margin:0 0 10px;color:var(--muted,#a3b5c5);font-size:12px}
+.ui-inbox-page .inbox-source-note summary{display:inline-flex;align-items:center;min-height:36px;cursor:pointer}
+.ui-inbox-page .inbox-source-note p{max-width:76ch;margin:4px 0 10px;line-height:1.5}
+.ui-inbox-page #inbox-feedback:empty{display:none}
+.ui-inbox-page #inbox-feedback:not(:empty){margin:8px 0;padding:10px 12px;border:1px solid var(--edge,#2b4051);border-radius:9px}
+.ui-inbox-page .inbox-message-list{margin-top:10px;gap:10px}
+.ui-inbox-page .inbox-message{padding:14px 16px}
+.ui-inbox-page .inbox-message-text{margin:10px 0 12px;line-height:1.55}
+.ui-inbox-page .inbox-message-status{gap:4px 14px}
+.ui-inbox-page .inbox-message-details{margin-top:8px}
+@media(max-width:760px){
+ .ui-inbox-page{padding:12px 14px 32px}
+ .ui-inbox-page .inbox-page-header{align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+ .ui-inbox-page .inbox-page-title{gap:8px}
+ .ui-inbox-page .inbox-page-title h1{font-size:22px}
+ .ui-inbox-page #refresh-inbox{min-height:44px;padding:9px 12px}
+ .ui-inbox-page .inbox-source-note{margin-bottom:8px}
+ .ui-inbox-page .inbox-message-list{margin-top:8px;gap:9px}
+ .ui-inbox-page .inbox-message{padding:12px}
+}
+@media(max-width:380px){
+ .ui-inbox-page .inbox-page-header{align-items:flex-start}
+ .ui-inbox-page .inbox-page-title{flex:1 1 100%}
+ .ui-inbox-page #refresh-inbox{width:100%}
+}
