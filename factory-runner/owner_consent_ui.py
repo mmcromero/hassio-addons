@@ -55,10 +55,11 @@ class OwnerConsentUI:
         status=self.rpc.enrollment_status()
         if not isinstance(status,dict) or status.get('enrolled') is not False:
             raise PublicationError('owner_already_enrolled')
-        session=secrets.token_hex(32);csrf=secrets.token_hex(32)
+        csrf=secrets.token_hex(32);session=csrf
         self.sessions={key:value for key,value in self.sessions.items() if value['expires']>time.time()}
         if len(self.sessions)>=32:raise PublicationError('owner_session_budget')
-        self.sessions[session]={'owner':owner,'csrf':csrf,'expires':time.time()+120,'kind':'enroll'}
+        self.sessions[session]={'owner':owner,'csrf':csrf,'expires':time.time()+120,'kind':'enroll',
+                                'ingress_path':context.get('ingress_path')}
         page=('<!doctype html><meta charset="utf-8"><title>Configurar proprietário</title>'
               '<h1>Cadastro inicial do proprietário</h1>'
               '<p>Crie uma senha independente. Use pelo menos 16 caracteres. Esta senha será solicitada em cada publicação.</p>'
@@ -77,6 +78,7 @@ class OwnerConsentUI:
         state=self.sessions.pop(session,None)
         if (not state or state.get('kind')!='enroll' or state['expires']<=time.time()
                 or owner!=state['owner'] or origin!=self.origin
+                or not state.get('ingress_path') or state['ingress_path']!=context.get('ingress_path')
                 or not isinstance(body,dict)
                 or set(body)!={'csrf','password','password_confirm','confirmation'}
                 or not secrets.compare_digest(str(body.get('csrf','')),state['csrf'])):

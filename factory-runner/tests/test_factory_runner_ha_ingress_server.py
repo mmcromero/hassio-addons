@@ -100,8 +100,7 @@ class HAIngressServerTests(unittest.TestCase):
 
         status, headers, body = self.dispatch(ui, "GET", "/owner-enroll/")
         self.assertEqual(status, 200)
-        self.assertIn("Path=/api/hassio_ingress/0123456789abcdef/owner-enroll/",
-                      headers["Set-Cookie"])
+        self.assertNotIn("Set-Cookie", headers)
 
     def test_owner_enrollment_short_route_redirects_to_slash(self):
         status, headers, body = self.dispatch(FakeOwnerUI(), "GET", "/owner-enroll")
@@ -109,16 +108,15 @@ class HAIngressServerTests(unittest.TestCase):
         self.assertEqual(headers["Location"],
                          "/api/hassio_ingress/0123456789abcdef/owner-enroll/")
 
-    def test_owner_enrollment_post_uses_exact_fields_and_clears_cookie(self):
+    def test_owner_enrollment_post_uses_exact_fields_without_cookie(self):
         ui = FakeOwnerUI()
         form = urlencode({
-            "csrf": "csrf-token",
+            "csrf": "a" * 64,
             "password": "strong-owner-password-123",
             "password_confirm": "strong-owner-password-123",
             "confirmation": "CADASTRAR",
         }).encode()
         headers = self.headers(
-            Cookie="factory_owner_session=" + "a" * 64,
             Origin=ui.origin,
             **{"Content-Type": "application/x-www-form-urlencoded"},
         )
@@ -127,8 +125,7 @@ class HAIngressServerTests(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertIn(b"Cadastro do propriet", body)
-        self.assertIn("Max-Age=0", response_headers["Set-Cookie"])
-        self.assertIn("/owner-enroll/", response_headers["Set-Cookie"])
+        self.assertNotIn("Set-Cookie", response_headers)
         self.assertEqual(ui.enrollments[0][1]["confirmation"], "CADASTRAR")
 
     def test_owner_enrollment_post_rejects_extra_fields(self):

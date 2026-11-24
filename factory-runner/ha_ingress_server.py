@@ -81,7 +81,8 @@ def dispatch_owner_consent(
     owner_id,
 ):
     """Handle one bounded request; never exposes the session or grant in body."""
-    context = {"peer_ip": peer_ip, "headers": headers}
+    context = {"peer_ip": peer_ip, "headers": headers,
+               "ingress_path": (_one_header(headers, "X-Ingress-Path") or "").rstrip("/")}
     owner = verify_ha_ingress_context(
         context,
         expected_ha_user_id=expected_ha_user_id,
@@ -134,6 +135,10 @@ def dispatch_owner_consent(
             return _response(503, "Interface de consentimento indisponível.")
         if len(page.encode("utf-8")) > MAX_PAGE_BYTES:
             return _response(503, "Conteúdo de consentimento excede o limite.")
+        # Initial enrollment uses a one-time form nonce bound to the verified HA ingress.
+        # Publication consent continues to require its separate HttpOnly cookie.
+        if enrollment:
+            return _response(200, page, security_headers)
         cookie_path = ingress_path.rstrip("/") + cookie_suffix
         cookie = (
             f"{COOKIE_NAME}={session}; Max-Age=120; Path={cookie_path}; "
@@ -162,7 +167,7 @@ def dispatch_owner_consent(
             return _response(415, "Formato não aceito.")
         origin = _one_header(headers, "Origin")
         session = _cookie_session(headers)
-        if not origin or not session:
+        if not origin or (not enrollment and not session):
             reason = "origin_missing" if not origin else "owner_session_cookie_missing_or_invalid"
             print("[OWNER-UI] DENIED: " + reason, flush=True)
             return _response(403, 
@@ -181,7 +186,10 @@ def dispatch_owner_consent(
         payload = {key: values[0] for key, values in form.items()}
         try:
             if enrollment:
-                ui.enroll(session, payload, context, origin)
+                nonce = payload["csrf"]
+                if not _SESSION.fullmatch(nonce):
+                    return _response(403, "Sessão de cadastro inválida.")
+                ui.enroll(nonce, payload, context, origin)
             else:
                 ui.consent(session, payload, context, origin)
         except Exception:
@@ -194,7 +202,7 @@ def dispatch_owner_consent(
         )
         message = ("Cadastro do proprietário concluído. Reinicie o add-on para concluir a preparação."
                    if enrollment else "Consentimento registrado. Nenhuma publicação foi executada.")
-        return _response(200, message, {
+        return _response(200, message, {} if enrollment else {
             "Set-Cookie": clear_cookie,
         })
 

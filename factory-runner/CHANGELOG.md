@@ -1,3 +1,10 @@
+# 0.1.0-rc.24 — cadastro inicial sem dependência de cookie próprio
+
+- Evidência real RC23: owner_session_cookie_missing_or_invalid.
+- Cadastro usa nonce CSRF de 256 bits, uso único, validade de 120 s, vinculado à identidade HA e caminho Ingress verificados; exige Origin HTTPS exato.
+- Consentimento de publicação mantém cookie HttpOnly, CSRF e reautenticação independentes.
+- Validação integrada do cadastro sem cookie; publicação de produtos continua bloqueada.
+
 # 0.1.0-rc.23 — cadastro via HA Ingress
 
 - Aceita campos Cookie separados, mas recusa duplicação do cookie do proprietário.

@@ -386,16 +386,29 @@ def dispatch(method, path, extra=None, body=b'', peer='172.30.32.2'):
 def form(path, submit, fields, submitted_origin=origin):
     code, response_headers, body = dispatch('GET', path)
     assert code == 200, code
-    cookie = response_headers['Set-Cookie']
-    assert all(x in cookie for x in ('Secure','HttpOnly','SameSite=Strict'))
+    cookie = response_headers.get('Set-Cookie')
+    if path.startswith('/owner-enroll'):
+        assert cookie is None
+    else:
+        assert all(x in cookie for x in ('Secure','HttpOnly','SameSite=Strict'))
     csrf = re.search(rb'name="csrf" value="([a-f0-9]{64})"', body).group(1).decode()
     fields = {**fields, 'csrf': csrf}
-    return dispatch('POST', submit, {'Cookie':cookie.split(';',1)[0],
-        'Origin':submitted_origin,'Content-Type':'application/x-www-form-urlencoded'},
-        urlencode(fields).encode())
+    post_headers = {'Origin':submitted_origin,'Content-Type':'application/x-www-form-urlencoded'}
+    if cookie:
+        post_headers['Cookie'] = cookie.split(';',1)[0]
+    return dispatch('POST', submit, post_headers, urlencode(fields).encode())
 """
         enrollment = run("owner_ui", ui_code + """
 assert dispatch('GET','/owner-enroll/',peer='127.0.0.1')[0] == 403
+code, _, page = dispatch('GET','/owner-enroll/')
+assert code == 200
+nonce = re.search(rb'name="csrf" value="([a-f0-9]{64})"', page).group(1).decode()
+post_headers = {'Origin':origin,'Content-Type':'application/x-www-form-urlencoded'}
+form_fields = {'csrf':nonce,'password':password,'password_confirm':password,'confirmation':'CADASTRAR'}
+encoded = urlencode(form_fields).encode()
+assert dispatch('POST','/owner-enroll/submit',{**post_headers,'X-Ingress-Path':'/api/hassio_ingress/other-token'},encoded)[0] == 403
+assert dispatch('POST','/owner-enroll/submit',post_headers,encoded)[0] == 403
+assert rpc.enrollment_status() == {'enrolled':False}
 fields = {'password':password,'password_confirm':password,'confirmation':'CADASTRAR'}
 assert form('/owner-enroll/','/owner-enroll/submit',fields,'https://wrong.invalid')[0] == 403
 assert rpc.enrollment_status() == {'enrolled':False}
