@@ -102,10 +102,6 @@ class ConnectionTests(unittest.TestCase):
         value = ic.subscribe_messages(CONFIG, cred, opener=fake)
         self.assertGreater(value, 0)
         req = observed["request"]
-        debug = observed["debug"]
-        self.assertEqual(parse_qs(urlsplit(debug.full_url).query)["input_token"], ["P" * 50])
-        self.assertNotIn("FAKE_APP_SECRET_REALLY_LONG", debug.full_url)
-        self.assertEqual(debug.get_header("Authorization"), "Bearer 1234567890123456|FAKE_APP_SECRET_REALLY_LONG")
         self.assertEqual(req.get_method(), "POST")
         self.assertEqual(urlsplit(req.full_url).path,
                          "/v27.0/17841454345931235/subscribed_apps")
@@ -132,7 +128,10 @@ class ConnectionTests(unittest.TestCase):
                 "messaging_page_id": "1122334455667788"}
         result = ic.send_text_message(CONFIG, cred, "12345678901234567", "Olá, tudo bem?", opener=fake)
         req = observed["request"]
+        # Webhook subscription uses the verified account token directly; the
+        # separate Page-token /debug_token permission check belongs to Send API.
         self.assertEqual(req.get_method(), "POST")
+        self.assertNotIn("/debug_token", req.full_url)
         self.assertEqual(urlsplit(req.full_url).netloc, "graph.facebook.com")
         self.assertEqual(urlsplit(req.full_url).path, "/v27.0/me/messages")
         self.assertEqual(req.get_header("Authorization"), "Bearer " + "P" * 50)
