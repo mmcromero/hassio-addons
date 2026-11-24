@@ -101,6 +101,31 @@ class RuntimeApiProbeTests(unittest.TestCase):
             boot_started_at="2026-11-24T19:00:00Z")
         self.assertEqual(result["prior_boot_audit_events"], 1)
 
+    def test_main_passes_boot_timestamp_into_live_probe(self):
+        from runtime_api_probe import main
+
+        timestamp = "2026-11-24T19:00:00Z"
+        expected_result = {
+            "projects": 0,
+            "preflight_checks": 0,
+            "audited_read_only_operations": 0,
+            "prior_boot_audit_events": 2,
+            "results": [],
+        }
+        with patch.dict("os.environ", {
+            "RUNNER_AUTH_TOKEN": self.TOKEN,
+            "RUNNER_API_PROBE_BOOT_STARTED_AT": timestamp,
+            "RUNNER_API_PROBE_EXPECT_WORKSPACES": "false",
+        }, clear=True), patch(
+            "runtime_api_probe.request_json", return_value=(200, {})
+        ), patch(
+            "runtime_api_probe.run_probe", return_value=expected_result
+        ) as run:
+            self.assertEqual(main(), 0)
+
+        run.assert_called_once_with(
+            self.TOKEN, [], boot_started_at=timestamp)
+
     def test_live_api_probe_fails_if_publication_is_reported(self):
         requester, _ = self.fake_requester(publish=True)
         with self.assertRaisesRegex(ProbeError, "publication_status_unsafe"):
