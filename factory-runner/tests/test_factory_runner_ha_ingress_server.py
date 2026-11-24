@@ -319,7 +319,7 @@ class HAIngressServerTests(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertIn("no-store", headers["Cache-Control"])
-        self.assertIn(b"Autorização desativada", body)
+        self.assertIn("Autorização desativada".encode("utf-8"), body)
         self.assertIn(b"owner_ingress_enabled", body)
         self.assertNotIn(b"PUBLICAR", body)
         self.assertIn("default-src 'none'", headers["Content-Security-Policy"])
