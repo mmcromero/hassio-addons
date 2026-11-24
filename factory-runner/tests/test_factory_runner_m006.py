@@ -264,8 +264,8 @@ class M006Tests(unittest.TestCase):
         self.assertEqual(self.fx.git(self.fx.source,'status','--porcelain'),'')
 
     def test_unix_peer_uid_and_action_acl(self):
-        directory=self.root/'socket';directory.mkdir(mode=0o700)
-        rpc=ApprovalRPCServer(directory/'approval.sock',self.issuer,{os.geteuid():{'status','view'}})
+        directory=self.root/'socket';directory.mkdir(mode=0o750)
+        rpc=ApprovalRPCServer(directory/'approval.sock',self.issuer,{os.geteuid():{'status','view'}},group_gid=os.getgid())
         thread=threading.Thread(target=rpc.serve_forever,daemon=True);thread.start()
         self.addCleanup(rpc.server_close);self.addCleanup(rpc.shutdown)
         client=ApprovalRPCClient(directory/'approval.sock',os.geteuid())
@@ -275,6 +275,17 @@ class M006Tests(unittest.TestCase):
         grant=self.grant()
         proof=client.status(grant['payload']['nonce'],'challenge',digest(grant['payload']),'check')
         self.assertTrue(proof['payload']['active'])
+
+    def test_ha_owner_ui_rejects_malformed_or_non_origin_urls(self):
+        class RPC:
+            def request(self,*args,**kwargs):return {}
+        invalid=('https://','https:///ha.example.invalid','http://ha.example.invalid',
+                 'https://user@ha.example.invalid','https://ha.example.invalid/path',
+                 'https://ha.example.invalid?x=1','https://ha.example.invalid#fragment',
+                 'https://ha.example.invalid:bad','https://ha.example.invalid\n')
+        for origin in invalid:
+            with self.subTest(origin=origin),self.assertRaisesRegex(PublicationError,'https_owner_origin_required'):
+                OwnerConsentUI(RPC(),origin,ingress_verifier=lambda ctx:'fixture-owner')
 
     def test_ha_owner_ui_requires_verified_context_csrf_and_reauth(self):
         outer=self
