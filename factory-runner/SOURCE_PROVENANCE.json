@@ -10,8 +10,8 @@
   "publication": "CANDIDATE_RC27_FOR_HA_VALIDATION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
   "candidate_distribution": "FACTORY_RUNNER_RC27_OWNER_ENROLLMENT_DIAGNOSTICS",
-  "tests": "PENDING_SUPERVISOR_VALIDATION",
-  "review_status": "SOURCE_COMMITTED_BUILD_PENDING",
+  "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
+  "review_status": "BUILD_AND_INSTALL_PASS_OWNER_ENROLLMENT_PENDING",
   "files": [
     {
       "mode": "100644",
@@ -749,5 +749,16 @@
       "sha256": "c4c451fdf6328fa86290a575c2354ec13e7a4ef714a265aec3c85a6c8e7795fc",
       "size": 21321
     }
-  ]
+  ],
+  "supervisor_validation": {
+    "target": "Home Assistant Supervisor",
+    "architecture": "aarch64",
+    "version": "0.1.0-rc.27",
+    "build": "success",
+    "installation": "success",
+    "runtime_state": "started",
+    "completed_at": "2026-11-24T11:49:52-03:00",
+    "owner_enrollment": "pending",
+    "product_publication": "disabled"
+  }
 }
