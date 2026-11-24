@@ -1,0 +1,1077 @@
+{
+  "schema_version": 1,
+  "project_id": "avisaqui",
+  "catalog_version": "1.0.0",
+  "environment_id": "avisaqui-node22-python3-ha-arm64",
+  "modules": [
+    {
+      "id": "database",
+      "path_patterns": [
+        "src/db.js",
+        "src/pairing/backend/schema.js"
+      ],
+      "depends_on": [],
+      "risk_tags": [
+        "data-integrity"
+      ]
+    },
+    {
+      "id": "core",
+      "path_patterns": [
+        "src/server.js",
+        "src/bootstrap-config.js",
+        "src/runtime-config.js",
+        "src/setup.js"
+      ],
+      "depends_on": [
+        "database"
+      ],
+      "risk_tags": [
+        "api",
+        "runtime"
+      ]
+    },
+    {
+      "id": "auth",
+      "path_patterns": [
+        "src/auth.js",
+        "src/admin.js",
+        "src/admin-gerentes.js",
+        "src/public/login.html",
+        "src/public/setup.html"
+      ],
+      "depends_on": [
+        "core",
+        "database"
+      ],
+      "risk_tags": [
+        "authentication",
+        "security"
+      ]
+    },
+    {
+      "id": "pairing",
+      "path_patterns": [
+        "src/pairing/**"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "cryptography",
+        "authorization"
+      ]
+    },
+    {
+      "id": "games",
+      "path_patterns": [
+        "src/pong.js",
+        "src/public/games/**"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "session",
+        "realtime"
+      ]
+    },
+    {
+      "id": "printing",
+      "path_patterns": [
+        "src/routes/integracao-impressao.js",
+        "src/public/impressao.html",
+        "src/windows-download.js"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "device-integration"
+      ]
+    },
+    {
+      "id": "kds",
+      "path_patterns": [
+        "src/public/kds.html",
+        "src/routes/pedidos.js"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "orders"
+      ]
+    },
+    {
+      "id": "wallet",
+      "path_patterns": [
+        "src/wallet.js",
+        "src/push.js",
+        "src/public/push-sw.js"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "payments",
+        "notifications"
+      ]
+    },
+    {
+      "id": "admin",
+      "path_patterns": [
+        "src/admin*.js",
+        "src/public/admin.html",
+        "src/interesses.js"
+      ],
+      "depends_on": [
+        "auth",
+        "database"
+      ],
+      "risk_tags": [
+        "administration"
+      ]
+    },
+    {
+      "id": "pwa",
+      "path_patterns": [
+        "src/public/login.html",
+        "src/public/landing.html",
+        "src/public/manifest.webmanifest",
+        "src/public/icon.svg",
+        "src/public/setup.html",
+        "src/public/cliente.html"
+      ],
+      "depends_on": [
+        "auth"
+      ],
+      "risk_tags": [
+        "browser",
+        "client"
+      ]
+    },
+    {
+      "id": "package",
+      "path_patterns": [
+        "package.json",
+        "package-lock.json",
+        "config.yaml",
+        "Dockerfile",
+        ".dockerignore",
+        ".governance/**",
+        "scripts/**",
+        ".github/**"
+      ],
+      "depends_on": [
+        "core"
+      ],
+      "risk_tags": [
+        "build",
+        "distribution"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "avisaqui.admin-gerentes-041",
+      "version": "1",
+      "path": "tests/admin-gerentes-041.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.admin-gerentes-seguranca-034",
+      "version": "1",
+      "path": "tests/admin-gerentes-seguranca-034.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.admin-gerentes",
+      "version": "1",
+      "path": "tests/admin-gerentes.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.agent-lab",
+      "version": "1",
+      "path": "tests/agent-lab.test.py",
+      "modules": [
+        "core"
+      ],
+      "kind": "policy",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.auth-api",
+      "version": "1",
+      "path": "tests/auth-api.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.auth-pages",
+      "version": "1",
+      "path": "tests/auth-pages.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.auth-schema",
+      "version": "1",
+      "path": "tests/auth-schema.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.biblioteca-jogos",
+      "version": "1",
+      "path": "tests/biblioteca-jogos.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.cadastro-rapido",
+      "version": "1",
+      "path": "tests/cadastro-rapido.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.catalogo-jogos",
+      "version": "1",
+      "path": "tests/catalogo-jogos.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.cliente-som-wallet-regression",
+      "version": "1",
+      "path": "tests/cliente-som-wallet-regression.test.js",
+      "modules": [
+        "wallet"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.games-browser-smoke.lab",
+      "version": "1",
+      "path": "tests/games-browser-smoke.lab.mjs",
+      "modules": [
+        "games"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.games-contratos-034",
+      "version": "1",
+      "path": "tests/games-contratos-034.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.games-fluxo-aprovado",
+      "version": "1",
+      "path": "tests/games-fluxo-aprovado.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.games-m019-jogo-da-velha-real",
+      "version": "1",
+      "path": "tests/games-m019-jogo-da-velha-real.test.mjs",
+      "modules": [
+        "games"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.https-prefix-auth",
+      "version": "1",
+      "path": "tests/https-prefix-auth.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.https-prefix",
+      "version": "1",
+      "path": "tests/https-prefix.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.integracao-impressao",
+      "version": "1",
+      "path": "tests/integracao-impressao.test.js",
+      "modules": [
+        "printing"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.interesses-piloto",
+      "version": "1",
+      "path": "tests/interesses-piloto.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.jogo-da-velha",
+      "version": "1",
+      "path": "tests/jogo-da-velha.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.kds-carregamento",
+      "version": "1",
+      "path": "tests/kds-carregamento.test.js",
+      "modules": [
+        "games",
+        "kds"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.kds-historico",
+      "version": "1",
+      "path": "tests/kds-historico.test.js",
+      "modules": [
+        "kds"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.legacy-conflicts",
+      "version": "1",
+      "path": "tests/legacy-conflicts.test.js",
+      "modules": [
+        "package"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "avisaqui.legacy-upgrade",
+      "version": "1",
+      "path": "tests/legacy-upgrade.test.js",
+      "modules": [
+        "database"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.login-browser-contract",
+      "version": "1",
+      "path": "tests/login-browser-contract.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "browser",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.logout-browser-history",
+      "version": "1",
+      "path": "tests/logout-browser-history.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "browser",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.package-policy",
+      "version": "1",
+      "path": "tests/package-policy.test.py",
+      "modules": [
+        "package"
+      ],
+      "kind": "policy",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "avisaqui.pairing-backend-api-lab",
+      "version": "1",
+      "path": "tests/pairing-backend-api-lab.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-asset-rc003",
+      "version": "1",
+      "path": "tests/pairing-backend-asset-rc003.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-backup-restore",
+      "version": "1",
+      "path": "tests/pairing-backend-backup-restore.test.js",
+      "modules": [
+        "pairing",
+        "database"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-http-python",
+      "version": "1",
+      "path": "tests/pairing-backend-http-python.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-https-headers",
+      "version": "1",
+      "path": "tests/pairing-backend-https-headers.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-integrated-host-lab",
+      "version": "1",
+      "path": "tests/pairing-backend-integrated-host-lab.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-manager-page-lab",
+      "version": "1",
+      "path": "tests/pairing-backend-manager-page-lab.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-schema",
+      "version": "1",
+      "path": "tests/pairing-backend-schema.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-session-lab",
+      "version": "1",
+      "path": "tests/pairing-backend-session-lab.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-backend-v1",
+      "version": "1",
+      "path": "tests/pairing-backend-v1.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-crypto",
+      "version": "1",
+      "path": "tests/pairing-crypto.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-ha-optin-config",
+      "version": "1",
+      "path": "tests/pairing-ha-optin-config.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pairing-server-optin-rc003",
+      "version": "1",
+      "path": "tests/pairing-server-optin-rc003.test.js",
+      "modules": [
+        "pairing"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pong-api",
+      "version": "1",
+      "path": "tests/pong-api.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pong-browser-contract",
+      "version": "1",
+      "path": "tests/pong-browser-contract.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pong-client-path",
+      "version": "1",
+      "path": "tests/pong-client-path.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pong-routes",
+      "version": "1",
+      "path": "tests/pong-routes.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.protocolo-jogos-v1",
+      "version": "1",
+      "path": "tests/protocolo-jogos-v1.test.js",
+      "modules": [
+        "games"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.proxy-origin",
+      "version": "1",
+      "path": "tests/proxy-origin.test.js",
+      "modules": [
+        "pwa"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.push-api",
+      "version": "1",
+      "path": "tests/push-api.test.js",
+      "modules": [
+        "wallet"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.pwa-brand-identity",
+      "version": "1",
+      "path": "tests/pwa-brand-identity.test.js",
+      "modules": [
+        "pwa"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.restaurante-logo-api",
+      "version": "1",
+      "path": "tests/restaurante-logo-api.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.restaurante-logo-ux",
+      "version": "1",
+      "path": "tests/restaurante-logo-ux.test.js",
+      "modules": [
+        "admin"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.server-roles",
+      "version": "1",
+      "path": "tests/server-roles.test.js",
+      "modules": [
+        "auth"
+      ],
+      "kind": "unit",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.server-smoke",
+      "version": "1",
+      "path": "tests/server-smoke.test.js",
+      "modules": [
+        "core"
+      ],
+      "kind": "integration",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.sqlite-backup-restore",
+      "version": "1",
+      "path": "tests/sqlite-backup-restore.test.js",
+      "modules": [
+        "database"
+      ],
+      "kind": "integration",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.sse-http",
+      "version": "1",
+      "path": "tests/sse-http.test.js",
+      "modules": [
+        "core"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.sse-scope",
+      "version": "1",
+      "path": "tests/sse-scope.test.js",
+      "modules": [
+        "core"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.test_arm64_isolated_smoke",
+      "version": "1",
+      "path": "tests/test_arm64_isolated_smoke.py",
+      "modules": [
+        "package"
+      ],
+      "kind": "policy",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "avisaqui.test_pr30_arm64_runner",
+      "version": "1",
+      "path": "tests/test_pr30_arm64_runner.py",
+      "modules": [
+        "package"
+      ],
+      "kind": "policy",
+      "risk": "high",
+      "requires_sandbox": true,
+      "artifact_required": true,
+      "operation_types": [
+        "package"
+      ]
+    },
+    {
+      "id": "avisaqui.testes-unificados-local",
+      "version": "1",
+      "path": "tests/testes-unificados-local.test.mjs",
+      "modules": [
+        "core"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.ux-gerentes-interface-034",
+      "version": "1",
+      "path": "tests/ux-gerentes-interface-034.test.js",
+      "modules": [
+        "core"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.ux-identidade-rc002",
+      "version": "1",
+      "path": "tests/ux-identidade-rc002.test.js",
+      "modules": [
+        "pwa"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.ux-impressao-pair-rc003",
+      "version": "1",
+      "path": "tests/ux-impressao-pair-rc003.test.js",
+      "modules": [
+        "printing",
+        "pairing"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.ux-paridade-prototipo-contract",
+      "version": "1",
+      "path": "tests/ux-paridade-prototipo-contract.test.js",
+      "modules": [
+        "pwa"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.wallet-addon-config",
+      "version": "1",
+      "path": "tests/wallet-addon-config.test.js",
+      "modules": [
+        "wallet"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.wallet-ready-notification",
+      "version": "1",
+      "path": "tests/wallet-ready-notification.test.js",
+      "modules": [
+        "wallet"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.wallet",
+      "version": "1",
+      "path": "tests/wallet.test.js",
+      "modules": [
+        "wallet"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.webui-launcher",
+      "version": "1",
+      "path": "tests/webui-launcher.test.js",
+      "modules": [
+        "pwa"
+      ],
+      "kind": "browser",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.windows-download-release",
+      "version": "1",
+      "path": "tests/windows-download-release.test.js",
+      "modules": [
+        "printing"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    },
+    {
+      "id": "avisaqui.windows-qr-complete-contract",
+      "version": "1",
+      "path": "tests/windows-qr-complete-contract.test.js",
+      "modules": [
+        "printing"
+      ],
+      "kind": "unit",
+      "risk": "normal",
+      "requires_sandbox": true,
+      "artifact_required": false,
+      "operation_types": []
+    }
+  ]
+}
