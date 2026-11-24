@@ -127,7 +127,7 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertEqual(original["state"], "SYNCED")
         # Already at the maximum retention cap. Unrelated catalog updates
         # must not require deleting a snapshot or adding a fifth archive.
-        for i in range(sync.MAX_ARCHIVES):
+        for i in range(4):
             (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
         # Public head advances outside the approved project's distribution
         # scope. A closed package must not create another large snapshot.
@@ -147,14 +147,14 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertFalse(result["eligible"])
         self.assertIn("PUBLIC_HEAD_OUTSIDE_APPROVED_SCOPE", result["errors"])
         self.assertEqual(len(list(self.workspaces.glob(".archive-*"))),
-                         sync.MAX_ARCHIVES)
+                         4)
 
     def test_updated_public_scope_must_archive_or_block_not_skip(self):
         self.run_sync()
         with patch.object(sync, "_public_scope_unchanged", return_value=False):
-            for i in range(sync.MAX_ARCHIVES):
+            for i in range(4):
                 (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
-            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_limit"):
+            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_unmanaged"):
                 sync.synchronize(
                     "fixture", token="notlogged", projects_dir=self.projects,
                     workspaces_dir=self.workspaces,
@@ -162,7 +162,7 @@ class WorkspaceSyncTests(unittest.TestCase):
                         self.source_sha if repo == "fixture/source" else "b" * 40),
                     clone=lambda *args: self.fail("must block before clone"))
         self.assertEqual(len(list(self.workspaces.glob(".archive-*"))),
-                         sync.MAX_ARCHIVES)
+                         4)
 
     def test_unrelated_catalog_fast_path_never_releases_eligible_package(self):
         self.run_sync()
@@ -173,8 +173,8 @@ class WorkspaceSyncTests(unittest.TestCase):
               patch.object(sync, "_clone", side_effect=AssertionError("not used"))):
             # Reaches the standard clone path; deliberately do not bypass
             # the fresh public checkout when a package is eligible.
-            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_limit"):
-                for i in range(sync.MAX_ARCHIVES):
+            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_unmanaged"):
+                for i in range(4):
                     (self.workspaces / (".archive-fixture-" + str(i))).mkdir()
                 sync.synchronize(
                     "fixture", token="notlogged", projects_dir=self.projects,
@@ -224,6 +224,97 @@ class WorkspaceSyncTests(unittest.TestCase):
         self.assertEqual(len(list(self.workspaces.glob(".archive-fixture-*"))),1)
         old=next(self.workspaces.glob(".archive-fixture-*"))
         self.assertEqual(json.loads((old/sync.MANAGED).read_text())["source_sha"],self.source_sha)
+
+    def test_retention_beyond_four_preserves_old_receipt_and_prepares(self):
+        import server
+        from release_receipt import verify_receipt
+        import hashlib
+        preparations = self.root / "preparations"
+        with (patch.object(server, "PROJECTS_DIR", self.projects),
+              patch.object(server, "WORKSPACES_DIR", self.workspaces),
+              patch.object(server, "PREPARATIONS_DIR", preparations)):
+            first = self.run_sync()
+            initial = server.prepare_project("fixture", first["source_sha"], "first")
+            self.assertEqual(initial["state"], "PREPARED_NOT_PUBLISHED")
+            first_path = next(preparations.iterdir())
+            original_receipt = verify_receipt(first_path, initial["receipt_sha256"])
+            original = {}
+            for i in range(6):
+                self.put(self.source, "change.txt", "revision " + str(i))
+                self.commit(self.source, "next " + str(i))
+                self.git(self.source, "branch", "-f", "desenvolvimento", "main")
+                result = self.run_sync()
+                self.assertEqual(result["state"], "SYNCED")
+                self.assertEqual(result["archive_count"], i + 1)
+                self.assertGreater(result["archive_bytes"], 0)
+                for path in self.workspaces.glob(".archive-fixture-*"):
+                    payload = (path / sync.MANAGED).read_bytes()
+                    key = path.name
+                    value = hashlib.sha256(payload).hexdigest()
+                    if key in original:
+                        self.assertEqual(value, original[key])
+                    original[key] = value
+            self.assertEqual(len(original), 6)
+            self.assertEqual(len(list(self.workspaces.glob(".archive-fixture-*"))), 6)
+            self.assertEqual(verify_receipt(first_path, initial["receipt_sha256"]),
+                             original_receipt)
+            final = server.prepare_project("fixture", result["source_sha"], "final")
+            self.assertEqual(final["state"], "PREPARED_NOT_PUBLISHED")
+            self.assertFalse(final["published"])
+            self.assertEqual(final["tests"], "PENDING")
+            output = next(p for p in preparations.iterdir() if p != first_path)
+            receipt = verify_receipt(output, final["receipt_sha256"])
+            self.assertEqual(receipt["source_sha"], result["source_sha"])
+            self.assertEqual(receipt["tests"]["status"], "PENDING")
+            repeat = server.prepare_project("fixture", result["source_sha"], "repeat")
+            self.assertTrue(repeat["idempotent"])
+            self.assertEqual(repeat["receipt_sha256"], final["receipt_sha256"])
+            self.assertEqual(self.git(self.dist, "rev-parse", "HEAD"), self.public_sha)
+
+    def test_retention_budget_denies_without_deleting_or_replacing(self):
+        self.run_sync()
+        work = self.workspaces / "fixture"
+        before = (work / sync.MANAGED).read_bytes()
+        self.put(self.source, "change.txt", "changed")
+        self.commit(self.source, "next")
+        self.git(self.source, "branch", "-f", "desenvolvimento", "main")
+        with patch.object(sync, "MAX_ARCHIVE_BYTES", 1):
+            with self.assertRaisesRegex(sync.SyncError, "workspace_archive_storage_limit"):
+                self.run_sync()
+        self.assertEqual((work / sync.MANAGED).read_bytes(), before)
+        self.assertFalse(list(self.workspaces.glob(".archive-*")))
+        self.assertFalse(list(self.workspaces.glob(".stage-*")))
+
+    def test_disk_reserve_denies_without_deleting_or_replacing(self):
+        from types import SimpleNamespace
+        self.run_sync()
+        work = self.workspaces / "fixture"
+        before = (work / sync.MANAGED).read_bytes()
+        self.put(self.source, "change.txt", "changed")
+        self.commit(self.source, "next")
+        self.git(self.source, "branch", "-f", "desenvolvimento", "main")
+        with patch.object(sync.shutil, "disk_usage",
+                          return_value=SimpleNamespace(free=sync.MIN_FREE_BYTES)):
+            with self.assertRaisesRegex(sync.SyncError, "workspace_disk_reserve"):
+                self.run_sync()
+        self.assertEqual((work / sync.MANAGED).read_bytes(), before)
+        self.assertFalse(list(self.workspaces.glob(".archive-*")))
+        self.assertFalse(list(self.workspaces.glob(".stage-*")))
+
+    def test_archive_symlink_preserved_and_sync_denied(self):
+        self.run_sync()
+        external = self.root / "outside"
+        external.mkdir()
+        (external / "keep").write_text("preserve")
+        link = self.workspaces / ".archive-fixture-abcdef012345"
+        link.symlink_to(external, target_is_directory=True)
+        self.put(self.source, "change.txt", "changed")
+        self.commit(self.source, "next")
+        self.git(self.source, "branch", "-f", "desenvolvimento", "main")
+        with self.assertRaisesRegex(sync.SyncError, "workspace_archive_unmanaged"):
+            self.run_sync()
+        self.assertTrue(link.is_symlink())
+        self.assertEqual((external / "keep").read_text(), "preserve")
 
     def test_unmanaged_directory_is_preserved(self):
         work=self.workspaces/"fixture"; work.mkdir()

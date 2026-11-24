@@ -461,6 +461,12 @@ def run_workspace_sync(project, token, auto_prepare=False):
               + " public=" + result["public_sha"][:12]
               + (" remote_public=" + result["remote_public_sha"][:12]
                  if result.get("remote_public_sha") else ""), flush=True)
+        if "archive_count" in result:
+            print("[RETENTION] PASS: project=" + project
+                  + " archives=" + str(result["archive_count"])
+                  + " bytes=" + str(result["archive_bytes"])
+                  + " budget=" + str(result["archive_budget_bytes"])
+                  + " removed=0", flush=True)
         record("workspace_sync:" + project, None, "completed_workspace_sync",
                operation_id, actor="trusted_startup")
         readonly = "SYNC_ONLY_NO_PREPARATION" in result["errors"]

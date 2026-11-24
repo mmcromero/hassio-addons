@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-rc.21 — retenção não destrutiva e homologação (24/11/2026)
+
+- Substitui o teto fixo de quatro snapshots por orçamento global de 8 GiB de arquivos históricos; exige 2 GiB livres após o clone (2,5 GiB antes). Mantém todos os snapshots e recibos nos caminhos originais. Não elimina arquivos automaticamente.
+- Recusa arquivos históricos não gerenciados, links, objetos especiais e orçamento excedido; mantém o workspace anterior. Registra contagem e bytes sem expor caminhos ou segredos.
+- Teste integrado como runner: seis rotações, preservação do recibo anterior, preparo de pacote sintético, verificação de recibo e idempotência, sem publicação.
+- Nenhuma ativação de Publisher, Approval ou sandbox; a validação ARM64 ocorre no Supervisor.
+
 ## 0.1.0-rc.20 — candidata única para homologação final (24/11/2026)
 
 - Correção de segurança M020: arquivos runtime de autoridade movidos para diretórios root-managed separados (owner root, grupo do serviço, modo 0750); contas de serviço não podem substituir arquivos 0440 por manipulação do diretório pai.

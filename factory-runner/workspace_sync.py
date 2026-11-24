@@ -29,8 +29,12 @@ REPO = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 SHA = re.compile(r"^[0-9a-f]{40}$")
 REF_HEAD = "refs/remotes/origin/"
 MANAGED = ".factory-runner-workspace.json"
-MAX_ARCHIVES = 4
 MAX_GIT_BYTES = 512 * 1024 * 1024
+# Preserve historical clones in their original paths. Limit storage globally,
+# not by an arbitrary number of snapshots per project. No automatic deletion.
+MAX_ARCHIVE_BYTES = 16 * MAX_GIT_BYTES
+MIN_FREE_BYTES = 4 * MAX_GIT_BYTES
+ARCHIVE_NAME = re.compile(r"^\.archive-([a-z][a-z0-9_-]{1,47})-[0-9a-f]{12}$")
 
 class SyncError(Exception):
     pass
@@ -195,6 +199,72 @@ def _bytes(root: Path) -> int:
     return total
 
 
+def _retained_snapshot_bytes(path: Path) -> int:
+    """Count a verified managed no-checkout snapshot; never modify its data."""
+    try:
+        info = path.lstat()
+        if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid()
+                or path.resolve() != path.absolute()):
+            raise SyncError("workspace_archive_unmanaged")
+        if {p.name for p in path.iterdir()} != {"source", "distribution", MANAGED}:
+            raise SyncError("workspace_archive_unmanaged")
+        manifest = path / MANAGED
+        meta = manifest.lstat()
+        if (not stat.S_ISREG(meta.st_mode) or meta.st_uid != os.geteuid()
+                or meta.st_nlink != 1 or meta.st_size > 65536):
+            raise SyncError("workspace_archive_unmanaged")
+        data = json.loads(manifest.read_bytes())
+        if (not isinstance(data, dict)
+                or data.get("managed_by") != "factory-runner-workspace-v1"
+                or not all(isinstance(data.get(k), str) and REPO.fullmatch(data[k])
+                           for k in ("source_repo", "distribution_repo"))
+                or not all(isinstance(data.get(k), str) and SHA.fullmatch(data[k])
+                           for k in ("source_sha", "public_sha"))):
+            raise SyncError("workspace_archive_unmanaged")
+        for name in ("source", "distribution"):
+            checkout = path / name
+            if (not stat.S_ISDIR(checkout.lstat().st_mode)
+                    or {p.name for p in checkout.iterdir()} != {".git"}
+                    or not stat.S_ISDIR((checkout / ".git").lstat().st_mode)):
+                raise SyncError("workspace_archive_unmanaged")
+        total = max(info.st_size, info.st_blocks * 512)
+        def walk_error(error):
+            raise SyncError("workspace_archive_unreadable") from error
+        for base, dirs, files in os.walk(path, followlinks=False, onerror=walk_error):
+            for name in dirs + files:
+                entry = (Path(base) / name).lstat()
+                if (entry.st_uid != os.geteuid()
+                        or not (stat.S_ISDIR(entry.st_mode)
+                                or (stat.S_ISREG(entry.st_mode) and entry.st_nlink == 1))):
+                    raise SyncError("workspace_archive_unmanaged")
+                total += max(entry.st_size, entry.st_blocks * 512)
+                if total > MAX_ARCHIVE_BYTES:
+                    raise SyncError("workspace_archive_storage_limit")
+        return total
+    except (OSError, ValueError, TypeError) as exc:
+        raise SyncError("workspace_archive_unreadable") from exc
+
+
+def _archive_capacity(root: Path, workspace: Path, previous: dict | None) -> tuple[int, int]:
+    """Account for every retained clone plus the active clone about to be archived."""
+    total, count = 0, 0
+    for path in root.glob(".archive-*"):
+        if not ARCHIVE_NAME.fullmatch(path.name):
+            raise SyncError("workspace_archive_unmanaged")
+        total += _retained_snapshot_bytes(path)
+        count += 1
+        if total > MAX_ARCHIVE_BYTES:
+            raise SyncError("workspace_archive_storage_limit")
+    if previous is not None:
+        total += _retained_snapshot_bytes(workspace)
+        count += 1
+    if total > MAX_ARCHIVE_BYTES:
+        raise SyncError("workspace_archive_storage_limit")
+    if shutil.disk_usage(root).free < MIN_FREE_BYTES + MAX_GIT_BYTES:
+        raise SyncError("workspace_disk_reserve")
+    return count, total
+
+
 def _safe_workspace_root(root: Path) -> None:
     if root.is_symlink() or root.resolve() != root.absolute():
         raise SyncError("unsafe_workspace_root")
@@ -309,9 +379,7 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
                         "source_sha": source_sha, "public_sha": existing_public_sha,
                         "remote_public_sha": public_sha, "eligible": False,
                         "errors": list(report["errors"]) + ["PUBLIC_HEAD_OUTSIDE_APPROVED_SCOPE"]}
-    archive_candidates = list(root.glob(".archive-" + project + "-*"))
-    if len(archive_candidates) >= MAX_ARCHIVES:
-        raise SyncError("workspace_archive_limit")
+    archive_count, archive_bytes = _archive_capacity(root, workspace, previous)
     # Temporary staging must be a sibling on the same private filesystem.
     stage = Path(tempfile.mkdtemp(prefix=".stage-" + project + "-", dir=root))
     saved = None
@@ -346,6 +414,10 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
             share_readonly(stage)
         except (OSError, ValueError, KeyError) as exc:
             raise SyncError("publisher_workspace_acl_unavailable") from exc
+        # Recheck after cloning, before changing the live workspace. No old
+        # snapshots are removed or moved for capacity recovery.
+        if shutil.disk_usage(root).free < MIN_FREE_BYTES:
+            raise SyncError("workspace_disk_reserve")
         if previous is not None:
             saved = root / (".archive-" + project + "-" + uuid.uuid4().hex[:12])
             os.rename(workspace, saved)
@@ -358,7 +430,9 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
         result = {"state": "SYNCED", "project": project,
                   "source_sha": source_sha, "public_sha": public_sha,
                   "eligible": bool(report["eligible_for_preparation"]),
-                  "errors": list(report["errors"])}
+                  "errors": list(report["errors"]),
+                  "archive_count": archive_count, "archive_bytes": archive_bytes,
+                  "archive_budget_bytes": MAX_ARCHIVE_BYTES}
         return result
     finally:
         if stage.exists():
