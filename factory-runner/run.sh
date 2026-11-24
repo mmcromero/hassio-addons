@@ -100,6 +100,12 @@ env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner pytho
 env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent su-exec runner python3 -I -u /app/factory_e2e_probe.py || echo "[E2E] WARN: functional probe unavailable; API stays policy-gated"
 SERVICE_PIDS=()
 APPROVAL_SOCKET="$AUTHORITY_ROOT/consent-ipc/approval.sock"
+if jq -e '(.owner_password // "") != "" or (.owner_password_confirm // "") != ""' "$OPTIONS_FILE" >/dev/null; then
+    if [ ! -f "$AUTHORITY_ROOT/approval-config/runtime.json" ]; then
+        echo "[OWNER-SETTINGS] BLOCKED: configure HA identity and HTTPS Ingress before submitting the one-time password" >&2
+        exit 1
+    fi
+fi
 if [ -f "$AUTHORITY_ROOT/approval-config/runtime.json" ]; then
     env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin su-exec approval python3 -I -u -c 'import sys,runpy;sys.path.insert(0,"/app");runpy.run_path("/app/approval_service.py",run_name="__main__")' &
     SERVICE_PIDS+=("$!")
@@ -109,6 +115,17 @@ if [ -f "$AUTHORITY_ROOT/approval-config/runtime.json" ]; then
     done
     if [ ! -S "$APPROVAL_SOCKET" ]; then
         echo "[APPROVAL] BLOCKED: approval IPC did not become ready" >&2
+        if jq -e '(.owner_password // "") != "" or (.owner_password_confirm // "") != ""' "$OPTIONS_FILE" >/dev/null; then
+            echo "[OWNER-SETTINGS] BLOCKED: enrollment credentials were not processed; correct the approval startup failure" >&2
+            exit 1
+        fi
+    else
+        # One-time enrollment is submitted through add-on Settings. The
+        # helper calls the root-only approval IPC and clears temporary fields
+        # through the Supervisor self-options API before normal services start.
+        env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent \
+            SUPERVISOR_TOKEN="${SUPERVISOR_TOKEN:-}" \
+            /usr/bin/python3 -I -c 'import sys,runpy;sys.path.insert(0,"/app");runpy.run_path("/app/owner_settings_enroll.py",run_name="__main__")'
     fi
 else
     echo "[APPROVAL] DORMANT: owner identity and HTTPS origin are not configured"
