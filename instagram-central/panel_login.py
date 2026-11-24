@@ -19,7 +19,7 @@ _ATTEMPTS = {}
 _ATTEMPTS_LOCK = threading.Lock()
 _MAX_FAILURES = 8
 _FAILURE_WINDOW = 120
-_ADMIN_ACTIONS = frozenset(("check", "subscribe", "routing", "inbox_refresh")) | frozenset(
+_ADMIN_ACTIONS = frozenset(("check", "subscribe", "routing", "inbox_refresh", "automation")) | frozenset(
     "editorial:umdoislab:" + action for action in ("upload", "draft", "approve", "schedule", "cancel"))
 
 
