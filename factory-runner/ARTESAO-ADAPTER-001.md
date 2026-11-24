@@ -1,5 +1,34 @@
 # ARTESÃO-ADAPTER-001 — Primeira etapa: plano auditável de pacotes HA e Debian
 
+**Situação atual (20/11/2026):** o adaptador foi publicado na RC10 e a correção de dois testes foi publicada na **RC11**, versão instalada no Home Assistant e confirmada por captura. Logs da RC11 demonstram sincronização e avaliação real de políticas do Artesão. O executor externo segue NÃO homologado e permanece fora da imagem de produção. O resultado integral da suíte da RC11 não foi disponibilizado; registros abaixo são o histórico original de desenvolvimento, não o estado atual da instalação.
+
+## Correção do histórico da RC12 — fonte para próxima RC
+
+A leitura da RC12 não reconhece a família de auditoria real
+`workspace_sync:<project_id>` nem os estados `completed_workspace_sync`
+e `blocked_workspace_sync`. Por isso poderia retornar lista vazia mesmo
+quando o startup registrava sincronização de projetos. Corrigido **na branch
+de desenvolvimento**: aceitar apenas identificadores de projeto dentro da
+gramática validada, exibir o último estado da operação, preservar a seleção
+dos quatro campos seguros e rejeitar nomes de projetos inválidos. Dois
+testes HTTP novos cobrem sincronização realista com estado final e tentativa
+de incluir path em nome de projeto. **Sem teste no HA até uma RC posterior.**
+
+## Operações observáveis — desenvolvimento posterior à RC11
+
+A branch privada agora implementa `GET /api/operations`, autenticado e
+somente leitura. Ele mostra até 20 operações recentes extraídas de uma janela
+limitada do histórico local, com apenas `operation_id`, ação, estado e hora.
+Não devolve parâmetros de requisição, SHA, credenciais, paths, `actor` ou
+linhas brutas. Ausência do histórico devolve lista vazia; histórico inacessível
+ou link simbólico devolve `503 audit_unavailable`. São previstos testes
+HTTP para autenticação, resultado da pré-verificação, sanitização e symlink,
+sem execução de ações de publicação.
+
+Esse endpoint **não é um sistema completo de filas nem altera a situação da
+RC11 instalada**; é avanço incremental da observabilidade na branch.
+**Testes novos não executados nesta sessão**, e nenhuma RC pública foi criada.
+
 ## Continuação — executor externo de builds (ARTESAO-BUILDER-002)
 
 Na mesma branch isolada, foi acrescentado `artesao_isolated_executor.py`. Ele separa **plano somente leitura** e **execução expressa numa VM descartável dedicada**, exigindo política fixada em SHA e versão, checkout Git íntegro/limpo, cache npm offline e Docker local na VM. Usa scripts oficiais pinados para recibo real, origem HA/Debian, imagens distintas arm64/amd64 e checksums. Não cria versão nova, não modifica source/HA/Forja, não publica nem instala. O arquivo da política é declaração do operador e **não prova isolamento físico**; validação real da VM/firewall permanece obrigatória antes de usar `--execute`.
