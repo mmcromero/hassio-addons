@@ -63,6 +63,7 @@ class OwnerConsentUI:
         page=('<!doctype html><meta charset="utf-8"><title>Configurar proprietário</title>'
               '<h1>Cadastro inicial do proprietário</h1>'
               '<p>Crie uma senha independente. Use pelo menos 16 caracteres. Esta senha será solicitada em cada publicação.</p>'
+              '<p>Por segurança, o formulário expira em 2 minutos. Se expirar, abra novamente o cadastro.</p>'
               '<form method="post" action="submit">'
               '<input type="hidden" name="csrf" value="'+csrf+'">'
               '<label>Nova senha <input type="password" name="password" minlength="16" maxlength="256" required></label>'

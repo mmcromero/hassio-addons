@@ -6,6 +6,7 @@ No request can select a key, credential file, Git URL, command or filesystem pat
 import json
 import grp
 import os
+import re
 from pathlib import Path
 import socket
 import socketserver
@@ -15,6 +16,15 @@ from publication_contract import PublicationError
 from release_receipt import canonical
 
 MAX_MESSAGE=3*1024*1024
+_ERROR_CODE=re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+def _safe_error_code(value):
+    if isinstance(value, PublicationError):
+        value = str(value)
+    if isinstance(value, str) and _ERROR_CODE.fullmatch(value):
+        return value
+    return "approval_request_denied"
 
 
 def _unique_object(pairs):
@@ -94,6 +104,8 @@ class ApprovalRPCHandler(socketserver.StreamRequestHandler):
             result=getattr(self.server.issuer,action)(**body)
             data=canonical({'ok':True,'result':result})+b'\n'
             if len(data)>MAX_MESSAGE:raise PublicationError('ipc_result_budget')
+        except PublicationError as exc:
+            data=canonical({"ok":False,"error":_safe_error_code(exc)})+b"\n"
         except Exception:
             data=b'{"ok":false,"error":"approval_request_denied"}\n'
         self.wfile.write(data)
@@ -114,7 +126,7 @@ class ApprovalRPCClient:
         if len(response)>MAX_MESSAGE:raise PublicationError('ipc_response_budget')
         try:result=json.loads(response)
         except ValueError:raise PublicationError('invalid_ipc_response') from None
-        if result.get('ok') is not True:raise PublicationError('approval_request_denied')
+        if result.get('ok') is not True:raise PublicationError(_safe_error_code(result.get('error')))
         return result.get('result')
     def enroll(self,password,password_confirm,confirmation):
         return self.request('enroll',password=password,password_confirm=password_confirm,confirmation=confirmation)

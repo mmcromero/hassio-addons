@@ -28,6 +28,7 @@ class OwnerUIEnrollmentTests(unittest.TestCase):
     def test_one_time_enrollment_requires_csrf_origin_and_password_confirmation(self):
         view=self.ui.enroll_view(self.context)
         self.assertIn("minlength=\"16\"",view["html"])
+        self.assertIn("expira em 2 minutos",view["html"])
         csrf=re.search(r'name="csrf" value="([a-f0-9]{64})"',view["html"]).group(1)
         result=self.ui.enroll(view["session"],{
             "csrf":csrf,"password":"strong-owner-password-123",

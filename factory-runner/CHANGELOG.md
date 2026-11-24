@@ -1,3 +1,11 @@
+# 0.1.0-rc.26 — diagnóstico seguro da recusa no cadastro
+
+- Registra códigos de erro constantes do cadastro sem registrar senha, corpo do formulário, cookies, cabeçalhos ou caminhos privados.
+- Propaga pela IPC apenas códigos de erro previamente limitados; exceções inesperadas viram `internal_error`.
+- A tela informa quando o nonce CSRF de 120 segundos expira e apresenta instrução específica para erros de sessão ou validação.
+- Mantém Origin HTTPS exata, identidade HA, nonce de uso único, CSRF, IPC por UID, permissões e gate de publicação fechado.
+- Nenhuma credencial ou grant é criada por diagnóstico; publicação de produtos continua bloqueada.
+
 # 0.1.0-rc.25 — validação final da candidata de cadastro
 
 - Corrige fixture unitária para fornecer o caminho Ingress autenticado exigido pelo cadastro.

@@ -10,12 +10,14 @@ import re
 from urllib.parse import parse_qs, urlsplit
 
 from ha_ingress_identity import is_supervisor_ingress_peer, verify_ha_ingress_context
+from publication_contract import PublicationError
 
 COOKIE_NAME = "factory_owner_session"
 MAX_FORM_BODY = 4096
 MAX_PAGE_BYTES = 1024 * 1024
 _PROPOSAL = re.compile(r"^([a-f0-9]{32})$")
 _SESSION = re.compile(r"^[a-f0-9]{64}$")
+_REASON_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _ALLOWED_FORM = frozenset(("csrf", "password", "confirmation"))
 _ALLOWED_ENROLL_FORM = frozenset(("csrf", "password", "password_confirm", "confirmation"))
 
@@ -67,6 +69,29 @@ def _response(status, body, headers=None):
     if headers:
         result_headers.update(headers)
     return status, result_headers, payload
+
+
+def _owner_error_response(reason, *, enrollment):
+    if enrollment and reason == "owner_enrollment_session_invalid":
+        message = "A sessão do formulário expirou ou perdeu a validade. Volte à página inicial e abra um novo cadastro."
+    elif enrollment and reason == "owner_enrollment_input_invalid":
+        message = "Confira os campos: senha com pelo menos 16 caracteres, confirmação idêntica e a palavra CADASTRAR."
+    elif enrollment and reason == "owner_already_enrolled":
+        message = "O cadastro já foi concluído. Volte à página inicial e atualize."
+    elif enrollment:
+        message = "Falha técnica no cadastro. Não envie novamente até confirmar o estado do cadastro."
+    else:
+        message = "Não foi possível concluir a autorização. Reabra a proposta pelo Home Assistant."
+    back = '<p><a href="./">Voltar ao cadastro</a></p>' if enrollment else ""
+    page = (
+        '<!doctype html><meta charset="utf-8"><title>Operação não concluída</title>'
+        '<h1>Não foi possível concluir</h1><p>' + message + '</p>'
+        '<p>Código: <code>' + reason + '</code></p>' + back
+    )
+    headers = {
+        "Content-Security-Policy": "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
+    }
+    return _response(503 if reason == "internal_error" else 403, page, headers)
 
 
 def dispatch_owner_consent(
@@ -192,8 +217,17 @@ def dispatch_owner_consent(
                 ui.enroll(nonce, payload, context, origin)
             else:
                 ui.consent(session, payload, context, origin)
-        except Exception:
-            return _response(403, "Solicitação recusada.")
+        except Exception as exc:
+            action = "ENROLLMENT" if enrollment else "CONSENT"
+            if isinstance(exc, PublicationError):
+                reason = str(exc)
+                if not _REASON_CODE.fullmatch(reason):
+                    reason = "internal_error"
+                print(f"[OWNER-UI] {action} REJECTED: {reason}", flush=True)
+            else:
+                reason = "internal_error"
+                print(f"[OWNER-UI] {action} ERROR: {type(exc).__name__}", flush=True)
+            return _owner_error_response(reason, enrollment=enrollment)
         ingress_path = _one_header(headers, "X-Ingress-Path")
         cookie_path = ingress_path.rstrip("/") + ("/owner-enroll/" if enrollment else "/owner-consent/")
         clear_cookie = (
