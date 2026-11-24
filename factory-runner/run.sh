@@ -22,7 +22,7 @@ fi
 
 # A conta do Runner não recebe privilégios de root. Apenas a subárvore
 # privada do próprio add-on é administrada; nunca alterar /data/options.json.
-for path in /data /data/factory-runner /data/factory-runner/workspaces /data/factory-runner/preparations /data/factory-runner/audit.jsonl /data/factory-runner-authority; do
+for path in /data /data/factory-runner /data/factory-runner/workspaces /data/factory-runner/preparations /data/factory-runner/executions /data/factory-runner/audit.jsonl /data/factory-runner-authority; do
     if [ -L "$path" ]; then
         echo "[ERROR] Caminho privado com symlink; início recusado" >&2
         exit 1
@@ -45,6 +45,7 @@ chmod g=x /data
 install -d -m 0710 -o runner -g publisher /data/factory-runner
 install -d -m 2710 -o runner -g publisher /data/factory-runner/workspaces
 install -d -m 2750 -o runner -g publisher /data/factory-runner/preparations
+install -d -m 0700 -o runner -g runner /data/factory-runner/executions
 if [ -e /data/factory-runner/audit.jsonl ]; then
     chown runner:runner /data/factory-runner/audit.jsonl
     chmod 0600 /data/factory-runner/audit.jsonl
