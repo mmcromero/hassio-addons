@@ -1,4 +1,6 @@
-# Central Instagram — 0.1.47 (hierarquia compacta e navegação responsiva)
+# Central Instagram — 0.1.53 (recuperação de sessão)
+
+**Sessão expirada:** a Central direciona a navegação protegida ao login e retorna à conta e tela permitidas após autenticar. Requisições de interface reconhecem o marcador de sessão; ações interrompidas não são repetidas automaticamente. O tratamento não renova tokens Meta nem altera credenciais, proxy ou automação. Edições pendentes mantêm a confirmação de saída. Homologação no navegador ainda pendente.
 
 **Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 

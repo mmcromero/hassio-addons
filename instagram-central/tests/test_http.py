@@ -88,7 +88,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.52")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.53")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -270,7 +270,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.52", body)
+        self.assertIn(b"0.1.53", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -288,7 +288,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.52", body)
+            self.assertIn(b"0.1.53", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -473,6 +473,66 @@ class HTTPContractTests(unittest.TestCase):
         self.assertIn("Max-Age=0", logout_headers["Set-Cookie"])
         status, _, body = self.request("/panel", headers={"Cookie": cookie})
         self.assertIn(b'autocomplete="current-password"', body)
+
+    def test_expired_session_returns_to_editorial_account_and_view(self):
+        nav = {"Sec-Fetch-Mode": "navigate", "Accept": "text/html"}
+        target = "/accounts/umdoislab/editorial/"
+        with server.database() as db:
+            token = server.panel_login.create_session(db, self.config["panel_password"], now=1)
+        cookie = server.panel_login.COOKIE_NAME + "=" + token
+        status, headers, _ = self.request(target, headers={**nav, "Cookie": cookie})
+        self.assertEqual(status, 303)
+        login_url = headers["Location"]
+        self.assertEqual(parse_qs(urlsplit(login_url).query)["return_to"], [target])
+        status, _, page = self.request(login_url, headers=nav)
+        self.assertEqual(status, 200)
+        self.assertIn(b'name="return_to"', page)
+        self.assertIn("Sua sessão expirou".encode(), page)
+        form = urlencode({"username": "admin", "password": self.config["panel_password"],
+                          "return_to": target + "#history"}).encode()
+        status, headers, _ = self.request("/auth/login", "POST", form,
+                    {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        self.assertEqual(headers["Location"], target + "#history")
+        new_cookie = headers["Set-Cookie"].split(";", 1)[0]
+        self.assertEqual(self.request(target, headers={"Cookie": new_cookie})[0], 200)
+
+    def test_expired_session_api_marker_and_no_open_redirect(self):
+        status, headers, _ = self.request("/editorial/api/state")
+        self.assertEqual(status, 403)
+        self.assertEqual(headers["X-Central-Session-Required"], "1")
+        self.assertNotIn("Location", headers)
+        self.assertNotIn("X-Central-Session-Required", self.request("/bridge/pending")[1])
+        for target in ("//evil.test", "https://evil.test", "/\\evil.test",
+                       "/editorial/api/state", "/oauth/meta/callback?code=secret",
+                       "/panel?view=sender-profile&sender=12345678", "/panel%0d%0a"):
+            self.assertEqual(server.safe_login_return(target), "")
+        form = urlencode({"username": "admin", "password": self.config["panel_password"],
+                          "return_to": "//evil.test"}).encode()
+        status, headers, _ = self.request("/auth/login", "POST", form,
+                    {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        self.assertEqual(headers["Location"], "../panel")
+        status, headers, page = self.request("/panel?return_to=%2F%2Fevil.test",
+            headers={"Sec-Fetch-Mode": "navigate"})
+        self.assertEqual(status, 200)
+        self.assertIn(b'name="return_to" value="/panel"', page)
+        self.assertNotIn("Location", headers)
+        self.assertEqual(self.request("/oauth/meta/start")[0], 401)
+        status, headers, _ = self.request("/oauth/meta/start",
+            headers={"Sec-Fetch-Mode": "navigate"})
+        self.assertEqual(status, 303)
+        self.assertEqual(parse_qs(urlsplit(headers["Location"]).query)["return_to"], ["/panel?view=settings"])
+
+    def test_expired_native_post_redirect_does_not_replay(self):
+        status, headers, _ = self.request("/panel/automation/policy", "POST", b"invalid",
+            {"Sec-Fetch-Mode": "navigate", "Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 303)
+        self.assertEqual(parse_qs(urlsplit(headers["Location"]).query)["return_to"], ["/panel?view=settings"])
+        status, headers, _ = self.request("/panel/automation/policy", "POST", b"invalid",
+            {"Content-Type": "application/x-www-form-urlencoded"})
+        self.assertEqual(status, 403)
+        self.assertEqual(headers["X-Central-Session-Required"], "1")
 
     def test_browser_session_cookie_secure_on_https_origin(self):
         body = urlencode({"username": "admin", "password": self.config["panel_password"]}).encode()

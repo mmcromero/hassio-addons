@@ -6,6 +6,35 @@
   const pending=new Map(),held=new Map(),dialogs=new WeakMap();
   const tabs=new Map(),leaveGuards=new Map();
   let submitting=false;
+  let reauthPending=false;
+  function sessionRequired(){
+    if(reauthPending)return;
+    reauthPending=true;
+    // Do not bypass the existing unsaved-form protection on forced navigation.
+    if([...leaveGuards.values()].some(check=>check()) &&
+      !window.confirm('Sua sessão expirou. Há alterações não salvas. Entre em outra aba para preservar esta edição, ou confirme para voltar ao login.')){
+      reauthPending=false;return;
+    }
+    // The server validates the return path. Never replay an interrupted POST.
+    const target=location.pathname+location.search+location.hash;
+    submitting=true;
+    location.replace('/panel?'+new URLSearchParams({return_to:target}));
+  }
+  const nativeFetch=window.fetch.bind(window);
+  window.fetch=async(...args)=>{
+    const response=await nativeFetch(...args);
+    if(response.url && new URL(response.url).origin===location.origin &&
+      response.headers.get('X-Central-Session-Required')==='1'){
+      sessionRequired();
+      throw new Error('Sua sessão expirou. Entre novamente para continuar.');
+    }
+    return response;
+  };
+  // A fragment is not sent over HTTP; preserve the Editorial view through login.
+  document.addEventListener('DOMContentLoaded',()=>{
+    const target=document.querySelector('form[action="/auth/login"] input[name="return_to"]');
+    if(target && location.hash && !target.value.includes('#'))target.value+=location.hash;
+  },{once:true});
   let feedback,caption,bar,fill,live,hideTimer,sequence=0,paneSequence=0,menuSequence=0;
   const instant=()=>reduced.matches || document.documentElement.dataset.uiInput==='keyboard';
   const make=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
@@ -620,7 +649,7 @@
       if(link)location.replace(link.href);
     }
   }
-  window.CentralUI={start,hold,announce,instant,switchPanel,media:trackMedia,releaseMedia,ready,initialError,
+  window.CentralUI={start,hold,announce,instant,switchPanel,media:trackMedia,releaseMedia,ready,initialError,sessionRequired,
     tabs:{select:(name,key)=>tabs.get(name)?.(key)},dirty:{register:(name,check)=>leaveGuards.set(name,check),confirmLeave:canLeave},
     dialog:{open:openDialog,close:closeDialog},closeMenu:()=>setMenu(false)};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();

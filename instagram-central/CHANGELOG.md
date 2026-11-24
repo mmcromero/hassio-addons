@@ -1,3 +1,9 @@
+# 0.1.53 — recuperação de sessão da interface
+
+- Redireciona navegação protegida sem sessão para o login, preservando rota, conta e seção permitidas.
+- Identifica a falta de sessão nas respostas HTTP da interface sem mudar o contrato JSON das APIs; fetch e upload retornam ao login sem repetir ações.
+- Valida o destino de retorno no servidor; preserva CSRF, sessão, cookie, webhook, bridge e OAuth. Preserva a proteção de edições não salvas: se houver edição pendente, permite autenticar em outra aba antes de sair. Testes de regressão incluídos; execução no Supervisor pendente.
+
 # 0.1.52 — alinhar smoke test ao gate de teste autorizado
 
 - Corrige expectativa antiga de maySend no smoke test; mantém gate e testes de segurança.

@@ -45,7 +45,12 @@
         operation.update((state.uploadLabel || 'Enviando arquivo')+' — '+Math.round(percent)+'%',percent);
         if(event.loaded===event.total)operation.update('Arquivo enviado. Validando e salvando…');
       });
-      request.addEventListener('load',()=>resolve({status:request.status,ok:request.status>=200&&request.status<300,text:async()=>request.responseText}));
+      request.addEventListener('load',()=>{
+        if(request.getResponseHeader('X-Central-Session-Required')==='1'){
+          UI.sessionRequired();reject(new Error('Sua sessão expirou. Entre novamente.'));return;
+        }
+        resolve({status:request.status,ok:request.status>=200&&request.status<300,text:async()=>request.responseText});
+      });
       ['error','abort','timeout'].forEach(kind=>request.addEventListener(kind,()=>reject(new Error('Não foi possível confirmar o upload. Confira a biblioteca antes de tentar novamente.'))));
       request.send(file);
     });

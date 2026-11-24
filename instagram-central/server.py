@@ -38,7 +38,7 @@ import interface_ui
 import automation_policy
 import panel_login
 import origin_configuration
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urlsplit, urlencode
 from zoneinfo import ZoneInfo
 
 DATA_DIR = Path(os.environ.get("INSTAGRAM_DATA_DIR", "/data"))
@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.52"
+APP_VERSION = "0.1.53"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -660,7 +660,49 @@ def panel_session_authorized(headers, cfg):
         return False
 
 
-def render_login(cfg=None, invalid=False, locked=False):
+def safe_login_return(value):
+    """Allow only local, read-only UI destinations, never arbitrary redirects."""
+    if not isinstance(value, str) or len(value) > 1024 or not value.startswith('/') or value.startswith('//'):
+        return ''
+    if any(ord(ch) < 33 or ord(ch) > 126 or ch == '\\' for ch in value):
+        return ''
+    try:
+        route = urlsplit(value)
+    except ValueError:
+        return ''
+    if route.scheme or route.netloc:
+        return ''
+    path, query, fragment = route.path, route.query, route.fragment
+    account = r'/accounts/[a-z][a-z0-9_-]{1,39}'
+    if path == '/accounts':
+        if query and not re.fullmatch(r'account=[a-z][a-z0-9_-]{1,39}', query):
+            return ''
+        if fragment not in ('', 'add-account'):
+            return ''
+    elif re.fullmatch(r'(?:' + account + r')?/editorial/?', path):
+        if query or fragment not in ('', 'overview', 'calendar', 'editor', 'library', 'approval', 'history'):
+            return ''
+    elif path in ('/', '/panel') or re.fullmatch(account + r'(?:/panel|/)?', path):
+        query = panel_navigation_query(query)
+        if query and settings_result(query) is None:
+            return ''
+        if fragment not in ('', 'connection'):
+            return ''
+    else:
+        return ''
+    return path + ('?' + query if query else '') + ('#' + fragment if fragment else '')
+
+
+def login_return_query(query):
+    try:
+        fields = parse_qs(query, keep_blank_values=True, max_num_fields=1)
+    except ValueError:
+        return ''
+    values = fields.get('return_to', [])
+    return safe_login_return(values[0]) if len(values) == 1 else ''
+
+
+def render_login(cfg=None, invalid=False, locked=False, return_to='', expired=False):
     """Own HTML form. Chrome can offer to save its standard username/password."""
     cfg = cfg or {}
     try:
@@ -684,9 +726,13 @@ def render_login(cfg=None, invalid=False, locked=False):
         notice = '<p class="notice" role="alert">Muitas tentativas. Tente novamente em alguns minutos.</p>'
     elif invalid:
         notice = '<p class="notice" role="alert">Usuário ou senha incorretos.</p>'
+    elif expired:
+        notice = '<p class="notice" role="status">Sua sessão expirou. Entre novamente para continuar.</p>'
     else:
         notice = ''
-    fields = ("""<form method="post" action="auth/login" autocomplete="on">
+    target = safe_login_return(return_to)
+    hidden = ('<input type="hidden" name="return_to" value="' + html.escape(target, quote=True) + '">' if target else '')
+    fields = ("""<form method="post" action="/auth/login" autocomplete="on">""" + hidden + """
       <input id="username" name="username" type="text" placeholder="Usuário"
         aria-label="Usuário" autocomplete="username" autocapitalize="off" spellcheck="false" required>
       <input id="password" name="password" type="password" placeholder="Senha"
@@ -730,12 +776,12 @@ def _login_form_fields(raw):
     if not isinstance(raw, bytes) or len(raw) > 4096:
         return None
     try:
-        fields = parse_qs(raw.decode("utf-8"), keep_blank_values=True, max_num_fields=2)
+        fields = parse_qs(raw.decode("utf-8"), keep_blank_values=True, max_num_fields=3)
     except (ValueError, UnicodeDecodeError):
         return None
-    if set(fields) != {"username", "password"} or any(len(v) != 1 for v in fields.values()):
+    if not {"username", "password"} <= set(fields) or set(fields) - {"username", "password", "return_to"} or any(len(v) != 1 for v in fields.values()):
         return None
-    return fields["username"][0], fields["password"][0]
+    return fields["username"][0], fields["password"][0], safe_login_return(fields.get("return_to", [""])[0])
 
 
 def _external_https(headers):
@@ -1462,6 +1508,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "no-referrer")
+        if getattr(self, "ui_session_missing", False) and (status in (401, 403) or (status == 200 and content_type == 'text/html')):
+            self.send_header("X-Central-Session-Required", "1")
         if csp:
             self.send_header("Content-Security-Policy", csp if content_type == "text/html" else "default-src 'none'; sandbox")
             if content_type in ("image/png", "image/jpeg", "video/mp4"):
@@ -1473,6 +1521,56 @@ class Handler(BaseHTTPRequestHandler):
                              "form-action 'self'; base-uri 'none'; object-src 'none'")
         self.end_headers()
         self.wfile.write(raw)
+
+    def login_redirect(self, destination):
+        self.send_response(303)
+        self.send_header("Location", "/panel?" + urlencode({"return_to": safe_login_return(destination) or "/panel"}))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def browser_navigation(self):
+        mode = self.headers.get("Sec-Fetch-Mode", "")
+        return mode == "navigate" or (not mode and "text/html" in self.headers.get("Accept", ""))
+
+    def browser_session_gate(self, method):
+        """Do not change machine API status codes or authorize any operation."""
+        route = urlsplit(self.path)
+        path = route.path
+        account = re.match(r'^(/accounts/[a-z][a-z0-9_-]{1,39})(?=/|$)', path)
+        prefix = account[1] if account else ''
+        suffix = path[len(prefix):]
+        page = safe_login_return(self.path) if method == 'GET' else ''
+        ui_api = (suffix.startswith('/editorial/') or suffix == '/panel/account-context'
+                  or suffix == '/panel' or path == '/accounts'
+                  or suffix in ('/panel/meta/check', '/panel/meta/subscribe', '/panel/automation/policy', '/panel/handoff'))
+        oauth_navigation = (method == 'GET' and suffix == '/oauth/meta/start' and not route.query
+                            and self.browser_navigation()
+                            and not self.headers.get('Authorization', '').startswith('Basic '))
+        if not page and not ui_api and not oauth_navigation:
+            return True
+        if panel_session_authorized(self.headers, settings()):
+            return True
+        # Preserve the existing Basic-auth handoff contract.
+        if suffix == '/panel/handoff' and self.headers.get('Authorization', '').startswith('Basic '):
+            return True
+        self.ui_session_missing = True
+        if self.browser_navigation():
+            if oauth_navigation:
+                self.login_redirect(prefix + '/panel?view=settings')
+                return False
+            if method == 'GET' and page and path not in ('/', '/panel'):
+                self.login_redirect(page)
+                return False
+            if method == 'POST' and (path == '/accounts' or suffix in (
+                    '/panel/meta/check', '/panel/meta/subscribe', '/panel/automation/policy', '/panel/handoff')):
+                target = '/accounts' if path == '/accounts' else prefix + '/panel'
+                if suffix != '/panel/handoff' and path != '/accounts':
+                    target += '?view=settings'
+                self.login_redirect(target)
+                return False
+        return True
 
     def request_business(self):
         return getattr(self, 'route_business', account_registry.PRIMARY_BUSINESS)
@@ -1584,6 +1682,21 @@ class Handler(BaseHTTPRequestHandler):
         return True
 
     def do_GET(self):
+        original = urlsplit(self.path)
+        if original.path == '/panel' and original.query.partition('=')[0] == 'return_to':
+            destination = login_return_query(original.query) or '/panel'
+            if destination:
+                cfg = settings()
+                if panel_session_authorized(self.headers, cfg):
+                    self.send_response(303)
+                    self.send_header("Location", destination)
+                    self.send_header("Cache-Control", "no-store")
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                return self.respond(200, render_login(cfg, return_to=destination, expired=True), "text/html")
+        if not self.browser_session_gate('GET'):
+            return
         if not self.account_route('GET'):
             return
         route = urlsplit(self.path)
@@ -1790,7 +1903,8 @@ class Handler(BaseHTTPRequestHandler):
         if messages_page or settings_page:
             cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
-                return self.respond(200, render_login(cfg), "text/html")
+                return self.respond(200, render_login(cfg, return_to=safe_login_return(self.path),
+                    expired=bool(self.headers.get("Cookie"))), "text/html")
             query_fields = parse_qs(route.query, keep_blank_values=True, max_num_fields=3)
             automation_result = query_fields.get('automation_result', [''])[0]
             if automation_result not in ('', 'saved', 'invalid'):
@@ -1872,6 +1986,8 @@ class Handler(BaseHTTPRequestHandler):
         if editorial_multi_api.handle(self, multi_connections(), settings, multi_store):
             return
         if editorial_import.handle(self, editorial_store_for_business, meta_configuration_for_business, PUBLICATIONS):
+            return
+        if not self.browser_session_gate('POST'):
             return
         if not self.account_route('POST'):
             return
@@ -1994,7 +2110,7 @@ class Handler(BaseHTTPRequestHandler):
             if (fields is None or fields[0] != "admin" or
                     not hmac.compare_digest(fields[1].encode("utf-8"), password.encode("utf-8"))):
                 panel_login.failed_attempt(client_id)
-                return self.respond(401, render_login(cfg, invalid=True), "text/html")
+                return self.respond(401, render_login(cfg, invalid=True, return_to=fields[2] if fields else ''), "text/html")
             try:
                 with database() as conn:
                     token = panel_login.create_session(conn, password)
@@ -2002,7 +2118,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(503, {"error": "session unavailable"})
             panel_login.successful_attempt(client_id)
             self.send_response(303)
-            self.send_header("Location", "../panel")
+            self.send_header("Location", fields[2] or "../panel")
             self.send_header("Set-Cookie", panel_login.set_cookie_header(
                 token, secure=_external_https(self.headers)))
             self.send_header("Cache-Control", "no-store")
