@@ -1,3 +1,10 @@
+# 0.1.47 — corrigir marcação da caixa de entrada
+
+- Corrige o fechamento do atributo `class` no contêiner da caixa de entrada; HTML passa a renderizar `class="content ui-inbox-page"` corretamente.
+- Atualiza o teste do webhook para validar a contagem compacta `1 mensagem`, em vez do rótulo redundante antigo `Mensagens armazenadas`.
+- Mantém as verificações de ausência de títulos redundantes, o layout compacto e o comportamento responsivo.
+- Preserva as correções CSRF e Meta das versões anteriores.
+
 # 0.1.46 — corrigir escopo das asserções do token Meta
 
 - Move as asserções do `debug_token` para o teste de envio pela Send API, onde a consulta realmente ocorre.
