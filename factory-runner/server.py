@@ -26,6 +26,7 @@ from sandbox_export import SandboxUnavailable
 from declarative_export import (DeclarativeExportError, prepare_declarative,
                                 expand_trusted_rules, extend_approved_mapping,
                                 write_distribution_provenance)
+from declarative_workspace_probe import probe_declarative_workspace
 from release_receipt import (seal_receipt, verify_receipt, digest,
                              ReceiptError)
 from publisher_permissions import share_readonly
@@ -442,6 +443,31 @@ def _store_declarative(destination, project_id, expected_sha, profile,
             "publication": "disabled", "tests": receipt["tests"]["status"]}
 
 
+def real_declarative_workspace_health(project, source_sha, public_sha):
+    """Exercise real Git blobs without changing release eligibility or workspace state."""
+    try:
+        profile, source, distribution = project_workspace(project)
+        if (profile.get("mode") in ("sync_only", "artesao_package")
+                or "declarative_rules" not in profile):
+            return
+        from workspace_sync import _existing
+        marker = _existing(WORKSPACES_DIR / project, profile)
+        if (not marker or marker.get("source_sha") != source_sha
+                or marker.get("public_sha") != public_sha):
+            raise PreflightError("workspace_probe_marker_mismatch")
+        result = probe_declarative_workspace(
+            project, source_sha, public_sha, profile, source, distribution)
+        print("[DECLARATIVE-REAL-PROBE] PASS: project=" + project
+              + " files=" + str(result["files"])
+              + " bytes=" + str(result["total_bytes"])
+              + " provenance_files=" + str(result["provenance_files"])
+              + " method=real_git_blobs_no_script", flush=True)
+    except Exception as exc:
+        # Diagnostic-only probe: never turn a valid workspace sync into failure.
+        print("[DECLARATIVE-REAL-PROBE] BLOCKED: project=" + project
+              + " reason=" + type(exc).__name__, flush=True)
+
+
 def run_workspace_sync(project, token, auto_prepare=False):
     """One trusted startup synchronization with audit and serialization.
 
@@ -456,6 +482,9 @@ def run_workspace_sync(project, token, auto_prepare=False):
                actor="trusted_startup")
         result = synchronize(project, token=token, projects_dir=PROJECTS_DIR,
                              workspaces_dir=WORKSPACES_DIR)
+        if result and result.get("source_sha") and result.get("public_sha"):
+            real_declarative_workspace_health(
+                project, result["source_sha"], result["public_sha"])
         print("[WORKSPACE] " + result["state"] + ": project=" + project
               + " source=" + result["source_sha"][:12]
               + " public=" + result["public_sha"][:12]

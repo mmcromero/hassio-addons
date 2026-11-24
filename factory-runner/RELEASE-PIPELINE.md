@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado RC30)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado RC31)
 
-> **Estado de código — 24/11/2026 / M050:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; versão declarada no manifesto: `0.1.0-rc.30`. RC30 permanece somente em desenvolvimento: não publicada nem instalada. A última instalação comprovada no histórico é RC28 (M044/M045); não inferir atualização posterior. RC19/RC20 são estados históricos, não baseline operacional atual.
+> **Estado de código — 24/11/2026 / M054:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; RC31 (`0.1.0-rc.31`) em desenvolvimento. **RC30 (`0.1.0-rc.30`) está instalada e iniciada no Home Assistant**, confirmado pelo Supervisor nesta conversa. RC31 ainda não foi publicada nem instalada. RC19/RC20/RC28 são estados históricos, não baseline operacional atual.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
@@ -9,6 +9,15 @@
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
+
+## M055 — autorização contínua de publicação de RC do Factory Runner (24/11/2026)
+
+O proprietário autorizou expressamente publicações repetidas de candidatas do próprio Factory Runner, sem nova solicitação a cada RC, enquanto este desenvolvimento permanecer em andamento, para fins de validação, testes e homologação. Escopo: somente `mmcromero/hassio-addons:main/factory-runner/`, pelo procedimento oficial e com preservação integral dos demais add-ons e arquivos compartilhados.
+
+A autorização não abrange publicação de pacotes Avisaqui/Artesão/outros produtos, ativação do Publisher, alteração de políticas de produto, credenciais, segredos, outros diretórios do catálogo ou ações destrutivas no host. Publicação, atualização/instalação e homologação são estados distintos. A atualização da instalação Factory Runner RC30 para RC31 está autorizada expressamente no pedido de 24/11/2026. Preservar opções e dados do add-on.
+
+A passagem de bastão integral M055 está em `docs/CONTINUIDADE-ATIVA.md` e na Issue #2 do Orquestrador. HEAD registrado na passagem: `aa016a84aff14801768fffb3dc5dd5fb592ebe28`. Próxima ação: publicar RC31 somente em `factory-runner/`, verificar o catálogo, atualizar a instalação existente via MCP HA e acompanhar build/testes/logs. Não pedir novamente autorização de publicação de RC do Factory Runner durante este desenvolvimento.
+
 Avisaqui e Artesão mantêm políticas, versões e receitas independentes.
 
 ## Auditoria M050 — RC30 e reconciliação do estado (24/11/2026)
@@ -185,3 +194,21 @@ Autoridade e isolamento reais de publish continuam NO-GO específico; o produto
 permanece parcialmente concluído para esse uso. Build/atualização e homologação
 no HA dependem do proprietário. Não há Actions, mudanças em servidores, Docker
 de produção, reabertura de pacote, instalação ou rotação de segredos neste fluxo.
+
+
+## M054 — prova declarativa em workspace Git real (24/11/2026)
+
+A RC30 instalada contém o exportador declarativo e o servidor que o integra; os blobs de `server.py`, `declarative_export.py` e `projects/avisaqui.json` da distribuição coincidem com a fonte RC30 consultada. Os logs da RC30 comprovam somente o probe sintético: cinco blobs Git de fixture; nenhum workspace real foi exercitado.
+
+A RC31 acrescenta `declarative_workspace_probe.py`, chamado depois de uma sincronização de workspace concluída. Ele:
+- valida o SHA de origem e o SHA da distribuição já sincronizados;
+- aplica somente as regras declarativas confiáveis do perfil do Runner;
+- confere o blob pinado do exportador e o contrato CI, quando aplicável;
+- copia blobs Git reais para uma pasta temporária, verifica SHA-256 e gera proveniência temporária;
+- remove a pasta temporária ao terminar, sem tocar nos checkouts ou na área persistente de preparações.
+
+**Limite importante:** o probe não é uma preparação de release nem substitui a elegibilidade do pacote. Ele não cria recibo, não marca testes do produto como PASS, não abre pacote, não publica e não contorna os gates de versão/branch/proveniência. A API `/api/prepare-declarative` continua exigindo preflight elegível.
+
+**Evidência de política observada no workspace Avisaqui:** o perfil está configurado com regras declarativas, mas a política do pacote atual está em `release_candidate_preparing`, enquanto o validador e o preflight exigem `active_package.status == "open"`; além disso, a proveniência pública já declara a versão candidata `0.1.20-rc.12` com origem `0da93dba4a6fff67eb2944f5c760346d8f3619d5`, enquanto o HEAD de desenvolvimento consultado é `10b21c4ddaeb778daab78d8a64c9f4b35290465c`. Isso explica por que a preparação real durável permanece bloqueada por política; não é falha do Bubblewrap nem da exportação declarativa. Nenhuma política de produto foi alterada.
+
+**Fonte RC31:** commit `31177332f9c5d3c3e34be77839f3171a7e1643f5` (branch `desenvolvimento`). **Validação:** sintaxe do novo helper e da nova suíte conferida por análise AST; testes unitários completos, build Docker/ARM64 e execução do probe no Home Assistant ainda NÃO executados. Dependem de publicar e atualizar a RC31 pela esteira oficial. Não declarar PASS antes desses logs.

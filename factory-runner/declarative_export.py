@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Deterministic offline export of pinned Git blobs; NO source code execution.
+"""Deterministic export of pinned Git blobs; NO source code execution.
 
-This module is not wired to the legacy HTTP server or the published HA add-on.
-The mapping MUST come from trusted runner-owned configuration, never a project
-commit, user HTTP payload or AI output. No git checkout, Python/npm or shell.
+Used by the authenticated Factory Runner API with trusted runner-owned rules.
+Mappings never come from a project commit, HTTP payload or AI output. Git is
+used only to read immutable objects; no project script, Python, npm or shell is run.
 """
 from __future__ import annotations
 

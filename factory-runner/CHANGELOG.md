@@ -1,3 +1,11 @@
+# 0.1.0-rc.31 — probe declarativo em workspace Git real
+
+- Exercita a exportação declarativa confiável contra os blobs reais do workspace sincronizado, usando SHA de origem e distribuição fixados.
+- Gera pacote e proveniência somente em diretório temporário, verifica hashes e remove a saída ao terminar.
+- Não executa scripts do projeto, não altera o workspace, não cria recibo de release e não publica.
+- Mantém os gates normais de política: a preparação durável pela API continua recusada quando o pacote não está elegível.
+- Adiciona testes de regressão para blobs reais em repositório Git temporário, pin do exportador, execução não-root e ausência de mutação dos checkouts.
+
 # 0.1.0-rc.30 — cadastro inicial por Configurações
 
 - Move o cadastro inicial único do proprietário para as opções do add-on no Home Assistant; o formulário de cadastro pelo Ingress deixa de existir.
