@@ -70,6 +70,7 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
         AUDIT_PATH.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
         if AUDIT_PATH.is_symlink() or AUDIT_PATH.parent.resolve() != AUDIT_PATH.parent.absolute():
             raise OSError("Unsafe audit path")
+        created = not AUDIT_PATH.exists()
         fd = os.open(AUDIT_PATH, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
         info = os.fstat(fd)
         if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
@@ -78,6 +79,18 @@ def record(action, issue, status, request_id, actor="authenticated-client"):
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "a", encoding="utf-8") as log:
             log.write(json.dumps(event, separators=(",", ":")) + "\n")
+            log.flush()
+            os.fsync(log.fileno())
+        if created:
+            # Persist the new directory entry as well as the file contents.
+            directory_fd = os.open(
+                AUDIT_PATH.parent,
+                os.O_RDONLY | getattr(os, "O_DIRECTORY", 0),
+            )
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
         AUDIT_PATH.chmod(0o600)
     except OSError:
         # Do not silently accept privileged actions if audit storage is unavailable.
