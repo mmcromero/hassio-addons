@@ -63,7 +63,7 @@ class ApprovalRPCServer(socketserver.UnixStreamServer):
         gid=grp.getgrnam("consent_clients").gr_gid if group_gid is None else group_gid
         info=parent.stat()
         if (info.st_uid!=os.geteuid() or info.st_gid!=gid
-                or stat.S_IMODE(info.st_mode)!=0o750):
+                or stat.S_IMODE(info.st_mode)!=0o2750):
             raise PublicationError('unsafe_approval_socket')
         _remove_stale_socket(path,os.geteuid(),gid)
         self.issuer=issuer;self.roles={uid:frozenset(actions) for uid,actions in roles.items()}

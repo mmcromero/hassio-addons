@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-rc.22 — compatibilidade IPC da autoridade (24/11/2026)
+
+- Corrige a divergência entre o bootstrap (02750, setgid) e a validação dos diretórios IPC de Approval/Publisher (antes 0750). Mantém verificação de UID, GID, modo exato e SO_PEERCRED.
+- Nova homologação integrada em laboratório: pacote sintético elegível, cadastro por UI simulada de HA, IPC Unix com UIDs/GIDs reais distintos, consentimento com CSRF/origin/senha, grant Ed25519, recusa de terceiro e de binding adulterado, gate real de publicação fechado sem token de escrita. Nenhum destino real é alterado.
+- RC21 permanece no histórico; nenhuma configuração, identidade ou credencial real é habilitada. Validação da candidata pelo Supervisor ARM64.
+
 ## 0.1.0-rc.21 — retenção não destrutiva e homologação (24/11/2026)
 
 - Substitui o teto fixo de quatro snapshots por orçamento global de 8 GiB de arquivos históricos; exige 2 GiB livres após o clone (2,5 GiB antes). Mantém todos os snapshots e recibos nos caminhos originais. Não elimina arquivos automaticamente.

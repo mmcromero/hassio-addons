@@ -66,7 +66,7 @@ class PublisherRPCServer(socketserver.UnixStreamServer):
         gid = grp.getgrnam(group_name).gr_gid if group_gid is None else group_gid
         info = parent.stat()
         if (info.st_uid != os.geteuid() or info.st_gid != gid
-                or stat.S_IMODE(info.st_mode) != 0o750):
+                or stat.S_IMODE(info.st_mode) != 0o2750):
             raise PublicationError("unsafe_publisher_socket")
         _remove_stale_socket(path,os.geteuid(),gid)
         self.service = service

@@ -264,7 +264,7 @@ class M006Tests(unittest.TestCase):
         self.assertEqual(self.fx.git(self.fx.source,'status','--porcelain'),'')
 
     def test_unix_peer_uid_and_action_acl(self):
-        directory=self.root/'socket';directory.mkdir(mode=0o750)
+        directory=self.root/'socket';directory.mkdir(mode=0o750);directory.chmod(0o2750)
         rpc=ApprovalRPCServer(directory/'approval.sock',self.issuer,{os.geteuid():{'status','view'}},group_gid=os.getgid())
         thread=threading.Thread(target=rpc.serve_forever,daemon=True);thread.start()
         self.addCleanup(rpc.server_close);self.addCleanup(rpc.shutdown)
@@ -275,6 +275,240 @@ class M006Tests(unittest.TestCase):
         grant=self.grant()
         proof=client.status(grant['payload']['nonce'],'challenge',digest(grant['payload']),'check')
         self.assertTrue(proof['payload']['active'])
+
+    def test_bootstrap_real_uids_eligible_package_owner_consent_and_closed_gate(self):
+        """A prepared lab package, actual Unix peers and Ed25519; no external writes."""
+        if os.geteuid() != 0:
+            self.skipTest("requires root validation stage to launch distinct service UIDs")
+        from owner_bootstrap import provision_layout
+        from types import SimpleNamespace
+        import stat
+        users = {"approval": 24001, "publisher": 24002, "owner_ui": 24003,
+                 "runner": 24004, "stranger": 24005}
+        groups = {"approval": 24101, "publisher": 24102, "owner_ui": 24103,
+                  "runner": 24104, "consent_clients": 24105, "publisher_clients": 24106}
+        self.root.chmod(0o711)
+        authority = self.root / "lab-authority"
+        authority.mkdir(mode=0o711)
+        authority.chmod(0o711)
+        provision_layout(authority, uid_for=lambda n: 0 if n == "root" else users[n],
+                         gid_for=lambda n: groups[n], root_uid=0, root_gid=0)
+        preview = self.workflow.preview(self.bundle, self.receipt_digest)
+        self.assertEqual(preview["receipt"]["source_sha"], self.fx.sha)
+        self.assertEqual(preview["state"], "PREVIEW_NOT_CONSENT")
+        self.assertTrue(rc_fastlane.evaluate(self.fx.source, self.fx.dist, self.fx.sha,
+                                            profile=self.fx.profile)["eligible_for_preparation"])
+        self.assertEqual(preview["receipt"]["tests"]["status"], "PASS")
+        module_dir = str(Path(__file__).resolve().parents[1])
+        prefix = "import sys; sys.path.insert(0, sys.argv[1])\n"
+        prefix += """
+import os, json, re, hashlib, base64
+from pathlib import Path
+from approval_ipc import ApprovalRPCClient, ApprovalRPCServer
+from publisher_ipc import PublisherRPCClient, PublisherRPCServer
+from owner_approval import ApprovalAuthority, GrantVerifier
+from publication_contract import PublicationError
+from owner_consent_ui import OwnerConsentUI
+from ha_ingress_identity import verify_ha_ingress_context
+from ha_ingress_server import dispatch_owner_consent
+from urllib.parse import urlencode
+from release_receipt import digest
+root = Path(sys.argv[2])
+users = json.loads(sys.argv[3])
+groups = json.loads(sys.argv[4])
+owner = 'lab-owner'
+ha_user = 'lab-ha-user'
+origin = 'https://lab.example.invalid'
+auth = 'lab-ed25519'
+password = 'laboratory-only-password-2026'
+approval_path = root/'consent-ipc'/'approval.sock'
+publisher_path = root/'publisher-ipc'/'publisher.sock'
+rpc = ApprovalRPCClient(approval_path, users['approval'])
+"""
+        def args(code):
+            return [sys.executable, "-I", "-c", prefix + code, module_dir,
+                    str(authority), json.dumps(users), json.dumps(groups)]
+        extra = {"approval": [groups["consent_clients"]],
+                 "publisher": [groups["consent_clients"], groups["publisher_clients"]],
+                 "owner_ui": [groups["consent_clients"]],
+                 "runner": [groups["publisher_clients"]],
+                 "stranger": [groups["consent_clients"], groups["publisher_clients"]]}
+        def options(role):
+            return dict(user=users[role], group=groups.get(role, groups["runner"]),
+                        extra_groups=extra[role], env={"PATH": "/usr/bin:/bin",
+                        "HOME": "/nonexistent", "LANG": "C"}, cwd="/tmp")
+        def run(role, code, data=None):
+            result = subprocess.run(args(code), input=json.dumps(data), text=True,
+                                    capture_output=True, timeout=30, **options(role))
+            self.assertEqual(result.returncode, 0, result.stderr[-2000:])
+            return json.loads(result.stdout)
+        def start(role, code, path):
+            process = subprocess.Popen(args(code), stdin=subprocess.DEVNULL,
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                       text=True, **options(role))
+            def cleanup():
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait(timeout=5)
+                process.stderr.close()
+            self.addCleanup(cleanup)
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                if process.poll() is not None:
+                    self.fail(role + " IPC startup failed: " + process.stderr.read()[-2000:])
+                if path.exists() and stat.S_IMODE(path.stat().st_mode) == 0o660:
+                    return
+                time.sleep(0.05)
+            self.fail(role + " IPC not ready")
+        start("approval", """
+state = root/'approval'
+issuer = ApprovalAuthority(state, state/'credentials'/'signing.pem',
+                           state/'credentials'/'owner.json', auth, owner)
+roles = {users['publisher']: {'propose','status','grant','public_key'},
+         users['owner_ui']: {'view','consent','enroll','enrollment_status'}}
+server = ApprovalRPCServer(approval_path, issuer, roles,
+                           group_gid=groups['consent_clients'])
+server.serve_forever()
+""", authority/"consent-ipc"/"approval.sock")
+        ui_code = """
+def verify(context):
+    return verify_ha_ingress_context(context, expected_ha_user_id=ha_user, owner_id=owner)
+ui = OwnerConsentUI(rpc, origin, ingress_verifier=verify)
+headers = {'X-Remote-User-Id': ha_user, 'X-Ingress-Path': '/api/hassio_ingress/lab-token'}
+def dispatch(method, path, extra=None, body=b'', peer='172.30.32.2'):
+    return dispatch_owner_consent(ui, method=method, path=path, peer_ip=peer,
+        headers={**headers, **(extra or {})}, body=body,
+        expected_ha_user_id=ha_user, owner_id=owner)
+def form(path, submit, fields, submitted_origin=origin):
+    code, response_headers, body = dispatch('GET', path)
+    assert code == 200, code
+    cookie = response_headers['Set-Cookie']
+    assert all(x in cookie for x in ('Secure','HttpOnly','SameSite=Strict'))
+    csrf = re.search(rb'name="csrf" value="([a-f0-9]{64})"', body).group(1).decode()
+    fields = {**fields, 'csrf': csrf}
+    return dispatch('POST', submit, {'Cookie':cookie.split(';',1)[0],
+        'Origin':submitted_origin,'Content-Type':'application/x-www-form-urlencoded'},
+        urlencode(fields).encode())
+"""
+        enrollment = run("owner_ui", ui_code + """
+assert dispatch('GET','/owner-enroll/',peer='127.0.0.1')[0] == 403
+fields = {'password':password,'password_confirm':password,'confirmation':'CADASTRAR'}
+assert form('/owner-enroll/','/owner-enroll/submit',fields,'https://wrong.invalid')[0] == 403
+assert rpc.enrollment_status() == {'enrolled':False}
+code, _, body = form('/owner-enroll/','/owner-enroll/submit',fields)
+assert code == 200 and password.encode() not in body
+assert rpc.enrollment_status() == {'enrolled':True}
+print(json.dumps({'enrolled':True}))
+""")
+        self.assertTrue(enrollment["enrolled"])
+        proposal = run("publisher", """
+data = json.load(sys.stdin)
+view = rpc.propose(data['binding'], data['changes'], data['receipt'])
+try:
+    rpc.grant(view['proposal_id'])
+except PublicationError:
+    pass
+else:
+    raise AssertionError('grant issued without owner consent')
+print(json.dumps({'proposal':view['proposal_id'],'binding':view['binding']}))
+""", preview)
+        self.assertEqual(proposal["binding"], preview["binding"])
+        self.assertTrue(run("stranger", """
+proposal = json.load(sys.stdin)['proposal']
+try:
+    rpc.request('view',proposal=proposal)
+except PublicationError:
+    print(json.dumps({'denied':True}))
+else:
+    raise AssertionError('unauthorized kernel UID obtained proposal')
+""", proposal)["denied"])
+        consent = run("owner_ui", ui_code + """
+proposal = json.load(sys.stdin)['proposal']
+path = '/owner-consent/' + proposal
+assert dispatch('GET',path,{'X-Remote-User-Id':'wrong-owner'})[0] == 403
+fields = {'password':password,'confirmation':'PUBLICAR'}
+assert form(path,'/owner-consent/consent',fields,'https://wrong.invalid')[0] == 403
+assert form(path,'/owner-consent/consent',{'password':'wrong lab password','confirmation':'PUBLICAR'})[0] == 403
+code, response_headers, body = form(path,'/owner-consent/consent',fields)
+assert code == 200 and b'Nenhuma publica' in body
+assert b'signature' not in body and password.encode() not in body
+assert 'Max-Age=0' in response_headers['Set-Cookie']
+print(json.dumps({'consented':True}))
+""", proposal)
+        self.assertTrue(consent["consented"])
+        key = authority/"approval"/"credentials"/"signing.pem"
+        public = subprocess.check_output(["/usr/bin/openssl","pkey","-in",str(key),"-pubout"])
+        pin = hashlib.sha256(public).hexdigest()
+        config = {"schema_version":1,"authority":"lab-ed25519","owner_id":"lab-owner",
+                  "approval_uid":users["approval"],"runner_uid":users["runner"],
+                  "public_key_sha256":pin}
+        verified = run("publisher", """
+data = json.load(sys.stdin)
+grant = rpc.grant(data['proposal'])
+public = base64.b64decode(rpc.public_key(),validate=True)
+key = root/'publisher'/'lab-public.pem'
+key.write_bytes(public); key.chmod(0o400)
+verifier = GrantVerifier(key, authority=auth, owner_id=owner, status_provider=rpc.status,
+                         public_key_sha256=data['pin'])
+nonce, bound = verifier.check(grant,data['binding'])
+assert nonce and bound
+try:
+    verifier.check(grant,{**data['binding'],'issue':999})
+except PublicationError:
+    pass
+else:
+    raise AssertionError('grant accepted altered binding')
+print(json.dumps({'signature_verified':True}))
+""", {**proposal,"pin":pin})
+        self.assertTrue(verified["signature_verified"])
+        start("publisher", """
+import publisher_service as service
+service.AUTHORITY_ROOT = root
+service.APPROVAL_SOCKET = approval_path
+service.TOKEN_FILE = root/'publisher'/'github-token'
+service.ACTIVATION_FILE = root/'publisher-config'/'activation.json'
+config = """ + repr(config) + """
+coordinator = service.PublisherCoordinator(config)
+server = PublisherRPCServer(publisher_path,coordinator,users['runner'],
+                            group_gid=groups['publisher_clients'])
+server.serve_forever()
+""", authority/"publisher-ipc"/"publisher.sock")
+        status = run("runner", """
+data=json.load(sys.stdin)
+client=PublisherRPCClient(publisher_path,users['publisher'])
+status=client.request('status')
+assert status['publication_gate']=='closed' and status['write_credential']=='missing'
+for action, payload in (
+    ('propose',{'project':data['binding']['project'],'issue':2,
+                'receipt_digest':data['binding']['receipt_sha256']}),
+    ('publish',{'project':data['binding']['project'],'issue':2,
+                'receipt_digest':data['binding']['receipt_sha256'],
+                'proposal_id':data['proposal']})):
+    try:
+        client.request(action,**payload)
+    except PublicationError:
+        pass
+    else:
+        raise AssertionError('closed activation gate did not block '+action)
+print(json.dumps({'gate_closed':True}))
+""", proposal)
+        self.assertTrue(status["gate_closed"])
+        self.assertTrue(run("stranger", """
+try:
+    PublisherRPCClient(publisher_path,users['publisher']).request('status')
+except PublicationError:
+    print(json.dumps({'denied':True}))
+else:
+    raise AssertionError('unauthorized kernel UID reached Publisher')
+""")["denied"])
+        self.assertEqual(self.fx.git(self.fx.target,'rev-parse','main'),self.fx.base)
+        self.assertFalse(any(method != 'GET' for method, _, _ in self.http.observed))
+        self.assertFalse((authority/"publisher-config"/"activation.json").exists())
+        self.assertFalse((authority/"publisher"/"github-token").exists())
 
     def test_ha_owner_ui_rejects_malformed_or_non_origin_urls(self):
         class RPC:
