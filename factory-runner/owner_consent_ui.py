@@ -46,7 +46,7 @@ class OwnerConsentUI:
         return {'html':'<!doctype html><meta charset="utf-8"><title>Factory Runner</title>'+body,
                 'headers':{'Cache-Control':'no-store',
                     'Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
-                    'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}
+                    'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'}}
 
     def enroll_view(self,context):
         owner=self.ingress_verifier(context)
@@ -70,7 +70,7 @@ class OwnerConsentUI:
               '<button type="submit">Cadastrar proprietário</button></form>')
         return {'session':session,'html':page,'headers':{
             'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
-            'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}}
+            'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'}}
 
     def enroll(self,session,body,context,origin):
         owner=self.ingress_verifier(context)
@@ -83,7 +83,7 @@ class OwnerConsentUI:
             raise PublicationError('owner_enrollment_session_invalid')
         if (not isinstance(body['password'],str) or not isinstance(body['password_confirm'],str)
                 or not 16<=len(body['password'])<=256
-                or not secrets.compare_digest(body['password'],body['password_confirm'])
+                or not secrets.compare_digest(body['password'].encode('utf-8'),body['password_confirm'].encode('utf-8'))
                 or body['confirmation']!='CADASTRAR'):
             raise PublicationError('owner_enrollment_input_invalid')
         return self.rpc.enroll(password=body['password'],
@@ -117,7 +117,7 @@ class OwnerConsentUI:
               '<button type="submit">Autorizar somente este ato</button></form>')
         return {'session':session,'html':page,'headers':{
             'Cache-Control':'no-store','Content-Security-Policy':"default-src 'none'; form-action 'self'; frame-ancestors 'self'",
-            'X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'},
+            'X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin'},
             'cookie_attributes':'Secure; HttpOnly; SameSite=Strict; Path=<accepted_ingress_path>'}
 
     def consent(self,session,body,context,origin):

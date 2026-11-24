@@ -1,3 +1,11 @@
+# 0.1.0-rc.23 — cadastro via HA Ingress
+
+- Aceita campos Cookie separados, mas recusa duplicação do cookie do proprietário.
+- Usa política de referência same-origin nos formulários, preservando validação exata de Origin e CSRF.
+- Diagnóstico sanitizado e retorno ao cadastro quando falta sessão ou origem.
+- Corrige comparação de confirmação de senha UTF-8 em ambas as camadas; inclui regressões.
+- Publicação de produtos permanece bloqueada; candidata pendente de validação no Supervisor.
+
 # Changelog
 
 ## 0.1.0-rc.22 — compatibilidade IPC da autoridade (24/11/2026)

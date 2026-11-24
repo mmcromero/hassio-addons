@@ -308,7 +308,7 @@ class OwnerEnrollment:
             raise PublicationError("owner_already_enrolled")
         if (confirmation != "CADASTRAR" or not isinstance(password, str)
                 or not isinstance(password_confirm, str)
-                or not hmac.compare_digest(password, password_confirm)
+                or not hmac.compare_digest(password.encode('utf-8'), password_confirm.encode('utf-8'))
                 or not 16 <= len(password) <= 256):
             raise PublicationError("owner_enrollment_input_invalid")
         salt = secrets.token_bytes(16)

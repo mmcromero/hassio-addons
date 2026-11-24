@@ -205,6 +205,22 @@ class HAIngressServerTests(unittest.TestCase):
         self.assertEqual(ui.consents[0][1]["confirmation"], "PUBLICAR")
         self.assertEqual(ui.consents[0][3], ui.origin)
 
+    def test_split_cookie_fields_are_accepted_but_duplicate_owner_cookie_denied(self):
+        ui = FakeOwnerUI()
+        headers = Message()
+        for name, value in self.headers(Origin=ui.origin, **{
+                "Content-Type": "application/x-www-form-urlencoded"}).items():
+            headers[name] = value
+        headers["Cookie"] = "ingress_session=ha-session"
+        headers["Cookie"] = "factory_owner_session=" + "a" * 64
+        body = urlencode({"csrf": "x", "password": "y", "confirmation": "PUBLICAR"}).encode()
+        self.assertEqual(self.dispatch(ui, "POST", "/owner-consent/consent",
+                                        headers=headers, body=body)[0], 200)
+        headers["Cookie"] = "factory_owner_session=" + "b" * 64
+        self.assertEqual(self.dispatch(ui, "POST", "/owner-consent/consent",
+                                        headers=headers, body=body)[0], 403)
+        self.assertEqual(len(ui.consents), 1)
+
     def test_duplicate_cookie_or_missing_origin_is_denied(self):
         ui = FakeOwnerUI()
         body = urlencode({"csrf": "x", "password": "y", "confirmation": "PUBLICAR"}).encode()

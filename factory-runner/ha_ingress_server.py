@@ -41,11 +41,13 @@ def _one_header(headers, wanted):
 
 
 def _cookie_session(headers):
-    raw = _one_header(headers, "Cookie")
-    if not raw:
+    # HTTP/2 and reverse proxies can split Cookie into several fields.
+    # Accept exactly one owner cookie across all fields, never duplicates.
+    values = _header_values(headers, "Cookie")
+    if not values:
         return None
     matches = []
-    for part in raw.split(";"):
+    for part in "; ".join(values).split(";"):
         name, separator, value = part.strip().partition("=")
         if separator and name == COOKIE_NAME:
             matches.append(value)
@@ -161,7 +163,13 @@ def dispatch_owner_consent(
         origin = _one_header(headers, "Origin")
         session = _cookie_session(headers)
         if not origin or not session:
-            return _response(403, "Consentimento inválido.")
+            reason = "origin_missing" if not origin else "owner_session_cookie_missing_or_invalid"
+            print("[OWNER-UI] DENIED: " + reason, flush=True)
+            return _response(403, 
+                "<!doctype html><meta charset=utf-8><h1>Sessão inválida</h1>"
+                "<p>Abra novamente o formulário de autorização pelo Home Assistant.</p>"
+                + ('<p><a href="./">Voltar ao cadastro</a></p>' if enrollment else ""),
+                {"Content-Security-Policy": "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"})
         try:
             decoded = body.decode("utf-8")
             form = parse_qs(decoded, keep_blank_values=True, strict_parsing=True,
