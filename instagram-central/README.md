@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.56 (janela OAuth)
+# Central Instagram — 0.1.57 (janela OAuth)
 
 **Autorização Meta:** o state OAuth e seu cookie de navegador têm validade de 30 minutos. O state continua aleatório, armazenado somente por hash, de uso único e vinculado à conta/configuração. Diagnósticos de callback registram somente presença do cookie e metadados limitados de validade; nunca registram state, código, cookies ou tokens.
 

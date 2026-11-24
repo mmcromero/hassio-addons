@@ -1,4 +1,8 @@
-# 0.1.56 — Janela de autorização Meta
+# 0.1.57 — Correção do gate de versão
+
+- Corrige três expectativas de versão hardcoded nos testes HTTP que fizeram o build 0.1.56 falhar após o bump de versão. Os testes OAuth adicionados foram executados e passaram antes dessas falhas.
+
+# 0.1.56 — Janela de autorização Meta (build rejeitado por expectativas HTTP antigas)
 
 - Amplia o prazo do state/cookie OAuth de 10 para 30 minutos para comportar fluxos de autorização demorados, mantendo token aleatório, uso único, vínculo à conta/configuração e cookie Secure/HttpOnly/SameSite=Lax.
 - Registra apenas metadados seguros de expiração do state quando o callback falha; nenhum state, código, cookie ou token é registrado.
