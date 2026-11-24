@@ -72,6 +72,23 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if path in ("/me/assigned_instagram_accounts", "/me"):
         if method != "GET":
             raise ConnectionError("Graph method not permitted")
+    elif path == "/me/accounts" and method == "GET":
+        if fields != {"fields": "id,name,access_token,tasks,instagram_business_account{id,username}", "limit": "100"}:
+            raise ConnectionError("Invalid assigned Page request")
+    elif path == "/me/messages" and method == "POST":
+        if not isinstance(fields, dict) or set(fields) != {"recipient", "message"}:
+            raise ConnectionError("Invalid message payload")
+        try:
+            recipient = json.loads(fields["recipient"])
+            message = json.loads(fields["message"])
+        except (TypeError, ValueError, UnicodeDecodeError):
+            raise ConnectionError("Invalid message payload") from None
+        if (not isinstance(recipient, dict) or set(recipient) != {"id"} or
+                not isinstance(recipient["id"], str) or not IG_ACCOUNT.fullmatch(recipient["id"]) or
+                not isinstance(message, dict) or set(message) != {"text"} or
+                not isinstance(message["text"], str) or
+                not 1 <= len(message["text"].encode("utf-8")) <= 1000):
+            raise ConnectionError("Invalid message payload")
     elif re.fullmatch(r"/[0-9]{8,30}", path) and method == 'GET':
         if fields not in ({'fields': 'id,username,profile_picture_url'}, {'fields': 'name,username,profile_pic'}):
             raise ConnectionError('Invalid profile request')
@@ -138,6 +155,63 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
     if not isinstance(obj, dict) or "error" in obj:
         raise _graph_error(obj)
     return obj
+
+
+def verify_messaging_permissions(cfg, credential, opener=urlopen):
+    """Require the exact Send API scopes on the currently stored system-user token."""
+    app_id, secret = cfg.get("meta_app_id"), cfg.get("meta_app_secret")
+    token = credential.get("access_token") if isinstance(credential, dict) else None
+    if (not isinstance(app_id, str) or not IG_ACCOUNT.fullmatch(app_id) or
+            not isinstance(secret, str) or not 16 <= len(secret) <= 128 or
+            not isinstance(token, str) or not 20 <= len(token) <= 8192):
+        raise ConnectionError("Messaging permission check is not configured")
+    result = request_graph(cfg.get("meta_graph_version"), "/debug_token", app_id + "|" + secret,
+                           fields={"input_token": token}, opener=opener, timeout=8)
+    data = result.get("data")
+    scopes = data.get("scopes") if isinstance(data, dict) else None
+    if (not isinstance(data, dict) or data.get("is_valid") is not True or
+            not isinstance(scopes, list) or len(scopes) > 256 or
+            any(not isinstance(scope, str) for scope in scopes)):
+        raise ConnectionError("Messaging token permissions could not be verified")
+    granted = set(scopes)
+    if not {"pages_messaging", "instagram_manage_messages"}.issubset(granted):
+        raise GraphError("permission_denied")
+    return True
+
+
+def send_text_message(cfg, credential, recipient_id, text, opener=urlopen):
+    """Send one bounded freeform reply through the fixed Instagram Send API."""
+    account_id = cfg.get('instagram_account_id')
+    if (not isinstance(account_id, str) or not IG_ACCOUNT.fullmatch(account_id) or
+            not isinstance(recipient_id, str) or not IG_ACCOUNT.fullmatch(recipient_id) or
+            recipient_id == account_id):
+        raise ConnectionError('Invalid message identity')
+    if (not isinstance(text, str) or not text.strip() or
+            len(text.strip().encode('utf-8')) > 1000):
+        raise ConnectionError('Invalid message text')
+    if (not isinstance(credential, dict) or credential.get('account_id') != account_id or
+            credential.get('business_id', 'umdoislab') != cfg.get('business_id', 'umdoislab') or
+            not credential_status(credential, cfg)['account_verified']):
+        raise ConnectionError('Account must be verified before sending')
+    page_token = credential.get('page_access_token')
+    page_id = credential.get('page_id')
+    if (not isinstance(page_token, str) or not 20 <= len(page_token) <= 8192 or
+            not isinstance(page_id, str) or not IG_ACCOUNT.fullmatch(page_id) or
+            credential.get('messaging_page_id') != page_id):
+        raise ConnectionError('A verified Page messaging token is required')
+    verify_messaging_permissions(cfg, credential, opener=opener)
+    fields = {
+        'recipient': json.dumps({'id': recipient_id}, separators=(',', ':')),
+        'message': json.dumps({'text': text.strip()}, ensure_ascii=False, separators=(',', ':')),
+    }
+    result = request_graph(cfg.get('meta_graph_version'), '/me/messages',
+        page_token, method='POST', fields=fields, opener=opener)
+    message_id = result.get('message_id')
+    if (result.get('recipient_id') != recipient_id or not isinstance(message_id, str)
+            or not 1 <= len(message_id) <= MAX_MESSAGE_ID
+            or any(ord(char) < 32 for char in message_id)):
+        raise GraphError('invalid_response')
+    return {'recipient_id': recipient_id, 'message_id': message_id}
 
 
 def read_recent_inbox(cfg, credential):
@@ -539,9 +613,37 @@ def verify_access(cfg, token, opener=urlopen):
     business_id = business.get("client_business_id")
     if not isinstance(business_id, str) or not IG_ACCOUNT.fullmatch(business_id):
         raise ConnectionError("Business portfolio access not verified")
-    return {"business_id": cfg.get("business_id", "umdoislab"),
-            "account_id": expected_id, "username": username,
-            "client_business_id": business_id, "verified_at": int(time.time())}
+    identity = {"business_id": cfg.get("business_id", "umdoislab"),
+                "account_id": expected_id, "username": username,
+                "client_business_id": business_id, "verified_at": int(time.time())}
+    # A system-user token is not itself a Page token. Resolve the exact linked
+    # Page and retain its token only inside the encrypted credential file.
+    try:
+        pages = request_graph(version, "/me/accounts", token,
+            fields={"fields": "id,name,access_token,tasks,instagram_business_account{id,username}",
+                    "limit": "100"}, opener=opener)
+        entries = pages.get("data")
+        if isinstance(entries, list) and len(entries) <= 100:
+            matches = []
+            for page in entries:
+                if not isinstance(page, dict):
+                    continue
+                linked = page.get("instagram_business_account")
+                page_id, page_token = page.get("id"), page.get("access_token")
+                tasks = page.get("tasks")
+                if (isinstance(linked, dict) and linked.get("id") == expected_id and
+                        isinstance(page_id, str) and IG_ACCOUNT.fullmatch(page_id) and
+                        isinstance(page_token, str) and 20 <= len(page_token) <= 8192 and
+                        isinstance(tasks, list) and "MESSAGING" in tasks):
+                    matches.append((page_id, page_token))
+            if len(matches) == 1:
+                identity.update(page_id=matches[0][0], page_access_token=matches[0][1],
+                                messaging_page_id=matches[0][0])
+    except (GraphError, ConnectionError):
+        # Keep identity verification separate from the optional Page messaging
+        # permission. Sending remains fail-closed until a valid Page token exists.
+        pass
+    return identity
 
 
 def subscribe_messages(cfg, credential, opener=urlopen):
