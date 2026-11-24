@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.35",
+  "version": "0.2.0-dev.36",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.35",
-  "sourceCommit": "93a435d68b56a5a382a3d7a455dac8819fdd5b45",
+  "releaseVersion": "0.2.0-dev.36",
+  "sourceCommit": "842516f127113d608631f33669b3b1bf167b316b",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,38 +22,41 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-24T02:08:17.678Z",
+  "preparedAt": "2026-11-24T03:02:38.579Z",
   "builtAt": null,
-  "businessSourceSha256": "e6db7c5080ebc1328561e71862ba36e37c00425b8e2bee1183b7e8caf81a5f12",
+  "businessSourceSha256": "bfdb6ec06bd1b58a6746061507d013524e015452538ca85b6e5508b85a3c0cef",
   "validation": {
-    "sourceCommit": "93a435d68b56a5a382a3d7a455dac8819fdd5b45",
+    "sourceCommit": "842516f127113d608631f33669b3b1bf167b316b",
     "status": "pending-supervisor",
     "directedChecks": [
       {
         "name": "source-scope-review",
         "status": "passed",
-        "evidence": "Diff dev.34→dev.35 revisado: brand.ts altera somente os blocos CSS communityCss/identityCss; entry.ts altera somente entryCss; welcome.css ajusta tipografia. Sem lógica de autenticação, rotas, API, schema, dependências ou contrato operacional."
+        "evidence": "Diff dev.35→dev.36: única alteração de runtime em server/pilot/entry.ts; demais arquivos alterados são testes, documentação e manifestos. Sem mudança em OAuth, convites, sessão, API, schemas ou dependências."
       },
       {
         "name": "pdv-preservation",
         "status": "passed",
-        "evidence": "Diff Git não contém Sales.tsx, SalesSessions.tsx, pdv.css, pdv-theme.tsx nem componentes internos do PDV; somente camada global e páginas de entrada."
-      },
-      {
-        "name": "fast-lane-exporter-tests",
-        "status": "passed",
-        "evidence": "scripts/test-ha-source.py: 12/12 PASS, execução registrada em docs/especificacoes/AD-UX-STD-001/tasks.md para os arquivos da branch desenvolvimento."
+        "evidence": "O diff não contém arquivos do PDV nem componentes de venda/fabricação; runtime restrito à página pública."
       },
       {
         "name": "store-identity-and-config",
         "status": "passed",
-        "evidence": "Nome oficial e slug artesaos_piloto preservados; config exportada somente aarch64; opções, volume, portas e assets oficiais preservados."
+        "evidence": "Nome oficial, slug artesaos_piloto, opções, portas, volume /data e arquitetura aarch64 preservados; configuração normalizada confere com a publicação anterior."
+      },
+      {
+        "name": "schema-compatibility",
+        "status": "passed",
+        "evidence": "schemaVersions e schemaChecksums mantidos; fonte histórica validada e publicação anterior são ancestrais da candidata."
+      },
+      {
+        "name": "package-integrity-review",
+        "status": "passed",
+        "evidence": "Inventário completo conferido com SHA256SUMS; hashes recalculados para entry.ts, manifestos, Dockerfile e release.json; assets oficiais preservados."
       }
     ],
     "build": "not-performed",
-    "physicalValidation": "not-performed",
-    "browserJourneys": "pending",
-    "exportMethod": "Exportação equivalente pela Git Data API: blobs da fonte congelada, inventário allowlist, hashes SHA256 recalculados; o script Python não foi executado nesta sessão."
+    "physicalValidation": "not-performed"
   },
   "schemaChecksums": {
     "tenant": [
@@ -185,7 +188,7 @@
   "schemaEvidence": {
     "mode": "unchanged-from-validated-source",
     "sourceCommit": "e6b48ed1149a0e06fb74c268acfd20253306035c",
-    "publishedCommit": "2eebb31992e057cf4b1d67156833065af62d2bd5",
+    "publishedCommit": "e9ba3d4f4e5f98ca89a9ff0798276f8e1e13a906",
     "supervisorCheck": "pending"
   },
   "compatibility": {
