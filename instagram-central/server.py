@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.44"
+APP_VERSION = "0.1.45"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -1244,16 +1244,18 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
             html.escape(sender, quote=True) + '">' + ''.join(actions) + '</div></article></li>')
     body = ('<ul class="inbox-message-list" aria-label="Mensagens desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>'
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
+    count_label = ('Nenhuma mensagem' if message_count == 0 else
+                   '1 mensagem' if message_count == 1 else str(message_count) + ' mensagens')
     content = ('''<section class="inbox-page-section" aria-label="Caixa de entrada">
       <div class="inbox-page-header" id="messages">
         <div class="inbox-page-title"><h1>Caixa de entrada</h1>
-          <p>''' + str(message_count) + ''' mensagens armazenadas · até 50 recentes · horário de Brasília</p></div>
+          <span class="inbox-count">''' + count_label + '''</span></div>
         <button type="button" class="btn quiet" id="refresh-inbox" data-inbox-url="''' +
       html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/panel/meta/check', quote=True) +
       '''" data-inbox-csrf="">Atualizar mensagens</button>
       </div>
-      <details class="inbox-source-note"><summary>Sobre a atualização</summary>
-        <p>A busca é manual: consulta até 5 conversas recentes e 10 mensagens de cada na Meta. Somente textos recebidos; não há consulta periódica nem envio automático.</p>
+      <details class="inbox-source-note"><summary>Como funciona a busca</summary>
+        <p>A busca é manual: consulta até 5 conversas recentes e 10 mensagens de cada na Meta. Somente textos recebidos; não há consulta periódica nem envio automático. Os horários dos cartões são de Brasília.</p>
       </details>
       <p id="inbox-feedback" role="status" aria-live="polite"></p>
       <div id="inbox-messages">''' + body + '''</div>
