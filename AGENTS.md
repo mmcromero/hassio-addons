@@ -1,3 +1,9 @@
+# P0 — Bootstrap universal GOV-ACT-001
+
+Leia a [fonte única central](https://github.com/mmcromero/governanca-master/blob/main/ATIVAR.md), a [GOV-STD-001 v1.1](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md) e o [mapa operacional de diretórios/esteiras](https://github.com/mmcromero/governanca-master/blob/main/docs/PORTFOLIO-ESTRUTURA-ESTEIRAS.md). Confirme versão/commit realmente acessados; falha de leitura = BLOQUEADO. /at e /atg são aliases conversacionais que exigem leitura real, não comandos nativos. AGENTS.md só orienta runtimes que o carregam; não sincroniza outros chats. Preserve as regras locais abaixo e não aplique a esteira de outro produto.
+
+---
+
 # AGENTS.md — Instruções universais do catálogo Home Assistant
 
 > **CONSULTA DIRETA AO HOME ASSISTANT (22/11/2026):** o plugin pessoal **Home Assistant — Somente leitura** foi homologado para inventário, versões, estados e logs via Supervisor. Todas as equipes devem consultar o [manual operacional HA-MCP](docs/HA-MCP-ACESSO-SOMENTE-LEITURA.md) e, quando a ferramenta estiver disponível e a leitura for pertinente à função, utilizá-la antes de pedir esses dados ao proprietário. Não autoriza escrita, compartilhamento de credenciais, acesso a dados pessoais não pertinentes ou alterações no Forja. O túnel n8n existente também foi migrado para uma segunda entrada da mesma integração no Raspberry Pi; chamadas reais foram homologadas com o CMD do Windows interrompido. Recuperação após reinício do Core/host ainda pendente; disponibilidade em outros chats deve ser verificada.
