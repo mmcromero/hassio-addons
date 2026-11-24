@@ -8,7 +8,9 @@
 - Preserva a correção de encaminhamento POST-only e os testes de proxy distribuído introduzidos em 0.1.48.
 - Exportação incremental limitada aos quatro arquivos listados abaixo e a este registro; demais arquivos, ícone, logo, opções do catálogo e outros add-ons preservados.
 - Nenhum segredo, token, banco, opção privada ou dado de cliente foi exportado.
-- A build 0.1.49 falhou no Supervisor por três expectativas antigas em `tests/test_http.py`. A build 0.1.50 e a suíte completa ainda precisam ser executadas; não há PASS de homologação nesta proveniência.
+- A build ARM64 0.1.50 no Supervisor concluiu às 02:32:47 BRT; o contêiner iniciou às 02:32:52 BRT. Como a suíte Dockerfile é a etapa final do build, a execução integral das suítes listadas no Dockerfile terminou sem erro. O endpoint interno `/health` confirmou `version=0.1.50` e o app permaneceu `started`.
+- A build 0.1.49 havia falhado por três expectativas antigas de versão em `tests/test_http.py`; corrigidas na 0.1.50.
+- A configuração NGINX ativa em `/share/nginx_proxy/instagram.conf` ainda não foi substituída nem validada com `nginx -t`; portanto a rota POST não está homologada externamente. Não há PASS funcional do formulário até aplicar e validar esse fragmento.
 
 ## Arquivos exportados — Git blob SHA-1
 
