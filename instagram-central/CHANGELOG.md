@@ -3,6 +3,7 @@
 - Corrige o fechamento do atributo `class` no contêiner da caixa de entrada; HTML passa a renderizar `class="content ui-inbox-page"` corretamente.
 - Atualiza os testes do webhook e da caixa de entrada para validar a contagem compacta `1 mensagem`, em vez do rótulo redundante antigo `Mensagens armazenadas`; a ausência do rótulo é verificada no conteúdo visível, não em mensagens de erro internas do JavaScript.
 - Mantém as verificações de ausência de títulos redundantes, o layout compacto e o comportamento responsivo.
+- Corrige a fixture do teste de isolamento das configurações: o remetente sintético esperado passa a ser o mesmo ID usado pelo webhook de teste (`12345678`).
 - Preserva as correções CSRF e Meta das versões anteriores.
 
 # 0.1.46 — corrigir escopo das asserções do token Meta
