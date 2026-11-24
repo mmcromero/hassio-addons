@@ -10,6 +10,9 @@ import os
 import re
 import sys
 import time
+import subprocess
+import uuid
+from datetime import datetime, timezone
 import urllib.error
 import urllib.request
 
@@ -62,9 +65,9 @@ def _expect(condition, code):
         raise ProbeError(code)
 
 
-def _post_readonly(requester, path, token, payload):
+def _post_readonly(requester, path, token, payload, timeout=3):
     for _ in range(20):
-        status, data = requester("POST", path, token, payload)
+        status, data = requester("POST", path, token, payload, timeout=timeout)
         if status == 409 and data.get("error") == "busy":
             time.sleep(0.5)
             continue
@@ -74,7 +77,8 @@ def _post_readonly(requester, path, token, payload):
     raise ProbeError("api_busy")
 
 
-def run_probe(token, snapshots, requester=request_json, boot_started_at=None):
+def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
+              execution_contract_factory=None):
     """Exercise only authenticated reads and read-only preflight endpoints."""
     _expect(isinstance(token, str) and len(token) >= 32, "auth_token_unavailable")
 
@@ -156,8 +160,41 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None):
                 and OPERATION_ID.fullmatch(operation_id),
                 "release_plan_operation_id_invalid")
         operation_ids.append(operation_id)
+
+        execution_summary = None
+        if execution_contract_factory is not None:
+            contract = execution_contract_factory(project, source_sha)
+            status, response = _post_readonly(
+                requester, "/api/execution-plan", token, contract, timeout=20)
+            _expect(status == 200 and isinstance(response.get("plan"), dict),
+                    "live_execution_plan_failed")
+            execution_plan = response["plan"]
+            _expect(execution_plan.get("format") == "factory-execution-plan-v1"
+                    and execution_plan.get("project") == project
+                    and execution_plan.get("source", {}).get("sha") == source_sha
+                    and execution_plan.get("tests", {}).get("execution_performed") is False
+                    and execution_plan.get("operations", {}).get("authorization_verified") is False
+                    and execution_plan.get("status") in ("PLANNED", "PARTIAL"),
+                    "execution_plan_contract_mismatch")
+            operation_id = response.get("operation_id")
+            _expect(isinstance(operation_id, str)
+                    and OPERATION_ID.fullmatch(operation_id),
+                    "execution_plan_operation_id_invalid")
+            operation_ids.append(operation_id)
+            status, stored = requester(
+                "GET", "/api/executions/" + contract["execution_id"], token)
+            _expect(status == 200 and isinstance(stored.get("plan"), dict)
+                    and stored["plan"].get("receipt", {}).get("digest")
+                    == execution_plan.get("receipt", {}).get("digest"),
+                    "execution_plan_persistence_failed")
+            execution_summary = {
+                "status": execution_plan["status"],
+                "selected": execution_plan["tests"]["selected_count"],
+                "reused": execution_plan["tests"]["reused_count"],
+                "omitted": execution_plan["tests"]["omitted_count"],
+            }
         results.append((project, preflight["eligible_for_preparation"], len(errors),
-                        plan.get("preparation")))
+                        plan.get("preparation"), execution_summary))
 
     status, audit = requester("GET", "/api/operations", token)
     _expect(status == 200 and audit.get("source") == "sanitized_audit"
@@ -197,6 +234,74 @@ def workspace_snapshots():
         if marker is not None:
             snapshots.append((project, marker.get("source_sha")))
     return snapshots
+
+
+def build_execution_contract(project, source_sha):
+    """Build a deterministic, plan-only smoke contract from trusted profile/workspace."""
+    import server
+
+    profile, source, _distribution = server.project_workspace(project)
+    if profile.get("source_sha") not in (None, source_sha):
+        raise ProbeError("workspace_source_binding_mismatch")
+    env = {
+        "PATH": "/usr/bin:/bin", "HOME": "/nonexistent",
+        "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_TERMINAL_PROMPT": "0", "GIT_OPTIONAL_LOCKS": "0",
+        "GIT_NO_REPLACE_OBJECTS": "1",
+    }
+    def git_value(*args):
+        try:
+            result = subprocess.run(
+                ["git", "-c", "core.hooksPath=/dev/null", "-C", str(source), *args],
+                capture_output=True, stdin=subprocess.DEVNULL, env=env,
+                timeout=5, check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            raise ProbeError("execution_plan_git_metadata_unavailable") from None
+        if result.returncode != 0:
+            raise ProbeError("execution_plan_git_metadata_unavailable")
+        return result.stdout.decode("ascii", "strict").strip()
+
+    parents = git_value("rev-list", "--parents", "-n", "1", source_sha).split()
+    if not parents or parents[0] != source_sha:
+        raise ProbeError("execution_plan_source_binding_invalid")
+    base_sha = parents[1] if len(parents) > 1 else None
+    created_at = git_value("show", "-s", "--format=%cI", source_sha)
+    try:
+        parsed = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError
+    except ValueError:
+        raise ProbeError("execution_plan_commit_time_invalid") from None
+    execution_id = str(uuid.uuid5(
+        uuid.NAMESPACE_URL, "factory-runner-runtime-plan:" + project + ":" + source_sha))
+    return {
+        "schema_version": "FR-EXEC-001/v1",
+        "execution_id": execution_id,
+        "created_at": created_at,
+        "objective": "Smoke probe autenticado do planejador; nenhuma execução de testes",
+        "project": project,
+        "source": {
+            "repository": profile["source_repo"], "ref": profile["source_ref"],
+            "sha": source_sha, "base_sha": base_sha,
+        },
+        "scope": {
+            "include_paths": [], "exclude_paths": [],
+            "constraints": ["Planejamento somente leitura; não executar código de projeto"],
+        },
+        "requested_operations": ["analyze", "plan", "test"],
+        "authorization": {
+            "reference": "runtime-api-probe",
+            "declared_operations": ["analyze", "plan", "test"],
+        },
+        "destinations": [],
+        "acceptance_criteria": ["Plano vinculado ao SHA sem executar testes"],
+        "limits": {
+            "timeout_seconds": 120, "max_changed_files": 1000,
+            "network_policy": "read_only", "data_access": "approved_workspace",
+            "max_cost_usd": None,
+        },
+    }
 
 
 def main():
@@ -247,7 +352,8 @@ def main():
         try:
             boot_started_at = os.environ.get("RUNNER_API_PROBE_BOOT_STARTED_AT", "")
             result = run_probe(
-                token, snapshots, boot_started_at=boot_started_at or None)
+                token, snapshots, boot_started_at=boot_started_at or None,
+                execution_contract_factory=build_execution_contract)
             break
         except ProbeError as exc:
             last_error = str(exc)
@@ -265,11 +371,12 @@ def main():
           + " prior_boot_audit_events="
           + str(result["prior_boot_audit_events"])
           + " publication=disabled", flush=True)
-    for project, eligible, errors, preparation in result["results"]:
+    for project, eligible, errors, preparation, execution_summary in result["results"]:
         print("[API-PROBE] PROJECT: " + project
               + " eligible=" + str(eligible).lower()
               + " policy_errors=" + str(errors)
-              + " preparation=" + str(preparation), flush=True)
+              + " preparation=" + str(preparation)
+              + " execution_plan=" + str(execution_summary), flush=True)
     return 0
 
 
