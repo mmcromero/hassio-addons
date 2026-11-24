@@ -66,7 +66,7 @@ server {{
     proxy_cache off;
 '''
     routes = [('/', 'GET'), ('/panel', 'GET'), ('/panel/account-context', 'GET'),
-              ('/panel/handoff', 'POST'), ('/panel/meta/check', 'POST'),
+              ('/panel/handoff', 'POST'), ('/panel/automation/policy', 'POST'), ('/panel/meta/check', 'POST'),
               ('/panel/meta/subscribe', 'POST'), ('/auth/login', 'POST'), ('/auth/logout', 'POST'),
               ('/oauth/meta/status', 'GET'), ('/oauth/meta/start', 'GET'),
               ('/oauth/meta/callback', 'GET'), ('/editorial', 'GET'), ('/editorial/', 'GET'),

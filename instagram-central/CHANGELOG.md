@@ -1,3 +1,12 @@
+# 0.1.48 — corrigir rota de salvamento da política no proxy
+
+- Inclui encaminhamento POST-only para `/panel/automation/policy` e para a variante com prefixo de conta no proxy dedicado.
+- Corrige as quebras de linha do fragmento NGINX distribuído; as duas locations agora são blocos NGINX reais, não sequências de escape literais.
+- Acrescenta testes de regressão para a geração e o arquivo distribuído, incluindo a rejeição de escapes literais e o bloqueio de GET.
+- Inclui o novo teste na suíte executada durante o build do add-on pelo Supervisor.
+- Mantém sessão, CSRF, validação de IDs e política Testes com lista vazia; não ativa automação nem altera credenciais, dados ou configurações Meta.
+- Nenhuma alteração foi aplicada ao proxy ativo. Build ARM64 e homologação funcional permanecem pendentes.
+
 # 0.1.47 — corrigir marcação da caixa de entrada
 
 - Corrige o fechamento do atributo `class` no contêiner da caixa de entrada; HTML passa a renderizar `class="content ui-inbox-page"` corretamente.
