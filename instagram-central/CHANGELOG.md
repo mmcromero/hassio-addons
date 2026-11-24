@@ -1,3 +1,12 @@
+# 0.1.40 — reorganização global da navegação e experiência móvel
+
+- Reorganiza a navegação em Editorial, Atendimento e Gestão; remove a identificação redundante da conta da sidebar e preserva o seletor global no cabeçalho.
+- Cabeçalho compacto com breadcrumb curto (Central / área atual), hierarquia de títulos e espaçamentos ajustados.
+- Navegação móvel em gaveta modal sobreposta, com altura natural da sidebar, shell de contas em uma coluna, sem quebra do cabeçalho em telas estreitas.
+- Gaveta com foco inicial, ciclo de Tab/Shift+Tab, fechamento por Escape, clique externo ou seleção e retorno do foco ao controle.
+- Preserva rotas, contexto de conta, autenticação, APIs, mensagens, Editorial, Meta, Drive e n8n; não altera regras de negócio nem dados persistidos.
+- Inclui testes dirigidos de renderização, seletor global, grupos, rotas e navegação móvel. O build do Supervisor executará os testes Python de interface como parte da atualização.
+
 # 0.1.39 — autorização editorial multi-conta e Drive privado
 
 - Chaves cei2 emitidas pelo administrador com escopo escolhido; listagem dinâmica, autorização transacional, recibos próprios por conta e conexão. Preserva cei1. Sem publicação direta nas novas conexões.

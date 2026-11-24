@@ -39,15 +39,32 @@ class SharedInterfaceTests(unittest.TestCase):
         self.assertIn("'sha256-"+digest+"'", policy)
         self.assertNotIn('unsafe-inline', policy)
 
+    def test_global_header_keeps_account_switcher_and_uses_compact_location(self):
+        html = ui.header({'business_id': 'umdoislab', 'account_display_name': 'Umdoislab',
+                          'instagram_expected_username': 'umdoislab'}, 'Mensagens')
+        self.assertIn('<nav class="ui-breadcrumb" aria-label="Localização">', html)
+        self.assertIn('<span id="current-section" aria-current="page">Mensagens</span>', html)
+        self.assertIn('aria-label="Conta selecionada"', html)
+        self.assertIn('Trocar conta. Conta selecionada:', html)
+        self.assertNotIn('Umdoislab <span>/</span>', html)
+
     def test_secondary_navigation_is_scoped_and_untrusted_account_labels_are_text(self):
         html = ui.sidebar({'business_id': 'ig_0000000000000001', 'account_display_name': '<script>bad</script>',
                            'instagram_expected_username': 'secondary'}, active='messages')
-        self.assertNotIn('<script>bad', html)
-        self.assertIn('&lt;script&gt;bad&lt;/script&gt;', html)
+        self.assertNotIn('script>bad', html)
+        header = ui.header({'business_id': 'ig_0000000000000001',
+                            'navigation_accounts': [{'business_id': 'ig_0000000000000001',
+                                'display_name': '<script>bad</script>', 'username': 'secondary'}]}, 'Mensagens')
+        self.assertNotIn('<script>bad', header)
+        self.assertIn('&lt;script&gt;bad&lt;/script&gt;', header)
         for route in ('/panel', '/panel?view=settings', '/editorial/#editor'):
             self.assertIn('href="/accounts/ig_0000000000000001'+route+'"', html)
         self.assertIn('href="/accounts?account=ig_0000000000000001"', html)
         self.assertNotIn('href="/panel', html)
+        self.assertNotIn('ui-account-context', html)
+        self.assertIn('<h2>Editorial</h2>', html)
+        self.assertIn('<h2>Atendimento</h2>', html)
+        self.assertIn('<h2>Gestão</h2>', html)
         editorial = ui.sidebar({'business_id': 'ig_0000000000000001'}, editorial=True)
         self.assertIn('data-view="editor"', editorial)
         self.assertIn('data-view="approval"', editorial)

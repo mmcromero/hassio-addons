@@ -1,10 +1,10 @@
-# Central Instagram — 0.1.39 (multi-conta editorial e Drive privado)
+# Central Instagram — 0.1.40 (navegação global e experiência móvel)
 
 **Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 
-A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor; sem foto, aparecem as iniciais.
+A Central prioriza o uso no celular. Configurações tem três abas: **Conexão, Diagnósticos e Ferramentas**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor global do cabeçalho; sem foto, aparecem as iniciais. O menu lateral não repete a identidade da conta e organiza os destinos em Editorial, Atendimento e Gestão. O padrão global está documentado em [CENTRAL-DESIGN-SYSTEM-001](../docs/ux/CENTRAL-DESIGN-SYSTEM-001.md).
 
-Há proteção contra perda de alterações e **Continuar composição** para retomar o que ainda não foi salvo. **Criar publicação** continua abrindo uma composição nova após confirmar o descarte quando necessário. O menu mantém as quatro seções aprovadas e o mesmo contexto da conta.
+Há proteção contra perda de alterações e **Continuar composição** para retomar o que ainda não foi salvo. **Criar publicação** continua abrindo uma composição nova após confirmar o descarte quando necessário. O menu agrupa Editorial, Atendimento e Gestão; os destinos e rotas funcionais permanecem os mesmos. O cabeçalho usa breadcrumb curto e seletor global de conta. Em telas compactas, a navegação abre como gaveta modal com suporte a teclado e foco acessível. O seletor global de conta fica exclusivamente no cabeçalho.
 
 **Atualização:** preserve as opções e `/data` e atualize somente a Central. Não exige alterar NGINX, webhook, portas ou login. A nova exclusão no Instagram pode exigir uma permissão adicional, conforme abaixo. Testes locais incluem toque emulado, criação/revisão/agendamento, larguras 320/360/390, teclado e movimento reduzido. Uso em aparelho real e operações Meta reais precisam ser confirmados após instalar.
 
