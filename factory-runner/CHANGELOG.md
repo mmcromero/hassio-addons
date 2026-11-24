@@ -266,3 +266,5 @@ exigem ambiente/política operacionais; não fecha pacote nem publica.
 - Testes de regressão de segurança incluídos para execução isolada.
 
 **Não homologado no hardware. Não equivale à versão funcional do worker.**
+
+- M029: diagnóstico do probe E2E inclui mensagem de exceção sanitizada para identificar a causa do `ValueError` no preparo declarativo sintético. Não expõe caminhos reais, tokens ou dados de workspace.
