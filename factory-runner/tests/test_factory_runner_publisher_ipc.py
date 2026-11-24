@@ -19,7 +19,7 @@ class FakePublisher:
 class PublisherIPCTests(unittest.TestCase):
     def test_duplicate_json_keys_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
-            parent=Path(tmp); parent.chmod(0o2750)
+            parent=Path(tmp); parent.chmod(0o750)
             path=parent/"publisher.sock"
             server=PublisherRPCServer(path,FakePublisher(),os.geteuid(),group_gid=os.getgid())
             thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
