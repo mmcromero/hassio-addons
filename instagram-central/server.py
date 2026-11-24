@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.53"
+APP_VERSION = "0.1.54"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -136,7 +136,9 @@ def _open_database():
     conn.execute("""CREATE TABLE IF NOT EXISTS handoff_audit (
       id INTEGER PRIMARY KEY AUTOINCREMENT, recipient_id TEXT NOT NULL,
       sender_id TEXT NOT NULL, old_state TEXT NOT NULL, new_state TEXT NOT NULL,
-      changed_at TEXT NOT NULL, actor TEXT NOT NULL)""")
+      changed_at TEXT NOT NULL, actor TEXT NOT NULL, reason TEXT)""")
+    if "reason" not in {row[1] for row in conn.execute("PRAGMA table_info(handoff_audit)")}:
+        conn.execute("ALTER TABLE handoff_audit ADD COLUMN reason TEXT")
     conn.execute("""CREATE TABLE IF NOT EXISTS drafts (
       recipient_id TEXT NOT NULL, sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
       draft_text TEXT NOT NULL, draft_source TEXT NOT NULL DEFAULT 'lab',
@@ -338,7 +340,7 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                 conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
                     WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
                     (completed, account, profile, mid, token))
-            set_handoff({"accountId": account, "senderId": profile, "state": "pending"})
+            set_handoff({"accountId": account, "senderId": profile, "state": "pending"}, reason="meta_send_failed")
             return {"status": "failed", "reason": reason}
         with database() as conn:
             conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,updated_at=?
@@ -434,7 +436,7 @@ def save_draft(data):
         return inserted.rowcount == 1
 
 
-def set_handoff(data):
+def set_handoff(data, *, actor="system", reason=None):
     if not isinstance(data, dict) or set(data) != {"accountId", "senderId", "state"}:
         return False
     account, sender, state = data["accountId"], data["senderId"], data["state"]
@@ -458,8 +460,8 @@ def set_handoff(data):
           state=excluded.state, updated_at=excluded.updated_at""",
           (account, sender, state, now))
         conn.execute("""INSERT INTO handoff_audit
-          (recipient_id,sender_id,old_state,new_state,changed_at,actor)
-          VALUES(?,?,?,?,?,?)""", (account, sender, old_state, state, now, "panel_or_bridge"))
+          (recipient_id,sender_id,old_state,new_state,changed_at,actor,reason)
+          VALUES(?,?,?,?,?,?,?)""", (account, sender, old_state, state, now, actor, reason))
         # Invalidate any active reservation before handing the conversation to a human.
         if state != "bot":
             conn.execute("""UPDATE inbound SET claim_token=NULL, claim_until=NULL
@@ -1245,7 +1247,7 @@ def render_automation_settings(cfg, result='', messaging_ready=False):
 def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_result=''):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
-    rows, message_count = [], 0
+    rows, message_count, audits = [], 0, {}
     if not settings_page:
         with database() as conn:
             account_registry.ensure_primary(conn, settings().get('instagram_account_id'))
@@ -1259,10 +1261,16 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
               LEFT JOIN drafts d ON i.recipient_id=d.recipient_id
                 AND i.sender_id=d.sender_id AND i.message_id=d.message_id
               WHERE i.recipient_id=?
-              ORDER BY i.received_at DESC, i.rowid DESC LIMIT 50""", (account_id,)).fetchall()
+              ORDER BY i.received_at DESC, i.rowid DESC""", (account_id,)).fetchall()
+            for sender, changed, actor, reason in conn.execute("""SELECT sender_id, changed_at, actor, reason FROM handoff_audit WHERE recipient_id=? ORDER BY id DESC""", (account_id,)):
+                audits.setdefault(sender, []).append((changed, actor, reason))
+    groups = {}
+    for row in rows:
+        groups.setdefault(row[1], []).append(row)
     entries = []
     cfg = cfg or {}
-    for account, sender, message, received, processed, state, draft, draft_status, source in rows:
+    for messages in sorted(groups.values(), key=lambda group: group[0][5] not in ('pending','human')):
+        account, sender, message, received, processed, state, draft, draft_status, source = messages[0]
         queue = 'Fora da fila automática' if source == 'manual' else 'Processada' if processed else 'Pendente'
         origin = 'Consulta manual à Meta' if source == 'manual' else 'Webhook'
         control = {'bot':'Automação', 'human':'Atendimento humano', 'pending':'Aguardando', 'done':'Concluída'}.get(state,'Não informado')
@@ -1278,23 +1286,41 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
                           ("state", target), ("csrf", token_for(account, sender, target, pwd)))
                 inputs = "".join('<input type="hidden" name="' + key + '" value="' +
                                  html.escape(value, quote=True) + '">' for key, value in values)
-                primary = target == ('done' if state == 'human' else 'human')
+                primary = target == ('bot' if state == 'pending' else 'done' if state == 'human' else 'human')
                 actions.append('<form method="post" action="panel/handoff">' + inputs +
                                '<button class="btn ' + ('primary' if primary else 'quiet') + '" type="submit">' + label + '</button></form>')
-        draft_box = ('<section class="inbox-draft" aria-label="Rascunho sem envio"><h3>Rascunho (sem envio)</h3><p>' +
-                     html.escape(draft) + '</p></section>') if draft else ''
+        history = []
+        for _, _, msg, stamp, done, _, saved_draft, saved_status, msg_source in messages:
+            _, label = inbox_received_label(stamp)
+            queue_label = 'Fora da fila automática' if msg_source == 'manual' else 'Processada' if done else 'Pendente'
+            history.append('<li><time>' + html.escape(label) + '</time><p class="inbox-message-text">' + html.escape(msg) +
+                           '</p><small>' + queue_label + '</small>' +
+                           ('<p>Rascunho (sem envio): ' + html.escape(saved_draft) + '</p>' if saved_draft else '') + '</li>')
+        audit = audits.get(sender, [])
+        origin_labels = {'panel':'Operador', 'bridge':'Automação', 'system':'Servidor'}
+        reason_labels = {'manual_action':'Ação manual', 'human_review':'Revisão humana necessária',
+                         'unsafe_content':'Conteúdo não autorizado', 'model_requested_handoff':'Revisão solicitada pelo modelo',
+                         'meta_send_failed':'Falha de envio à Meta'}
+        def audit_label(item):
+            changed, actor, reason = item
+            return html.escape(reason_labels.get(reason, 'Motivo não registrado') + ' · ' +
+                               origin_labels.get(actor, 'Origem não registrada') + ' · ' + inbox_received_label(changed)[1])
+        status = ('Bot bloqueado — ' if state != 'bot' else '') + control
+        detail = ('<p role="status"><strong>' + html.escape(status) + '</strong><br>' +
+                  (audit_label(audit[0]) if audit else 'Motivo não registrado') + '</p>') if state != 'bot' else '<p><strong>Automação selecionada</strong></p>'
         entries.append('<li><article class="inbox-message"><header class="inbox-message-head">' +
             sender_profiles.identity_html(account_management.prefix(cfg.get('business_id', 'umdoislab')), sender) +
             '<time' + date_attr + ' title="Horário de Brasília">' + html.escape(date) + '</time></header>' +
+            detail + '<p>' + str(len(messages)) + ' mensagens · ' + str(sum(not m[4] and m[8] == 'webhook' for m in messages)) + ' não processadas</p>' +
             '<p class="inbox-message-text">' + html.escape(message) + '</p>' +
-            '<div class="inbox-message-status"><span>Controle: ' + control + '</span><span>' + origin + '</span></div>' +
-            draft_box + '<details class="inbox-message-details"><summary>Fila e rascunho</summary><dl><div><dt>Fila</dt><dd>' +
-            queue + '</dd></div><div><dt>Rascunho</dt><dd>' +
-            ({'pending':'Aguardando revisão, sem envio', 'discarded':'Descartado'}.get(draft_status,'Sem rascunho salvo')) +
-            '</dd></div><div><dt>ID técnico do remetente</dt><dd>' + html.escape(sender) +
-            '</dd></div></dl></details><div class="inbox-message-actions" role="group" aria-label="Ações da conversa com ' +
-            html.escape(sender, quote=True) + '">' + ''.join(actions) + '</div></article></li>')
-    body = ('<ul class="inbox-message-list" aria-label="Mensagens desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>'
+            '<div class="inbox-message-actions" role="group" aria-label="Ações da conversa">' + ''.join(actions) + '</div>' +
+            '<details class="inbox-message-details"><summary>Histórico de mensagens</summary><ul>' + ''.join(history) + '</ul></details>' +
+            '<details class="inbox-message-details"><summary>Histórico de controle</summary><ul>' +
+            ''.join('<li>' + audit_label(item) + '</li>' for item in audit) + '</ul></details></article></li>')
+    overview = '<section class="inbox-message" aria-label="Controle de atendimento"><h2>Controle de atendimento</h2><div class="inbox-message-status">' + ''.join(
+        '<span>' + label + ': <strong>' + str(sum(group[0][5] == state for group in groups.values())) + '</strong></span>' for state, label in
+        (('pending','Aguardando ação'),('human','Atendimento humano'),('bot','Automação selecionada'),('done','Concluídas'))) + '</div></section>'
+    body = overview + (('<ul class="inbox-message-list" aria-label="Conversas desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>')
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
     count_label = ('Nenhuma mensagem' if message_count == 0 else
                    '1 mensagem' if message_count == 1 else str(message_count) + ' mensagens')
@@ -2192,7 +2218,7 @@ class Handler(BaseHTTPRequestHandler):
             if size <= 0 or size > 4096:
                 return self.respond(413, {"error": "size not allowed"})
             data = parse_action(self.rfile.read(size), cfg.get("panel_password", ""))
-            if not data or data["accountId"] != cfg.get("instagram_account_id") or not set_handoff(data):
+            if not data or data["accountId"] != cfg.get("instagram_account_id") or not set_handoff(data, actor="panel", reason="manual_action"):
                 return self.respond(403, {"error": "invalid action or CSRF"})
             self.send_response(303)
             self.send_header("Location", "../panel")
@@ -2224,7 +2250,10 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(data, dict) or data.get("accountId") != primary_meta_id(cfg):
                 return self.respond(403, {"error": "wrong account scope"})
             if self.path == "/bridge/handoff":
-                if not set_handoff(data):
+                reason = data.pop("reason", None)
+                if reason not in (None, "human_review", "unsafe_content", "model_requested_handoff"):
+                    return self.respond(422, {"error": "invalid handoff reason"})
+                if not set_handoff(data, actor="bridge", reason=reason):
                     return self.respond(422, {"error": "invalid handoff"})
                 return self.respond(200, {"saved": True})
             if self.path == "/bridge/decision":

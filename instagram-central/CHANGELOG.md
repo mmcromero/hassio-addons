@@ -1,3 +1,8 @@
+# 0.1.54 — Controle de atendimento
+
+- Agrupa mensagens por conta e remetente, destaca bloqueios e exibe histórico de controle.
+- Registra origem e motivo quando disponíveis, preserva auditoria anterior.
+
 # 0.1.53 — recuperação de sessão da interface
 
 - Redireciona navegação protegida sem sessão para o login, preservando rota, conta e seção permitidas.

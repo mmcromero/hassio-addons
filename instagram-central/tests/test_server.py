@@ -338,6 +338,17 @@ class InstagramIngressTests(unittest.TestCase):
             rows = conn.execute("SELECT old_state,new_state FROM handoff_audit ORDER BY id").fetchall()
         self.assertEqual(rows, [("bot", "human"), ("human", "done")])
 
+    def test_conversation_control_groups_messages_and_records_reason(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="message-2")).encode(), 'business-1'), 1)
+        self.assertTrue(server.set_handoff({"accountId":"business-1","senderId":"12345678","state":"pending"}, actor="bridge", reason="human_review"))
+        page = server.render_panel({"panel_password":"strong-test-password-12345"})
+        self.assertEqual(page.count('aria-label="Ações da conversa"'), 1)
+        self.assertIn("Bot bloqueado", page)
+        self.assertIn("Revisão humana necessária", page)
+        self.assertIn("2 mensagens", page)
+        self.assertIn("Voltar ao bot", page)
+
     def test_panel_forms_have_scoped_csrf(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         page = server.render_panel({"panel_password": "strong-test-password-12345"})
