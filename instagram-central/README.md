@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.40 (navegação global e experiência móvel)
+# Central Instagram — 0.1.41 (navegação global e experiência móvel)
 
 **Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 

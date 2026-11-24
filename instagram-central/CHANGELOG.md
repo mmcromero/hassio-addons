@@ -1,3 +1,9 @@
+# 0.1.41 — hotfix dos testes de navegação da 0.1.40
+
+- Corrige a asserção do teste de grupos de navegação: rótulo “Gestão” passa a ser codificado explicitamente em UTF-8, evitando SyntaxError em literal bytes não ASCII durante o build ARM64 do Supervisor.
+- Mantém integralmente a reorganização UX da 0.1.40; nenhuma alteração de regra de negócio, API, integração, dados ou opções.
+- A 0.1.40 foi publicada, mas o build do Supervisor falhou antes da instalação; a 0.1.41 contém a correção e será reconstruída no host.
+
 # 0.1.40 — reorganização global da navegação e experiência móvel
 
 - Reorganiza a navegação em Editorial, Atendimento e Gestão; remove a identificação redundante da conta da sidebar e preserva o seletor global no cabeçalho.

@@ -166,7 +166,7 @@ class SettingsNavigation(unittest.TestCase):
         self.assertIn(b'ui-breadcrumb',body)
         self.assertIn(b'aria-label="Conta selecionada"',body)
         self.assertEqual(re.findall(rb'<section class="ui-nav-group"><h2>(.*?)</h2>',body),
-                         [b'Editorial',b'Atendimento',b'Gestão'])
+                         [b'Editorial',b'Atendimento','Gestão'.encode('utf-8')])
         self.assertIn(('/accounts/'+business+'/editorial/#calendar').encode(),body)
         for query in ('account=not_registered','account='+business+'&account=umdoislab','other=umdoislab','account='):
             self.assertEqual(self.request('/accounts?'+query)[0],404)
