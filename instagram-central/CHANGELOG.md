@@ -1,3 +1,10 @@
+# 0.1.43 — validação da permissão no token efetivamente usado
+
+- Corrige a verificação pré-envio para consultar o token de acesso da Página que será usado na Send API, em vez do token de usuário do sistema que o obteve.
+- Acrescenta regressão que comprova que o token da Página é o `input_token` enviado ao `debug_token`, enquanto o app access token permanece somente no cabeçalho.
+- Mantém o bloqueio por padrão, a lista de testes vazia, as permissões `pages_messaging` e `instagram_manage_messages`, a janela Meta de 24 horas e a idempotência.
+- Esta correção ainda requer build/testes no Supervisor e homologação real; não ativa o workflow n8n.
+
 # 0.1.41 — hotfix dos testes de navegação da 0.1.40
 
 - Corrige a asserção do teste de grupos de navegação: rótulo “Gestão” passa a ser codificado explicitamente em UTF-8, evitando SyntaxError em literal bytes não ASCII durante o build ARM64 do Supervisor.
