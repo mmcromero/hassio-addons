@@ -35,6 +35,7 @@ import editorial_delivery
 import editorial_publishing
 import editorial_history
 import interface_ui
+import automation_policy
 import panel_login
 import origin_configuration
 from urllib.parse import parse_qs, urlsplit
@@ -45,8 +46,9 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.39"
+APP_VERSION = "0.1.42"
 _INBOX_LOCK = threading.Lock()
+_AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
     'authorization_missing': 'Esta conta ainda não tem uma autorização Meta utilizável. Clique em Conectar Instagram pela Meta para autorizar esta conta.',
     'oauth_incomplete': 'A conexão inicial ainda não está preparada. Confira a configuração de autorização abaixo.',
@@ -116,11 +118,12 @@ def _open_database():
       message_id TEXT NOT NULL,
       message_text TEXT NOT NULL,
       received_at TEXT NOT NULL,
+      message_at TEXT,
       PRIMARY KEY(recipient_id, sender_id, message_id))""")
     if "processed_at" not in {r[1] for r in conn.execute("PRAGMA table_info(inbound)")}:
         conn.execute("ALTER TABLE inbound ADD COLUMN processed_at TEXT")
     columns = {r[1] for r in conn.execute("PRAGMA table_info(inbound)")}
-    for column in ("claim_token", "claim_until"):
+    for column in ("claim_token", "claim_until", "message_at"):
         if column not in columns:
             conn.execute("ALTER TABLE inbound ADD COLUMN " + column + " TEXT")
     if 'source' not in columns:
@@ -143,6 +146,18 @@ def _open_database():
     conn.execute('''CREATE TABLE IF NOT EXISTS publication_downloads (
       token_hash TEXT PRIMARY KEY,business_id TEXT NOT NULL,post_id TEXT NOT NULL,
       media_id TEXT NOT NULL,expires_at INTEGER NOT NULL,revision INTEGER NOT NULL,run_id TEXT NOT NULL)''')
+    automation_policy.ensure_schema(conn)
+    conn.execute("""CREATE TABLE IF NOT EXISTS automation_sends (
+      recipient_id TEXT NOT NULL,
+      sender_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('sending','sent','failed')),
+      remote_message_id TEXT,
+      error_reason TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY(recipient_id,sender_id,message_id)
+    )""")
     return conn
 
 
@@ -177,19 +192,44 @@ def primary_meta_id(cfg=None):
             conn, account_registry.PRIMARY_BUSINESS)["instagram_account_id"]
 
 
+def within_messaging_window(received_at, now=None):
+    try:
+        received = datetime.fromisoformat(str(received_at).replace("Z", "+00:00"))
+        current = now or _utc_now()
+        if received.utcoffset() is None:
+            return False
+        age = current - received
+        return timedelta(seconds=-60) <= age <= timedelta(hours=24)
+    except (ValueError, TypeError, AttributeError, OverflowError):
+        return False
+
+
 def list_pending(limit=50, *, account_id=None):
     """Read-only queue for a single Meta recipient, never the whole database."""
     if account_id is None:
         account_id = primary_meta_id()
     with database() as conn:
+        now = _utc_now()
         rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_id,
             i.message_text, i.received_at,
             COALESCE(h.state, 'bot') AS handoff_state
             FROM inbound i LEFT JOIN handoff h
               ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
+            LEFT JOIN automation_policy ap ON ap.recipient_id=i.recipient_id
+            LEFT JOIN automation_contacts ex ON ex.recipient_id=i.recipient_id
+              AND ex.sender_id=i.sender_id AND ex.category='excluded'
+            LEFT JOIN automation_contacts te ON te.recipient_id=i.recipient_id
+              AND te.sender_id=i.sender_id AND te.category='test'
             WHERE i.processed_at IS NULL AND i.source='webhook' AND i.recipient_id=?
+              AND ex.sender_id IS NULL
+              AND (COALESCE(ap.mode,'tests')='all' OR te.sender_id IS NOT NULL)
+              AND i.message_at IS NOT NULL
+              AND datetime(i.message_at)>=datetime(?)
+              AND datetime(i.message_at)<=datetime(?)
             ORDER BY i.received_at, i.rowid LIMIT ?""",
-            (account_id, min(max(int(limit), 1), 50))).fetchall()
+            (account_id, (now-timedelta(hours=24)).isoformat(),
+             (now+timedelta(minutes=1)).isoformat(), min(max(int(limit), 1), 50))).fetchall()
+        rows = [row for row in rows if automation_policy.allowed(conn, row[0], row[1])]
     return [{"channel": "instagram", "accountId": r[0],
              "senderId": r[1], "messageId": r[2], "messageText": r[3],
              "receivedAt": r[4], "handoffState": r[5]} for r in rows]
@@ -205,15 +245,28 @@ def claim_message(lease_seconds=120, *, account_id=None):
     token = secrets.token_urlsafe(32)
     with database() as conn:
         conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_id,
-          i.message_text, i.received_at, COALESCE(h.state, 'bot')
+        rows = conn.execute("""SELECT i.recipient_id, i.sender_id, i.message_id,
+          i.message_text, i.received_at, i.message_at, COALESCE(h.state, 'bot')
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
+          LEFT JOIN automation_policy ap ON ap.recipient_id=i.recipient_id
+          LEFT JOIN automation_contacts ex ON ex.recipient_id=i.recipient_id
+            AND ex.sender_id=i.sender_id AND ex.category='excluded'
+          LEFT JOIN automation_contacts te ON te.recipient_id=i.recipient_id
+            AND te.sender_id=i.sender_id AND te.category='test'
           WHERE i.processed_at IS NULL AND i.source='webhook' AND i.recipient_id=?
-            AND COALESCE(h.state, 'bot') = 'bot'
+            AND COALESCE(h.state, 'bot')='bot' AND ex.sender_id IS NULL
+            AND (COALESCE(ap.mode,'tests')='all' OR te.sender_id IS NOT NULL)
             AND (i.claim_until IS NULL OR i.claim_until <= ?)
-          ORDER BY i.received_at, i.rowid LIMIT 1""",
-          (account_id, now_iso)).fetchone()
+            AND i.message_at IS NOT NULL
+            AND datetime(i.message_at)>=datetime(?)
+            AND datetime(i.message_at)<=datetime(?)
+          ORDER BY i.received_at, i.rowid LIMIT 50""",
+          (account_id, now_iso, (now-timedelta(hours=24)).isoformat(),
+           (now+timedelta(minutes=1)).isoformat())).fetchall()
+        row = next((candidate for candidate in rows
+                    if automation_policy.allowed(conn, candidate[0], candidate[1])
+                    and within_messaging_window(candidate[5], now)), None)
         if row is None:
             return None
         conn.execute("""UPDATE inbound SET claim_token=?, claim_until=?
@@ -221,7 +274,78 @@ def claim_message(lease_seconds=120, *, account_id=None):
           (token, until_iso, row[0], row[1], row[2]))
     return {"channel": "instagram", "accountId": row[0], "senderId": row[1],
             "messageId": row[2], "messageText": row[3], "receivedAt": row[4],
-            "handoffState": row[5], "claimToken": token, "claimUntil": until_iso}
+            "handoffState": row[6], "claimToken": token, "claimUntil": until_iso}
+
+
+def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send_text_message):
+    """Send only a live, test-policy-authorized inbound reply; never retry an uncertain send."""
+    keys = {"accountId", "senderId", "messageId", "claimToken", "text"}
+    if not isinstance(data, dict) or set(data) != keys:
+        return {"status": "rejected", "reason": "invalid_payload"}
+    account, profile, mid, token, text = (data["accountId"], data["senderId"],
+        data["messageId"], data["claimToken"], data["text"])
+    if (not _valid_message_identity(account, profile, mid) or
+            not isinstance(token, str) or not 32 <= len(token) <= 256 or
+            not isinstance(text, str) or not 1 <= len(text.strip().encode("utf-8")) <= 1000):
+        return {"status": "rejected", "reason": "invalid_payload"}
+    if account != cfg.get("instagram_account_id"):
+        return {"status": "rejected", "reason": "wrong_account"}
+    now = _utc_now()
+    now_iso = now.isoformat()
+    with _AUTOMATION_LOCK:
+        with database() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot')
+              FROM inbound i LEFT JOIN handoff h
+                ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
+              WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
+                AND i.source='webhook' AND i.processed_at IS NULL
+                AND i.message_at IS NOT NULL
+                AND i.claim_token=? AND i.claim_until>?""",
+              (account, profile, mid, token, now_iso)).fetchone()
+            if row is None or row[1] != "bot" or not automation_policy.allowed(conn, account, profile):
+                return {"status": "rejected", "reason": "claim_or_policy_invalid"}
+            if not within_messaging_window(row[0], now):
+                return {"status": "rejected", "reason": "outside_messaging_window"}
+            if conn.execute("""SELECT 1 FROM automation_sends
+                WHERE recipient_id=? AND sender_id=? AND message_id=?""",
+                (account, profile, mid)).fetchone():
+                return {"status": "rejected", "reason": "already_attempted"}
+            conn.execute("""INSERT INTO automation_sends
+                (recipient_id,sender_id,message_id,status,created_at,updated_at)
+                VALUES(?,?,?,'sending',?,?)""", (account, profile, mid, now_iso, now_iso))
+        try:
+            result = sender(cfg, credential, profile, text.strip())
+        except instagram_connection.GraphError as exc:
+            reason = str(exc.details.get("reason") or "provider_error")
+            failed = True
+        except instagram_connection.ConnectionError:
+            reason = "configuration_incomplete"
+            failed = True
+        except Exception:
+            reason = "transport_error"
+            failed = True
+        else:
+            failed = False
+        completed = _utc_now().isoformat()
+        if failed:
+            with database() as conn:
+                conn.execute("""UPDATE automation_sends SET status='failed',error_reason=?,updated_at=?
+                    WHERE recipient_id=? AND sender_id=? AND message_id=? AND status='sending'""",
+                    (reason, completed, account, profile, mid))
+                conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
+                    WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
+                    (completed, account, profile, mid, token))
+            set_handoff({"accountId": account, "senderId": profile, "state": "pending"})
+            return {"status": "failed", "reason": reason}
+        with database() as conn:
+            conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,updated_at=?
+                WHERE recipient_id=? AND sender_id=? AND message_id=? AND status='sending'""",
+                (result["message_id"], completed, account, profile, mid))
+            conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
+                WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
+                (completed, account, profile, mid, token))
+        return {"status": "sent", "messageId": result["message_id"]}
 
 
 def acknowledge_message(data):
@@ -253,12 +377,17 @@ def evaluate_claim(data):
     if not isinstance(values[3], str) or not 32 <= len(values[3]) <= 256:
         return None
     with database() as conn:
-        row = conn.execute("""SELECT i.message_text, COALESCE(h.state, 'bot')
+        row = conn.execute("""SELECT i.message_text, COALESCE(h.state, 'bot'), i.message_at
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
           WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
-            AND i.source='webhook' AND i.claim_token=? AND i.claim_until>? AND i.processed_at IS NULL""",
+            AND i.source='webhook' AND i.message_at IS NOT NULL
+            AND i.claim_token=? AND i.claim_until>? AND i.processed_at IS NULL""",
           (*values, _utc_now().isoformat())).fetchone()
+        if (row is None or row[2] is None or
+                not automation_policy.allowed(conn, values[0], values[1]) or
+                not within_messaging_window(row[2])):
+            return None
     if row is None:
         return None
     return prepare_decision({
@@ -307,7 +436,7 @@ def set_handoff(data):
         not isinstance(sender, str) or not 1 <= len(sender) <= 160 or
         state not in ("bot", "pending", "human", "done")):
         return False
-    with database() as conn:
+    with _AUTOMATION_LOCK, database() as conn:
         found = conn.execute("""SELECT 1 FROM inbound WHERE recipient_id=? AND sender_id=? LIMIT 1""",
                              (account, sender)).fetchone()
         if not found:
@@ -417,6 +546,30 @@ def webhook_diagnostics(body, account_id):
     return counts
 
 
+def webhook_message_times(payload, account_id):
+    """Map accepted incoming message identities to Meta event time (milliseconds)."""
+    found = {}
+    for _, event in _message_envelopes(payload):
+        message = event.get("message")
+        sender = event.get("sender")
+        recipient = event.get("recipient")
+        if (not isinstance(message, dict) or message.get("is_echo") is True or
+                not isinstance(sender, dict) or not isinstance(recipient, dict) or
+                recipient.get("id") != account_id):
+            continue
+        mid, sender_id, stamp = message.get("mid"), sender.get("id"), event.get("timestamp")
+        if (not isinstance(mid, str) or not isinstance(sender_id, str) or
+                type(stamp) not in (int, float) or stamp <= 0):
+            continue
+        try:
+            moment = datetime.fromtimestamp(stamp / 1000, timezone.utc)
+        except (ValueError, OverflowError, OSError):
+            continue
+        if moment <= _utc_now() + timedelta(minutes=1):
+            found[(account_id, sender_id, mid)] = moment.isoformat()
+    return found
+
+
 def persist(body, account_id=None):
     """Route signed events by known recipient, never by caller-provided business_id."""
     try:
@@ -426,6 +579,7 @@ def persist(body, account_id=None):
     # Only a payload already matching the configured legacy recipient can
     # bootstrap the single existing account; arbitrary events cannot remap it.
     legacy_messages = normalized_messages(payload, account_id)
+    event_times = webhook_message_times(payload, account_id)
     inserted = 0
     with database() as conn:
         account_registry.prepare(conn)
@@ -439,12 +593,14 @@ def persist(body, account_id=None):
             if account_registry.resolve_meta(conn, rid) is None:
                 continue
             cursor = conn.execute(
-                """INSERT INTO inbound (recipient_id,sender_id,message_id,message_text,received_at)
-                VALUES(?,?,?,?,?) ON CONFLICT(recipient_id,sender_id,message_id) DO UPDATE SET
+                """INSERT INTO inbound
+                (recipient_id,sender_id,message_id,message_text,received_at,message_at)
+                VALUES(?,?,?,?,?,?) ON CONFLICT(recipient_id,sender_id,message_id) DO UPDATE SET
                 source='webhook',message_text=excluded.message_text,received_at=excluded.received_at,
-                processed_at=NULL,claim_token=NULL,claim_until=NULL
+                message_at=excluded.message_at,processed_at=NULL,claim_token=NULL,claim_until=NULL
                 WHERE inbound.source='manual'""",
-                (rid, sid, mid, msg, datetime.now(timezone.utc).isoformat()))
+                (rid, sid, mid, msg, datetime.now(timezone.utc).isoformat(),
+                 event_times.get((rid, sid, mid))))
             inserted += cursor.rowcount
     return inserted
 
@@ -507,6 +663,14 @@ def render_login(cfg=None, invalid=False, locked=False):
         origin = ""
     standalone_link = ('<p><a href="' + html.escape(origin + '/panel', quote=True) +
                        '" target="_blank" rel="noopener noreferrer">Abrir Central em janela própria</a></p>') if origin else ''
+    instagram_mark = '''<div class="instagram-mark" aria-label="Instagram">
+<svg viewBox="0 0 100 100" role="img" aria-label="Instagram">
+<defs><linearGradient id="instagram-gradient" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#ffb900"/><stop offset=".35" stop-color="#ff3d55"/><stop offset=".68" stop-color="#c52bd4"/><stop offset="1" stop-color="#6542e8"/></linearGradient></defs>
+<rect x="3" y="3" width="94" height="94" rx="27" fill="url(#instagram-gradient)"/>
+<rect x="22" y="22" width="56" height="56" rx="17" fill="none" stroke="#fff" stroke-width="7"/>
+<circle cx="50" cy="50" r="13" fill="none" stroke="#fff" stroke-width="7"/>
+<circle cx="70" cy="30" r="4.5" fill="#fff"/>
+</svg></div>'''
     configured = isinstance(cfg.get("panel_password"), str) and len(cfg["panel_password"]) >= 16
     if not configured:
         notice = '<p class="notice" role="alert">Configure uma senha de pelo menos 16 caracteres nas opções do aplicativo.</p>'
@@ -517,12 +681,10 @@ def render_login(cfg=None, invalid=False, locked=False):
     else:
         notice = ''
     fields = ("""<form method="post" action="auth/login" autocomplete="on">
-      <label for="username">Usuário</label>
-      <input id="username" name="username" type="text" value="admin"
-        autocomplete="username" autocapitalize="off" spellcheck="false" required>
-      <label for="password">Senha</label>
-      <input id="password" name="password" type="password"
-        autocomplete="current-password" required>
+      <input id="username" name="username" type="text" placeholder="Usuário"
+        aria-label="Usuário" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      <input id="password" name="password" type="password" placeholder="Senha"
+        aria-label="Senha" autocomplete="current-password" required>
       <button type="submit">Entrar</button></form>""" if configured else "")
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -530,26 +692,30 @@ def render_login(cfg=None, invalid=False, locked=False):
 <style>
 :root{color-scheme:light}*{box-sizing:border-box}
 body{margin:0;min-height:100vh;display:grid;place-items:center;padding:1.2rem;
- font-family:system-ui,-apple-system,sans-serif;background:#f3f5fa;color:#17243b}
-main{width:min(100%,410px);background:white;padding:clamp(1.5rem,5vw,2.3rem);
- border:1px solid #e1e5ee;border-radius:18px;box-shadow:0 12px 40px #13264214}
-.kicker{color:#a24321;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;font-weight:700}
-h1{font-size:1.5rem;margin:.7rem 0 .3rem}
-p{color:#526078;line-height:1.5;font-size:.94rem}
-form{display:grid;gap:.45rem;margin-top:1.5rem}
-label{font-size:.9rem;font-weight:650;margin-top:.6rem}
-input{font:inherit;width:100%;padding:.8rem .85rem;border:1px solid #a9b4c5;border-radius:9px;background:white;color:#14243c}
-input:focus-visible,button:focus-visible{outline:3px solid #6e99e7;outline-offset:2px}
-button{font:inherit;margin-top:1rem;padding:.8rem;cursor:pointer;border:0;border-radius:9px;
- background:#152f56;color:white;font-weight:650}
+ font-family:system-ui,-apple-system,sans-serif;background:#0b1420;color:#17243b}
+main{width:min(100%,430px);background:#fff;padding:clamp(1.5rem,5vw,2.3rem);
+ border:1px solid #d7dfeb;border-radius:18px;box-shadow:0 18px 48px #0005}
+.kicker{color:#a83e16;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;font-weight:800}
+h1{color:#14243c;font-size:1.65rem;line-height:1.2;margin:.7rem 0 .3rem}
+p{color:#33445b;line-height:1.5;font-size:.94rem}
+.instagram-mark{display:grid;place-items:center;margin:1.1rem auto 1.35rem;width:76px;height:76px}
+.instagram-mark svg{display:block;width:76px;height:76px;filter:drop-shadow(0 5px 9px #152f5628)}
+form{display:grid;gap:.7rem;margin-top:1.2rem}
+input{font:inherit;width:100%;min-height:48px;padding:.8rem .85rem;border:1px solid #8999ad;border-radius:9px;background:#fff;color:#14243c}
+input::placeholder{color:#43536a;opacity:1}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #2768c7;outline-offset:2px}
+button{font:inherit;margin-top:.25rem;min-height:48px;padding:.8rem;cursor:pointer;border:0;border-radius:9px;
+ background:#152f56;color:#fff;font-weight:750}
 button:hover{background:#244978}
 .notice{padding:.8rem;border-radius:9px;background:#fff1e8;color:#813613}
-small{display:block;color:#59697d;margin-top:1.3rem}
+small{display:block;color:#33445b;margin-top:1.1rem}
+@media(max-width:420px){body{padding:12px}main{padding:24px 20px}.instagram-mark{margin:.8rem auto 1rem}}
 </style></head><body><main>
 <div class="kicker">Umdoislab · acesso administrativo</div>
 <h1>Central Instagram</h1>
-<p>Entre para acessar as mensagens e a fila local.</p>"""
-        + notice + standalone_link + fields +
+<p>Entre para acessar as mensagens e a fila local.</p>
+"""
+        + notice + standalone_link + instagram_mark + fields +
         "<small>Use a senha cadastrada nas configurações da Central. "
         "O Chrome pode oferecer para salvá-la.</small></main></body></html>")
 
@@ -698,6 +864,11 @@ def connection_summary(cfg, credential=None):
         "oauthReady": oauth_meta.is_ready(cfg),
         "tokenStored": bool(credential),
         "accountVerified": state["account_verified"],
+        "messagingPageReady": bool(
+            isinstance(credential, dict) and isinstance(credential.get("page_id"), str) and
+            credential.get("page_id") == credential.get("messaging_page_id") and
+            isinstance(credential.get("page_access_token"), str) and
+            20 <= len(credential["page_access_token"]) <= 8192),
         "subscriptionRequested": state["subscription_requested"],
         "webhookEnabled": cfg.get("ingress_enabled") is True,
         "webhookConfigReady": (isinstance(cfg.get("meta_verify_token"), str)
@@ -892,13 +1063,19 @@ def settings_result(query):
     if query == 'view=settings':
         return ''
     try:
-        fields = parse_qs(query, keep_blank_values=True, max_num_fields=2)
+        fields = parse_qs(query, keep_blank_values=True, max_num_fields=3)
     except ValueError:
         return None
-    if (set(fields) == {'view', 'meta_result'} and fields['view'] == ['settings']
-            and len(fields['meta_result']) == 1 and fields['meta_result'][0] in META_RESULTS):
-        return fields['meta_result'][0]
-    return None
+    if fields.get('view') != ['settings'] or set(fields) - {'view', 'meta_result', 'automation_result'}:
+        return None
+    if ('automation_result' in fields and
+            (len(fields['automation_result']) != 1 or
+             fields['automation_result'][0] not in ('saved', 'invalid'))):
+        return None
+    if ('meta_result' in fields and
+            (len(fields['meta_result']) != 1 or fields['meta_result'][0] not in META_RESULTS)):
+        return None
+    return fields.get('meta_result', [''])[0]
 
 
 def navigation_configuration(cfg):
@@ -972,7 +1149,48 @@ def inbox_received_label(value):
         return '', 'Horário não informado'
 
 
-def render_panel(cfg=None, *, settings_page=False, meta_result=''):
+def render_automation_settings(cfg, result='', messaging_ready=False):
+    account_id = str(cfg.get('instagram_account_id') or '')
+    primary = cfg.get('business_id', account_registry.PRIMARY_BUSINESS) == account_registry.PRIMARY_BUSINESS
+    with database() as conn:
+        policy = automation_policy.snapshot(conn, account_id) if account_id else {
+            'mode': 'tests', 'test': [], 'excluded': [], 'updatedAt': None}
+    status = ''
+    if result == 'saved':
+        status = '<p class="automation-feedback" role="status">Configurações salvas. O filtro já vale para as próximas mensagens.</p>'
+    elif result == 'invalid':
+        status = '<p class="automation-feedback" role="alert">Não foi possível salvar. Confira os IDs numéricos e tente novamente. Nenhuma configuração anterior foi alterada.</p>'
+    disabled = ' disabled' if not primary or not account_id else ''
+    mode = policy['mode']
+    bridge_ready = isinstance(cfg.get('bridge_secret'), str) and len(cfg['bridge_secret']) >= 32
+    return ('''<section class="panel automation-policy" aria-label="Controle de atendimento automático">
+      <div class="panel-title"><div><h2>Atendimento automático</h2>
+      <p>Controle quais perfis podem chegar ao n8n e receber respostas automáticas.</p></div>
+      <span class="automation-mode">''' + ('Somente testes' if mode == 'tests' else 'Produção') + '''</span></div>
+      ''' + ('<p role="status">Página vinculada e token de mensagens armazenado. As permissões Meta são revalidadas antes de cada envio.</p>' if messaging_ready else
+             '<p role="alert">Envio Meta pendente: falta um token de Página vinculado com tarefa MESSAGING. O filtro funciona, mas o envio permanece bloqueado.</p>') +
+      ('<p role="status">Segredo da ponte n8n configurado (valor oculto).</p>' if bridge_ready else
+       '<p role="alert">Ponte n8n não configurada: falta um segredo próprio com pelo menos 32 caracteres nas opções da Central. Não reutilize o segredo do WhatsApp.</p>') + status + ('''<p role="status">Este controle está disponível somente para a conta principal Umdoislab. As demais contas permanecem isoladas.</p>''' if not primary else '') + '''
+      <form method="post" action="panel/automation/policy" class="automation-policy-form">
+        <input type="hidden" name="csrf" value="" data-automation-csrf>
+        <fieldset''' + disabled + '''><legend>Modo de operação</legend>
+          <label><input type="radio" name="mode" value="tests"''' + (' checked' if mode == 'tests' else '') + '''> Testes — somente perfis autorizados</label>
+          <label><input type="radio" name="mode" value="all"''' + (' checked' if mode == 'all' else '') + '''> Produção — todos, exceto perfis excluídos</label>
+        </fieldset>
+        <div class="automation-lists">
+          <label for="automation-test-ids"><strong>Perfis autorizados para teste</strong>
+            <small>Um ID técnico do Instagram por linha. Copie o ID no detalhe da conversa na Caixa de entrada.</small></label>
+          <textarea id="automation-test-ids" name="test_ids" rows="4" maxlength="10000"''' + disabled + '''>''' + html.escape('\n'.join(policy['test'])) + '''</textarea>
+          <label for="automation-excluded-ids"><strong>Perfis sempre excluídos</strong>
+            <small>Esses perfis nunca recebem resposta automática, inclusive em produção.</small></label>
+          <textarea id="automation-excluded-ids" name="excluded_ids" rows="4" maxlength="10000"''' + disabled + '''>''' + html.escape('\n'.join(policy['excluded'])) + '''</textarea>
+        </div>
+        <p class="automation-safety">A exclusão sempre prevalece. IDs são identificadores estáveis; @nomes de usuário podem mudar. No modo de testes, nenhum perfil fora da lista autorizada é encaminhado ao n8n.</p>
+        <button class="btn primary" type="submit"''' + disabled + '''>Salvar controle de atendimento</button>
+      </form>
+    </section>''')
+
+def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_result=''):
     """Account-scoped messages or settings, rendered as separate documents."""
     cfg = navigation_configuration(cfg or {})
     rows, message_count = [], 0
@@ -1026,18 +1244,20 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
             html.escape(sender, quote=True) + '">' + ''.join(actions) + '</div></article></li>')
     body = ('<ul class="inbox-message-list" aria-label="Mensagens desta conta">' + ''.join(entries) + '</ul>') if entries else '<p class="inbox-empty">Nenhuma mensagem recebida.</p>'
     page_name = 'Configurações Meta' if settings_page else 'Mensagens'
-    content = ('''<div class="heading" id="messages"><span class="eyebrow">CENTRAL DE ATENDIMENTO</span>
-      <h1>Mensagens</h1><p>Acompanhe as mensagens recebidas nesta conta.</p></div>
-      <section class="panel" aria-label="Últimas mensagens"><div class="panel-title"><h2>Mensagens recebidas</h2>
-      <button type="button" class="btn quiet" id="refresh-inbox" data-inbox-url="''' +
+    content = ('''<section class="inbox-page-section" aria-label="Caixa de entrada">
+      <div class="inbox-page-header" id="messages">
+        <div class="inbox-page-title"><h1>Caixa de entrada</h1>
+          <p>''' + str(message_count) + ''' mensagens armazenadas · até 50 recentes · horário de Brasília</p></div>
+        <button type="button" class="btn quiet" id="refresh-inbox" data-inbox-url="''' +
       html.escape(account_management.prefix(cfg.get('business_id', 'umdoislab')) + '/panel/meta/check', quote=True) +
-      '''" data-inbox-csrf="">Atualizar mensagens</button></div>
-      <p>Busca manual na Meta: até 5 conversas recentes e 10 mensagens de cada. Somente textos recebidos; sem consulta periódica.</p>
+      '''" data-inbox-csrf="">Atualizar mensagens</button>
+      </div>
+      <details class="inbox-source-note"><summary>Sobre a atualização</summary>
+        <p>A busca é manual: consulta até 5 conversas recentes e 10 mensagens de cada na Meta. Somente textos recebidos; não há consulta periódica nem envio automático.</p>
+      </details>
       <p id="inbox-feedback" role="status" aria-live="polite"></p>
-      <div id="inbox-messages">
-      <p><strong>Mensagens armazenadas: ''' + str(message_count) + '''</strong></p>
-      <p><small>Últimas 50 mensagens · horários de Brasília. Nenhuma resposta é enviada ao Instagram.</small></p>
-      ''' + body + '</div></section>')
+      <div id="inbox-messages">''' + body + '''</div>
+      </section>''')
     if settings_page:
         summary = connection_summary(cfg)
         if meta_result == 'token_invalid':
@@ -1048,7 +1268,8 @@ def render_panel(cfg=None, *, settings_page=False, meta_result=''):
                    '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' + feedback +
                    interface_ui.settings_tabs(render_connection_section(cfg, summary),
                        render_receiving_settings(cfg, summary) + render_routing_settings(cfg) + render_publication_settings(cfg),
-                       render_integration_settings(cfg), default='diagnostics' if meta_result and not summary.get('reauthRequired')
+                       render_integration_settings(cfg), automation=render_automation_settings(cfg, automation_result, summary.get('messagingPageReady') is True),
+                       default='automation' if automation_result else 'diagnostics' if meta_result and not summary.get('reauthRequired')
                            and summary.get('tokenStored') else 'connection'))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1122,7 +1343,22 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 .panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 #refresh-inbox{min-height:44px}
 .note{border:1px solid #465538;background:#222c23;border-radius:12px;padding:15px 18px;color:#c5d5bf;line-height:1.6}
+.automation-policy .automation-mode{display:inline-flex;align-items:center;border:1px solid var(--orange);border-radius:999px;padding:6px 11px;color:var(--orange);font-size:12px;font-weight:800;white-space:nowrap}
+.automation-policy-form fieldset{display:grid;gap:12px;border:1px solid var(--edge);border-radius:10px;padding:15px;margin:18px 0}
+.automation-policy-form legend{padding:0 6px;font-weight:750;color:var(--text)}
+.automation-policy-form fieldset label{display:flex;align-items:center;gap:9px;color:var(--text)}
+.automation-policy-form input[type=radio]{accent-color:var(--orange);width:18px;height:18px}
+.automation-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.automation-lists label{display:block;min-width:0}
+.automation-lists strong,.automation-lists small{display:block}
+.automation-lists small{color:var(--muted);line-height:1.45;margin:6px 0 10px}
+.automation-lists textarea{display:block;width:100%;min-height:116px;resize:vertical;border:1px solid var(--edge);border-radius:9px;background:var(--surface2);color:var(--text);padding:12px;font:inherit;line-height:1.5}
+.automation-policy .automation-safety{border-left:3px solid var(--orange);padding:10px 13px;background:var(--surface2);border-radius:0 8px 8px 0}
+.automation-policy .btn.primary{background:var(--orange);border-color:var(--orange);color:#161b23}
+.automation-feedback{border:1px solid var(--edge);border-radius:8px;padding:10px 12px}
 @media(max-width:760px){
+.automation-lists{grid-template-columns:minmax(0,1fr)}
+.automation-policy .panel-title{align-items:flex-start;flex-wrap:wrap}
 .shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
 .sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--edge);padding:13px}
 .brand{padding-bottom:12px}.section-label,.sidebar-foot{display:none}
@@ -1140,7 +1376,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var
 """ + interface_ui.sidebar(cfg, active='settings' if settings_page else 'messages') + """
 <main id="principal" class="main">
 """ + interface_ui.header(cfg, page_name) + """
- <div class="content">
+ <div class="content""" + ('' if settings_page else ' ui-inbox-page') + """>
 """ + content + """
   </div>
  </main>
@@ -1332,7 +1568,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return False
         allowed = ({'/', '/panel', '/panel/account-context', '/oauth/meta/status', '/oauth/meta/start'} if method == 'GET'
-                   else {'/panel/handoff', '/panel/meta/check', '/panel/meta/subscribe', '/auth/logout'})
+                   else {'/panel/handoff', '/panel/meta/check', '/panel/meta/subscribe', '/panel/automation/policy', '/auth/logout'})
         if suffix not in allowed and suffix != '/editorial' and not suffix.startswith('/editorial/'):
             self.respond(404, {'error': 'account route not found'})
             return False
@@ -1549,7 +1785,11 @@ class Handler(BaseHTTPRequestHandler):
             cfg = self.request_configuration()
             if not panel_session_authorized(self.headers, cfg):
                 return self.respond(200, render_login(cfg), "text/html")
-            page = render_panel(cfg, settings_page=settings_page, meta_result=meta_result or '')
+            query_fields = parse_qs(route.query, keep_blank_values=True, max_num_fields=3)
+            automation_result = query_fields.get('automation_result', [''])[0]
+            if automation_result not in ('', 'saved', 'invalid'):
+                automation_result = ''
+            page = render_panel(cfg, settings_page=settings_page, meta_result=meta_result or '', automation_result=automation_result)
             if not settings_page:
                 csrf_inbox = panel_login.admin_csrf_token(
                     self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('inbox_refresh'))
@@ -1559,6 +1799,11 @@ class Handler(BaseHTTPRequestHandler):
             csrf_subscribe = panel_login.admin_csrf_token(
                 self.headers.get("Cookie", ""), cfg.get("panel_password"), self.meta_csrf_action("subscribe"))
             if settings_page and csrf_check:
+                csrf_automation = panel_login.admin_csrf_token(
+                    self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('automation'))
+                page = page.replace('data-automation-csrf', 'data-automation-csrf')
+                page = page.replace('name="csrf" value="" data-automation-csrf',
+                                    'name="csrf" value="' + csrf_automation + '" data-automation-csrf')
                 csrf_routing = panel_login.admin_csrf_token(
                     self.headers.get('Cookie', ''), cfg.get('panel_password'), self.meta_csrf_action('routing'))
                 page = page.replace('data-routing-csrf=""', 'data-routing-csrf="' + csrf_routing + '"')
@@ -1774,6 +2019,44 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
+        if self.path == "/panel/automation/policy":
+            cfg = self.request_configuration()
+            if not panel_session_authorized(self.headers, cfg):
+                return self.respond(403, {"error": "access denied"})
+            if cfg.get('business_id', account_registry.PRIMARY_BUSINESS) != account_registry.PRIMARY_BUSINESS:
+                return self.respond(403, {"error": "automation policy is restricted to the primary account"})
+            if self.headers.get("Content-Type", "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
+                return self.respond(415, {"error": "invalid content type"})
+            try:
+                size = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                return self.respond(400, {"error": "invalid length"})
+            if size <= 0 or size > 12000 or self.headers.get('Transfer-Encoding'):
+                return self.respond(413, {"error": "size not allowed"})
+            try:
+                fields = parse_qs(self.rfile.read(size).decode('utf-8'), keep_blank_values=True, max_num_fields=8)
+            except (ValueError, UnicodeDecodeError):
+                fields = {}
+            if (set(fields) != {'csrf', 'mode', 'test_ids', 'excluded_ids'} or
+                    any(len(values) != 1 for values in fields.values()) or
+                    not panel_login.admin_csrf_valid(self.headers.get('Cookie', ''), cfg.get('panel_password'),
+                                                      self.meta_csrf_action('automation'), fields.get('csrf', [''])[0])):
+                return self.respond(403, {"error": "invalid automation policy action or CSRF"})
+            try:
+                with _AUTOMATION_LOCK, database() as conn:
+                    automation_policy.save(conn, cfg.get('instagram_account_id', ''),
+                        fields['mode'][0], fields['test_ids'][0], fields['excluded_ids'][0])
+            except automation_policy.PolicyError:
+                result = 'invalid'
+            else:
+                result = 'saved'
+            self.send_response(303)
+            self.send_header('Location', account_management.prefix(self.request_business()) +
+                             '/panel?view=settings&automation_result=' + result)
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Content-Length', '0')
+            self.end_headers()
+            return
         if self.path == "/panel/handoff":
             cfg = self.request_configuration()
             if not panel_authorized(self.headers, cfg):
@@ -1800,7 +2083,7 @@ class Handler(BaseHTTPRequestHandler):
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
             return self.respond(200, {"message": claim_message(account_id=primary_meta_id(cfg))})
-        if self.path in ("/bridge/handoff", "/bridge/ack", "/bridge/decision", "/bridge/draft"):
+        if self.path in ("/bridge/handoff", "/bridge/ack", "/bridge/decision", "/bridge/draft", "/bridge/reply"):
             cfg = settings()
             if not bridge_authorized(self.headers, cfg):
                 return self.respond(403, {"error": "access denied"})
@@ -1827,6 +2110,14 @@ class Handler(BaseHTTPRequestHandler):
                 if decision is None:
                     return self.respond(409, {"error": "invalid or expired claim"})
                 return self.respond(200, {"decision": decision})
+            if self.path == "/bridge/reply":
+                credential = _meta_credential(account_registry.PRIMARY_BUSINESS)
+                result = send_automatic_reply(data, cfg, credential)
+                if result["status"] == "sent":
+                    return self.respond(200, {"sent": True, "messageId": result["messageId"]})
+                if result["status"] == "failed":
+                    return self.respond(502, {"sent": False, "reason": result["reason"]})
+                return self.respond(409, {"sent": False, "reason": result["reason"]})
             if self.path == "/bridge/draft":
                 if cfg.get("drafts_enabled") is not True:
                     return self.respond(503, {"error": "draft storage disabled"})
