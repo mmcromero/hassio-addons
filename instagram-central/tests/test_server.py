@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -20,14 +21,17 @@ class InstagramIngressTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         server.DATA_DIR = Path(self.tmp.name)
         server.DB_PATH = server.DATA_DIR / "instagram.sqlite3"
+        with server.database() as conn:
+            server.automation_policy.save(conn, "business-1", "tests", "12345678", "")
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def sample(self, mid="message-1", text="oi"):
         return {"object": "instagram", "entry": [{"id": "business-1",
-            "messaging": [{"sender": {"id": "customer-1"},
+            "messaging": [{"sender": {"id": "12345678"},
                             "recipient": {"id": "business-1"},
+                            "timestamp": int(time.time() * 1000),
                             "message": {"mid": mid, "text": text}}]}]}
 
     def test_signed_payload(self):
@@ -48,6 +52,24 @@ class InstagramIngressTests(unittest.TestCase):
         event["entry"][0]["messaging"][0]["message"] = {"mid": "x", "attachments": []}
         self.assertEqual(server.normalized_messages(event, 'business-1'), [])
 
+    def test_meta_event_time_controls_automatic_reply_window(self):
+        import copy
+        fresh = self.sample()
+        current = server.webhook_message_times(fresh, "business-1")
+        self.assertIn(("business-1", "12345678", "message-1"), current)
+        stale = copy.deepcopy(fresh)
+        stale["entry"][0]["messaging"][0]["timestamp"] = int((time.time() - 25 * 3600) * 1000)
+        self.assertEqual(server.persist(json.dumps(stale).encode(), "business-1"), 1)
+        self.assertEqual(server.list_pending(account_id="business-1"), [])
+        self.assertIsNone(server.claim_message())
+
+    def test_missing_meta_timestamp_fails_closed_for_automation(self):
+        event = self.sample()
+        del event["entry"][0]["messaging"][0]["timestamp"]
+        self.assertEqual(server.persist(json.dumps(event).encode(), "business-1"), 1)
+        self.assertEqual(server.list_pending(account_id="business-1"), [])
+        self.assertIsNone(server.claim_message())
+
     def test_idempotency(self):
         raw = json.dumps(self.sample()).encode()
         self.assertEqual(server.persist(raw, 'business-1'), 1)
@@ -61,7 +83,7 @@ class InstagramIngressTests(unittest.TestCase):
         unified = {'object': 'instagram', 'entry': [{'id': entry['id'],
             'changes': [{'field': 'messages', 'value': entry['messaging'][0]}]}]}
         self.assertEqual(server.normalized_messages(unified, 'business-1'),
-                         [('business-1', 'customer-1', 'message-1', 'oi')])
+                         [('business-1', '12345678', 'message-1', 'oi')])
         self.assertEqual(server.persist(json.dumps(unified).encode(), 'business-1'), 1)
         self.assertEqual(server.persist(json.dumps(legacy).encode(), 'business-1'), 0)
         self.assertEqual(server.list_pending(account_id='business-1')[0]['messageText'], 'oi')
@@ -120,7 +142,7 @@ class InstagramIngressTests(unittest.TestCase):
         """Regression: INSERT must name columns after adding lease/ACK fields."""
         with server.database() as conn:
             names = {row[1] for row in conn.execute("PRAGMA table_info(inbound)")}
-            self.assertTrue({"processed_at", "claim_token", "claim_until", "source"}.issubset(names))
+            self.assertTrue({"processed_at", "claim_token", "claim_until", "source", "message_at"}.issubset(names))
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         with server.database() as conn:
             row = conn.execute("""SELECT message_text, processed_at, claim_token, claim_until
@@ -130,7 +152,7 @@ class InstagramIngressTests(unittest.TestCase):
     def test_sender_isolation(self):
         one = self.sample("same")
         two = self.sample("same")
-        two["entry"][0]["messaging"][0]["sender"]["id"] = "customer-2"
+        two["entry"][0]["messaging"][0]["sender"]["id"] = "87654321"
         self.assertEqual(server.persist(json.dumps(one).encode(), 'business-1'), 1)
         self.assertEqual(server.persist(json.dumps(two).encode(), 'business-1'), 1)
 
@@ -138,15 +160,15 @@ class InstagramIngressTests(unittest.TestCase):
         self.assertFalse(server.set_handoff({"accountId": "b", "senderId": "c", "state": "human"}))
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "pending"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "pending"}))
         self.assertEqual(server.list_pending()[0]["handoffState"], "pending")
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertEqual(server.list_pending()[0]["handoffState"], "human")
         self.assertFalse(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-2", "state": "human"}))
+            "accountId": "business-1", "senderId": "87654321", "state": "human"}))
         self.assertFalse(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "unknown"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "unknown"}))
 
     def test_claim_ack_and_no_duplicate(self):
         raw = json.dumps(self.sample()).encode()
@@ -200,7 +222,7 @@ class InstagramIngressTests(unittest.TestCase):
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
         self.assertEqual(server.evaluate_claim(claim)["action"], "greeting")
         self.assertFalse(server.evaluate_claim(claim)["maySend"])
-        self.assertFalse(server.evaluate_claim(claim)["mayCallGemini"])
+        self.assertTrue(server.evaluate_claim(claim)["mayCallGemini"])
         self.assertIsNone(server.evaluate_claim({**claim, "claimToken": "x" * 43}))
         self.assertTrue(server.acknowledge_message(claim))
         self.assertIsNone(server.evaluate_claim(claim))
@@ -210,7 +232,7 @@ class InstagramIngressTests(unittest.TestCase):
         item = server.claim_message()
         claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertIsNone(server.evaluate_claim(claim))
 
     def test_decision_rejects_unknown_message_and_extra_fields(self):
@@ -245,7 +267,7 @@ class InstagramIngressTests(unittest.TestCase):
         payload = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
         payload["draftText"] = "Resposta ainda não enviada"
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertFalse(server.save_draft(payload))
         with server.database() as conn:
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM drafts").fetchone()[0], 0)
@@ -264,13 +286,13 @@ class InstagramIngressTests(unittest.TestCase):
         item = server.claim_message()
         self.assertIsNotNone(item)
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertIsNone(server.claim_message())
         self.assertFalse(server.acknowledge_message({
             "accountId": item["accountId"], "senderId": item["senderId"],
             "messageId": item["messageId"], "claimToken": item["claimToken"]}))
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "bot"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "bot"}))
         fresh = server.claim_message()
         self.assertIsNotNone(fresh)
         self.assertNotEqual(item["claimToken"], fresh["claimToken"])
@@ -278,7 +300,7 @@ class InstagramIngressTests(unittest.TestCase):
     def test_pending_handoff_blocks_bot_queue(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "pending"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "pending"}))
         self.assertIsNone(server.claim_message())
 
     def test_bridge_requires_secret(self):
@@ -305,11 +327,11 @@ class InstagramIngressTests(unittest.TestCase):
     def test_handoff_audit(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "human"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "human"}))
         self.assertTrue(server.set_handoff({
-            "accountId": "business-1", "senderId": "customer-1", "state": "done"}))
+            "accountId": "business-1", "senderId": "12345678", "state": "done"}))
         with server.database() as conn:
             rows = conn.execute("SELECT old_state,new_state FROM handoff_audit ORDER BY id").fetchall()
         self.assertEqual(rows, [("bot", "human"), ("human", "done")])
