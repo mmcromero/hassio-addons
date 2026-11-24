@@ -28,11 +28,14 @@
   "validation": {
     "sourceCommit": "842516f127113d608631f33669b3b1bf167b316b",
     "status": "pending-supervisor",
-    "directedChecks": [
+    "directedChecks": [],
+    "build": "not-performed",
+    "physicalValidation": "not-performed",
+    "reviewChecks": [
       {
         "name": "source-scope-review",
         "status": "passed",
-        "evidence": "Diff dev.35→dev.36: única alteração de runtime em server/pilot/entry.ts; demais arquivos alterados são testes, documentação e manifestos. Sem mudança em OAuth, convites, sessão, API, schemas ou dependências."
+        "evidence": "Diff dev.35→dev.36: única alteração de runtime em server/pilot/entry.ts; demais arquivos alterados são teste, documentação e manifestos. Sem mudança em OAuth, convites, sessão, API, schemas ou dependências."
       },
       {
         "name": "pdv-preservation",
@@ -55,8 +58,8 @@
         "evidence": "Inventário completo conferido com SHA256SUMS; hashes recalculados para entry.ts, manifestos, Dockerfile e release.json; assets oficiais preservados."
       }
     ],
-    "build": "not-performed",
-    "physicalValidation": "not-performed"
+    "exportMethod": "Git Data API incremental: pacote dev.35 existente foi usado como base validada; o blob de server/pilot/entry.ts foi copiado diretamente do SHA congelado; manifestos, config, Dockerfile, release.json e SHA256SUMS foram atualizados. Inventário público de 216 arquivos e hashes foram conferidos.",
+    "exporterScript": "not-performed: scripts/prepare-ha-source.py e scripts/test-ha-source.py não foram executados porque esta sessão não dispõe de clone local/runner para a fonte privada."
   },
   "schemaChecksums": {
     "tenant": [
