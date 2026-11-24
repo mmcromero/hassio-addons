@@ -1,3 +1,17 @@
+> **ESTADO VIGENTE — 24/11/2026**
+>
+> - Fonte ativa: mmcromero/factory-runner, branch desenvolvimento, diretório factory-runner-add-on/.
+> - Candidata para homologação final: 0.1.0-rc.20. A RC19 continua como baseline publicada/instalada até a homologação da nova candidata.
+> - Distribuição: somente mmcromero/hassio-addons:main/factory-runner/. Não publicar branches alternativas nem alterar outros add-ons.
+> - O Supervisor executa o build do Dockerfile e a etapa de testes durante a atualização no Home Assistant. Docker externo, QEMU e Actions não são gates genéricos.
+> - HA Ingress usa a porta interna 8099, sem porta de host. A página de status é somente leitura por padrão; owner_ingress_enabled=false. O consentimento exige opt-in, identidade HA e origem HTTPS.
+> - A API de publicação permanece bloqueada sem ativação root-managed e grant assinado. O token Bearer não autoriza escrita.
+> - Estado e próxima ação: [continuidade ativa](../docs/CONTINUIDADE-ATIVA.md) e [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+>
+> O conteúdo histórico abaixo foi preservado. Referências a branches, versões e etapas antigas não substituem a continuidade ativa.
+
+---
+
 # Factory Runner — fonte, operação e continuidade
 
 **Executor externo em estudo (não publicado):** `artesao_isolated_executor.py` implementa os passos oficiais de build HA ARM64 e Debian AMD64, recibos de testes reais, hashes e bloqueios por SHA/versão/arquitetura, somente em VM isolada. **Não é copiado para a imagem final HA.** O script só executa tarefas no builder com `--execute` e uma política externa exata; nenhuma VM/compilação/instalação foi usada neste lote. Ver `ARTESAO-BUILDER-002.md`.
@@ -15,21 +29,21 @@
 
 ## Comece aqui (novo agente)
 
-1. Leia [CONTINUIDADE.md](CONTINUIDADE.md) e [HISTORICO.md](HISTORICO.md). Não comece por relatórios antigos de outros produtos.
-2. Leia as regras superiores em [GOV-STD-001](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md), [GOV-BLK-002](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_BLK_002.md) e [CONTRIBUTING do catálogo HA](https://github.com/mmcromero/hassio-addons/blob/main/CONTRIBUTING.md), além do `AGENTS.md` deste repositório.
-3. Consulte as tarefas existentes: [Issue #2, origem](https://github.com/mmcromero/orquestrador-projetos-base/issues/2); [PR #3, origem](https://github.com/mmcromero/orquestrador-projetos-base/pull/3); [PR #43, distribuição](https://github.com/mmcromero/hassio-addons/pull/43).
-4. Inspecione o estado **atual** do código na branch `feat/factory-runner-esteira-001` e do pacote em `mmcromero/hassio-addons:main/factory-runner/`. Não presuma que tenham os mesmos arquivos.
-5. Retome **apenas a última pendência validada**, documentada em `CONTINUIDADE.md`; não repita build externo/CI sem motivo comprovado.
+1. Leia a continuidade ativa em ../docs/CONTINUIDADE-ATIVA.md.
+2. Leia GOV-STD-001, GOV-BLK-002 e CONTRIBUTING do catálogo HA.
+3. Acompanhe a Issue canônica #2 do Orquestrador. A Issue #1 deste repositório trata somente da preservação do histórico Git adiada pelo proprietário.
+4. Use exclusivamente mmcromero/factory-runner:desenvolvimento como fonte ativa e compare a pasta factory-runner/ do catálogo antes de publicar.
+5. Retome a última pendência validada; não repita etapas aprovadas nem crie branches/Issues sem necessidade.
 
 ## Repositórios e responsabilidade
 
 | Papel | Localização |
 | --- | --- |
-| Fonte de desenvolvimento, organização geral | `mmcromero/orquestrador-projetos-base`, pasta `factory-runner-add-on/`, branch de trabalho `feat/factory-runner-esteira-001` |
-| Distribuição efetiva para Home Assistant | `mmcromero/hassio-addons`, pasta `factory-runner/`, branch `main` |
-| Documento de operação da candidata distribuída | [OPERACAO-ESTEIRA.md](https://github.com/mmcromero/hassio-addons/blob/main/factory-runner/OPERACAO-ESTEIRA.md) |
-| Instalação em teste | Raspberry Pi / Home Assistant; estado deve ser comprovado por versão e logs locais |
-| Acompanhamento oficial | Issue #2 na fonte e PR #43 na distribuição, sem abrir chamados duplicados |
+| Fonte ativa | mmcromero/factory-runner:desenvolvimento/factory-runner-add-on/ |
+| Distribuição | mmcromero/hassio-addons:main/factory-runner/ |
+| Baseline publicada/instalada | Factory Runner 0.1.0-rc.19, conforme registro HA de 24/11/2026 |
+| Candidata em desenvolvimento | 0.1.0-rc.20, para homologação final no HA |
+| Acompanhamento oficial | Issue #2 do Orquestrador; Issue #1 deste repositório mantém somente a pendência histórica de importação Git adiada |
 
 **Atualização em 19/11/2026:** a base RC2 foi sincronizada na origem privada e o worker controlado foi desenvolvido; a **RC3 foi publicada somente na pasta `factory-runner/` de `hassio-addons:main`**, commit `db77d23fcfef78535240577388b2a654a0cb2d8a`. O worker está **PUBLICADO NO GITHUB**, mas **não instalado ou homologado no Home Assistant**. A divergência histórica da fonte consta em `HISTORICO.md`. A divergência histórica está registrada em `HISTORICO.md`. Não fazer exportação cega nem sobrescrever a distribuição.
 
