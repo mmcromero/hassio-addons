@@ -1,6 +1,9 @@
 """Private evidence-ledger binding regressions."""
+import os
 import sys
 import tempfile
+import uuid
+from datetime import datetime, timezone
 import unittest
 from pathlib import Path
 
@@ -26,6 +29,18 @@ class ExecutionEvidenceTests(unittest.TestCase):
             "artifact_digest": None,
             "executor": "ha-supervisor",
         }
+
+    def test_valid_record_fixture_passes_internal_schema(self):
+        record = {
+            "evidence_id": str(uuid.uuid4()),
+            **self.values,
+            "result": "PASS",
+            "recorded_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "issuer": evidence.ISSUER,
+            "verified": True,
+        }
+        self.assertIsNone(evidence._validation_error(record),
+                          msg=evidence._validation_error(record))
 
     def test_exact_binding_is_reusable(self):
         item = evidence.record_evidence(self.ledger, **self.values)
