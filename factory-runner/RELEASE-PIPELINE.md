@@ -1,3 +1,5 @@
+> **HISTÓRICO — SEM EFEITO OPERACIONAL:** esta cópia pertence a um estado anterior do Factory Runner e não é a fonte de desenvolvimento nem a esteira atual. Fonte canônica atual: [mmcromero/factory-runner, branch desenvolvimento](https://github.com/mmcromero/factory-runner/tree/desenvolvimento), especialmente [factory-runner-add-on/RELEASE-PIPELINE.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/factory-runner-add-on/RELEASE-PIPELINE.md) e [docs/CONTINUIDADE-ATIVA.md](https://github.com/mmcromero/factory-runner/blob/desenvolvimento/docs/CONTINUIDADE-ATIVA.md). Leia a versão atual antes de qualquer decisão; este documento é somente histórico de distribuição.
+
 # Esteira consolidada — Factory Runner RC18
 
 > Diretriz vigente M006/P0 (20/11/2026): operação exclusivamente no Raspberry
