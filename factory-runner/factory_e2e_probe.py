@@ -192,9 +192,10 @@ def _execute() -> dict:
                             runner.prepare_project("laboratorio", sha, "diagnostic")
                         except Exception as exc:
                             detail = type(exc).__name__
-                            safe_detail = str(exc)[:48] if isinstance(
-                                exc, (runner.PreflightError, runner.DeclarativeExportError,
-                                      runner.ReceiptError)) else ""
+                            safe_detail = "".join(
+                                char if char.isalnum() or char in "_-" else "_"
+                                for char in str(exc)
+                            )[:48]
                             raise ProbeFailed("standard_prepare_failed_" + str(code) + "_"
                                               + str(error)[:24] + "_" + detail + "_" + safe_detail)
                         finally:
