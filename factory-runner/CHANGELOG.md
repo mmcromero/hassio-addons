@@ -1,3 +1,12 @@
+# 0.1.0-rc.37 — append de auditoria com fsync
+
+- Cada evento de auditoria agora faz flush e `fsync()` do arquivo antes de a operação ser considerada registrada.
+- Na criação inicial do arquivo, também sincroniza o diretório pai para persistir a entrada.
+- Falha de sincronização mantém o comportamento fail-closed: a operação não prossegue como se a auditoria estivesse íntegra.
+- Dois testes regressivos cobrem fsync do arquivo/diretório na criação e fsync em append subsequente.
+- Não altera APIs, autenticação, rede, opções, Publisher, políticas de produto ou execução de código não confiável.
+- Build ARM64 e suíte completa serão validados no Supervisor antes da publicação/instalação desta candidata.
+
 # 0.1.0-rc.36 — conecta timestamp de boot ao probe de persistência
 
 - O processo principal do probe agora lê `RUNNER_API_PROBE_BOOT_STARTED_AT` e repassa o instante a `run_probe()`.
