@@ -3,10 +3,10 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.30",
   "repository": "mmcromero/factory-runner",
-  "commit": "6beebc9faf1b2257a1108572305bc4e5c5362114",
+  "commit": "b61937b5ff4bedbaaa7cfaaa4f98a4d67e5cb6fd",
   "catalog_sha": "fb97f2564d9aae071f8f4be3d6ce007404e8bdfb",
   "previous_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "reviewed_source": "6beebc9faf1b2257a1108572305bc4e5c5362114",
+  "reviewed_source": "b61937b5ff4bedbaaa7cfaaa4f98a4d67e5cb6fd",
   "publication": "OWNER_AUTHORIZED_RC30_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
   "candidate_distribution": "FACTORY_RUNNER_RC30_OWNER_SETTINGS_ENROLLMENT",
@@ -527,8 +527,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_ha_ingress_server.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_ha_ingress_server.py",
-      "git_blob_sha": "c47dd40d2a18c6d3bae332d07e3525072f676308",
-      "size": 14252,
+      "git_blob_sha": "2bfd904da4b6a2071925f43f9c0317e0e1c2b4b4",
+      "size": 14235,
       "mode": "100644"
     },
     {
@@ -548,8 +548,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_m006.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_m006.py",
-      "git_blob_sha": "2cf95a18c8a1e27916a0674d1c91eace9ded1440",
-      "size": 48944,
+      "git_blob_sha": "fd367646d7abfe9e629ef85a3acf5cbd3c1b8fa1",
+      "size": 48756,
       "mode": "100644"
     },
     {
@@ -706,5 +706,5 @@
   },
   "branch": "desenvolvimento",
   "provenance_note": "Manifesto e runtime críticos sincronizados diretamente da fonte RC30. Arquivos listados em files preservam o inventário da RC28 anterior; não usar essa lista como prova de identidade integral dos blobs RC30. Auditoria de árvore integral pendente.",
-  "status": "RC30_REVISED_TESTS_PUBLISHED_PENDING_SUPERVISOR_VALIDATION"
+  "status": "RC30_REVISED_SETTINGS_ONLY_ENROLLMENT_TESTS_PENDING_SUPERVISOR_VALIDATION"
 }
