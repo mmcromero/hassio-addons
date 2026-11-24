@@ -4,14 +4,14 @@
   "version": "0.1.0-rc.20",
   "repository": "mmcromero/factory-runner",
   "commit": "7e65e103cc7360c587ebf30b5204439a2330d8f3",
-  "catalog_sha": "631642d6975cdb9120390259f1a75f8155ae584a",
+  "catalog_sha": "049622bb4d3a4e7a1fe694ce3fc6d2c877817b72",
   "previous_source": "59f6f435bd050f2ef769ad27e179599968fbe456",
   "reviewed_source": "7e65e103cc7360c587ebf30b5204439a2330d8f3",
   "publication": "RC20_HA_VALIDATION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
   "candidate_distribution": "RC20 — publicação autorizada para build e homologação no Home Assistant; não autoriza publicação de pacotes de projetos pelo Publisher.",
-  "tests": "PENDING_SUPERVISOR_BUILD",
-  "review_status": "NO_GO_PENDING_BUILD_AND_INDEPENDENT_REVIEW",
+  "tests": "PASS_SUPERVISOR_BUILD_ARM64",
+  "review_status": "PENDING_INDEPENDENT_TECH_LEAD_AND_SECURITY_REVIEW",
   "files": [
     {
       "mode": "100644",
