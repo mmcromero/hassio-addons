@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.39",
+  "version": "0.1.0-rc.40",
   "repository": "mmcromero/factory-runner",
-  "commit": "0882092c3f9bc60b04b1f427dade742fcc477282",
-  "catalog_sha": "288ee5a94207986a469db92e62663fe6564c7bbd",
-  "previous_source": "4c67f5f673cd6d7ed6b2f1dd987a60d2bdcf4cec",
-  "reviewed_source": "0882092c3f9bc60b04b1f427dade742fcc477282",
-  "publication": "OWNER_AUTHORIZED_RC39_CANDIDATE_DISTRIBUTION",
+  "commit": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
+  "catalog_sha": "cd10d0ae73c4df429ea932e0cbf9057927d6fecb",
+  "previous_source": "0882092c3f9bc60b04b1f427dade742fcc477282",
+  "reviewed_source": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
+  "publication": "OWNER_AUTHORIZED_RC40_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_CONTINUOUS_INSTALL_UPDATE_AUTHORIZATION_20261124",
-  "candidate_distribution": "FACTORY_RUNNER_RC39_FR_EXEC_001_FIXES",
+  "candidate_distribution": "FACTORY_RUNNER_RC40_FR_EXEC_001_LEDGER_DIAGNOSTICS",
   "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "RC39_PUBLISHED_WAITING_SUPERVISOR_BUILD",
+  "review_status": "RC40_PUBLISHED_WAITING_SUPERVISOR_BUILD",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,14 +86,14 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "c169d8ec49d16ee624cac21cf1fe32fb78bd30f7",
-      "size": 42802,
+      "git_blob_sha": "e7d989cb4a22289a1c014ce9c8b9349a55065492",
+      "size": 43350,
       "mode": "100644"
     },
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "989e78fe3407267aad322c9bf87bb74fedfa3a91",
+      "git_blob_sha": "8357e21467efed1f7497e4fe56d09d91e55e3c81",
       "size": 1037,
       "mode": "100644"
     },
@@ -170,8 +170,8 @@
     {
       "path": "factory-runner/execution_evidence.py",
       "source_path": "factory-runner-add-on/execution_evidence.py",
-      "git_blob_sha": "24c94d688132f7a533c419634dd8c14971aded1a",
-      "size": 6893,
+      "git_blob_sha": "107f865744071293d9d151b76b5ca0d76fe65302",
+      "size": 7504,
       "mode": "100644"
     },
     {
@@ -401,8 +401,8 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "c713e63fb94dd2abbe7377ea34d7d0d6b7cf3edc",
-      "size": 7586,
+      "git_blob_sha": "2ec97e8b9e532d192611097ff0900b66d6e75c23",
+      "size": 7659,
       "mode": "100644"
     },
     {
@@ -422,8 +422,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "e381627e07d2826b72d8d5876d96f477485f45be",
-      "size": 27400,
+      "git_blob_sha": "e3771d49cf29f6cde5ee04f683da81c861cbd2b8",
+      "size": 27463,
       "mode": "100644"
     },
     {
@@ -590,8 +590,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_execution_evidence.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_evidence.py",
-      "git_blob_sha": "4fcdd22fb0814534089b616a67ad96e8aa50229c",
-      "size": 2946,
+      "git_blob_sha": "1bc7935845d27210e6eb9d8248012ded50b3d34e",
+      "size": 3492,
       "mode": "100644"
     },
     {
@@ -794,21 +794,21 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.38",
+    "version": "0.1.0-rc.39",
     "build": "FAILED",
     "test_count": 409,
-    "errors": 5,
-    "failures": 1,
+    "errors": 2,
+    "failures": 2,
     "skipped": 28,
     "installation": "NOT_INSTALLED",
     "installed_version": "0.1.0-rc.37",
     "runtime_state": "RC37 started",
-    "failure_summary": "Numeric test_version rejected by evidence identifier regex; corrupt-ledger fixture mode 0644; runtime probe expected 6 operations for one project instead of 3",
+    "failure_summary": "Evidence ledger record validation/reuse and corrupt-ledger fixture; runtime probe count mismatch no longer failed in this build",
     "publisher": "DORMANT"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral de 111 arquivos da fonte factory-runner-add-on/ no commit RC39 indicado. RC39 corrige os cinco erros e uma falha observados na suíte ARM64 da RC38. Somente factory-runner/ foi alterada; RC4-VALIDACAO.md e demais add-ons foram preservados. RC39 implementa FR-EXEC-001 como planejador somente leitura. Novo build ARM64, suíte Dockerfile e probe autenticado ainda pendentes. Nenhum teste, script ou código dos projetos Avisaqui/Artesão foi executado; Publisher permanece DORMANT.",
-  "status": "RC39_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
+  "provenance_note": "Inventário integral de 111 arquivos da fonte factory-runner-add-on/ no commit RC40 indicado. RC40 acrescenta diagnóstico por código de campo no ledger e corrige fixture/permissões; build ARM64 e suíte Dockerfile ainda pendentes. Somente factory-runner/ foi alterada; demais add-ons e RC4-VALIDACAO.md preservados. Nenhum código/teste de Avisaqui/Artesão executado; Publisher DORMANT.",
+  "status": "RC40_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -824,7 +824,7 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.39",
+    "version": "0.1.0-rc.40",
     "build": "PENDING",
     "dockerfile_tests": "PENDING",
     "execution_plan_probe": "PENDING",
