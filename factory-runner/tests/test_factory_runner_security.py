@@ -3,6 +3,7 @@ import http.client
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import threading
@@ -569,6 +570,54 @@ class SecurityTests(unittest.TestCase):
     def test_bad_json_rejected(self):
         self.assertEqual(self.request("POST", "/api/corrigir-issue",
             token="Bearer test-secret-not-for-production-0123456789", raw=b"{not json")[0], 400)
+
+    def test_authority_services_start_without_runner_credentials(self):
+        run_script = (ADDON / "run.sh").read_text(encoding="utf-8")
+        expected = {"approval": 1, "publisher": 1, "owner_ui": 2}
+        for service, count in expected.items():
+            launches = [
+                line.strip() for line in run_script.splitlines()
+                if f"su-exec {service} python3" in line
+            ]
+            self.assertEqual(len(launches), count, service)
+            for command in launches:
+                self.assertTrue(
+                    command.startswith(
+                        f"env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin su-exec {service} "
+                    ),
+                    command,
+                )
+                self.assertNotIn("RUNNER_AUTH_TOKEN", command)
+                self.assertNotIn("RUNNER_GITHUB_READ_TOKEN", command)
+
+        # The API remains the only child that receives its own Bearer and
+        # workspace read token; clean service launches do not change this.
+        self.assertIn("export RUNNER_AUTH_TOKEN", run_script)
+        self.assertIn(
+            "export RUNNER_WORKSPACE_SYNC_ENABLED RUNNER_GITHUB_READ_TOKEN RUNNER_WORKSPACE_AUTO_PREPARE",
+            run_script,
+        )
+        self.assertIn("su-exec runner python3 -u /app/server.py &", run_script)
+
+    def test_env_i_removes_inherited_runner_secrets(self):
+        parent_env = os.environ.copy()
+        parent_env.update({
+            "RUNNER_AUTH_TOKEN": "synthetic-runner-bearer",
+            "RUNNER_GITHUB_READ_TOKEN": "synthetic-read-token",
+            "UNRELATED_SECRET": "synthetic-unrelated-secret",
+        })
+        probe = "import json,os; print(json.dumps(sorted(os.environ)))"
+        result = subprocess.run(
+            ["/usr/bin/env", "-i", "PATH=/usr/bin:/bin",
+             sys.executable, "-I", "-c", probe],
+            env=parent_env, capture_output=True, text=True, check=True, timeout=5,
+        )
+        observed = set(json.loads(result.stdout))
+        self.assertIn("PATH", observed)
+        self.assertLessEqual(observed, {"PATH", "LC_CTYPE"})
+        self.assertNotIn("synthetic-runner-bearer", result.stdout)
+        self.assertNotIn("synthetic-read-token", result.stdout)
+        self.assertNotIn("synthetic-unrelated-secret", result.stdout)
 
     def test_audit_does_not_contain_secret(self):
         self.request("POST", "/api/corrigir-issue", token="Bearer test-secret-not-for-production-0123456789")
