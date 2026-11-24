@@ -1,3 +1,10 @@
+# 0.1.0-rc.40 — diagnóstico do ledger e fixture de evidência
+
+- Acrescenta diagnóstico não sensível do campo que invalida um registro de evidência, sem incluir valores no log.
+- Corrige import explícito de os na fixture que define modo 0600 do ledger corrompido.
+- Acrescenta teste isolado do schema interno do registro antes de testar append/reuso.
+- RC39 executou 409 testes e terminou com 2 erros e 2 falhas; erros remanescentes estavam concentrados na validação do ledger e na fixture de permissões. RC40 aguarda novo build ARM64.
+
 # 0.1.0-rc.39 — corrige regressões do ledger e do probe
 
 - Permite versões numéricas de teste no binding de evidência, mantendo validação estrita do identificador.
