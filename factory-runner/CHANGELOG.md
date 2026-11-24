@@ -1,3 +1,11 @@
+# 0.1.0-rc.30 — cadastro inicial por Configurações
+
+- Move o cadastro inicial único do proprietário para as opções do add-on no Home Assistant; o formulário de cadastro pelo Ingress deixa de existir.
+- Processa a senha temporária no startup por IPC local com a autoridade isolada e limpa os dois campos via Supervisor API somente após confirmar o estado durável.
+- Inclui o helper no estágio de validação e na imagem runtime; RC29 o referenciava no Dockerfile sem copiá-lo.
+- Remove a redigitação de senha no consentimento de cada publicação: sessão HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR` permanecem.
+- Mantém publicação bloqueada, token de escrita vazio e nenhuma alteração no add-on instalado.
+
 # 0.1.0-rc.28 — diagnóstico granular da sessão de cadastro
 
 - Distingue sessão ausente, expirada, identidade/origem/Ingress divergentes, formato e CSRF sem registrar valores sensíveis.
