@@ -28,6 +28,7 @@ def serve():
     issuer=ApprovalAuthority(ROOT/"approval",PRIVATE_KEY,OWNER_RECORD,
                              config["authority"],config["owner_id"])
     roles={
+        0:{"enroll","enrollment_status"},
         config["publisher_uid"]:{"propose","status","grant","public_key"},
         config["owner_ui_uid"]:{"view","consent","enroll","enrollment_status"},
     }
