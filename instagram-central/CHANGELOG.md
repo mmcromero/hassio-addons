@@ -4,6 +4,15 @@
 - Mantém integralmente a reorganização UX da 0.1.40; nenhuma alteração de regra de negócio, API, integração, dados ou opções.
 - A 0.1.40 foi publicada, mas o build do Supervisor falhou antes da instalação; a 0.1.41 contém a correção e será reconstruída no host.
 
+# 0.1.42 — controle de atendimento automático restrito
+
+- Adiciona modo Testes/Produção por conta, lista de perfis autorizados e lista de exclusão com precedência absoluta; padrão seguro: Testes com lista vazia.
+- Aplica a política no backend antes de expor/claimar mensagens para o n8n e novamente antes de qualquer envio. A janela de 24 horas usa o timestamp original do evento Meta; eventos sem timestamp, mensagens manuais, remetentes excluídos e conversas sob controle humano falham fechados.
+- Adiciona aba Atendimento nas Configurações Meta, protegida por sessão e CSRF, com IDs técnicos estáveis dos perfis.
+- Adiciona envio Meta somente com token de Página vinculado à conta Instagram, tarefa MESSAGING e permissões `pages_messaging` + `instagram_manage_messages`; tokens ficam no armazenamento criptografado local. Idempotência por mensagem e bloqueio de repetição em falhas incertas.
+- Cria workflow n8n separado e inativo, com triagem local, Gemini restrito e envio exclusivamente pela Central. Não ativar até configurar a credencial própria `X-Instagram-Bridge-Secret`, cadastrar o perfil do proprietário e validar a conexão de mensagens Meta.
+- Testes dirigidos de política, isolamento, CSRF, claim, exclusão, handoff, janela de mensagens e Send API incluídos no build do Supervisor. A execução local integral e a homologação real ainda precisam ser concluídas.
+
 # 0.1.40 — reorganização global da navegação e experiência móvel
 
 - Reorganiza a navegação em Editorial, Atendimento e Gestão; remove a identificação redundante da conta da sidebar e preserva o seletor global no cabeçalho.
