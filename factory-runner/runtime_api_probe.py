@@ -74,7 +74,7 @@ def _post_readonly(requester, path, token, payload):
     raise ProbeError("api_busy")
 
 
-def run_probe(token, snapshots, requester=request_json):
+def run_probe(token, snapshots, requester=request_json, boot_started_at=None):
     """Exercise only authenticated reads and read-only preflight endpoints."""
     _expect(isinstance(token, str) and len(token) >= 32, "auth_token_unavailable")
 
@@ -105,6 +105,18 @@ def run_probe(token, snapshots, requester=request_json):
     if isinstance(publication, dict):
         _expect(publication.get("published") is not True,
                 "publication_status_unsafe")
+
+    status, prior_audit = requester("GET", "/api/operations", token)
+    _expect(status == 200 and prior_audit.get("source") == "sanitized_audit"
+            and isinstance(prior_audit.get("operations"), list),
+            "prior_audit_endpoint_failed")
+    prior_boot_audit_events = 0
+    if isinstance(boot_started_at, str) and boot_started_at:
+        prior_boot_audit_events = sum(
+            1 for event in prior_audit["operations"]
+            if isinstance(event, dict) and isinstance(event.get("time"), str)
+            and event["time"] < boot_started_at
+        )
 
     operation_ids = []
     results = []
@@ -165,6 +177,7 @@ def run_probe(token, snapshots, requester=request_json):
         "preflight_checks": len(snapshots),
         "audited_read_only_operations": len(operation_ids),
         "publication": "disabled",
+        "prior_boot_audit_events": prior_boot_audit_events,
         "results": results,
     }
 
@@ -247,6 +260,8 @@ def main():
           + str(result["projects"]) + " preflight_checks="
           + str(result["preflight_checks"]) + " audited_read_only_operations="
           + str(result["audited_read_only_operations"])
+          + " prior_boot_audit_events="
+          + str(result["prior_boot_audit_events"])
           + " publication=disabled", flush=True)
     for project, eligible, errors, preparation in result["results"]:
         print("[API-PROBE] PROJECT: " + project

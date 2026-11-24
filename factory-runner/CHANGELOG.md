@@ -1,3 +1,10 @@
+# 0.1.0-rc.35 — verificação de auditoria persistida entre boots
+
+- O probe captura o instante de início do contêiner e consulta a auditoria antes/depois do preflight.
+- Conta somente eventos de auditoria anteriores ao início do boot atual, permitindo evidenciar a persistência do volume após atualização/reinício normal.
+- Não grava marcador adicional, não altera o volume fora dos eventos read-only já existentes e não executa operações de preparação/publicação.
+- Inclui teste sintético para reconhecer evento anterior ao boot.
+
 # 0.1.0-rc.34 — importar sys no probe live API
 
 - Corrige a falha de importação da RC33: o probe usa `sys.path` em modo Python isolado e agora importa explicitamente `sys`.

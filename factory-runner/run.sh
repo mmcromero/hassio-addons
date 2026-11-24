@@ -1,5 +1,7 @@
 #!/bin/bash
 set -euo pipefail
+RUNNER_API_PROBE_BOOT_STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true)"
+export RUNNER_API_PROBE_BOOT_STARTED_AT
 umask 077
 
 echo "[STARTUP] Factory Runner — modo restrito"
@@ -161,6 +163,7 @@ API_PID=$!
     export PATH=/usr/sbin:/usr/bin:/sbin:/bin
     export HOME=/nonexistent
     export RUNNER_API_PROBE_EXPECT_WORKSPACES="$RUNNER_WORKSPACE_SYNC_ENABLED"
+    export RUNNER_API_PROBE_BOOT_STARTED_AT
     unset RUNNER_GITHUB_READ_TOKEN GITHUB_PUBLISH_TOKEN SUPERVISOR_TOKEN
     exec su-exec runner python3 -I -u /app/runtime_api_probe.py
 ) &

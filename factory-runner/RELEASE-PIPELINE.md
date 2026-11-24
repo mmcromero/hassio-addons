@@ -267,3 +267,10 @@ RC33 (`0.1.0-rc.33`), commit `d09aff0a1fc6641ec1e0ad087200acc501d8ed5e`, adicion
 RC33 falhou no build ARM64 do Supervisor (exit code 1) durante a suíte unitária: `runtime_api_probe.py` consultava `sys.path` sem importar `sys`. `py_compile` passou, mas a suíte registrou `FAILED (errors=1, skipped=28)`. RC33 não foi instalada; RC32 permaneceu `started`.
 
 RC34 (`0.1.0-rc.34`), commit `7e95296dd4c92aff36a1deb74d738e23716e845a`, adiciona `import sys`. O teste de regressão de import path permanece. Ainda pendentes promoção, publicação, build/testes no Supervisor e log real `[API-PROBE] PASS`.
+
+
+## M062 — RC34: API viva e preflight real PASS
+
+Supervisor confirmou RC34 `started`, build ARM64 concluído e atualização bem-sucedida. Log: `[API-PROBE] PASS: authenticated live loopback API; projects=2 preflight_checks=2 audited_read_only_operations=4 publication=disabled`. Avisaqui bloqueado por 3 códigos de política e Artesão por 7; ambos retornaram `blocked_by_project_policy`, sem alterar gates. Nenhuma rota prepare/publish/reconcile foi chamada. API permanece loopback-only, worker read-only, Publisher DORMANT.
+
+RC35 em desenvolvimento acrescenta medição de eventos de auditoria anteriores ao timestamp do boot atual para provar persistência após update/restart normal. Não comprova durabilidade contra queda abrupta; `record()` ainda não faz fsync explícito. Etapa 1 permanece aberta até RC35.

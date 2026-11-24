@@ -8,9 +8,16 @@ from runtime_api_probe import ProbeError, run_probe
 class RuntimeApiProbeTests(unittest.TestCase):
     TOKEN = "synthetic-probe-token-that-is-not-real-012345"
 
-    def fake_requester(self, *, publish=False, bad_audit=False):
+    def fake_requester(self, *, publish=False, bad_audit=False, prior_audit=False):
         calls = []
         operations = []
+        if prior_audit:
+            operations.append({
+                "operation_id": "c" * 8 + "-1234-1234-1234-" + "c" * 12,
+                "action": "workspace_sync:avisaqui",
+                "status": "completed_workspace_sync",
+                "time": "2026-11-24T18:00:00Z",
+            })
         def request(method, path, token, payload=None):
             calls.append((method, path, token, payload))
             if path == "/api/status" and not token:
@@ -86,6 +93,13 @@ class RuntimeApiProbeTests(unittest.TestCase):
             result = run_probe(self.TOKEN, [("avisaqui", "a" * 40)], transient_busy)
         self.assertTrue(seen["busy"])
         self.assertEqual(result["preflight_checks"], 1)
+
+    def test_live_api_probe_detects_audit_events_from_before_current_boot(self):
+        requester, _ = self.fake_requester(prior_audit=True)
+        result = run_probe(
+            self.TOKEN, [], requester,
+            boot_started_at="2026-11-24T19:00:00Z")
+        self.assertEqual(result["prior_boot_audit_events"], 1)
 
     def test_live_api_probe_fails_if_publication_is_reported(self):
         requester, _ = self.fake_requester(publish=True)
