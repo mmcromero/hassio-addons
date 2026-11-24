@@ -330,7 +330,7 @@ rpc = ApprovalRPCClient(approval_path, users['approval'])
                  "publisher": [groups["consent_clients"], groups["publisher_clients"]],
                  "owner_ui": [groups["consent_clients"]],
                  "runner": [groups["publisher_clients"]],
-                 "stranger": [groups["consent_clients"], groups["publisher_clients"]]}
+                 "stranger": [groups["consent_clients"], groups["publisher_clients"]], "root": []}
         def options(role):
             return dict(user=users[role], group=groups.get(role, groups["runner"]),
                         extra_groups=extra[role], env={"PATH": "/usr/bin:/bin",
@@ -366,12 +366,34 @@ rpc = ApprovalRPCClient(approval_path, users['approval'])
 state = root/'approval'
 issuer = ApprovalAuthority(state, state/'credentials'/'signing.pem',
                            state/'credentials'/'owner.json', auth, owner)
-roles = {users['publisher']: {'propose','status','grant','public_key'},
-         users['owner_ui']: {'view','consent','enroll','enrollment_status'}}
+roles = {0: {'enroll','enrollment_status'},
+         users['publisher']: {'propose','status','grant','public_key'},
+         users['owner_ui']: {'view','consent'}}
 server = ApprovalRPCServer(approval_path, issuer, roles,
                            group_gid=groups['consent_clients'])
 server.serve_forever()
 """, authority/"consent-ipc"/"approval.sock")
+        enrollment = run("root", """
+import owner_settings_enroll as settings
+from types import SimpleNamespace
+settings.OPTIONS = root/'synthetic-supervisor-options.json'
+settings.SOCKET = str(approval_path)
+settings.pwd.getpwnam = lambda name: SimpleNamespace(pw_uid=users['approval'])
+settings.clear_temporary_options = lambda token: None
+settings.OPTIONS.write_text(json.dumps({
+    'owner_password': password,
+    'owner_password_confirm': password,
+    'owner_ha_user_id': ha_user,
+    'owner_ingress_origin': origin,
+    'owner_ingress_enabled': True,
+}))
+settings.OPTIONS.chmod(0o600)
+os.environ['SUPERVISOR_TOKEN'] = 'synthetic-supervisor-token'
+assert settings.main() == 0
+assert rpc.enrollment_status() == {'enrolled':True}
+print(json.dumps({'enrolled':True}))
+""")
+        self.assertTrue(enrollment["enrolled"])
         ui_code = """
 def verify(context):
     return verify_ha_ingress_context(context, expected_ha_user_id=ha_user, owner_id=owner)
@@ -385,37 +407,19 @@ def form(path, submit, fields, submitted_origin=origin):
     code, response_headers, body = dispatch('GET', path)
     assert code == 200, code
     cookie = response_headers.get('Set-Cookie')
-    if path.startswith('/owner-enroll'):
-        assert cookie is None
-    else:
-        assert all(x in cookie for x in ('Secure','HttpOnly','SameSite=Strict'))
+    assert all(x in cookie for x in ('Secure','HttpOnly','SameSite=Strict'))
     csrf = re.search(rb'name="csrf" value="([a-f0-9]{64})"', body).group(1).decode()
     fields = {**fields, 'csrf': csrf}
     post_headers = {'Origin':submitted_origin,'Content-Type':'application/x-www-form-urlencoded'}
-    if cookie:
-        post_headers['Cookie'] = cookie.split(';',1)[0]
+    post_headers['Cookie'] = cookie.split(';',1)[0]
     return dispatch('POST', submit, post_headers, urlencode(fields).encode())
 """
-        enrollment = run("owner_ui", ui_code + """
-assert dispatch('GET','/owner-enroll/',peer='127.0.0.1')[0] == 403
-code, _, page = dispatch('GET','/owner-enroll/')
-assert code == 200
-nonce = re.search(rb'name="csrf" value="([a-f0-9]{64})"', page).group(1).decode()
-post_headers = {'Origin':origin,'Content-Type':'application/x-www-form-urlencoded'}
-form_fields = {'csrf':nonce,'password':password,'password_confirm':password,'confirmation':'CADASTRAR'}
-encoded = urlencode(form_fields).encode()
-assert dispatch('POST','/owner-enroll/submit',{**post_headers,'X-Ingress-Path':'/api/hassio_ingress/other-token'},encoded)[0] == 403
-assert dispatch('POST','/owner-enroll/submit',post_headers,encoded)[0] == 403
-assert rpc.enrollment_status() == {'enrolled':False}
-fields = {'password':password,'password_confirm':password,'confirmation':'CADASTRAR'}
-assert form('/owner-enroll/','/owner-enroll/submit',fields,'https://wrong.invalid')[0] == 403
-assert rpc.enrollment_status() == {'enrolled':False}
-code, _, body = form('/owner-enroll/','/owner-enroll/submit',fields)
-assert code == 200 and password.encode() not in body
-assert rpc.enrollment_status() == {'enrolled':True}
-print(json.dumps({'enrolled':True}))
+        ingress_closed = run("owner_ui", ui_code + """
+assert dispatch('GET','/owner-enroll/')[0] == 404
+assert dispatch('POST','/owner-enroll/submit',{'Origin':origin,'Content-Type':'application/x-www-form-urlencoded'},b'')[0] == 404
+print(json.dumps({'legacy_enrollment_routes_closed':True}))
 """)
-        self.assertTrue(enrollment["enrolled"])
+        self.assertTrue(ingress_closed["legacy_enrollment_routes_closed"])
         proposal = run("publisher", """
 data = json.load(sys.stdin)
 view = rpc.propose(data['binding'], data['changes'], data['receipt'])
@@ -441,9 +445,9 @@ else:
 proposal = json.load(sys.stdin)['proposal']
 path = '/owner-consent/' + proposal
 assert dispatch('GET',path,{'X-Remote-User-Id':'wrong-owner'})[0] == 403
-fields = {'password':password,'confirmation':'PUBLICAR'}
+fields = {'confirmation':'PUBLICAR'}
 assert form(path,'/owner-consent/consent',fields,'https://wrong.invalid')[0] == 403
-assert form(path,'/owner-consent/consent',{'password':'wrong lab password','confirmation':'PUBLICAR'})[0] == 403
+assert form(path,'/owner-consent/consent',{'password':'unexpected','confirmation':'PUBLICAR'})[0] == 403
 code, response_headers, body = form(path,'/owner-consent/consent',fields)
 assert code == 200 and b'Nenhuma publica' in body
 assert b'signature' not in body and password.encode() not in body
@@ -532,7 +536,7 @@ else:
             with self.subTest(origin=origin),self.assertRaisesRegex(PublicationError,'https_owner_origin_required'):
                 OwnerConsentUI(RPC(),origin,ingress_verifier=lambda ctx:'fixture-owner')
 
-    def test_ha_owner_ui_requires_verified_context_csrf_and_reauth(self):
+    def test_ha_owner_ui_requires_verified_context_csrf_and_session_without_password_reentry(self):
         outer=self
         class RPC:
             def request(self,action,**body):return getattr(outer.issuer,action)(**body)
@@ -544,9 +548,9 @@ else:
         self.assertNotIn(self.password,page['html']);self.assertIn('no-store',page['headers']['Cache-Control'])
         csrf=ui.sessions[page['session']]['csrf']
         with self.assertRaisesRegex(PublicationError,'owner_csrf'):
-            ui.consent(page['session'],{'csrf':csrf,'password':self.password,'confirmation':'PUBLICAR'},{'trusted':True},'https://evil.invalid')
+            ui.consent(page['session'],{'csrf':csrf,'confirmation':'PUBLICAR'},{'trusted':True},'https://evil.invalid')
         page=ui.view(view['proposal_id'],{'trusted':True});csrf=ui.sessions[page['session']]['csrf']
-        grant=ui.consent(page['session'],{'csrf':csrf,'password':self.password,'confirmation':'PUBLICAR'},{'trusted':True},'https://ha.example.invalid')
+        grant=ui.consent(page['session'],{'csrf':csrf,'confirmation':'PUBLICAR'},{'trusted':True},'https://ha.example.invalid')
         self.publish(grant)
 
     def test_api_status_keeps_publish_disabled_without_owner_route(self):
