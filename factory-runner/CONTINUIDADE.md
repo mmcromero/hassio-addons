@@ -1,4 +1,4 @@
-> **ESTADO VIGENTE — 24/11/2026:** a fonte ativa é mmcromero/factory-runner:desenvolvimento. A continuidade válida está em docs/CONTINUIDADE-ATIVA.md. A candidata RC20 inclui a página de status HA Ingress, somente leitura por padrão; owner consent e publicador continuam opt-in e bloqueados. O histórico abaixo foi preservado como registro de versões anteriores; não usar RC3–RC19 como estado atual.
+> **ESTADO DE CÓDIGO — 24/11/2026 / M050:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; manifesto declara RC30 (0.1.0-rc.30), ainda não publicada nem instalada. A última instalação comprovada é RC28 (M044/M045). A continuidade canônica está em `docs/CONTINUIDADE-ATIVA.md`. Este arquivo conserva notas históricas; não usar RC20/RC19 como estado atual.
 
 ---
 
