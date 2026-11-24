@@ -10,8 +10,8 @@
   "publication": "OWNER_AUTHORIZED_RC37_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_INSTALLATION_UPDATE_AUTHORIZATION_20261124",
   "candidate_distribution": "FACTORY_RUNNER_RC37_AUDIT_FSYNC",
-  "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
+  "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
+  "review_status": "INSTALLED_STARTED_RUNTIME_PROBE_PASS",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -725,14 +725,15 @@
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
     "version": "0.1.0-rc.37",
-    "build": "pending",
-    "installation": "pending",
-    "runtime_state": "RC36 started; build and live probe passed",
-    "audit_persistence_across_boot": "PASS: prior_boot_audit_events=19 after RC36 update",
+    "build": "PASS_DOCKERFILE_BUILD_ARM64",
+    "installation": "PASS_INSTALLED_STARTED",
+    "runtime_state": "RC37 started",
+    "audit_persistence_across_boot": "PASS: prior_boot_audit_events=19 after RC36-to-RC37 update",
+    "audit_fsync": "PASS_UNIT_TESTS_FILE_AND_DIRECTORY_SYNC",
     "owner_enrollment": "unchanged",
     "product_publication": "disabled"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC37 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo RC4-VALIDACAO.md foram preservados. RC37 adiciona flush + fsync em cada append de auditoria e fsync do diretório pai na criação, com duas regressões. RC36 anterior foi instalada e comprovou persistência normal com 19 eventos anteriores ao boot; build/testes/instalação RC37 pendentes. Fsync reduz a janela de perda, mas não comprova resistência a falha física de mídia/controladora.",
-  "status": "RC37_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
+  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC37 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo RC4-VALIDACAO.md foram preservados. RC37 adiciona flush + fsync em cada append de auditoria e fsync do diretório pai na criação, com duas regressões. RC36 anterior foi instalada e comprovou persistência normal com 19 eventos anteriores ao boot; build/testes/instalação RC37 pendentes. Fsync reduz a janela de perda, mas não comprova resistência a falha física de mídia/controladora. Supervisor RC37 build ARM64, full Dockerfile tests, installation/startup and authenticated live probe PASS. 19 prior-boot audit events recovered. Fsync regressions passed. Etapa 1B closed; Etapa 1C read-only enrollment/Publisher diagnosis pending. No abrupt-power-loss test was performed.",
+  "status": "RC37_INSTALLED_STARTED_PROBE_PASS_STAGE1B_COMPLETE_STAGE1C_PENDING"
 }
