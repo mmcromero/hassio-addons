@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Factory Runner"
-version: "0.1.0-rc.28"
+version: "0.1.0-rc.30"
 slug: fabrica_software
 description: "Preparação declarativa e worker controlado; publicação bloqueada"
 url: "https://github.com/mmcromero/hassio-addons"
@@ -23,6 +23,8 @@ options:
   owner_ha_user_id: ""
   owner_ingress_origin: ""
   owner_ingress_enabled: false
+  owner_password: ""
+  owner_password_confirm: ""
   github_publish_token: ""
 schema:
   runner_auth_token: password
@@ -30,6 +32,8 @@ schema:
   owner_ha_user_id: "str?"
   owner_ingress_origin: "str?"
   owner_ingress_enabled: bool
+  owner_password: "password?"
+  owner_password_confirm: "password?"
   github_publish_token: "password?"
   github_read_token: "password?"
   workspace_auto_prepare: bool
