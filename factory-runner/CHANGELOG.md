@@ -1,11 +1,27 @@
 # Changelog
 
-## 0.1.0-rc.19 — Candidata privada M008 (não publicada)
+## 0.1.0-rc.20 — candidata única para homologação final (24/11/2026)
 
-M006 consolidado para homologação dirigida no RPi4; consentimento, transporte e contas permanecem dormentes. Publicação, instalação e ativação dependem de autorização posterior.
+- Correção de segurança M020: arquivos runtime de autoridade movidos para diretórios root-managed separados (owner root, grupo do serviço, modo 0750); contas de serviço não podem substituir arquivos 0440 por manipulação do diretório pai.
+- Testes de bootstrap cobrem os novos diretórios e os caminhos dos três serviços foram atualizados. Suíte completa ainda pendente do build de validação no Supervisor.
+- M021: teste de permissões com UIDs/GIDs fixos e prova de leitura/escrita cruzada; teste de regressão confirma que Approval, Publisher e Owner UI iniciam com ambiente limpo.
+- SEC-M020: `run.sh` não transmite `RUNNER_AUTH_TOKEN` nem `RUNNER_GITHUB_READ_TOKEN` aos três serviços de autoridade. Execução da suíte e nova revisão independente ainda pendentes.
 
+- Declara HA Ingress na configuração do add-on. O serviço apresenta uma página estática de status por padrão; cadastro e consentimento permanecem desligados (owner_ingress_enabled=false).
+- A página de status aceita somente conexões do Supervisor (172.30.32.2) e não oferece POST, sessão, IPC, credenciais ou ação de publicação.
+- O fluxo completo de owner ingress exige opt-in explícito, ID exato do usuário HA e origem HTTPS. O cadastro é único; após concluir, a interface solicita reinício para o bootstrap fixar a chave pública do proprietário e iniciar o publicador em modo somente leitura.
+- Integra bootstrap persistente, Approval, Owner UI e Publisher em UIDs separados, com IPC Unix e verificações de identidade. O token de escrita GitHub é separado do token de leitura.
+- As rotas de publicação continuam bloqueadas sem ativação root-managed e grant assinado do proprietário. Bearer operacional não autoriza publicação.
+- O Dockerfile executa sintaxe, py_compile e a suíte unittest na etapa de validação. A execução desta candidata e o build ARM64 real permanecem pendentes da homologação pelo Supervisor no Home Assistant.
 
-## Em desenvolvimento — M006 Raspberry exclusivo (sem nova RC)
+## 0.1.0-rc.19 — publicada no catálogo em 20/11/2026
+
+- Distribuição no catálogo público pelo commit 64c9f134553ac9516de484330ee162ad2852bbb8.
+- A leitura do Supervisor em 24/11/2026 confirmou a versão 0.1.0-rc.19 instalada e iniciada no add-on 45c28620_fabrica_software.
+- A RC19 é o baseline preservado; ela não contém os incrementos M013–M019 desenvolvidos depois da publicação.
+- A instalação confirmada não equivale à homologação integral ARM64, persistência após reinício ou ativação do publicador.
+
+## Histórico — lote M006 anterior à integração M018/M019 (RC18)
 
 - Contrato de publicação reproduz receita declarativa desde blobs pinados, confere política vigente e revalida arquivos/modos/hashes; não executa scripts de produto.
 - Consentimento Ed25519 por ato com reautenticação independente, scrypt/throttle, preview e receipt persistidos, TTL/revogação/nonce e IPC por identidade do kernel; emissor, publisher, UI e preparador com contas distintas.
