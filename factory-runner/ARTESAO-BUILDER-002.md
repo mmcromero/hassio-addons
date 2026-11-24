@@ -1,5 +1,24 @@
 # ARTESAO-BUILDER-002 — Executor externo e isolado de builds
 
+## Atualização de execução — Factory Runner RC11 (20/11/2026)
+
+A versão pública do add-on avançou para **0.1.0-rc.11**, publicada em
+`mmcromero/hassio-addons` pelo PR #53, commit
+`d0344c82534683b94a7d31d18d91823e56291930`. A instalação no Home Assistant
+foi confirmada por captura da tela de informações. Logs reais confirmam inicialização,
+API somente leitura, sincronização multiprojeto e aplicação dos bloqueios do adaptador
+aos workspaces de Avisaqui e Artesão Digital. O resumo integral da suíte executada
+no build da RC11 ainda não foi obtido nesta conversa: não atribuir contagem ou
+resultado de suíte da RC10 à RC11.
+
+**A execução do builder externo continua NÃO homologada.** O Raspberry e a Forja
+não são ambientes de build isolados aprovados. Nesta revisão da fonte foram
+adicionados dois testes offline, de recusa antecipada de tokens de produção e
+variáveis de Docker remoto, sem execução da suíte nesta sessão, sem alterar
+`main`, sem Actions, sem publicar novos pacotes nem instalar em servidores.
+Isso é reforço de regressão, não prova de isolamento físico da futura VM.
+
+
 **Estado:** código desenvolvido na branch isolada `feat/factory-runner-artesao-package-adapter`. **Não executado em VM real, não instalado e não publicado.** Rastreabilidade na Issue #2.
 
 ## Objetivo e limites
@@ -11,7 +30,7 @@ O `artesao_isolated_executor.py` prepara **artefatos locais de teste**, seguindo
 | Home Assistant | Contingência do Artesão Digital | Imagem `linux/arm64`, pacote `apps/artesaos-piloto/`, `runtime.tar.gz`, `SHA256SUMS` |
 | Debian/Forja 01 | Principal, independente do HA | Imagem `linux/amd64`, pacote Debian/Compose, `image.tar`, `SHA256SUMS`; ZIP Windows somente se descriptor oficial da versão existir |
 
-Não confundir com o Avisaqui nem instalar os pacotes na Forja 01 ou no Raspberry. A versão do **Factory Runner permanece RC9 no catálogo**; desenvolvimento do executor não a altera.
+Não confundir com o Avisaqui nem instalar os pacotes na Forja 01 ou no Raspberry. A versão **atual** do Factory Runner no catálogo é **RC11**; o desenvolvimento do executor externo na branch privada não altera nem publica por si só o catálogo.
 
 ## Origem canônica (verificada no Git)
 
