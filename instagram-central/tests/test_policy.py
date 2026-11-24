@@ -35,11 +35,15 @@ class PolicyTests(unittest.TestCase):
         event["channel"] = "whatsapp"
         self.assertEqual(policy.prepare_decision(event)["action"], "reject")
 
-    def test_never_sends(self):
-        for text in ("oi", "preço da pracinha", "qualquer coisa"):
-            decision = policy.prepare_decision(self.event(text))
+    def test_only_safe_triage_actions_may_call_gemini(self):
+        greeting = policy.prepare_decision(self.event("oi"))
+        product = policy.prepare_decision(self.event("preço da pracinha"))
+        review = policy.prepare_decision(self.event("preciso de ajuda"))
+        self.assertTrue(greeting["mayCallGemini"])
+        self.assertTrue(product["mayCallGemini"])
+        self.assertFalse(review["mayCallGemini"])
+        for decision in (greeting, product, review):
             self.assertFalse(decision["maySend"])
-            self.assertFalse(decision["mayCallGemini"])
 
 
 if __name__ == "__main__":
