@@ -112,7 +112,7 @@ class RuntimeApiProbeTests(unittest.TestCase):
             self.TOKEN, [("avisaqui", "a" * 40)], requester,
             execution_contract_factory=factory)
         self.assertIn("/api/execution-plan", [item[1] for item in calls])
-        self.assertEqual(result["audited_read_only_operations"], 6)
+        self.assertEqual(result["audited_read_only_operations"], 3)
         self.assertEqual(result["results"][0][4]["selected"], 2)
 
     def test_live_api_probe_retries_while_workspace_sync_holds_api_lock(self):
