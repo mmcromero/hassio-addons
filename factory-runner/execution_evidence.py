@@ -33,7 +33,7 @@ def canonical(value):
                       ensure_ascii=True, allow_nan=False).encode("ascii")
 
 
-def _valid_record(value):
+def _validation_error(value):
     required = {
         "evidence_id", "test_id", "test_version", "source_sha",
         "unit_digest", "dependency_digest", "environment_id",
@@ -41,37 +41,55 @@ def _valid_record(value):
         "issuer", "verified",
     }
     if not isinstance(value, dict) or set(value) != required:
-        return False
+        return "record_shape"
     try:
         if str(uuid.UUID(value["evidence_id"])) != value["evidence_id"]:
-            return False
+            return "evidence_id"
     except (ValueError, TypeError, AttributeError):
-        return False
-    if (not isinstance(value["test_id"], str) or not IDENT.fullmatch(value["test_id"])
-            or not isinstance(value["test_version"], str) or not VERSION.fullmatch(value["test_version"])
-            or not isinstance(value["source_sha"], str) or not re.fullmatch(r"[0-9a-f]{40}", value["source_sha"])
-            or not isinstance(value["unit_digest"], str) or not SHA256.fullmatch(value["unit_digest"])
-            or not isinstance(value["dependency_digest"], str) or not SHA256.fullmatch(value["dependency_digest"])
-            or not isinstance(value["environment_id"], str) or not IDENT.fullmatch(value["environment_id"])
-            or (value["artifact_digest"] is not None and
-                (not isinstance(value["artifact_digest"], str) or not SHA256.fullmatch(value["artifact_digest"])))
-            or value["result"] != "PASS"
-            or not isinstance(value["executor"], str) or not IDENT.fullmatch(value["executor"])
-            or value["issuer"] != ISSUER or value["verified"] is not True):
-        return False
+        return "evidence_id"
+    if not isinstance(value["test_id"], str) or not IDENT.fullmatch(value["test_id"]):
+        return "test_id"
+    if not isinstance(value["test_version"], str) or not VERSION.fullmatch(value["test_version"]):
+        return "test_version"
+    if not isinstance(value["source_sha"], str) or not re.fullmatch(r"[0-9a-f]{40}", value["source_sha"]):
+        return "source_sha"
+    if not isinstance(value["unit_digest"], str) or not SHA256.fullmatch(value["unit_digest"]):
+        return "unit_digest"
+    if not isinstance(value["dependency_digest"], str) or not SHA256.fullmatch(value["dependency_digest"]):
+        return "dependency_digest"
+    if not isinstance(value["environment_id"], str) or not IDENT.fullmatch(value["environment_id"]):
+        return "environment_id"
+    if value["artifact_digest"] is not None and (
+            not isinstance(value["artifact_digest"], str)
+            or not SHA256.fullmatch(value["artifact_digest"])):
+        return "artifact_digest"
+    if value["result"] != "PASS":
+        return "result"
+    if not isinstance(value["executor"], str) or not IDENT.fullmatch(value["executor"]):
+        return "executor"
+    if value["issuer"] != ISSUER:
+        return "issuer"
+    if value["verified"] is not True:
+        return "verified"
     try:
         parsed = datetime.fromisoformat(value["recorded_at"].replace("Z", "+00:00"))
         if parsed.tzinfo is None:
-            return False
+            return "recorded_at_timezone"
     except (ValueError, AttributeError, TypeError):
-        return False
-    return len(canonical(value)) <= MAX_RECORD_BYTES
+        return "recorded_at"
+    if len(canonical(value)) > MAX_RECORD_BYTES:
+        return "record_size"
+    return None
+
+
+def _valid_record(value):
+    return _validation_error(value) is None
 
 
 def _safe_ledger(path):
     path = Path(path).absolute()
     if path.resolve() != path or path.is_symlink():
-        raise EvidenceError("unsafe_evidence_ledger")
+        raise EvidenceError("unsafe_evidence_path_resolution")
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     parent = path.parent.lstat()
     if (not stat.S_ISDIR(parent.st_mode) or parent.st_uid != os.geteuid()
@@ -80,9 +98,12 @@ def _safe_ledger(path):
     if path.exists():
         info = path.lstat()
         if (not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid()
-                or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) != 0o600
-                or info.st_size > MAX_LEDGER_BYTES):
-            raise EvidenceError("unsafe_evidence_ledger")
+                or info.st_nlink != 1):
+            raise EvidenceError("unsafe_evidence_file_metadata")
+        if stat.S_IMODE(info.st_mode) != 0o600:
+            raise EvidenceError("unsafe_evidence_file_mode")
+        if info.st_size > MAX_LEDGER_BYTES:
+            raise EvidenceError("evidence_ledger_budget_exceeded")
     return path
 
 
@@ -141,8 +162,9 @@ def record_evidence(path, *, test_id, test_version, source_sha, unit_digest,
         "issuer": ISSUER,
         "verified": True,
     }
-    if not _valid_record(record):
-        raise EvidenceError("invalid_evidence_record")
+    validation_error = _validation_error(record)
+    if validation_error:
+        raise EvidenceError("invalid_evidence_record:" + validation_error)
     path = _safe_ledger(path)
     created = not path.exists()
     fd = os.open(path, os.O_RDWR | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
