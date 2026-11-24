@@ -18,6 +18,11 @@ let child,browser;
   const evidence=process.env.IG_EVIDENCE_DIR || root;fs.mkdirSync(evidence,{recursive:true});
   await page.goto(config.url+'/panel');await page.getByLabel('Senha').fill('synthetic-browser-publication-password');
   await page.getByRole('button',{name:'Entrar',exact:true}).click();await page.locator('#messages').waitFor();
+  assert.equal(await page.locator('.inbox-page-title h1').count(),1,'one page title');
+  assert.equal(await page.locator('.inbox-page-title h1').innerText(),'Caixa de entrada');
+  assert.equal(await page.locator('.inbox-count').count(),1,'one compact message count');
+  assert.equal(await page.getByRole('heading',{name:'Mensagens recebidas',exact:true}).count(),0,'no repeated section title');
+  assert.equal(await page.locator('.inbox-page-title .eyebrow').count(),0,'no redundant eyebrow above inbox title');
   if(process.env.IG_LAYOUT_BASELINE){
     const sizes=await page.locator('#inbox-messages .item-actions button').evaluateAll(nodes=>nodes.map(n=>({label:n.textContent,width:Math.round(n.getBoundingClientRect().width),height:Math.round(n.getBoundingClientRect().height)})));
     await page.screenshot({path:path.join(evidence,'inbox-before-desktop.png'),fullPage:true,animations:'disabled'});
@@ -31,6 +36,8 @@ let child,browser;
   for(const width of [1920,1440,1280,1100,768,390,360,320]){
     await page.setViewportSize({width,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'page overflow at '+width);
+    const topGap=await page.evaluate(()=>Math.round(document.querySelector('.inbox-page-header').getBoundingClientRect().top-document.querySelector('.ui-app-header').getBoundingClientRect().bottom));
+    assert.ok(topGap>=0 && topGap<=24,'compact content start at '+width+': '+topGap+'px');
     for(const card of await page.locator('.inbox-message').all()){
       const box=await card.boundingBox();assert.ok(box.x>=0 && box.x+box.width<=width+1,'card bounds at '+width);
       assert.ok(await card.evaluate(n=>n.scrollWidth<=n.clientWidth+1),'card overflow at '+width);
