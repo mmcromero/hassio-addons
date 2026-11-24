@@ -1,3 +1,10 @@
+# 0.1.49 — alinhar versão interna com o pacote
+
+- Alinha `APP_VERSION` da aplicação com a versão do manifesto após a revisão da instalação revelar identificação interna ainda em 0.1.47.
+- Preserva as correções de rota POST-only, o fragmento NGINX com blocos válidos e os testes adicionados na 0.1.48.
+- Não altera opções, bancos, credenciais, Meta, n8n, webhook ou comportamento de atendimento.
+- Build e homologação desta versão ainda dependem da atualização no Home Assistant.
+
 # 0.1.48 — corrigir rota de salvamento da política no proxy
 
 - Inclui encaminhamento POST-only para `/panel/automation/policy` e para a variante com prefixo de conta no proxy dedicado.
