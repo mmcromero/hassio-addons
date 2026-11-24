@@ -1,13 +1,13 @@
 > **ESTADO VIGENTE — 24/11/2026**
 >
 > - **Roadmap aprovado:** [ROADMAP-CONCLUSAO-001](../docs/ROADMAP-CONCLUSAO-001.md), seis etapas; isolamento de código não confiável é a última etapa de construção, mas continua obrigatório antes de executar código de projetos.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; candidata corrente em preparação: `0.1.0-rc.35`.
-> - **Última candidata publicada/instalada antes desta correção:** `0.1.0-rc.32`, catálogo `mmcromero/hassio-addons:main/factory-runner/`, Supervisor `started`.
-> - **Etapa 1:** RC31/RC32 confirmaram startup, dois workspaces, auditoria sanitizada e probe declarativo real PASS. O novo probe HTTP interno da RC32 não gerou marcador `[API-PROBE]`; RC33 falhou por ausência do import `sys`; RC34 instalou e o probe HTTP vivo passou para dois workspaces. RC35 acrescenta medição da auditoria persistida antes do boot atual.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; candidata corrente em desenvolvimento: `0.1.0-rc.36`.
+> - **Última candidata publicada/instalada antes desta correção:** `0.1.0-rc.34`, catálogo `mmcromero/hassio-addons:main/factory-runner/`, Supervisor `started` (confirmada nos logs consultados nesta retomada).
+> - **Etapa 1:** RC31/RC32 confirmaram startup, dois workspaces, auditoria sanitizada e probe declarativo real PASS. O novo probe HTTP interno da RC32 não gerou marcador `[API-PROBE]`; RC33 falhou por ausência do import `sys`; RC34 instalou e o probe HTTP vivo passou para dois workspaces. RC35 introduziu a medição, mas faltava conectá-la ao fluxo de inicialização; RC36 corrige essa ligação e adiciona regressão de integração. Build/testes e validação HA da RC36 ainda pendentes.
 > - **Publisher:** DORMANT; publicação de produtos permanece desativada. Não ativar nesta etapa.
 > - **Isolamento:** Bubblewrap continua bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed. A exportação declarativa não depende do sandbox.
 > - **Distribuição:** publicar somente a pasta `factory-runner/`; não alterar outros add-ons nem arquivos compartilhados.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seções M057–M059; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seções M057–M064; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado. Referências antigas a RC20, RC19 e RCs anteriores são registros históricos, não o estado operacional atual.
 
