@@ -154,7 +154,6 @@ class HAIngressServerTests(unittest.TestCase):
         ui = FakeOwnerUI()
         form = urlencode({
             "csrf": "csrf-token",
-            "password": "owner-password",
             "confirmation": "PUBLICAR",
         }).encode()
         headers = self.headers(
