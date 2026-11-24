@@ -7,6 +7,7 @@ import json
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from http.server import ThreadingHTTPServer
 from http.client import HTTPConnection
@@ -39,6 +40,8 @@ class HTTPContractTests(unittest.TestCase):
             "meta_oauth_enabled": False,
         }
         server.settings = lambda: self.config
+        with server.database() as conn:
+            server.automation_policy.save(conn, "business-1", "tests", "12345678", "")
         self.http = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
         self.thread = threading.Thread(target=self.http.serve_forever, daemon=True)
         self.thread.start()
@@ -62,7 +65,8 @@ class HTTPContractTests(unittest.TestCase):
 
     def event(self):
         return json.dumps({"object": "instagram", "entry": [{"id": "business-1",
-            "messaging": [{"sender": {"id": "customer-1"}, "recipient": {"id": "business-1"},
+            "messaging": [{"sender": {"id": "12345678"}, "recipient": {"id": "business-1"},
+                            "timestamp": int(time.time() * 1000),
                             "message": {"mid": "m1", "text": "oi"}}]}]}).encode()
 
     def post_event(self, valid=True):
@@ -84,7 +88,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.38")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.42")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -266,7 +270,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.38", body)
+        self.assertIn(b"0.1.42", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -284,7 +288,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.38", body)
+            self.assertIn(b"0.1.42", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -365,7 +369,7 @@ class HTTPContractTests(unittest.TestCase):
         for expected in ('Meta webhook accepted:', 'legacy_events=0', 'unified_events=1',
                          'recipient_match=1', 'matched_text=1', 'stored=1'):
             self.assertIn(expected,log)
-        for private in ('business-1','customer-1',event['message']['text'],digest,
+        for private in ('business-1','12345678',event['message']['text'],digest,
                         self.config['meta_app_secret'],self.config['meta_verify_token']):
             self.assertNotIn(private,log)
         self.assertEqual(self.post_event()[0],200)  # same mid through old shape
@@ -416,7 +420,7 @@ class HTTPContractTests(unittest.TestCase):
         status, _, html = self.request("/panel", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
         self.assertIn(b"Mensagens armazenadas: 1", html)
-        self.assertIn(b"customer-1", html)
+        self.assertIn(b"12345678", html)
         status, _, body = self.request("/oauth/meta/status", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
         result = json.loads(body)
@@ -504,8 +508,8 @@ class HTTPContractTests(unittest.TestCase):
                         {"Content-Type": "application/x-www-form-urlencoded"})
         self.assertEqual(status, 303)
         cookie = headers["Set-Cookie"].split(";", 1)[0]
-        csrf = token_for("business-1", "customer-1", "human", self.config["panel_password"])
-        data = urlencode({"accountId": "business-1", "senderId": "customer-1",
+        csrf = token_for("business-1", "12345678", "human", self.config["panel_password"])
+        data = urlencode({"accountId": "business-1", "senderId": "12345678",
                           "state": "human", "csrf": csrf}).encode()
         status, headers, _ = self.request("/panel/handoff", "POST", data,
                      {"Cookie": cookie, "Content-Type": "application/x-www-form-urlencoded"})
@@ -513,21 +517,21 @@ class HTTPContractTests(unittest.TestCase):
         self.assertEqual(headers.get("Location"), "../panel")
         with server.database() as conn:
             self.assertEqual(conn.execute(
-                "SELECT state FROM handoff WHERE sender_id='customer-1'"
+                "SELECT state FROM handoff WHERE sender_id='12345678'"
             ).fetchone(), ("human",))
 
     def test_panel_form_requires_valid_csrf(self):
         self.assertEqual(self.post_event()[0], 200)
-        form = {"accountId": "business-1", "senderId": "customer-1", "state": "human",
+        form = {"accountId": "business-1", "senderId": "12345678", "state": "human",
                 "csrf": "invalid"}
         headers = {**self.admin_header(), "Content-Type": "application/x-www-form-urlencoded"}
         self.assertEqual(self.request("/panel/handoff", "POST", urlencode(form).encode(), headers)[0], 403)
-        form["csrf"] = token_for("business-1", "customer-1", "human", self.config["panel_password"])
+        form["csrf"] = token_for("business-1", "12345678", "human", self.config["panel_password"])
         status, response_headers, _ = self.request("/panel/handoff", "POST", urlencode(form).encode(), headers)
         self.assertEqual(status, 303)
         self.assertEqual(response_headers.get("Location"), "../panel")
         with server.database() as conn:
-            row = conn.execute("SELECT state FROM handoff WHERE sender_id='customer-1'").fetchone()
+            row = conn.execute("SELECT state FROM handoff WHERE sender_id='12345678'").fetchone()
             self.assertEqual(row, ("human",))
 
     def test_bridge_secret_required_for_claim(self):
@@ -547,7 +551,7 @@ class HTTPContractTests(unittest.TestCase):
         decision = json.loads(data)["decision"]
         self.assertEqual(decision["action"], "greeting")
         self.assertFalse(decision["maySend"])
-        self.assertFalse(decision["mayCallGemini"])
+        self.assertTrue(decision["mayCallGemini"])
 
     def test_draft_endpoint_disabled_by_default(self):
         self.assertEqual(self.post_event()[0], 200)
