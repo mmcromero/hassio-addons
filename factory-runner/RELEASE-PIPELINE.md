@@ -1,6 +1,6 @@
 # Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado RC31)
 
-> **Estado de código — 24/11/2026 / M054:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; RC31 (`0.1.0-rc.31`) em desenvolvimento. **RC30 (`0.1.0-rc.30`) está instalada e iniciada no Home Assistant**, confirmado pelo Supervisor nesta conversa. RC31 ainda não foi publicada nem instalada. RC19/RC20/RC28 são estados históricos, não baseline operacional atual.
+> **Estado de código — 24/11/2026 / M056:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; RC31 (`0.1.0-rc.31`) promovida à branch `release-candidate`, publicada somente em `hassio-addons:main/factory-runner/` e instalada/iniciada no Home Assistant. Build/validação do Dockerfile e probe declarativo de workspace real confirmados; homologação funcional ampla ainda pendente. RC30 é estado histórico.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
@@ -16,7 +16,7 @@ O proprietário autorizou expressamente publicações repetidas de candidatas do
 
 A autorização não abrange publicação de pacotes Avisaqui/Artesão/outros produtos, ativação do Publisher, alteração de políticas de produto, credenciais, segredos, outros diretórios do catálogo ou ações destrutivas no host. Publicação, atualização/instalação e homologação são estados distintos. A atualização da instalação Factory Runner RC30 para RC31 está autorizada expressamente no pedido de 24/11/2026. Preservar opções e dados do add-on.
 
-A passagem de bastão integral M055 está em `docs/CONTINUIDADE-ATIVA.md` e na Issue #2 do Orquestrador. HEAD registrado na passagem: `aa016a84aff14801768fffb3dc5dd5fb592ebe28`. Próxima ação: publicar RC31 somente em `factory-runner/`, verificar o catálogo, atualizar a instalação existente via MCP HA e acompanhar build/testes/logs. Não pedir novamente autorização de publicação de RC do Factory Runner durante este desenvolvimento.
+A passagem de bastão integral M055 está em `docs/CONTINUIDADE-ATIVA.md` e na Issue #2 do Orquestrador. A próxima ação daquela passagem foi concluída e seu resultado está registrado em M056: RC31 publicada, instalada/iniciada e probe declarativo real PASS. Não pedir novamente autorização de publicação de RC do Factory Runner durante este desenvolvimento.
 
 Avisaqui e Artesão mantêm políticas, versões e receitas independentes.
 
@@ -212,3 +212,17 @@ A RC31 acrescenta `declarative_workspace_probe.py`, chamado depois de uma sincro
 **Evidência de política observada no workspace Avisaqui:** o perfil está configurado com regras declarativas, mas a política do pacote atual está em `release_candidate_preparing`, enquanto o validador e o preflight exigem `active_package.status == "open"`; além disso, a proveniência pública já declara a versão candidata `0.1.20-rc.12` com origem `0da93dba4a6fff67eb2944f5c760346d8f3619d5`, enquanto o HEAD de desenvolvimento consultado é `10b21c4ddaeb778daab78d8a64c9f4b35290465c`. Isso explica por que a preparação real durável permanece bloqueada por política; não é falha do Bubblewrap nem da exportação declarativa. Nenhuma política de produto foi alterada.
 
 **Fonte RC31:** commit `31177332f9c5d3c3e34be77839f3171a7e1643f5` (branch `desenvolvimento`). **Validação:** sintaxe do novo helper e da nova suíte conferida por análise AST; testes unitários completos, build Docker/ARM64 e execução do probe no Home Assistant ainda NÃO executados. Dependem de publicar e atualizar a RC31 pela esteira oficial. Não declarar PASS antes desses logs.
+
+
+## M056 — resultado da homologação técnica inicial da RC31 (24/11/2026)
+
+- PR #10 promoveu `desenvolvimento` para `release-candidate`; merge commit `1cd8db2134d4ddae7ab8cb5ee5d483b97df4a9da`.
+- Publicação no catálogo: commit `e501c858f7ed9f91746e1418aa40d139fa455dd2`; somente nove paths em `factory-runner/`. Proveniência integral de 99 arquivos; commit de atualização da evidência `a2a6fa8ae4d1f0cc74f7b59404b525234489567a`.
+- Supervisor confirmou `App successfully updated`; versão instalada `0.1.0-rc.31`, estado `started`, sem atualização pendente.
+- Dockerfile executa bash -n, py_compile, suíte unittest completa `test_factory_runner_*.py` e rodadas não-root de workspace sync/E2E. O build/validação foi concluído para a instalação RC31.
+- Log real: `[DECLARATIVE-REAL-PROBE] PASS: project=avisaqui files=136 bytes=1000106 provenance_files=135 method=real_git_blobs_no_script`.
+- E2E sintético PASS continua explicitamente sem workspaces reais; não confundir com o probe acima.
+- Opções do add-on preservadas. Publisher permanece bloqueado; publicação de produtos desativada.
+- Bubblewrap continua bloqueado no ambiente, sem bypass. A prova declarativa usa Git blobs e não depende dele.
+- A política de pacote Avisaqui permanece fechada; não alterar status ou contornar preflight.
+- Estado: **RC31 PUBLICADA, INSTALADA, INICIADA; BUILD/TESTES DO DOCKERFILE E PROBE DECLARATIVO REAL PASS; HOMOLOGAÇÃO FUNCIONAL AMPLA PENDENTE.**

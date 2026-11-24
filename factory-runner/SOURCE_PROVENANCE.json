@@ -3,10 +3,10 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.31",
   "repository": "mmcromero/factory-runner",
-  "commit": "1cd8db2134d4ddae7ab8cb5ee5d483b97df4a9da",
+  "commit": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
   "catalog_sha": "e501c858f7ed9f91746e1418aa40d139fa455dd2",
   "previous_source": "8eb7f7cce7958313b0c28f1d09bb16af8686642b",
-  "reviewed_source": "1cd8db2134d4ddae7ab8cb5ee5d483b97df4a9da",
+  "reviewed_source": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
   "publication": "OWNER_AUTHORIZED_RC31_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055",
   "candidate_distribution": "FACTORY_RUNNER_RC31_DECLARATIVE_REAL_WORKSPACE_PROBE",
@@ -156,8 +156,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "19f80d007d0f52762463c7995c43ea38597d9da9",
-      "size": 19583,
+      "git_blob_sha": "9b0bb07a213496aa50b21835c264b09ab4202117",
+      "size": 21018,
       "mode": "100644"
     },
     {
@@ -720,6 +720,6 @@
     "evidence": "Supervisor reports app successfully updated; installed version rc.31 started; no update available; Dockerfile validation RUN chain completed; [DECLARATIVE-REAL-PROBE] PASS for avisaqui"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral gerado da árvore factory-runner-add-on/ no commit de origem indicado. catalog_sha identifica o commit de publicação da RC31. Os arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados e não integram o payload da fonte. O Supervisor concluiu o build/validação Dockerfile e iniciou RC31; o probe declarativo real passou para Avisaqui. Isso não equivale à homologação funcional completa do produto nem libera publicação de produtos.",
+  "provenance_note": "Inventário integral gerado da árvore factory-runner-add-on/ no commit de origem indicado (RC31 release-candidate, incluindo M056). catalog_sha identifica o commit de publicação da RC31; o registro de validação Supervisor está nesta proveniência. Documentos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados e não integram o payload da fonte. O Supervisor concluiu o build/validação Dockerfile e iniciou RC31; o probe declarativo real passou para Avisaqui. Isso não equivale à homologação funcional completa de todos os fluxos nem libera publicação de produtos.",
   "status": "RC31_INSTALLED_STARTED_REAL_WORKSPACE_PROBE_PASS_PENDING_HOMOLOGATION"
 }
