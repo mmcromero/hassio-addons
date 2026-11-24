@@ -182,10 +182,11 @@ def _execute() -> dict:
                          for repo in (source, distribution)}
                     code, prepared = _request(port, token, "/api/prepare", source_sha=sha)
                     result = prepared.get("result", {})
-                    _require(code == 200 and result.get("method") == "declarative_no_script"
-                             and result.get("state") == "PREPARED_NOT_PUBLISHED"
-                             and result.get("published") is False,
-                             "standard_prepare_failed")
+                    if not (code == 200 and result.get("method") == "declarative_no_script"
+                            and result.get("state") == "PREPARED_NOT_PUBLISHED"
+                            and result.get("published") is False):
+                        error = prepared.get("error", "unknown")
+                        raise ProbeFailed("standard_prepare_failed_" + str(code) + "_" + str(error)[:40])
                     candidates = list(preparations.iterdir())
                     _require(len(candidates) == 1, "unexpected_candidate_count")
                     output = candidates[0]
