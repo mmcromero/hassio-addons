@@ -186,7 +186,20 @@ def _execute() -> dict:
                             and result.get("state") == "PREPARED_NOT_PUBLISHED"
                             and result.get("published") is False):
                         error = prepared.get("error", "unknown")
-                        raise ProbeFailed("standard_prepare_failed_" + str(code) + "_" + str(error)[:40])
+                        original_preparations = runner.PREPARATIONS_DIR
+                        runner.PREPARATIONS_DIR = root / "diagnostic-preparations"
+                        try:
+                            runner.prepare_project("laboratorio", sha, "diagnostic")
+                        except Exception as exc:
+                            detail = type(exc).__name__
+                            safe_detail = str(exc)[:48] if isinstance(
+                                exc, (runner.PreflightError, runner.DeclarativeExportError,
+                                      runner.ReceiptError)) else ""
+                            raise ProbeFailed("standard_prepare_failed_" + str(code) + "_"
+                                              + str(error)[:24] + "_" + detail + "_" + safe_detail)
+                        finally:
+                            runner.PREPARATIONS_DIR = original_preparations
+                        raise ProbeFailed("standard_prepare_http_failed_" + str(code) + "_" + str(error)[:40])
                     candidates = list(preparations.iterdir())
                     _require(len(candidates) == 1, "unexpected_candidate_count")
                     output = candidates[0]
