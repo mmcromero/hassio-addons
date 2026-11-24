@@ -14,7 +14,8 @@ import test_receiving_diagnostics as receiving
 CFG={**receiving.CFG,'meta_app_secret':'SYNTHETIC_APP_SECRET_PRIVATE'}
 TOKEN=receiving.CREDENTIAL
 VALID={'data':{'is_valid':True,'app_id':CFG['meta_app_id'],
-               'scopes':['instagram_basic','instagram_manage_messages'],
+               'scopes':['instagram_basic','instagram_manage_messages',
+                         'pages_read_engagement','pages_messaging'],
                'user_id':'PRIVATE_USER','metadata':{'auth_nonce':'PRIVATE_NONCE'}}}
 SUBS={'data':[{'object':'instagram','active':True,
                'fields':[{'name':'messages','version':'v27.0'}],
@@ -39,7 +40,8 @@ class AppMetadata(unittest.TestCase):
     def test_valid_token_exact_app_scopes_and_sanitized_callback(self):
         result=self.read()
         self.assertEqual(result['token_metadata'],{'status':'confirmed','token_is_valid':True,
-            'app_matches':True,'basic_granted':True,'messages_granted':True})
+            'app_matches':True,'basic_granted':True,'messages_granted':True,
+            'page_read_engagement_granted':True,'pages_messaging_granted':True})
         self.assertEqual(result['app_subscription'],{'status':'confirmed','active':True,'messages':True,
             'callback_origin':'https://callback.test:8443','callback_https':True,
             'callback_path_matches':True,'callback_extra':True})
@@ -51,6 +53,8 @@ class AppMetadata(unittest.TestCase):
         self.assertFalse(result['token_metadata']['app_matches'])
         self.assertFalse(result['token_metadata']['basic_granted'])
         self.assertFalse(result['token_metadata']['messages_granted'])
+        self.assertFalse(result['token_metadata']['page_read_engagement_granted'])
+        self.assertFalse(result['token_metadata']['pages_messaging_granted'])
 
     def test_generic_edge_absence_does_not_prove_dashboard_subscription_absent(self):
         for payload in ({'data':[]},{'data':[{'object':'page','active':True,'fields':['messages']}]},
@@ -96,10 +100,12 @@ class AppMetadata(unittest.TestCase):
 
     def test_stored_metadata_allowlist_rejects_full_callback_and_untrusted_values(self):
         clean=ic.safe_diagnostics({**receiving.GOOD,'token_metadata':{'status':'confirmed',
-            'token_is_valid':True,'scopes':['PRIVATE'],'user_id':'PRIVATE','access_token':'PRIVATE'},
+            'token_is_valid':True,'page_read_engagement_granted':True,'pages_messaging_granted':True,
+            'scopes':['PRIVATE'],'user_id':'PRIVATE','access_token':'PRIVATE'},
             'app_subscription':{'status':'confirmed','callback_origin':'https://callback.test/?secret=PRIVATE',
                                 'active':'PRIVATE','callback_url':'PRIVATE'}})
-        self.assertEqual(clean['token_metadata'],{'status':'confirmed','token_is_valid':True})
+        self.assertEqual(clean['token_metadata'],{'status':'confirmed','token_is_valid':True,
+            'page_read_engagement_granted':True,'pages_messaging_granted':True})
         self.assertEqual(clean['app_subscription'],{'status':'confirmed'})
         self.assertNotIn('PRIVATE',json.dumps(clean))
 
@@ -155,6 +161,8 @@ class AppMetadata(unittest.TestCase):
         report={**receiving.GOOD,**self.read()}
         html=receiving.contracts.server.render_meta_diagnostics({'receivingDiagnostics':report})
         self.assertIn('instagram_manage_messages: Sim',html)
+        self.assertIn('pages_read_engagement: Sim',html)
+        self.assertIn('pages_messaging: Sim',html)
         self.assertIn('Destino: https://callback.test:8443',html)
         self.assertIn('não informam o nível Standard ou Advanced Access',html)
         self.assertNotIn('PRIVATE',html)

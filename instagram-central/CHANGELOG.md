@@ -1,3 +1,10 @@
+# 0.1.58 — Diagnóstico de token de Página e permissões Meta
+
+- A consulta de diagnóstico verifica a Página vinculada à conta Instagram por `/me/accounts`, a tarefa `MESSAGING` e se a Meta retorna um token de Página, sem expor IDs, nomes ou tokens.
+- O diagnóstico de token mostra separadamente `pages_read_engagement` (necessária para obter o token de Página com token de usuário do sistema), `pages_messaging` e `instagram_manage_messages`.
+- A aba Atendimento diferencia permissão recusada, Página não vinculada, tarefa MESSAGING ausente, token não retornado e token não armazenado.
+- Inclui os testes de diagnóstico de recebimento e metadados Meta no gate executado durante o build do add-on.
+
 # 0.1.57 — Correção do gate de versão
 
 - Corrige três expectativas de versão hardcoded nos testes HTTP que fizeram o build 0.1.56 falhar após o bump de versão. Os testes OAuth adicionados foram executados e passaram antes dessas falhas.

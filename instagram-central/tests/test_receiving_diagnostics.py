@@ -16,14 +16,18 @@ CFG = {'instagram_account_id':'11111111','meta_app_id':'12345678',
 CREDENTIAL = {'business_id':'umdoislab','account_id':'11111111','username':'umdoislab',
               'verified_at':1,'access_token':'SYNTHETIC_PRIVATE_TOKEN_'*3}
 GOOD = {'checked_at':1795302000,'subscription':{'status':'confirmed','messages':True},
-        'conversations':{'status':'confirmed','conversation_found':True}}
+        'conversations':{'status':'confirmed','conversation_found':True},
+        'messaging_page':{'status':'confirmed','page_found':True,
+                          'messaging_task_granted':True,'page_token_available':True}}
 
 
 class ReceivingContracts(unittest.TestCase):
-    def diagnose(self, subscription, conversations=None):
-        with patch.object(ic,'request_graph',side_effect=[subscription, conversations or {'data':[]}]) as graph:
+    def diagnose(self, subscription, conversations=None, pages=None):
+        pages = pages if pages is not None else {'data':[]}
+        with patch.object(ic,'request_graph',side_effect=[
+                subscription, conversations or {'data':[]}, pages]) as graph:
             result=ic.diagnose_receiving(CFG,CREDENTIAL)
-        self.assertEqual(graph.call_count,2)
+        self.assertEqual(graph.call_count,3)
         for call in graph.call_args_list:
             self.assertEqual(call.args[0],'v27.0')
             self.assertEqual(call.args[2],CREDENTIAL['access_token'])
@@ -32,6 +36,9 @@ class ReceivingContracts(unittest.TestCase):
         self.assertEqual(graph.call_args_list[0].args[1],'/11111111/subscribed_apps')
         self.assertEqual(graph.call_args_list[0].kwargs['fields'],{'fields':'app_id,subscribed_fields','limit':'100'})
         self.assertEqual(graph.call_args_list[1].kwargs['fields'],{'platform':'instagram','fields':'id','limit':'1'})
+        self.assertEqual(graph.call_args_list[2].args[1],'/me/accounts')
+        self.assertEqual(graph.call_args_list[2].kwargs['fields'],{
+            'fields':'id,name,access_token,tasks,instagram_business_account{id,username}','limit':'100'})
         return result
 
     def test_exact_app_id_messages_and_id_only_conversations(self):
@@ -68,6 +75,47 @@ class ReceivingContracts(unittest.TestCase):
         for payload in ({'data':[{}]},{'data':[{'id':'a'},{'id':'b'}]}):
             self.assertEqual(self.diagnose({'data':[]},payload)['conversations']['reason'],'invalid_response')
 
+    def test_linked_page_reports_task_and_token_without_exposing_private_values(self):
+        page_id='1122334455667788'
+        page_token='PRIVATE_PAGE_ACCESS_TOKEN_'*3
+        result=self.diagnose({'data':[]},pages={'data':[{
+            'id':page_id,'name':'Private Page','access_token':page_token,'tasks':['MESSAGING'],
+            'instagram_business_account':{'id':CFG['instagram_account_id'],'username':'umdoislab'}}]})
+        self.assertEqual(result['messaging_page'],{
+            'status':'confirmed','page_found':True,
+            'messaging_task_granted':True,'page_token_available':True})
+        self.assertNotIn(page_id,json.dumps(result))
+        self.assertNotIn(page_token,json.dumps(result))
+        self.assertNotIn('Private Page',json.dumps(result))
+
+    def test_linked_page_without_messaging_task_is_distinguished(self):
+        result=self.diagnose({'data':[]},pages={'data':[{
+            'id':'1122334455667788','access_token':'P'*50,'tasks':['ANALYZE'],
+            'instagram_business_account':{'id':CFG['instagram_account_id']}}]})
+        self.assertEqual(result['messaging_page']['status'],'confirmed')
+        self.assertFalse(result['messaging_page']['messaging_task_granted'])
+        self.assertTrue(result['messaging_page']['page_token_available'])
+
+    def test_missing_linked_page_and_incomplete_page_list_are_not_conflated(self):
+        absent=self.diagnose({'data':[]},pages={'data':[]})
+        self.assertEqual(absent['messaging_page'],{
+            'status':'absent','reason':'linked_page_not_found'})
+        incomplete=self.diagnose({'data':[]},pages={
+            'data':[],'paging':{'next':'https://graph.facebook.com/v27.0/me/accounts?after=PRIVATE'}})
+        self.assertEqual(incomplete['messaging_page'],{
+            'status':'unknown','reason':'page_list_incomplete'})
+
+    def test_page_list_permission_error_is_reported_without_breaking_other_diagnostics(self):
+        with patch.object(ic,'request_graph',side_effect=[
+                {'data':[]},{'data':[]},ic.GraphError('permission_denied',403,200,99)]) as graph:
+            result=ic.diagnose_receiving(CFG,CREDENTIAL)
+        self.assertEqual(graph.call_count,3)
+        self.assertEqual(result['subscription']['status'],'absent')
+        self.assertEqual(result['conversations']['status'],'confirmed')
+        self.assertEqual(result['messaging_page']['reason'],'permission_denied')
+        self.assertEqual(result['messaging_page']['http_status'],403)
+        self.assertEqual(result['messaging_page']['provider_code'],200)
+
     def test_business_account_username_and_verification_binding_before_network(self):
         for changed in ({'business_id':'other'},{'account_id':'22222222'},{'username':'other'},
                         {'verified_at':0}):
@@ -77,16 +125,21 @@ class ReceivingContracts(unittest.TestCase):
                 self.assertEqual(result['subscription']['reason'],'configuration_incomplete')
 
     def test_provider_errors_are_independent_and_sanitized(self):
-        with patch.object(ic,'request_graph',side_effect=[ic.GraphError('permission_denied',403,200,99),{'data':[]}]):
+        with patch.object(ic,'request_graph',side_effect=[
+                ic.GraphError('permission_denied',403,200,99),{'data':[]},{'data':[]}]):
             result=ic.diagnose_receiving(CFG,CREDENTIAL)
         self.assertEqual(result['subscription']['provider_code'],200)
         self.assertEqual(result['conversations']['status'],'confirmed')
 
     def test_output_allowlist_for_untrusted_stored_reports(self):
         report={**GOOD,'token':'SECRET','subscription':{'status':'error','reason':['SECRET'],
-            'provider_code':True,'provider_subcode':-1,'http_status':403,'message':'<script>SECRET</script>'}}
+            'provider_code':True,'provider_subcode':-1,'http_status':403,'message':'<script>SECRET</script>'},
+            'messaging_page':{'status':'confirmed','page_found':True,'messaging_task_granted':True,
+                              'page_token_available':True,'page_access_token':'SECRET'}}
         clean=ic.safe_diagnostics(report)
         self.assertEqual(clean['subscription'],{'status':'error','http_status':403})
+        self.assertEqual(clean['messaging_page'],{'status':'confirmed','page_found':True,
+            'messaging_task_granted':True,'page_token_available':True})
         self.assertNotIn('SECRET',json.dumps(clean))
         for invalid in (None,{}, {'checked_at':True}, {'checked_at':2**63}):
             self.assertIsNone(ic.safe_diagnostics(invalid))
@@ -175,10 +228,27 @@ class ReceivingHTTP(unittest.TestCase):
 
     def test_error_result_is_visible_without_raw_provider_data(self):
         report={**GOOD,'conversations':{'status':'error','reason':'message_access_disabled',
-            'http_status':403,'provider_code':200,'message':'PRIVATE_PROVIDER_TEXT'}}
+            'http_status':403,'provider_code':200,'message':'PRIVATE_PROVIDER_TEXT'},
+            'messaging_page':{'status':'error','reason':'permission_denied',
+                              'http_status':403,'provider_code':200}}
         markup=self.server.render_meta_diagnostics({'receivingDiagnostics':report})
         self.assertIn('acesso externo às mensagens está desativado',markup)
+        self.assertIn('A Meta recusou listar as Páginas',markup)
+        self.assertIn('pages_read_engagement',markup)
         self.assertIn('HTTP=403, código Meta=200',markup)
+        self.assertNotIn('PRIVATE',markup)
+
+    def test_automation_policy_explains_missing_page_task_or_token_permission(self):
+        task_report={'messaging_page':{'status':'confirmed','page_found':True,
+            'messaging_task_granted':False,'page_token_available':True}}
+        markup=self.server.render_automation_settings(CFG,messaging_ready=False,
+            receiving_diagnostics=task_report)
+        self.assertIn('falta a tarefa',markup)
+        self.assertIn('MESSAGING',markup)
+        permission_report={'messaging_page':{'status':'error','reason':'permission_denied'}}
+        markup=self.server.render_automation_settings(CFG,messaging_ready=False,
+            receiving_diagnostics=permission_report)
+        self.assertIn('pages_read_engagement',markup)
         self.assertNotIn('PRIVATE',markup)
 
     def test_identity_failure_preserves_binding_and_shows_failed_read(self):

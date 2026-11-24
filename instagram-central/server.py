@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.57"
+APP_VERSION = "0.1.58"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -57,7 +57,7 @@ META_RESULTS = {
     'query_failed': 'Não foi possível concluir a consulta à Meta. A autorização anterior foi preservada. Confira o diagnóstico antes de tentar novamente.',
     'subscription_failed': 'Não foi possível confirmar a assinatura de mensagens nesta conta. A conexão existente foi preservada.',
     'storage_error': 'Não foi possível salvar o resultado da consulta. A autorização existente foi preservada.',
-    'check_completed': 'Verificação concluída. Confira os resultados desta conta abaixo.',
+    'check_completed': 'Identidade verificada. Confira o token de Página, a tarefa MESSAGING e as permissões no diagnóstico abaixo.',
     'subscription_completed': 'Solicitação de assinatura concluída. Isso ainda não comprova entrega de mensagens reais.',
 }
 
@@ -944,7 +944,7 @@ def render_meta_diagnostics(summary):
     if isinstance(action, dict) and action.get('kind') in ('check', 'subscribe'):
         text = (('Não foi possível confirmar novamente a identidade na Meta. Confira o diagnóstico abaixo; a verificação anterior não foi renovada.'
                  if action.get('identity_verified') is False else
-                 'Verificação de identidade concluída. Confira o diagnóstico de recebimento abaixo.')
+                 'Verificação de identidade concluída. Confira também o token de Página para envio abaixo.')
                 if action['kind'] == 'check' else
                 'A Meta aceitou o pedido de assinatura. O recebimento de uma mensagem real ainda precisa ser confirmado.')
         feedback = '<p role="status"><strong>' + text + '</strong></p>'
@@ -961,12 +961,15 @@ def render_meta_diagnostics(summary):
         'transport_error': 'Não foi possível concluir a comunicação com a Meta.',
         'provider_error': 'A Meta recusou esta consulta.',
         'request_unavailable': 'A consulta não pôde ser concluída.',
-        'app_subscription_not_exposed': 'A consulta genérica não retornou a configuração Instagram; isso não comprova ausência no portal.'}
+        'app_subscription_not_exposed': 'A consulta genérica não retornou a configuração Instagram; isso não comprova ausência no portal.',
+        'linked_page_not_found': 'A Meta não retornou uma Página vinculada a esta conta Instagram.',
+        'page_list_incomplete': 'A lista de Páginas está incompleta; não é possível confirmar ausência ou unicidade.'}
     parts = []
     def answer(value, key):
         return 'Sim' if value.get(key) is True else 'Não' if value.get(key) is False else 'Não confirmado'
     for key, title in (('subscription', 'Assinatura consultada na Meta'),
                        ('conversations', 'Acesso às conversas'),
+                       ('messaging_page', 'Acesso à Página para envio'),
                        ('token_metadata', 'Token salvo'),
                        ('app_subscription', 'Webhook do aplicativo')):
         value = report[key]
@@ -974,10 +977,18 @@ def render_meta_diagnostics(summary):
             text = ('Aplicativo encontrado, campo messages presente.' if value.get('messages') is True else
                     'Aplicativo encontrado, campo messages ausente.' if value.get('messages') is False else
                     'Aplicativo encontrado; campo messages não confirmado.')
+        elif value['status'] == 'confirmed' and key == 'messaging_page':
+            stored = 'Sim' if summary.get('messagingPageReady') is True else 'Não'
+            text = ('Página vinculada: ' + answer(value, 'page_found') +
+                    '; tarefa MESSAGING: ' + answer(value, 'messaging_task_granted') +
+                    '; token de Página retornado pela Meta: ' + answer(value, 'page_token_available') +
+                    '; token armazenado na Central: ' + stored + '.')
         elif value['status'] == 'confirmed' and key == 'token_metadata':
             text = ('Válido: ' + answer(value, 'token_is_valid') + '; pertence ao app configurado: ' +
                     answer(value, 'app_matches') + '; instagram_basic: ' + answer(value, 'basic_granted') +
-                    '; instagram_manage_messages: ' + answer(value, 'messages_granted') + '.')
+                    '; instagram_manage_messages: ' + answer(value, 'messages_granted') +
+                    '; pages_read_engagement: ' + answer(value, 'page_read_engagement_granted') +
+                    '; pages_messaging: ' + answer(value, 'pages_messaging_granted') + '.')
         elif value['status'] == 'confirmed' and key == 'app_subscription':
             text = ('Objeto Instagram encontrado. Ativo: ' + answer(value, 'active') +
                     '; messages: ' + answer(value, 'messages') + '; HTTPS: ' + answer(value, 'callback_https') +
@@ -990,7 +1001,13 @@ def render_meta_diagnostics(summary):
             text = ('Acesso aceito; há conversa visível, sem consultar seu conteúdo.' if value.get('conversation_found') else
                     'Acesso aceito; a amostra retornou vazia.')
         elif value['status'] == 'absent':
-            text = 'O aplicativo não consta na assinatura desta conta.'
+            text = ('A Meta não retornou uma Página vinculada à conta do Instagram.'
+                    if key == 'messaging_page' else
+                    'O aplicativo não consta na assinatura desta conta.')
+        elif (value['status'] == 'error' and key == 'messaging_page'
+              and value.get('reason') == 'permission_denied'):
+            text = ('A Meta recusou listar as Páginas. Para tokens de usuário do sistema, '
+                    'confirme pages_read_engagement na configuração do Login.')
         else:
             text = labels.get(value.get('reason'), 'Não foi possível confirmar.')
         codes = ['%s=%s' % (label, value[key]) for key, label in
@@ -1202,7 +1219,7 @@ def inbox_received_label(value):
         return '', 'Horário não informado'
 
 
-def render_automation_settings(cfg, result='', messaging_ready=False):
+def render_automation_settings(cfg, result='', messaging_ready=False, receiving_diagnostics=None):
     account_id = str(cfg.get('instagram_account_id') or '')
     primary = cfg.get('business_id', account_registry.PRIMARY_BUSINESS) == account_registry.PRIMARY_BUSINESS
     with database() as conn:
@@ -1216,12 +1233,31 @@ def render_automation_settings(cfg, result='', messaging_ready=False):
     disabled = ' disabled' if not primary or not account_id else ''
     mode = policy['mode']
     bridge_ready = isinstance(cfg.get('bridge_secret'), str) and len(cfg['bridge_secret']) >= 32
+    page_diagnostic = (receiving_diagnostics.get('messaging_page')
+                       if isinstance(receiving_diagnostics, dict) else None)
+    if not isinstance(page_diagnostic, dict):
+        page_diagnostic = {}
+    if messaging_ready:
+        messaging_status = '<p role="status">Página vinculada e token de mensagens armazenado. As permissões Meta são revalidadas antes de cada envio.</p>'
+    elif page_diagnostic.get('status') == 'error' and page_diagnostic.get('reason') == 'permission_denied':
+        messaging_status = '<p role="alert">A Meta recusou listar as Páginas. Confira se <code>pages_read_engagement</code> foi concedida na configuração do Login.</p>'
+    elif page_diagnostic.get('status') == 'confirmed' and page_diagnostic.get('messaging_task_granted') is False:
+        messaging_status = '<p role="alert">A Página está vinculada, mas falta a tarefa <code>MESSAGING</code> no acesso à Página.</p>'
+    elif page_diagnostic.get('status') == 'confirmed' and page_diagnostic.get('page_token_available') is False:
+        messaging_status = '<p role="alert">A Meta encontrou a Página, mas não retornou o token de Página. Confira <code>pages_read_engagement</code> e a autorização.</p>'
+    elif page_diagnostic.get('status') == 'confirmed' and page_diagnostic.get('page_token_available') is True:
+        messaging_status = '<p role="alert">A Meta retornou um token de Página, mas ele ainda não está armazenado na Central. Execute Verificar acesso Meta.</p>'
+    elif page_diagnostic.get('status') == 'absent':
+        messaging_status = '<p role="alert">A Meta não retornou uma Página vinculada à conta Instagram.</p>'
+    elif page_diagnostic.get('status') == 'unknown' and page_diagnostic.get('reason') == 'page_list_incomplete':
+        messaging_status = '<p role="alert">A lista de Páginas está incompleta; não foi possível confirmar o vínculo e o token.</p>'
+    else:
+        messaging_status = '<p role="alert">Envio Meta pendente: falta um token de Página vinculado com tarefa MESSAGING. O filtro funciona, mas o envio permanece bloqueado.</p>'
     return ('''<section class="panel automation-policy" aria-label="Controle de atendimento automático">
       <div class="panel-title"><div><h2>Atendimento automático</h2>
       <p>Controle quais perfis podem chegar ao n8n e receber respostas automáticas.</p></div>
       <span class="automation-mode">''' + ('Somente testes' if mode == 'tests' else 'Produção') + '''</span></div>
-      ''' + ('<p role="status">Página vinculada e token de mensagens armazenado. As permissões Meta são revalidadas antes de cada envio.</p>' if messaging_ready else
-             '<p role="alert">Envio Meta pendente: falta um token de Página vinculado com tarefa MESSAGING. O filtro funciona, mas o envio permanece bloqueado.</p>') +
+      ''' + messaging_status +
       ('<p role="status">Segredo da ponte n8n configurado (valor oculto).</p>' if bridge_ready else
        '<p role="alert">Ponte n8n não configurada: falta um segredo próprio com pelo menos 32 caracteres nas opções da Central. Não reutilize o segredo do WhatsApp.</p>') + status + ('''<p role="status">Este controle está disponível somente para a conta principal Umdoislab. As demais contas permanecem isoladas.</p>''' if not primary else '') + '''
       <form method="post" action="panel/automation/policy" class="automation-policy-form">
@@ -1358,7 +1394,9 @@ def render_panel(cfg=None, *, settings_page=False, meta_result='', automation_re
                    '<h1>Configurações Meta</h1><p>Conexão e diagnósticos desta conta do Instagram.</p></div>' + feedback +
                    interface_ui.settings_tabs(render_connection_section(cfg, summary),
                        render_receiving_settings(cfg, summary) + render_routing_settings(cfg) + render_publication_settings(cfg),
-                       render_integration_settings(cfg), automation=render_automation_settings(cfg, automation_result, summary.get('messagingPageReady') is True),
+                       render_integration_settings(cfg), automation=render_automation_settings(
+                           cfg, automation_result, summary.get('messagingPageReady') is True,
+                           summary.get('receivingDiagnostics')),
                        default='automation' if automation_result else 'diagnostics' if meta_result and not summary.get('reauthRequired')
                            and summary.get('tokenStored') else 'connection'))
     return ("""<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">

@@ -379,7 +379,8 @@ def diagnose_receiving(cfg, credential):
     account_id = cfg.get('instagram_account_id')
     app_id = cfg.get('meta_app_id')
     report = {'checked_at': int(time.time()), 'subscription': {'status': 'unknown'},
-              'conversations': {'status': 'unknown'}}
+              'conversations': {'status': 'unknown'},
+              'messaging_page': {'status': 'unknown'}}
     if (not credential_status(credential, cfg)['account_verified']
             or not IG_ACCOUNT.fullmatch(str(account_id or ''))
             or not IG_ACCOUNT.fullmatch(str(app_id or ''))):
@@ -423,6 +424,50 @@ def diagnose_receiving(cfg, credential):
             report[key] = {'status': 'error', **exc.details}
         except ConnectionError:
             report[key] = {'status': 'error', 'reason': 'request_unavailable'}
+    # Webhook subscription and Page-token access are separate Meta capabilities.
+    # Inspect the exact Page link and MESSAGING task without returning Page IDs or tokens.
+    try:
+        pages = request_graph(version, "/me/accounts", token,
+            fields={"fields": "id,name,access_token,tasks,instagram_business_account{id,username}",
+                    "limit": "100"}, timeout=5)
+        entries = pages.get("data")
+        if not isinstance(entries, list) or len(entries) > 100:
+            raise GraphError("invalid_response")
+        matches = []
+        for page in entries:
+            if not isinstance(page, dict):
+                raise GraphError("invalid_response")
+            linked = page.get("instagram_business_account")
+            if isinstance(linked, dict) and linked.get("id") == account_id:
+                matches.append(page)
+        if len(matches) > 1:
+            raise GraphError("invalid_response")
+        if not matches:
+            paging = pages.get("paging")
+            incomplete = (paging is not None and
+                          (not isinstance(paging, dict) or bool(paging.get("next"))))
+            report["messaging_page"] = (
+                {"status": "unknown", "reason": "page_list_incomplete"} if incomplete else
+                {"status": "absent", "reason": "linked_page_not_found"})
+        else:
+            page = matches[0]
+            page_id = page.get("id")
+            tasks = page.get("tasks")
+            if (not isinstance(page_id, str) or not IG_ACCOUNT.fullmatch(page_id) or
+                    not isinstance(tasks, list) or len(tasks) > 100 or
+                    any(not isinstance(task, str) or len(task) > 100 for task in tasks)):
+                raise GraphError("invalid_response")
+            page_token = page.get("access_token")
+            report["messaging_page"] = {
+                "status": "confirmed",
+                "page_found": True,
+                "messaging_task_granted": "MESSAGING" in tasks,
+                "page_token_available": isinstance(page_token, str) and 20 <= len(page_token) <= 8192,
+            }
+    except GraphError as exc:
+        report["messaging_page"] = {"status": "error", **exc.details}
+    except ConnectionError:
+        report["messaging_page"] = {"status": "error", "reason": "request_unavailable"}
     report.update(diagnose_app_metadata(cfg, credential))
     return report
 
@@ -483,7 +528,9 @@ def diagnose_app_metadata(cfg, credential):
                             or any(not isinstance(scope, str) or len(scope) > 100 for scope in scopes)):
                         raise GraphError('invalid_response')
                     value.update(basic_granted='instagram_basic' in scopes,
-                                 messages_granted='instagram_manage_messages' in scopes)
+                                 messages_granted='instagram_manage_messages' in scopes,
+                                 page_read_engagement_granted='pages_read_engagement' in scopes,
+                                 pages_messaging_granted='pages_messaging' in scopes)
                 result[key] = value
                 continue
             entries = data.get('data')
@@ -527,8 +574,9 @@ def safe_diagnostics(report):
     clean = {'checked_at': report['checked_at']}
     reasons = {'configuration_incomplete', 'invalid_response', 'message_access_disabled',
                'permission_denied', 'token_invalid', 'unsupported_request',
-               'provider_error', 'transport_error', 'request_unavailable', 'app_subscription_not_exposed'}
-    for key in ('subscription', 'conversations', 'token_metadata', 'app_subscription'):
+               'provider_error', 'transport_error', 'request_unavailable', 'app_subscription_not_exposed',
+               'linked_page_not_found', 'page_list_incomplete'}
+    for key in ('subscription', 'conversations', 'messaging_page', 'token_metadata', 'app_subscription'):
         part = report.get(key)
         part = part if isinstance(part, dict) else {}
         status = part.get('status')
@@ -539,7 +587,9 @@ def safe_diagnostics(report):
             if type(part.get(code)) is int and 0 <= part[code] <= 2**31-1:
                 value[code] = part[code]
         for flag in ('messages', 'conversation_found', 'token_is_valid', 'app_matches',
-                     'basic_granted', 'messages_granted', 'active', 'callback_https',
+                     'basic_granted', 'messages_granted', 'page_read_engagement_granted',
+                     'pages_messaging_granted', 'page_found', 'messaging_task_granted',
+                     'page_token_available', 'active', 'callback_https',
                      'callback_path_matches', 'callback_extra'):
             if type(part.get(flag)) is bool:
                 value[flag] = part[flag]
