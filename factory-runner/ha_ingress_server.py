@@ -19,8 +19,7 @@ MAX_PAGE_BYTES = 1024 * 1024
 _PROPOSAL = re.compile(r"^([a-f0-9]{32})$")
 _SESSION = re.compile(r"^[a-f0-9]{64}$")
 _REASON_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
-_ALLOWED_FORM = frozenset(("csrf", "password", "confirmation"))
-_ALLOWED_ENROLL_FORM = frozenset(("csrf", "password", "password_confirm", "confirmation"))
+_ALLOWED_FORM = frozenset(("csrf", "confirmation"))
 
 
 def _header_values(headers, wanted):
@@ -72,24 +71,17 @@ def _response(status, body, headers=None):
     return status, result_headers, payload
 
 
-def _owner_error_response(reason, *, enrollment):
-    if enrollment and reason == "owner_enrollment_session_invalid":
-        message = "A sessão do formulário expirou ou perdeu a validade. Volte à página inicial e abra um novo cadastro."
-    elif enrollment and reason == "owner_enrollment_input_invalid":
-        message = "Confira os campos: senha com pelo menos 16 caracteres, confirmação idêntica e a palavra CADASTRAR."
-    elif enrollment and reason == "owner_already_enrolled":
-        message = "O cadastro já foi concluído. Volte à página inicial e atualize."
-    elif enrollment and reason == "invalid_request":
-        message = "Os dados enviados não passaram na validação. Reabra o formulário e confira os campos."
-    elif enrollment:
-        message = "Falha técnica no cadastro. Não envie novamente até confirmar o estado do cadastro."
+def _owner_error_response(reason):
+    if reason == "owner_csrf_or_session_invalid":
+        message = "A sessão de consentimento expirou ou perdeu a validade. Reabra a proposta pelo Home Assistant."
+    elif reason == "invalid_request":
+        message = "Os dados enviados não passaram na validação. Reabra a proposta e tente novamente."
     else:
-        message = "Não foi possível concluir a autorização. Reabra a proposta pelo Home Assistant."
-    back = '<p><a href="./">Voltar ao cadastro</a></p>' if enrollment else ""
+        message = "Falha técnica no consentimento. Nenhuma publicação foi executada."
     page = (
         '<!doctype html><meta charset="utf-8"><title>Operação não concluída</title>'
         '<h1>Não foi possível concluir</h1><p>' + message + '</p>'
-        '<p>Código: <code>' + reason + '</code></p>' + back
+        '<p>Código: <code>' + reason + '</code></p>'
     )
     headers = {
         "Content-Security-Policy": "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'",
@@ -108,7 +100,7 @@ def dispatch_owner_consent(
     expected_ha_user_id,
     owner_id,
 ):
-    """Handle one bounded request; never exposes the session or grant in body."""
+    """Handle bounded owner consent requests; initial enrollment is Settings-only."""
     context = {"peer_ip": peer_ip, "headers": headers,
                "ingress_path": (_one_header(headers, "X-Ingress-Path") or "").rstrip("/")}
     owner = verify_ha_ingress_context(
@@ -124,11 +116,6 @@ def dispatch_owner_consent(
         return _response(400, "Requisição inválida.")
 
     if method == "GET":
-        ingress_path = _one_header(headers, "X-Ingress-Path")
-        if parsed.path == "/owner-enroll":
-            return _response(303, "Redirecionando.", {
-                "Location": ingress_path.rstrip("/") + "/owner-enroll/"
-            })
         if parsed.path == "/":
             try:
                 view = ui.home_view(context)
@@ -139,22 +126,14 @@ def dispatch_owner_consent(
             if not isinstance(page, str) or len(page.encode("utf-8")) > MAX_PAGE_BYTES:
                 return _response(503, "Interface indisponível.")
             return _response(200, page, security_headers)
-        enrollment = parsed.path == "/owner-enroll/"
-        if enrollment:
-            try:
-                view = ui.enroll_view(context)
-            except Exception:
-                return _response(404, "Cadastro indisponível.")
-            cookie_suffix = "/owner-enroll/"
-        else:
-            match = _PROPOSAL.fullmatch(parsed.path.removeprefix("/owner-consent/")) if parsed.path.startswith("/owner-consent/") else None
-            if not match:
-                return _response(404, "Não encontrado.")
-            try:
-                view = ui.view(match.group(1), context)
-            except Exception:
-                return _response(404, "Proposta indisponível.")
-            cookie_suffix = "/owner-consent/"
+
+        match = _PROPOSAL.fullmatch(parsed.path.removeprefix("/owner-consent/")) if parsed.path.startswith("/owner-consent/") else None
+        if not match:
+            return _response(404, "Não encontrado.")
+        try:
+            view = ui.view(match.group(1), context)
+        except Exception:
+            return _response(404, "Proposta indisponível.")
         session = view.get("session") if isinstance(view, dict) else None
         page = view.get("html") if isinstance(view, dict) else None
         security_headers = view.get("headers", {}) if isinstance(view, dict) else {}
@@ -163,11 +142,9 @@ def dispatch_owner_consent(
             return _response(503, "Interface de consentimento indisponível.")
         if len(page.encode("utf-8")) > MAX_PAGE_BYTES:
             return _response(503, "Conteúdo de consentimento excede o limite.")
-        # Initial enrollment uses a one-time form nonce bound to the verified HA ingress.
-        # Publication consent continues to require its separate HttpOnly cookie.
-        if enrollment:
-            return _response(200, page, security_headers)
-        cookie_path = ingress_path.rstrip("/") + cookie_suffix
+        if not ingress_path:
+            return _response(403, "Caminho Ingress indisponível.")
+        cookie_path = ingress_path.rstrip("/") + "/owner-consent/"
         cookie = (
             f"{COOKIE_NAME}={session}; Max-Age=120; Path={cookie_path}; "
             "Secure; HttpOnly; SameSite=Strict"
@@ -178,13 +155,7 @@ def dispatch_owner_consent(
         })
 
     if method == "POST":
-        if parsed.path == "/owner-consent/consent":
-            allowed_form = _ALLOWED_FORM
-            enrollment = False
-        elif parsed.path == "/owner-enroll/submit":
-            allowed_form = _ALLOWED_ENROLL_FORM
-            enrollment = True
-        else:
+        if parsed.path != "/owner-consent/consent":
             return _response(404, "Não encontrado.")
         if len(body) > MAX_FORM_BODY:
             return _response(413, "Requisição muito grande.")
@@ -195,54 +166,45 @@ def dispatch_owner_consent(
             return _response(415, "Formato não aceito.")
         origin = _one_header(headers, "Origin")
         session = _cookie_session(headers)
-        if not origin or (not enrollment and not session):
+        if not origin or not session:
             reason = "origin_missing" if not origin else "owner_session_cookie_missing_or_invalid"
             print("[OWNER-UI] DENIED: " + reason, flush=True)
-            return _response(403, 
+            return _response(403,
                 "<!doctype html><meta charset=utf-8><h1>Sessão inválida</h1>"
-                "<p>Abra novamente o formulário de autorização pelo Home Assistant.</p>"
-                + ('<p><a href="./">Voltar ao cadastro</a></p>' if enrollment else ""),
+                "<p>Abra novamente a proposta de consentimento pelo Home Assistant.</p>",
                 {"Content-Security-Policy": "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'"})
         try:
             decoded = body.decode("utf-8")
-            form = parse_qs(decoded, keep_blank_values=True, strict_parsing=True,
-                             max_num_fields=8)
+            form = parse_qs(decoded, keep_blank_values=True, strict_parsing=True, max_num_fields=4)
         except (UnicodeDecodeError, ValueError):
             return _response(400, "Formulário inválido.")
-        if set(form) != allowed_form or any(len(values) != 1 for values in form.values()):
+        if set(form) != _ALLOWED_FORM or any(len(values) != 1 for values in form.values()):
             return _response(400, "Formulário inválido.")
         payload = {key: values[0] for key, values in form.items()}
         try:
-            if enrollment:
-                nonce = payload["csrf"]
-                if not _SESSION.fullmatch(nonce):
-                    return _response(403, "Sessão de cadastro inválida.")
-                ui.enroll(nonce, payload, context, origin)
-            else:
-                ui.consent(session, payload, context, origin)
+            ui.consent(session, payload, context, origin)
         except Exception as exc:
-            action = "ENROLLMENT" if enrollment else "CONSENT"
             if isinstance(exc, PublicationError):
                 reason = str(exc)
                 if not _REASON_CODE.fullmatch(reason):
                     reason = "internal_error"
-                print(f"[OWNER-UI] {action} REJECTED: {reason}", file=sys.stderr, flush=True)
+                print(f"[OWNER-UI] CONSENT REJECTED: {reason}", file=sys.stderr, flush=True)
             elif isinstance(exc, ValueError):
                 reason = "invalid_request"
-                print(f"[OWNER-UI] {action} REJECTED: invalid_request", file=sys.stderr, flush=True)
+                print("[OWNER-UI] CONSENT REJECTED: invalid_request", file=sys.stderr, flush=True)
             else:
                 reason = "internal_error"
-                print(f"[OWNER-UI] {action} ERROR: {type(exc).__name__}", file=sys.stderr, flush=True)
-            return _owner_error_response(reason, enrollment=enrollment)
+                print(f"[OWNER-UI] CONSENT ERROR: {type(exc).__name__}", file=sys.stderr, flush=True)
+            return _owner_error_response(reason)
         ingress_path = _one_header(headers, "X-Ingress-Path")
-        cookie_path = ingress_path.rstrip("/") + ("/owner-enroll/" if enrollment else "/owner-consent/")
+        if not ingress_path:
+            return _response(403, "Caminho Ingress indisponível.")
+        cookie_path = ingress_path.rstrip("/") + "/owner-consent/"
         clear_cookie = (
             f"{COOKIE_NAME}=; Max-Age=0; Path={cookie_path}; "
             "Secure; HttpOnly; SameSite=Strict"
         )
-        message = ("Cadastro do proprietário concluído. Reinicie o add-on para concluir a preparação."
-                   if enrollment else "Consentimento registrado. Nenhuma publicação foi executada.")
-        return _response(200, message, {} if enrollment else {
+        return _response(200, "Consentimento registrado. Nenhuma publicação foi executada.", {
             "Set-Cookie": clear_cookie,
         })
 
