@@ -245,7 +245,9 @@ def main():
                 time.sleep(2)
                 continue
         try:
-            result = run_probe(token, snapshots)
+            boot_started_at = os.environ.get("RUNNER_API_PROBE_BOOT_STARTED_AT", "")
+            result = run_probe(
+                token, snapshots, boot_started_at=boot_started_at or None)
             break
         except ProbeError as exc:
             last_error = str(exc)
