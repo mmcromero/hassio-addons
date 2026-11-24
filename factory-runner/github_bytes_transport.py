@@ -8,6 +8,7 @@ import base64
 import datetime
 import hashlib
 import json
+from pathlib import Path
 import re
 import socket
 import time
@@ -25,7 +26,11 @@ class GitHubBytesHTTP:
     base='https://api.github.com'
     def __init__(self,token_file,write_gate):
         self.deadline=None
-        self.token_path=protected_file(token_file)
+        self.token_path=Path(token_file).absolute()
+        if self.token_path.exists() or self.token_path.is_symlink():
+            self.token_path=protected_file(self.token_path)
+        else:
+            self.token_path=None
         self.write_gate=write_gate
         self.opener=urllib.request.build_opener(NoRedirect())
 
@@ -39,10 +44,12 @@ class GitHubBytesHTTP:
         # Read secret only inside the trusted transport process. Never put it in
         # argv, environment, bundles, receipts or error messages.
         if self.deadline is not None and time.monotonic()>=self.deadline:raise PublicationError('transport_deadline')
-        token=self.token_path.read_text().strip()
-        if not re.fullmatch('[A-Za-z0-9_]+',token):raise PublicationError('invalid_transport_credential')
-        headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',
+        token=self.token_path.read_text().strip() if self.token_path is not None else ""
+        if token and not re.fullmatch('[A-Za-z0-9_]+',token):raise PublicationError('invalid_transport_credential')
+        if method!='GET' and not token:raise PublicationError('remote_write_credential_missing')
+        headers={'Accept':'application/vnd.github+json',
                  'X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'}
+        if token:headers['Authorization']='Bearer '+token
         payload=None if body is None else json.dumps(body,separators=(',',':')).encode()
         req=urllib.request.Request(self.base+path,data=payload,headers=headers,method=method)
         try:
