@@ -447,7 +447,7 @@ path = '/owner-consent/' + proposal
 assert dispatch('GET',path,{'X-Remote-User-Id':'wrong-owner'})[0] == 403
 fields = {'confirmation':'PUBLICAR'}
 assert form(path,'/owner-consent/consent',fields,'https://wrong.invalid')[0] == 403
-assert form(path,'/owner-consent/consent',{'password':'unexpected','confirmation':'PUBLICAR'})[0] == 403
+assert form(path,'/owner-consent/consent',{'password':'unexpected','confirmation':'PUBLICAR'})[0] == 400
 code, response_headers, body = form(path,'/owner-consent/consent',fields)
 assert code == 200 and b'Nenhuma publica' in body
 assert b'signature' not in body and password.encode() not in body
