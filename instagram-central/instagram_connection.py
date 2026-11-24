@@ -158,9 +158,9 @@ def request_graph(version, path, token, method="GET", fields=None, opener=urlope
 
 
 def verify_messaging_permissions(cfg, credential, opener=urlopen):
-    """Require the exact Send API scopes on the currently stored system-user token."""
+    """Require the exact Send API scopes on the Page token used for the send."""
     app_id, secret = cfg.get("meta_app_id"), cfg.get("meta_app_secret")
-    token = credential.get("access_token") if isinstance(credential, dict) else None
+    token = credential.get("page_access_token") if isinstance(credential, dict) else None
     if (not isinstance(app_id, str) or not IG_ACCOUNT.fullmatch(app_id) or
             not isinstance(secret, str) or not 16 <= len(secret) <= 128 or
             not isinstance(token, str) or not 20 <= len(token) <= 8192):
