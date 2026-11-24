@@ -3,10 +3,10 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.30",
   "repository": "mmcromero/factory-runner",
-  "commit": "bd13dffd8678e8624881c68cd9b203de70f4bc42",
+  "commit": "6beebc9faf1b2257a1108572305bc4e5c5362114",
   "catalog_sha": "fb97f2564d9aae071f8f4be3d6ce007404e8bdfb",
   "previous_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "reviewed_source": "bd13dffd8678e8624881c68cd9b203de70f4bc42",
+  "reviewed_source": "6beebc9faf1b2257a1108572305bc4e5c5362114",
   "publication": "OWNER_AUTHORIZED_RC30_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
   "candidate_distribution": "FACTORY_RUNNER_RC30_OWNER_SETTINGS_ENROLLMENT",
@@ -14,740 +14,683 @@
   "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
   "files": [
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/.dockerignore",
       "path": "factory-runner/.dockerignore",
-      "sha256": "7769ab78cc1c8b11a743d2b90d149ec1cde7364203cfe712694f45fabbbf2c1b",
-      "size": 180
+      "source_path": "factory-runner-add-on/.dockerignore",
+      "git_blob_sha": "512bdfb480d4b0dccf8af22bf1afe70bf4dac613",
+      "size": 180,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/.env.example",
       "path": "factory-runner/.env.example",
-      "sha256": "1687d924a216482d2e5d22b98dd73db81786a4ab14b3cebf6d11ffb715188abc",
-      "size": 316
+      "source_path": "factory-runner-add-on/.env.example",
+      "git_blob_sha": "5825e3b19d3219c176af62ba9cbaa3af29f0ad1a",
+      "size": 316,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/approval_ipc.py",
-      "path": "factory-runner/approval_ipc.py",
-      "sha256": "1bd56be8c6380eb938520e2ba9290e6c559b35dd7cdf232b76aef3dd89a4fa32",
-      "size": 6435
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/approval_service.py",
-      "path": "factory-runner/approval_service.py",
-      "sha256": "6affcd9a4557e35d79c837d8a5a1d61afb0c353fed892694f3d07d1ba2f0acf9",
-      "size": 1835
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/artesao_adapter.py",
-      "path": "factory-runner/artesao_adapter.py",
-      "sha256": "07120e2670f486b0ce780b6c8855d5f26b5ae1f1b97cda2d3ebbaac31cd3b8d8",
-      "size": 10945
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/artesao_artifacts.py",
-      "path": "factory-runner/artesao_artifacts.py",
-      "sha256": "13909d1ac2e2871c661a5b1815300e45b40c82c375f3cc6ee84bae72f4955188",
-      "size": 3826
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/artesao_isolated_executor.py",
-      "path": "factory-runner/artesao_isolated_executor.py",
-      "sha256": "bdcfa6cfbbe6b591e82d66e3667d4121926eac982877f4a2a6d15e513911ea36",
-      "size": 22659
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/ARTESAO-ADAPTER-001.md",
       "path": "factory-runner/ARTESAO-ADAPTER-001.md",
-      "sha256": "c89878afd9eae0007ec9dc1a7af66f37d9aa5a75fb9543254c842210969a5e7b",
-      "size": 9411
+      "source_path": "factory-runner-add-on/ARTESAO-ADAPTER-001.md",
+      "git_blob_sha": "603182d056a4040ff0ce869c7137cb48736a8fd8",
+      "size": 9411,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/ARTESAO-BUILDER-002.md",
       "path": "factory-runner/ARTESAO-BUILDER-002.md",
-      "sha256": "7d8d715aa8bf5d49eff4d661a55073eb99bbeb3b7dc6e0056a6f5b519467a569",
-      "size": 9134
+      "source_path": "factory-runner-add-on/ARTESAO-BUILDER-002.md",
+      "git_blob_sha": "073438dec650f47f05f149577f9bd3da3eba1faf",
+      "size": 9134,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/autonomous_dev.py",
-      "path": "factory-runner/autonomous_dev.py",
-      "sha256": "31f59f273b3abcccb6d82ad1a1cadbea2b17526f7c063b8d4cc038c112599a96",
-      "size": 789
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
-      "origin_path": "factory-runner-add-on/CHANGELOG.md",
       "path": "factory-runner/CHANGELOG.md",
-      "sha256": "d644520da0ed1ad5b9e3931c1150cea250b77827d656e97f7b6841ccfb5980d9",
-      "size": 35669
+      "source_path": "factory-runner-add-on/CHANGELOG.md",
+      "git_blob_sha": "8e8ce5613b5079c4ca744047b7d5566dee0ff4e7",
+      "size": 36425,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
-      "origin_path": "factory-runner-add-on/config.yaml",
-      "path": "factory-runner/config.yaml",
-      "sha256": "541ced45c4877477dafb0b6e0520a160ebff5a978c8cb64b8d727b68efb65391",
-      "size": 919
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/CONTINUIDADE.md",
       "path": "factory-runner/CONTINUIDADE.md",
-      "sha256": "255e59e8023d74e3210de056d0a152f0546c75e83e28b6e6c20efb2331c1fe1f",
-      "size": 15596
+      "source_path": "factory-runner-add-on/CONTINUIDADE.md",
+      "git_blob_sha": "e51fb8d586ee3b8d2bedc83b75307c055924dce7",
+      "size": 15560,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/controlled_worker.py",
-      "path": "factory-runner/controlled_worker.py",
-      "sha256": "a7c570a4b77266f698d482bfad11e1fcd654224eb0c07d6a8e7074cb1e5ebbf2",
-      "size": 5140
+      "path": "factory-runner/CONTROLLED-WORKER.md",
+      "source_path": "factory-runner-add-on/CONTROLLED-WORKER.md",
+      "git_blob_sha": "9118e38bfe609bebe95dd90fce46dafce56f4d6d",
+      "size": 5714,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/declarative_export.py",
-      "path": "factory-runner/declarative_export.py",
-      "sha256": "6b3a57cca2a10d0be381d7b3b387d40bd3a1d3922d50b29efc03a55580296a64",
-      "size": 18153
+      "path": "factory-runner/DECLARATIVE-IMPLEMENTACAO-001.md",
+      "source_path": "factory-runner-add-on/DECLARATIVE-IMPLEMENTACAO-001.md",
+      "git_blob_sha": "1baeb3abd4de7873250b884e82eb36be769a1c57",
+      "size": 6916,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/declarative_runtime_probe.py",
-      "path": "factory-runner/declarative_runtime_probe.py",
-      "sha256": "8aab16370361289404549a24739d05ba80c35a6a0e1e8cc74174d95b2305c3e9",
-      "size": 3833
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/Dockerfile",
-      "path": "factory-runner/Dockerfile",
-      "sha256": "51782f08819a88b31b69d5c0be16dd60f292150534889a4bb0418a0e60da73fe",
-      "size": 5025
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/DOCS.md",
       "path": "factory-runner/DOCS.md",
-      "sha256": "6d267d87494c565e0e9df05e829dc3867cb6223ef426c79e8bf8c438f7d76261",
-      "size": 5228
+      "source_path": "factory-runner-add-on/DOCS.md",
+      "git_blob_sha": "3ebdb7e61bbbcd082691cd49a3d02cfef16f43b5",
+      "size": 5228,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/factory_e2e_probe.py",
-      "path": "factory-runner/factory_e2e_probe.py",
-      "sha256": "a2f09eaddcb25bc5f3838b5d14fd2b66be0f35fbdd1adcebf2c53d5e48d42e1e",
-      "size": 15348
+      "path": "factory-runner/Dockerfile",
+      "source_path": "factory-runner-add-on/Dockerfile",
+      "git_blob_sha": "79cb28c255d3e41965c271111aee472fdbcbf74b",
+      "size": 5110,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/github_bytes_transport.py",
-      "path": "factory-runner/github_bytes_transport.py",
-      "sha256": "740df0d3f827e103e9d35da389bd279bedde29e8702a0798112a5847087d6736",
-      "size": 13360
+      "path": "factory-runner/HISTORICO.md",
+      "source_path": "factory-runner-add-on/HISTORICO.md",
+      "git_blob_sha": "d33e8673f68c2230adf35cd585f50b5bdcf7ffa3",
+      "size": 18646,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/ha_ingress_identity.py",
-      "path": "factory-runner/ha_ingress_identity.py",
-      "sha256": "a72ac9475e72a5254b4ec60377eab8e7c0a8577f56bb6522f87ce1551702db4d",
-      "size": 2863
+      "path": "factory-runner/LANDLOCK-ESTUDO-001.md",
+      "source_path": "factory-runner-add-on/LANDLOCK-ESTUDO-001.md",
+      "git_blob_sha": "f8f583f011d426158f7ef17a2ececece9edc749d",
+      "size": 12234,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/ha_ingress_server.py",
-      "path": "factory-runner/ha_ingress_server.py",
-      "sha256": "c960cbb027278ace9a7c07d669351e2c84c1ea91ba9e947b349d83f3c5d55dad",
-      "size": 17516
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/icon.png",
-      "path": "factory-runner/icon.png",
-      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc",
-      "size": 111228
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/landlock_probe.py",
-      "path": "factory-runner/landlock_probe.py",
-      "sha256": "37d09399ceb38ab6dbc5cad1f887083be6282935c45f85cf1a385044681f1cac",
-      "size": 2489
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/local_publisher.py",
-      "path": "factory-runner/local_publisher.py",
-      "sha256": "e69e14b4231fe73ae76da530f4c326b78859cdc52d936abf820a0c3a920bfb45",
-      "size": 18142
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/logo.png",
-      "path": "factory-runner/logo.png",
-      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9",
-      "size": 194750
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/M006-RPI-PIPELINE.md",
       "path": "factory-runner/M006-RPI-PIPELINE.md",
-      "sha256": "5dcdc8d786adce6e5e23ef2e3e07ce97c3aae46bf021ee07a445d07e3fbcffc1",
-      "size": 11774
+      "source_path": "factory-runner-add-on/M006-RPI-PIPELINE.md",
+      "git_blob_sha": "cfa0ede3c93bf80b7b10152a625a13c716001f1d",
+      "size": 11774,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/OPERACAO-ESTEIRA.md",
       "path": "factory-runner/OPERACAO-ESTEIRA.md",
-      "sha256": "03788f75b7b8177d62c7c1e9b84799859759290ce8ce38fce4887d4a699d15ae",
-      "size": 18497
+      "source_path": "factory-runner-add-on/OPERACAO-ESTEIRA.md",
+      "git_blob_sha": "55a2ac3e32f0e769d02763eebbdfc93412f3e69f",
+      "size": 18469,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/owner_approval.py",
-      "path": "factory-runner/owner_approval.py",
-      "sha256": "b7a16148c1c4d0e45258287ea0ae0c5652f7de558aa0ce28f16a1d4cddbec41b",
-      "size": 20916
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/owner_bootstrap.py",
-      "path": "factory-runner/owner_bootstrap.py",
-      "sha256": "8efb2462b027078ce07e5135358f6df1e80b20dcea10b19b18c9563f5355c88a",
-      "size": 10303
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
-      "origin_path": "factory-runner-add-on/owner_consent_ui.py",
-      "path": "factory-runner/owner_consent_ui.py",
-      "sha256": "5b675ab96807a546effa87796ea1503efe458fbadee08da7c78803f31d96960f",
-      "size": 9922
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/owner_ingress_service.py",
-      "path": "factory-runner/owner_ingress_service.py",
-      "sha256": "6b3fb756ddbb591fe27d2df77bb4e3dc7145fe1d77f83b38d8ce93c1b943c262",
-      "size": 2187
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/projects/artesao_digital.json",
-      "path": "factory-runner/projects/artesao_digital.json",
-      "sha256": "11771b0ff6a1ad6e2ec6f4f94bc163c46263e2f084bbd5fb7c70d14704332919",
-      "size": 1185
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/projects/avisaqui.json",
-      "path": "factory-runner/projects/avisaqui.json",
-      "sha256": "1b0ef1bb93498e9d4e40641223124f2245223d4d6667a4c92dde8ecbbc904b4e",
-      "size": 3555
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/projects/README.md",
-      "path": "factory-runner/projects/README.md",
-      "sha256": "17d870dc67016547a32ae521bffcb52f16b86eb3cb7644f1ffcd1a3b029a4a21",
-      "size": 5879
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/publication_contract.py",
-      "path": "factory-runner/publication_contract.py",
-      "sha256": "be7a26bcc8a44ad8eeb63549226b7b940802048a6eeb721957618fbfcdf61795",
-      "size": 8092
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/publication_workflow.py",
-      "path": "factory-runner/publication_workflow.py",
-      "sha256": "ba2a0d9354d7842e83287da56a65781d53f5a073b4318789b3876acb181e753d",
-      "size": 8867
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/publisher_ipc.py",
-      "path": "factory-runner/publisher_ipc.py",
-      "sha256": "9509befebb02c71245626a63d7620b000e841339b189fd80bd72abe8ad8e94ff",
-      "size": 5474
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/publisher_permissions.py",
-      "path": "factory-runner/publisher_permissions.py",
-      "sha256": "38fbcf0fb2f93a5ebc0353e715c568e955aab76ec33727aeb2c585b1a133f706",
-      "size": 2673
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/publisher_service.py",
-      "path": "factory-runner/publisher_service.py",
-      "sha256": "79c85e3624c3c9c12c802e6145f09bffc056542ba66f0e668faca7102f513612",
-      "size": 11255
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/rc_fastlane.py",
-      "path": "factory-runner/rc_fastlane.py",
-      "sha256": "f9ec6cb508d9ed3e536e7080c0811893d04e215278effd1bc6dd001471a150cd",
-      "size": 28419
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "5f87e931cc94ae51bd82eccac32d048ad36b1cd1",
-      "origin_path": "factory-runner/RC4-VALIDACAO.md",
-      "path": "factory-runner/RC4-VALIDACAO.md",
-      "sha256": "47a8927fefd666114c1cb45f99d5af66406f1423a5b540ff83ca4011bd1540dd",
-      "size": 7333
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RC5-VALIDACAO.md",
       "path": "factory-runner/RC5-VALIDACAO.md",
-      "sha256": "bb6d244d032f31f1b75bd32942bb026205e45a75c980c4e43002939cada18b82",
-      "size": 5654
+      "source_path": "factory-runner-add-on/RC5-VALIDACAO.md",
+      "git_blob_sha": "94cd38c50f895dbbba929687fc7df80729fdc25f",
+      "size": 5654,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RC6-VALIDACAO.md",
       "path": "factory-runner/RC6-VALIDACAO.md",
-      "sha256": "94f1bf5431bf1ed94a4face6cd1c6f95de7da549f1bf243b2bc8e310e91efcd3",
-      "size": 4960
+      "source_path": "factory-runner-add-on/RC6-VALIDACAO.md",
+      "git_blob_sha": "9bfe76e9ce575c9d0b539f7a5849445bdbd5f92c",
+      "size": 4960,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RC7-VALIDACAO.md",
       "path": "factory-runner/RC7-VALIDACAO.md",
-      "sha256": "b45cac4ace1a14885b82d8d89ca918dd005a04437660a46350ae08a25e6bcd1c",
-      "size": 5400
+      "source_path": "factory-runner-add-on/RC7-VALIDACAO.md",
+      "git_blob_sha": "9c13ab8c93ff6aab7957c653891d4623b45abc2c",
+      "size": 5400,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RC8-VALIDACAO.md",
       "path": "factory-runner/RC8-VALIDACAO.md",
-      "sha256": "fe6d2335fb12e2c16db84871920badf8684db79725fd52d0f6b47a04a4e325b4",
-      "size": 5093
+      "source_path": "factory-runner-add-on/RC8-VALIDACAO.md",
+      "git_blob_sha": "ef52398a2bed82bd6d327176df7953108e5a1781",
+      "size": 5093,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RC9-VALIDACAO.md",
       "path": "factory-runner/RC9-VALIDACAO.md",
-      "sha256": "efba0ff7cf4c7473e5d4523e81af0ee260a358f2df8af0f32be98e5c9b940f4e",
-      "size": 4836
+      "source_path": "factory-runner-add-on/RC9-VALIDACAO.md",
+      "git_blob_sha": "d7e07b353f0fbd6a588a16c0b3a63eb652146238",
+      "size": 4836,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/README.md",
       "path": "factory-runner/README.md",
-      "sha256": "1fc2c43ef977376772775d91e53cbfed2fd87b84c09bf35c1aee996d92b67fcb",
-      "size": 6701
+      "source_path": "factory-runner-add-on/README.md",
+      "git_blob_sha": "2ca4518b68f382b33acde5aec6a999d0064c7363",
+      "size": 6701,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/release_console.py",
-      "path": "factory-runner/release_console.py",
-      "sha256": "d3c5ca2a31206cf250f160b55ba8555dc25dc14e8fa3e7c8c29875792af2e6bf",
-      "size": 2761
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/release_receipt.py",
-      "path": "factory-runner/release_receipt.py",
-      "sha256": "d26c17ec86800e84b8d1345313e14b48456bfc3b8bf0f29d93971c61de413673",
-      "size": 5263
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
       "path": "factory-runner/RELEASE-PIPELINE.md",
-      "sha256": "b155d596c5499f5f66324f39eee0a382fc7f94240959e4004b6faa05f08fe4de",
-      "size": 9688
+      "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
+      "git_blob_sha": "df7aa0ee2b08f1c1c6527986ead593c0af16f657",
+      "size": 15825,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/run.sh",
+      "path": "factory-runner/approval_ipc.py",
+      "source_path": "factory-runner-add-on/approval_ipc.py",
+      "git_blob_sha": "d5effb016910f6dfa775453b0e48b7031247b2e0",
+      "size": 6424,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/approval_service.py",
+      "source_path": "factory-runner-add-on/approval_service.py",
+      "git_blob_sha": "692babc724f542339a71a6004c240e84ac10c641",
+      "size": 1877,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/artesao_adapter.py",
+      "source_path": "factory-runner-add-on/artesao_adapter.py",
+      "git_blob_sha": "31a4193edd9142c7d648c66a0eada91bbd264b76",
+      "size": 10945,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/artesao_artifacts.py",
+      "source_path": "factory-runner-add-on/artesao_artifacts.py",
+      "git_blob_sha": "10a88cf6cfb043895fedb267857d4cc3c8e76f41",
+      "size": 3826,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/artesao_isolated_executor.py",
+      "source_path": "factory-runner-add-on/artesao_isolated_executor.py",
+      "git_blob_sha": "1547e2db9785ab391a3d48cfca6e3d10e78ff632",
+      "size": 22659,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/autonomous_dev.py",
+      "source_path": "factory-runner-add-on/autonomous_dev.py",
+      "git_blob_sha": "3632bac92bc99a6aa314df89b1faabe645390519",
+      "size": 789,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/config.yaml",
+      "source_path": "factory-runner-add-on/config.yaml",
+      "git_blob_sha": "9bb8859143a13df8beb82e233efbff0a88568a8c",
+      "size": 1037,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/controlled_worker.py",
+      "source_path": "factory-runner-add-on/controlled_worker.py",
+      "git_blob_sha": "5560726b5ce800da538e5793c6a326813ff79f99",
+      "size": 5140,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/declarative_export.py",
+      "source_path": "factory-runner-add-on/declarative_export.py",
+      "git_blob_sha": "f02f5312ef2e7dd6141a1842816012ab585ef8cf",
+      "size": 18153,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/declarative_runtime_probe.py",
+      "source_path": "factory-runner-add-on/declarative_runtime_probe.py",
+      "git_blob_sha": "1968ef39a3a62914e59d8aac7cb39264c6dde635",
+      "size": 3833,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/factory_e2e_probe.py",
+      "source_path": "factory-runner-add-on/factory_e2e_probe.py",
+      "git_blob_sha": "43b8380ecfda9dc5580e475fbe2b271eedc4ac1c",
+      "size": 15348,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/github_bytes_transport.py",
+      "source_path": "factory-runner-add-on/github_bytes_transport.py",
+      "git_blob_sha": "5e7e78c7671930987d14b16bca0a404ef033dbec",
+      "size": 13360,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/ha_ingress_identity.py",
+      "source_path": "factory-runner-add-on/ha_ingress_identity.py",
+      "git_blob_sha": "d0a7b2be810f645c5724d846f1a82ce31a5c95d1",
+      "size": 2863,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/ha_ingress_server.py",
+      "source_path": "factory-runner-add-on/ha_ingress_server.py",
+      "git_blob_sha": "d22fbb86ded18e4b1e2134ea8469be7ffe163b79",
+      "size": 15188,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/icon.png",
+      "source_path": "factory-runner-add-on/icon.png",
+      "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a",
+      "size": 111228,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/landlock_probe.py",
+      "source_path": "factory-runner-add-on/landlock_probe.py",
+      "git_blob_sha": "fc66089552725137ee244d2d869b1331e2452c4e",
+      "size": 2489,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/local_publisher.py",
+      "source_path": "factory-runner-add-on/local_publisher.py",
+      "git_blob_sha": "c81cf90b3d65d5cc6c4c5e2cb3096bf666510713",
+      "size": 18142,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/logo.png",
+      "source_path": "factory-runner-add-on/logo.png",
+      "git_blob_sha": "7e500016222b0a5bf395be8ed17447edeb3e2af9",
+      "size": 194750,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/owner_approval.py",
+      "source_path": "factory-runner-add-on/owner_approval.py",
+      "git_blob_sha": "a74a2ec07d5ea30762ebadab820222dc22313cac",
+      "size": 20745,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/owner_bootstrap.py",
+      "source_path": "factory-runner-add-on/owner_bootstrap.py",
+      "git_blob_sha": "cb551f998c4257679cea52e4b99f27352a7832f0",
+      "size": 10382,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/owner_consent_ui.py",
+      "source_path": "factory-runner-add-on/owner_consent_ui.py",
+      "git_blob_sha": "b4991eb20a66e0bef8075e2d10c609bccc0e3865",
+      "size": 5775,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/owner_ingress_service.py",
+      "source_path": "factory-runner-add-on/owner_ingress_service.py",
+      "git_blob_sha": "9d9afc64b698480701698985a21f1918ff443e91",
+      "size": 2204,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/owner_settings_enroll.py",
+      "source_path": "factory-runner-add-on/owner_settings_enroll.py",
+      "git_blob_sha": "bc63f9735a8666d638b7233ad48770e9f9f72046",
+      "size": 3979,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/projects/README.md",
+      "source_path": "factory-runner-add-on/projects/README.md",
+      "git_blob_sha": "d78af901a0f79866aa9835a5703cdd434cae2d4f",
+      "size": 5879,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/projects/artesao_digital.json",
+      "source_path": "factory-runner-add-on/projects/artesao_digital.json",
+      "git_blob_sha": "166c969574538dffe76ee02c628c085289a1568c",
+      "size": 1185,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/projects/avisaqui.json",
+      "source_path": "factory-runner-add-on/projects/avisaqui.json",
+      "git_blob_sha": "f3291118ba6e5564b46bf52ce76bc844f6484cff",
+      "size": 3555,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/publication_contract.py",
+      "source_path": "factory-runner-add-on/publication_contract.py",
+      "git_blob_sha": "656b40f91fd690e4e20faa2536c33f8f206ff138",
+      "size": 8092,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/publication_workflow.py",
+      "source_path": "factory-runner-add-on/publication_workflow.py",
+      "git_blob_sha": "bab48a6e64a8e984e4f522e2fec08f7375db7431",
+      "size": 8867,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/publisher_ipc.py",
+      "source_path": "factory-runner-add-on/publisher_ipc.py",
+      "git_blob_sha": "7e146b7a932db1b2ce4306075ce6ba227c9ff4fe",
+      "size": 5474,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/publisher_permissions.py",
+      "source_path": "factory-runner-add-on/publisher_permissions.py",
+      "git_blob_sha": "bff25b70a76602f0e4f15eb2dd35d0502ae227a0",
+      "size": 2673,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/publisher_service.py",
+      "source_path": "factory-runner-add-on/publisher_service.py",
+      "git_blob_sha": "4e41427782c01790abf0ebf035834fa941257d53",
+      "size": 11255,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/rc_fastlane.py",
+      "source_path": "factory-runner-add-on/rc_fastlane.py",
+      "git_blob_sha": "f1802871350f1e2d3af3ba9ac8540df11b3dd136",
+      "size": 28419,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/release_console.py",
+      "source_path": "factory-runner-add-on/release_console.py",
+      "git_blob_sha": "b95ba697043130686d7a0282f1d02a089b889a8c",
+      "size": 2761,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/release_receipt.py",
+      "source_path": "factory-runner-add-on/release_receipt.py",
+      "git_blob_sha": "373696fa0d8e767d5ac6f6b9b519ded80cdc7335",
+      "size": 5263,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/run.sh",
-      "sha256": "eaec28b1292e37acabf03829767c80dd9167a98f9eea2c640d0537789396bd6f",
-      "size": 7771
+      "source_path": "factory-runner-add-on/run.sh",
+      "git_blob_sha": "dcea0f4b5f5a64157ffd4c9d1f5cb08252c9c01b",
+      "size": 8899,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/runtime_probe.py",
       "path": "factory-runner/runtime_probe.py",
-      "sha256": "70e5f92e54f0969d3d93cfeca680d2f947b4dfcab5d1f405fce3cd8728519a9c",
-      "size": 2512
+      "source_path": "factory-runner-add-on/runtime_probe.py",
+      "git_blob_sha": "d7d089099e0f001974f7f95cc723b83b6244d766",
+      "size": 2512,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/sandbox_export.py",
       "path": "factory-runner/sandbox_export.py",
-      "sha256": "460427b9fbececdae14a13eeba4143a11d3caead0b182b7873e7c858f912b615",
-      "size": 9049
+      "source_path": "factory-runner-add-on/sandbox_export.py",
+      "git_blob_sha": "30044957887f43f6a6ef3fb7e3f01db224b44608",
+      "size": 9049,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/server.py",
       "path": "factory-runner/server.py",
-      "sha256": "b9bd5b604b18c5d794555471b0264323351da336625872ad5c25be179ea59df1",
-      "size": 43386
+      "source_path": "factory-runner-add-on/server.py",
+      "git_blob_sha": "0e3a1f35a080113de7426490f3e8de2ebc9055f9",
+      "size": 43386,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/fixtures/avisaqui_git_tree_20261119.json",
       "path": "factory-runner/tests/fixtures/avisaqui_git_tree_20261119.json",
-      "sha256": "bd02a0d37ed0fb5f764bb61c0e03ecc8fafbf5abeed1028458850e795dab2040",
-      "size": 56623
+      "source_path": "factory-runner-add-on/tests/fixtures/avisaqui_git_tree_20261119.json",
+      "git_blob_sha": "4471931e72c18f159845bf8ab0292b4e828b2562",
+      "size": 56623,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/m006_runtime_probe.py",
       "path": "factory-runner/tests/m006_runtime_probe.py",
-      "sha256": "ca1d8e4ab0d613c399aca8ab28cd2a4baaac9221db3d95c53e1b25ce3792577c",
-      "size": 4758
+      "source_path": "factory-runner-add-on/tests/m006_runtime_probe.py",
+      "git_blob_sha": "f395b4bfac8b0b9ec5eb6d128e302cadb9a7083f",
+      "size": 4758,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/probe_sandbox.py",
       "path": "factory-runner/tests/probe_sandbox.py",
-      "sha256": "446782be12bc33d63840b9d82ecfeb6154b42fca4dde8a0a0bed93594f0e41cb",
-      "size": 7554
+      "source_path": "factory-runner-add-on/tests/probe_sandbox.py",
+      "git_blob_sha": "8bcac4fb49e9a59a5cf99fd81ff62ba4a39d21e2",
+      "size": 7554,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/smoke_container.py",
       "path": "factory-runner/tests/smoke_container.py",
-      "sha256": "026e3024306308f5c0b55ba1695679c10ecca8b40a846f4f0b9a12af42a3d0e5",
-      "size": 9412
+      "source_path": "factory-runner-add-on/tests/smoke_container.py",
+      "git_blob_sha": "a4c299216a11a7ebb28d72c05a00a60a679a5f3c",
+      "size": 9412,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_approval_ipc.py",
       "path": "factory-runner/tests/test_factory_runner_approval_ipc.py",
-      "sha256": "ed0d11e5a346df4c7df41e67369f3946ba98e05716464376c65e6745f070cb27",
-      "size": 1100
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_approval_ipc.py",
+      "git_blob_sha": "7ec1d3ff8ad0560e547c01bed879d553b8d5dffe",
+      "size": 1100,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_artesao_adapter.py",
       "path": "factory-runner/tests/test_factory_runner_artesao_adapter.py",
-      "sha256": "db4cfefa61e4f6cd0cfa5887db87071992fd96c7979ab86f879810f15ca197d1",
-      "size": 10089
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_adapter.py",
+      "git_blob_sha": "76fc7c0212929ddb37b1fb13a791b2eec90d4e27",
+      "size": 10089,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_artesao_artifacts.py",
       "path": "factory-runner/tests/test_factory_runner_artesao_artifacts.py",
-      "sha256": "6dbec4dbbd90d291c19fe5a14f92a4d9bd3282c3355ac9649da60594ba9208b2",
-      "size": 6362
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_artifacts.py",
+      "git_blob_sha": "3d2b0e067cba55e32495ad99d204f1a516e15f79",
+      "size": 6362,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_artesao_isolated_executor.py",
       "path": "factory-runner/tests/test_factory_runner_artesao_isolated_executor.py",
-      "sha256": "c9dae6a163758b7b22b9b7167a9f73277047d656e86e46700838008d7571d3fb",
-      "size": 17019
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_isolated_executor.py",
+      "git_blob_sha": "2eea3c7ac8f9a54db0df65af2a3abe7994cbeacd",
+      "size": 17019,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_controlled_worker.py",
       "path": "factory-runner/tests/test_factory_runner_controlled_worker.py",
-      "sha256": "7dc61c7a26a2830ff3070b95b6a8a5f1a5db3603b5beca3c54767088ca441702",
-      "size": 9428
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_controlled_worker.py",
+      "git_blob_sha": "08bd91d0c53bc4cfb71611ccc9a04b33a7d8c196",
+      "size": 9428,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_declarative_runtime_probe.py",
-      "path": "factory-runner/tests/test_factory_runner_declarative_runtime_probe.py",
-      "sha256": "8fc02e96c1e3b860c36f254449e789948b92b826a5ff740d32a4c45c12a9be61",
-      "size": 2521
-    },
-    {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_declarative.py",
       "path": "factory-runner/tests/test_factory_runner_declarative.py",
-      "sha256": "9d632ca4de46857ce92ac97117412ff9d0c4b21a27e11b6648b11db342a8dd99",
-      "size": 9889
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative.py",
+      "git_blob_sha": "c62764cd3c49cf322af40bcf36b642b2a279260e",
+      "size": 9889,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_e2e_probe.py",
+      "path": "factory-runner/tests/test_factory_runner_declarative_runtime_probe.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative_runtime_probe.py",
+      "git_blob_sha": "82c11b926e39251b2c434722f645f7657efe5e72",
+      "size": 2521,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/tests/test_factory_runner_e2e_probe.py",
-      "sha256": "0e82d6b120eb37245eab92269c1eff28deba48dccf6e637dadcd1b6dfe5159af",
-      "size": 3170
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_e2e_probe.py",
+      "git_blob_sha": "97e7fb23e9d046411b219d69df6b2e18b7f739f7",
+      "size": 3170,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_fastlane.py",
       "path": "factory-runner/tests/test_factory_runner_fastlane.py",
-      "sha256": "273af27230d95b95af1c1b9826d56dd15fd08143b113043411e6f6ddd44579c7",
-      "size": 11987
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_fastlane.py",
+      "git_blob_sha": "04374c89054652390284218af934ca231930cda1",
+      "size": 11987,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_ha_ingress_identity.py",
       "path": "factory-runner/tests/test_factory_runner_ha_ingress_identity.py",
-      "sha256": "4ffdb3750a6f21055cdba8bb09b62733fd1cdeedcf2a4c9ca136b7a115a6b62b",
-      "size": 4440
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_ha_ingress_identity.py",
+      "git_blob_sha": "75edcd3f8127b112faa303327d69aaffa3fa4739",
+      "size": 4440,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_ha_ingress_server.py",
       "path": "factory-runner/tests/test_factory_runner_ha_ingress_server.py",
-      "sha256": "c1a66a73efa7b3a299942041548d690f51af0ae69b18b8e05709fd7fec222703",
-      "size": 18006
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_ha_ingress_server.py",
+      "git_blob_sha": "c47dd40d2a18c6d3bae332d07e3525072f676308",
+      "size": 14252,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_integration.py",
       "path": "factory-runner/tests/test_factory_runner_integration.py",
-      "sha256": "9950c196e8a307307484fe2e42ac6b3e8253847f947529900f2d89b226f3d556",
-      "size": 17719
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_integration.py",
+      "git_blob_sha": "425bbd7a5c9c77ef954ad0ad611e050d086476a1",
+      "size": 17719,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_landlock_probe.py",
       "path": "factory-runner/tests/test_factory_runner_landlock_probe.py",
-      "sha256": "c7ef4ca7b484e5d5b310c8d33695e898b6c4930b991f89051da2207da764b26d",
-      "size": 2623
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_landlock_probe.py",
+      "git_blob_sha": "8bd183fead78ab205770bd96f1c6256c470b8a15",
+      "size": 2623,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_m006.py",
       "path": "factory-runner/tests/test_factory_runner_m006.py",
-      "sha256": "3866fb1526f586000b417256cb0f864857a50cbbb5974bd77835c6e4a4b650b6",
-      "size": 49200
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_m006.py",
+      "git_blob_sha": "2cf95a18c8a1e27916a0674d1c91eace9ded1440",
+      "size": 48944,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_owner_bootstrap.py",
       "path": "factory-runner/tests/test_factory_runner_owner_bootstrap.py",
-      "sha256": "3672e0eded7f112d997c97a44180f5fae553dc62a3fb2f405bedbc2f6172ca72",
-      "size": 14661
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_bootstrap.py",
+      "git_blob_sha": "7f7c2a89aa4664435a23676de167600490bbb887",
+      "size": 14661,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_owner_enrollment.py",
       "path": "factory-runner/tests/test_factory_runner_owner_enrollment.py",
-      "sha256": "08e2eacf39859bbd5fb1dacef19709aa6d85bbe8e77e5eb659c478f407b030b8",
-      "size": 3455
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_enrollment.py",
+      "git_blob_sha": "74f8e723c36c28ffe9ab36fe1370e2c5e611c088",
+      "size": 3455,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_owner_ingress_service.py",
       "path": "factory-runner/tests/test_factory_runner_owner_ingress_service.py",
-      "sha256": "0a8c6a1d29d8ec4963967c8ed2cc52fd0f21f452d780fdb737124bbdb22cb336",
-      "size": 746
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_ingress_service.py",
+      "git_blob_sha": "bfaca95dda332817d922619385ab729708021269",
+      "size": 746,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_owner_ui_enrollment.py",
+      "path": "factory-runner/tests/test_factory_runner_owner_settings_enroll.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_settings_enroll.py",
+      "git_blob_sha": "c9df964789c453159dfcc820370112fd009fddff",
+      "size": 6341,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/tests/test_factory_runner_owner_ui_enrollment.py",
-      "sha256": "2db5c818581db6407479965621fb3f69ec7021e094befa32addf7dd616d86d4c",
-      "size": 6746
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_ui_enrollment.py",
+      "git_blob_sha": "89cddf571abab37e8e60ef8e04f9f8ffe59c4ef7",
+      "size": 5624,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_publisher_ipc.py",
       "path": "factory-runner/tests/test_factory_runner_publisher_ipc.py",
-      "sha256": "04a452c7a88b2e19b7d28718d307a44757e328299ab8b732ecf1b3b6d90733a1",
-      "size": 2950
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_publisher_ipc.py",
+      "git_blob_sha": "16cf36e405c6b8ed0b43e417b71c8d126037f157",
+      "size": 2950,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_publisher_permissions.py",
       "path": "factory-runner/tests/test_factory_runner_publisher_permissions.py",
-      "sha256": "0b3648cd580113b935f4cfa738d676636ac00625ed6346dd30a042408c0905a7",
-      "size": 2571
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_publisher_permissions.py",
+      "git_blob_sha": "8a9e664901ec40e80891115ee346f04013c06b39",
+      "size": 2571,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_publisher_service.py",
       "path": "factory-runner/tests/test_factory_runner_publisher_service.py",
-      "sha256": "7260239df2e72a51cd5454ef13b10c5f273c17c920e1e138536268ee8e8c6dc2",
-      "size": 2189
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_publisher_service.py",
+      "git_blob_sha": "ebbd70a0274f01b76eaac2077a1f4438ad4453e3",
+      "size": 2189,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_publisher_workflow_cache.py",
       "path": "factory-runner/tests/test_factory_runner_publisher_workflow_cache.py",
-      "sha256": "a7c2a30b7689108ddd4108840de156969708eaaa7086dd0cd00227ad0b3d09e1",
-      "size": 2099
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_publisher_workflow_cache.py",
+      "git_blob_sha": "4387512add713040dff3baf727f3918ab7d09817",
+      "size": 2099,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_real_export_mapping.py",
       "path": "factory-runner/tests/test_factory_runner_real_export_mapping.py",
-      "sha256": "52a6551f2fe341797379445f2db8bb9dd789ee635912d9d0f6fe820e3bbd90d6",
-      "size": 6200
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_real_export_mapping.py",
+      "git_blob_sha": "0f2dcd27efaa7956a506e25c8cd21b1eaeaed48c",
+      "size": 6200,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_release_pipeline.py",
       "path": "factory-runner/tests/test_factory_runner_release_pipeline.py",
-      "sha256": "f5df231b0dd374a475919831ac0721648d25107447759e5c85c5cde611b10831",
-      "size": 22285
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_release_pipeline.py",
+      "git_blob_sha": "1cbbf78554f5a7c4a0104e61748f284e1cbee47b",
+      "size": 22285,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_sandbox.py",
       "path": "factory-runner/tests/test_factory_runner_sandbox.py",
-      "sha256": "46bd41217bd4cd7c78fba1cde48d19603a03d44e1f29479f9b6d3c04c60356ab",
-      "size": 8708
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_sandbox.py",
+      "git_blob_sha": "3ae77a40dfa69719929f512f5bead5f10ce645d5",
+      "size": 8708,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_security.py",
       "path": "factory-runner/tests/test_factory_runner_security.py",
-      "sha256": "4d1864052d6fd1107824a1b6421f96ce971bbb0c7aecf09f3a49ee3ccc5f246a",
-      "size": 33200
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_security.py",
+      "git_blob_sha": "cb2fef2f741425d70e533d725f967d04ee89c7f6",
+      "size": 33200,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_trusted_export_plan.py",
       "path": "factory-runner/tests/test_factory_runner_trusted_export_plan.py",
-      "sha256": "a3dec0b47a6bd24149244b739fa4351e3ec79e0ffbac512028821a329fc992d8",
-      "size": 3430
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_trusted_export_plan.py",
+      "git_blob_sha": "a9afc0d26fed4ab413b09f4168ec227ea8b7c5bf",
+      "size": 3430,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_workspace_controller.py",
       "path": "factory-runner/tests/test_factory_runner_workspace_controller.py",
-      "sha256": "9ddf9a4b5c4f38247b0f42978b9bf597f027807318990a550a23bc3913510d77",
-      "size": 8829
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_workspace_controller.py",
+      "git_blob_sha": "927bab066c00df2b88e50f5f622cb1a2818e6c9e",
+      "size": 8829,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/tests/test_factory_runner_workspace_sync.py",
       "path": "factory-runner/tests/test_factory_runner_workspace_sync.py",
-      "sha256": "c967c44da2f3de7f774205c8123894da981d6af1f312ffb36ba13930e0883d87",
-      "size": 27603
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_workspace_sync.py",
+      "git_blob_sha": "9fe7e266d3db422e62b613be0c36064b1c2be65d",
+      "size": 27603,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/trusted_export_plan.py",
       "path": "factory-runner/trusted_export_plan.py",
-      "sha256": "bd5a118ee4d5d0ffc611ccaf292b2fc7b3e1855e36c482f46545a62f279b5d00",
-      "size": 4743
+      "source_path": "factory-runner-add-on/trusted_export_plan.py",
+      "git_blob_sha": "4c95c8c241625b544438a7b4fe7cfe8c6ccb3a94",
+      "size": 4743,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/validate_offline.py",
       "path": "factory-runner/validate_offline.py",
-      "sha256": "f05133f76d0ca2600c6a6d6f3e4bec3d2dd97f5265e7158faba74b84986d2cba",
-      "size": 1960
+      "source_path": "factory-runner-add-on/validate_offline.py",
+      "git_blob_sha": "e72cc910c5beaae975156d1d1d16d448d7aa076e",
+      "size": 1960,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/workspace_askpass.py",
       "path": "factory-runner/workspace_askpass.py",
-      "sha256": "8a4fba18408612d7e741288b3341e8a203424cb5d0025a4e1f95b44a1fc7b343",
-      "size": 644
+      "source_path": "factory-runner-add-on/workspace_askpass.py",
+      "git_blob_sha": "2e2980acfbd91e04c730a0c302d980f643737974",
+      "size": 644,
+      "mode": "100644"
     },
     {
-      "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-      "origin_path": "factory-runner-add-on/workspace_sync.py",
       "path": "factory-runner/workspace_sync.py",
-      "sha256": "c4c451fdf6328fa86290a575c2354ec13e7a4ef714a265aec3c85a6c8e7795fc",
-      "size": 21321
+      "source_path": "factory-runner-add-on/workspace_sync.py",
+      "git_blob_sha": "151fff040309f6189578d70f17ff38cc24561cf6",
+      "size": 21321,
+      "mode": "100644"
     }
   ],
   "supervisor_validation": {
@@ -762,5 +705,6 @@
     "product_publication": "disabled"
   },
   "branch": "desenvolvimento",
-  "provenance_note": "Manifesto e runtime críticos sincronizados diretamente da fonte RC30. Arquivos listados em files preservam o inventário da RC28 anterior; não usar essa lista como prova de identidade integral dos blobs RC30. Auditoria de árvore integral pendente."
+  "provenance_note": "Manifesto e runtime críticos sincronizados diretamente da fonte RC30. Arquivos listados em files preservam o inventário da RC28 anterior; não usar essa lista como prova de identidade integral dos blobs RC30. Auditoria de árvore integral pendente.",
+  "status": "RC30_REVISED_TESTS_PUBLISHED_PENDING_SUPERVISOR_VALIDATION"
 }
