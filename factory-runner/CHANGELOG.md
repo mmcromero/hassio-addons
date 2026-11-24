@@ -1,3 +1,14 @@
+# 0.1.0-rc.38 — FR-EXEC-001: contrato, impacto e plano de testes
+
+- Adiciona contrato FR-EXEC-001/v1 com validação estrita, binding a perfil/repositório/ref/SHA, escopo, operações declaradas, autorização não verificada e limites.
+- Persiste contratos e planos imutáveis no volume privado; mesmo execution_id + digest é idempotente; conflito de conteúdo é recusado; recuperação de gravação parcial é segura.
+- Analisa diff Git sem checkout/hooks, mapeia módulos/dependências e seleciona testes proporcionalmente pelos catálogos confiáveis de Avisaqui (68 testes) e Artesão (54 testes).
+- Reutiliza evidência somente com binding exato de teste/versão, digest da unidade/dependências, ambiente e artefato; ledger privado, serializado e idempotente. Nenhum endpoint aceita PASS externo.
+- Emite recibo verificável com selecionados, reutilizados, omitidos, justificativas, bloqueios e digest.
+- API autenticada: POST /api/execution-plan e GET /api/executions/{execution_id}. O probe de inicialização exercita o endpoint real para os workspaces existentes.
+- Planejamento é somente leitura: não executa teste, script, comando ou código de projeto. Testes permanecem não executados até sandbox da Etapa 5. Publicação/deploy exigem grants independentes; Publisher permanece DORMANT.
+- Build ARM64, suíte completa e probe real no Supervisor ainda pendentes.
+
 # 0.1.0-rc.37 — append de auditoria com fsync
 
 - Cada evento de auditoria agora faz flush e `fsync()` do arquivo antes de a operação ser considerada registrada.
@@ -5,7 +16,7 @@
 - Falha de sincronização mantém o comportamento fail-closed: a operação não prossegue como se a auditoria estivesse íntegra.
 - Dois testes regressivos cobrem fsync do arquivo/diretório na criação e fsync em append subsequente.
 - Não altera APIs, autenticação, rede, opções, Publisher, políticas de produto ou execução de código não confiável.
-- Build ARM64 e suíte completa serão validados no Supervisor antes da publicação/instalação desta candidata.
+- Supervisor build ARM64, Dockerfile tests, instalação e probe vivo PASS em 24/11/2026; 19 eventos de auditoria anteriores ao boot foram recuperados. Fsync foi exercitado pelos testes de regressão. Não equivale a ensaio de queda abrupta ou falha física de mídia.
 
 # 0.1.0-rc.36 — conecta timestamp de boot ao probe de persistência
 
