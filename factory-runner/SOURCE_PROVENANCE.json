@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.27",
+  "version": "0.1.0-rc.28",
   "repository": "mmcromero/factory-runner",
-  "commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "catalog_sha": "5d5fd6b946d899430069b0422724373e51ab9540",
-  "previous_source": "65038aa65a86866bb98ffb7d1fe627d5edf64e17",
-  "reviewed_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "publication": "CANDIDATE_RC27_FOR_HA_VALIDATION",
+  "commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
+  "catalog_sha": "fb97f2564d9aae071f8f4be3d6ce007404e8bdfb",
+  "previous_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
+  "reviewed_source": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
+  "publication": "CANDIDATE_RC28_FOR_HA_VALIDATION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
-  "candidate_distribution": "FACTORY_RUNNER_RC27_OWNER_ENROLLMENT_DIAGNOSTICS",
-  "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "BUILD_AND_INSTALL_PASS_OWNER_ENROLLMENT_PENDING",
+  "candidate_distribution": "FACTORY_RUNNER_RC28_OWNER_ENROLLMENT_SESSION_DIAGNOSTICS",
+  "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
+  "review_status": "CANDIDATE_PUBLISHED_PENDING_HA_BUILD_AND_INGRESS_TEST",
   "files": [
     {
       "mode": "100644",
@@ -95,18 +95,18 @@
     },
     {
       "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
+      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
       "origin_path": "factory-runner-add-on/CHANGELOG.md",
       "path": "factory-runner/CHANGELOG.md",
-      "sha256": "267d170371e90db15a47d7fa5022babd2ea47b80455f5afd663b43a400c5a631",
-      "size": 35020
+      "sha256": "d644520da0ed1ad5b9e3931c1150cea250b77827d656e97f7b6841ccfb5980d9",
+      "size": 35669
     },
     {
       "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
+      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
       "origin_path": "factory-runner-add-on/config.yaml",
       "path": "factory-runner/config.yaml",
-      "sha256": "16bc43839ff15efc1a6ba20479105d0e419bf59ef139b7990047c28e3acfd825",
+      "sha256": "541ced45c4877477dafb0b6e0520a160ebff5a978c8cb64b8d727b68efb65391",
       "size": 919
     },
     {
@@ -255,11 +255,11 @@
     },
     {
       "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
+      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
       "origin_path": "factory-runner-add-on/owner_consent_ui.py",
       "path": "factory-runner/owner_consent_ui.py",
-      "sha256": "3652e773e78d4a0a0501272b3f0b23b254236c0246c1b4e85a0334903346a5aa",
-      "size": 9046
+      "sha256": "5b675ab96807a546effa87796ea1503efe458fbadee08da7c78803f31d96960f",
+      "size": 9922
     },
     {
       "mode": "100644",
@@ -623,11 +623,11 @@
     },
     {
       "mode": "100644",
-      "origin_commit": "9a28e348740c971116a96374d25f7da1bd8d88eb",
+      "origin_commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
       "origin_path": "factory-runner-add-on/tests/test_factory_runner_owner_ui_enrollment.py",
       "path": "factory-runner/tests/test_factory_runner_owner_ui_enrollment.py",
-      "sha256": "8a6313ac8e7704fa7ff439e432b458cec8c7a7cf6be235b846d2ce480e9ba944",
-      "size": 3418
+      "sha256": "2db5c818581db6407479965621fb3f69ec7021e094befa32addf7dd616d86d4c",
+      "size": 6746
     },
     {
       "mode": "100644",

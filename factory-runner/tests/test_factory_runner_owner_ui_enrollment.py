@@ -1,9 +1,14 @@
 import re
 import sys
 import unittest
+from contextlib import redirect_stderr
+from io import StringIO
+from urllib.parse import urlencode
+from email.message import Message
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from owner_consent_ui import OwnerConsentUI
+from ha_ingress_server import dispatch_owner_consent
 from publication_contract import PublicationError
 
 class FakeApprovalRPC:
@@ -50,6 +55,64 @@ class OwnerUIEnrollmentTests(unittest.TestCase):
         self.assertNotEqual(fresh["session"],view["session"])
         with self.assertRaisesRegex(PublicationError,"session_invalid"):
             self.ui.enroll(view["session"],body,self.context,self.ui.origin)
+
+    def test_session_failure_logs_only_a_safe_reason(self):
+        view=self.ui.enroll_view(self.context)
+        csrf=re.search(r'name="csrf" value="([a-f0-9]{64})"',view["html"]).group(1)
+        body={"csrf":csrf,"password":"synthetic-owner-password-123",
+              "password_confirm":"synthetic-owner-password-123","confirmation":"CADASTRAR"}
+        captured=StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaisesRegex(PublicationError,"session_invalid"):
+                self.ui.enroll(view["session"],body,self.context,"https://evil.invalid")
+        log=captured.getvalue()
+        self.assertIn("reason=origin_mismatch",log)
+        self.assertNotIn(csrf,log)
+        self.assertNotIn("synthetic-owner-password-123",log)
+        self.assertNotIn(self.context["ingress_path"],log)
+
+    def test_full_supervisor_ingress_enrollment_round_trip(self):
+        headers=Message()
+        headers["X-Remote-User-Id"]="synthetic-ha-user"
+        headers["X-Ingress-Path"]="/api/hassio_ingress/synthetic-ingress-token"
+        get_result=dispatch_owner_consent(
+            self.ui,method="GET",path="/owner-enroll/",peer_ip="172.30.32.2",
+            headers=headers,expected_ha_user_id="synthetic-ha-user",owner_id="owner-fixed")
+        self.assertEqual(get_result[0],200)
+        csrf=re.search(rb'name="csrf" value="([a-f0-9]{64})"',get_result[2]).group(1).decode()
+        post_headers=Message()
+        for name,value in headers.items():
+            post_headers[name]=value
+        post_headers["Origin"]="https://ha.example.invalid"
+        post_headers["Content-Type"]="application/x-www-form-urlencoded"
+        body=urlencode({
+            "csrf":csrf,
+            "password":"synthetic-owner-password-123",
+            "password_confirm":"synthetic-owner-password-123",
+            "confirmation":"CADASTRAR",
+        }).encode()
+        post_result=dispatch_owner_consent(
+            self.ui,method="POST",path="/owner-enroll/submit",peer_ip="172.30.32.2",
+            headers=post_headers,body=body,
+            expected_ha_user_id="synthetic-ha-user",owner_id="owner-fixed")
+        self.assertEqual(post_result[0],200)
+        self.assertTrue(self.rpc.enrolled)
+        self.assertEqual(len(self.rpc.calls),1)
+
+    def test_ingress_path_mismatch_is_diagnosed_without_logging_path(self):
+        view=self.ui.enroll_view(self.context)
+        csrf=re.search(r'name="csrf" value="([a-f0-9]{64})"',view["html"]).group(1)
+        body={"csrf":csrf,"password":"synthetic-owner-password-123",
+              "password_confirm":"synthetic-owner-password-123","confirmation":"CADASTRAR"}
+        changed_context={**self.context,"ingress_path":"/api/hassio_ingress/other-token"}
+        captured=StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaisesRegex(PublicationError,"session_invalid"):
+                self.ui.enroll(view["session"],body,changed_context,"https://ha.example.invalid")
+        log=captured.getvalue()
+        self.assertIn("reason=ingress_path_mismatch",log)
+        self.assertNotIn("test-token",log)
+        self.assertNotIn("other-token",log)
 
     def test_wrong_owner_cannot_use_existing_enrollment_session(self):
         view=self.ui.enroll_view(self.context)

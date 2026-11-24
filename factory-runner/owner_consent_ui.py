@@ -4,7 +4,9 @@ The separate Ingress service supplies a kernel-verified Supervisor peer and user
 Request headers never set verified_ingress; this module never starts a listener.
 """
 import html
+import os
 import secrets
+import sys
 import time
 from urllib.parse import urlsplit
 from publication_contract import PublicationError
@@ -60,6 +62,8 @@ class OwnerConsentUI:
         if len(self.sessions)>=32:raise PublicationError('owner_session_budget')
         self.sessions[session]={'owner':owner,'csrf':csrf,'expires':time.time()+120,'kind':'enroll',
                                 'ingress_path':context.get('ingress_path')}
+        print(f"[OWNER-UI] ENROLLMENT FORM ISSUED: pid={os.getpid()} active_sessions={len(self.sessions)}",
+              file=sys.stderr,flush=True)
         page=('<!doctype html><meta charset="utf-8"><title>Configurar proprietário</title>'
               '<h1>Cadastro inicial do proprietário</h1>'
               '<p>Crie uma senha independente. Use pelo menos 16 caracteres. Esta senha será solicitada em cada publicação.</p>'
@@ -77,12 +81,29 @@ class OwnerConsentUI:
     def enroll(self,session,body,context,origin):
         owner=self.ingress_verifier(context)
         state=self.sessions.pop(session,None)
-        if (not state or state.get('kind')!='enroll' or state['expires']<=time.time()
-                or owner!=state['owner'] or origin!=self.origin
-                or not state.get('ingress_path') or state['ingress_path']!=context.get('ingress_path')
-                or not isinstance(body,dict)
-                or set(body)!={'csrf','password','password_confirm','confirmation'}
-                or not secrets.compare_digest(str(body.get('csrf','')),state['csrf'])):
+        reason=None
+        if not state:
+            reason='session_not_found'
+        elif state.get('kind')!='enroll':
+            reason='session_kind_mismatch'
+        elif not isinstance(state.get('expires'),(int,float)) or state['expires']<=time.time():
+            reason='session_expired'
+        elif owner!=state.get('owner'):
+            reason='owner_identity_mismatch'
+        elif origin!=self.origin:
+            reason='origin_mismatch'
+        elif not state.get('ingress_path'):
+            reason='ingress_binding_missing'
+        elif state.get('ingress_path')!=context.get('ingress_path'):
+            reason='ingress_path_mismatch'
+        elif not isinstance(body,dict) or set(body)!={'csrf','password','password_confirm','confirmation'}:
+            reason='form_shape_invalid'
+        elif not isinstance(state.get('csrf'),str) or not secrets.compare_digest(
+                str(body.get('csrf','')),state['csrf']):
+            reason='csrf_mismatch'
+        if reason:
+            print(f"[OWNER-UI] ENROLLMENT SESSION INVALID: reason={reason} pid={os.getpid()} active_sessions={len(self.sessions)}",
+                  file=sys.stderr,flush=True)
             raise PublicationError('owner_enrollment_session_invalid')
         if (not isinstance(body['password'],str) or not isinstance(body['password_confirm'],str)
                 or not 16<=len(body['password'])<=256

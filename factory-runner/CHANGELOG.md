@@ -1,3 +1,11 @@
+# 0.1.0-rc.28 — diagnóstico granular da sessão de cadastro
+
+- Distingue sessão ausente, expirada, identidade/origem/Ingress divergentes, formato e CSRF sem registrar valores sensíveis.
+- Registra PID e contagem de sessões ativas para confirmar perda de estado entre a emissão e o POST.
+- Mantém mensagem externa genérica e validações de segurança; nenhuma senha, nonce, cookie, origem ou caminho Ingress é registrado.
+- Adiciona teste integrado GET → POST pelo contrato do Supervisor Ingress e regressões para origem/caminho.
+- Nenhuma alteração em credenciais, identidade, permissões, token de escrita ou gate de publicação.
+
 # 0.1.0-rc.27 — correções do build ARM64 e diagnóstico do cadastro
 
 - Envia diagnósticos sanitizados para stderr, preservando stdout para respostas JSON dos testes integrados.
