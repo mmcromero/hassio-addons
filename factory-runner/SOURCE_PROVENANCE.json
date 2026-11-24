@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.28",
+  "version": "0.1.0-rc.30",
   "repository": "mmcromero/factory-runner",
-  "commit": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
+  "commit": "bd13dffd8678e8624881c68cd9b203de70f4bc42",
   "catalog_sha": "fb97f2564d9aae071f8f4be3d6ce007404e8bdfb",
   "previous_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "reviewed_source": "db7b3331c1d2154062ded70dda27b2b8f8753b11",
-  "publication": "CANDIDATE_RC28_FOR_HA_VALIDATION",
+  "reviewed_source": "bd13dffd8678e8624881c68cd9b203de70f4bc42",
+  "publication": "OWNER_AUTHORIZED_RC30_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
-  "candidate_distribution": "FACTORY_RUNNER_RC28_OWNER_ENROLLMENT_SESSION_DIAGNOSTICS",
+  "candidate_distribution": "FACTORY_RUNNER_RC30_OWNER_SETTINGS_ENROLLMENT",
   "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "BUILD_AND_INSTALL_PASS_OWNER_ENROLLMENT_PENDING",
+  "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
   "files": [
     {
       "mode": "100644",
@@ -760,5 +760,7 @@
     "completed_at": "2026-11-24T11:49:52-03:00",
     "owner_enrollment": "pending",
     "product_publication": "disabled"
-  }
+  },
+  "branch": "desenvolvimento",
+  "provenance_note": "Manifesto e runtime críticos sincronizados diretamente da fonte RC30. Arquivos listados em files preservam o inventário da RC28 anterior; não usar essa lista como prova de identidade integral dos blobs RC30. Auditoria de árvore integral pendente."
 }
