@@ -1,13 +1,13 @@
 # Proveniência — Central Instagram 0.1.47
 
 - Fonte canônica: `mmcromero/instagram-automacoes`, branch `release-candidate`.
-- SHA da candidata: `272b93b5f4f3c2e5fb168964b55ee571ade9ae23`.
+- SHA da candidata: `4adc60d38c0779f4a926f65c51c66e218331883a`.
 - Versão: `0.1.47`; slug `umdoislab_instagram`; arquitetura `aarch64`.
 - Destino: `mmcromero/hassio-addons:main/instagram-central/`.
 - Corrige a marcação HTML do contêiner da caixa de entrada, fechando corretamente o atributo `class`.
 - Atualiza o teste do webhook para verificar a contagem compacta `1 mensagem`, em vez do texto antigo `Mensagens armazenadas`.
 - Preserva correções CSRF, validação do token Meta e os ajustes UX responsivos das versões anteriores.
-- Integridade: 101/101 blobs da pasta-fonte presentes e idênticos no catálogo; cinco arquivos modificados reexportados e duas atualizações posteriores dos testes/registro de release. Ícone, logo e oito manifestos anteriores preservados.
+- Integridade: 101/101 blobs da pasta-fonte presentes e idênticos no catálogo; arquivos alterados e atualizações de testes/registro reexportados. Ícone, logo e oito manifestos anteriores preservados.
 - Nenhum segredo, token, banco, opção privada ou dado de cliente foi exportado.
 - Build ARM64 e suíte Dockerfile ainda aguardam execução no Supervisor.
 
