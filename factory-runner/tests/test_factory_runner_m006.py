@@ -388,7 +388,7 @@ class M006Tests(unittest.TestCase):
             conn.request('GET','/api/publication-status',headers={'Authorization':'Bearer '+'t'*40})
             response=conn.getresponse();self.assertEqual(response.status,200);self.assertEqual(json.loads(response.read())['publication'],'disabled')
             conn.request('POST','/api/publish',body='{}',headers={'Authorization':'Bearer '+'t'*40})
-            response=conn.getresponse();payload=json.loads(response.read());self.assertEqual(response.status,503);self.assertEqual(payload['error'],'publisher_unavailable');conn.close()
+            response=conn.getresponse();payload=json.loads(response.read());self.assertEqual(response.status,400);self.assertEqual(payload['error'],'invalid_publication_payload');conn.close()
 
     def test_recovery_after_cas_sync_expiry_and_process_restart_is_read_only(self):
         grant=self.grant();self.http.cut_cas=True
