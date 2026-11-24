@@ -1,15 +1,64 @@
-# Esteira consolidada — Factory Runner M019 / candidata RC20
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado RC30)
 
-> **Estado atual — 24/11/2026:** fonte ativa mmcromero/factory-runner:desenvolvimento; candidata 0.1.0-rc.20. A RC19 é o baseline publicado/instalado. A publicação desta candidata não instala nem reinicia o add-on.
+> **Estado de código — 24/11/2026 / M050:** fonte ativa `mmcromero/factory-runner:desenvolvimento`; versão declarada no manifesto: `0.1.0-rc.30`. RC30 permanece somente em desenvolvimento: não publicada nem instalada. A última instalação comprovada no histórico é RC28 (M044/M045); não inferir atualização posterior. RC19/RC20 são estados históricos, não baseline operacional atual.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
-> O owner ingress está disponível via Supervisor na porta interna 8099; a página de status é somente leitura por padrão. Consentimento exige opt-in e identidade HA. As rotas de publicação são protegidas por ativação root-managed e grant independente; o gate permanece fechado por padrão. Não confundir a publicação da RC do Runner com publicação de pacotes dos produtos.
+> O cadastro inicial do proprietário é feito uma única vez pelas Configurações nativas do add-on. A senha temporária é encaminhada no startup pelo helper root-only à autoridade Approval via IPC local e os campos temporários são limpos somente após confirmação durável. O Ingress não cadastra o proprietário: oferece status e consentimento por proposta. O consentimento não redigita a senha; exige sessão/identidade HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR`. O Publisher continua protegido por ativação root-managed, token separado e grant Ed25519; nenhuma destas proteções foi liberada por esta RC.
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 Avisaqui e Artesão mantêm políticas, versões e receitas independentes.
+
+## Auditoria M050 — RC30 e reconciliação do estado (24/11/2026)
+
+### Baseline e escopo revisados
+
+- Base indicada por M047: `15e6625bbc22f293677062fe299015d65c62fd04`.
+- HEAD RC30 indicado por M047: `4daf3fe633f067f8d32c532eae5e5c2a3f7d98d1`.
+- Comparação GitHub da base ao HEAD RC30: **17 commits à frente, 0 atrás**.
+- Arquivos de código/configuração/documentação do lote: 12 caminhos. As mudanças de runtime concentram-se em `owner_settings_enroll.py`, `owner_approval.py`, `owner_bootstrap.py`, `owner_consent_ui.py`, `ha_ingress_server.py`, `owner_ingress_service.py`, `run.sh`, Dockerfile/config e duas suítes de teste.
+- RC30 declara `0.1.0-rc.30` em `config.yaml` e no cabeçalho do changelog.
+- M049 acrescentou apenas documentação; não alterou o código da RC30. O HEAD documental atual não deve ser confundido com o HEAD de código RC30.
+
+### Conclusões da revisão estática
+
+1. Cadastro inicial único movido para as Configurações do add-on. O Ingress não expõe mais rotas de cadastro; apresenta orientação para usar Configurações e mantém o consentimento por proposta.
+2. `owner_settings_enroll.py` executa como root no startup, valida arquivo/opções, confirmação e identidade HA/Ingress, comunica-se com a autoridade Approval somente pelo socket Unix local e só solicita a limpeza dos campos temporários depois de receber estado de cadastro durável.
+3. A autoridade valida a confirmação `CADASTRAR`, compara a senha em tempo constante, cria a chave Ed25519 e o registro em staging privado, faz fsync e confirma o estado antes de devolver sucesso.
+4. Se a limpeza das opções pelo Supervisor falhar, o helper retorna falha e o startup fecha; em nova tentativa, o estado já cadastrado evita recriar credenciais e permite repetir a limpeza. Isso é comportamento previsto pelo código, ainda sem ensaio integrado desta candidata.
+5. Consentimento de publicação não pede a senha novamente. A jornada mantém identidade/sessão HA, CSRF de uso único e confirmação explícita `PUBLICAR`; o grant e os gates independentes do Publisher permanecem.
+6. Dockerfile inclui o helper tanto na etapa de validação quanto na imagem runtime; `run.sh` aguarda Approval IPC antes de processar as opções temporárias e falha fechado se a submissão não puder ser processada.
+7. A leitura estática não identificou no diff revisado uma rota de cadastro Ingress remanescente nem um caminho de consentimento que exija redigitação da senha. Isso não equivale a aprovação de segurança nem a execução dos testes.
+
+### Cobertura adicionada/alterada identificada
+
+- `test_factory_runner_owner_settings_enroll.py`: 7 testes novos (cadastro via IPC local, idempotência após cadastro, rejeição de senha inválida, identidade incompleta, campos vazios, limpeza seletiva e falha de limpeza).
+- `test_factory_runner_owner_ui_enrollment.py`: 4 testes no estado RC30 (orientação para Configurações, consentimento sem senha, POST HTTP sem senha e rotas antigas de cadastro indisponíveis).
+- `test_factory_runner_owner_bootstrap.py`: 10 testes existentes/atualizados na área de provisionamento e identidade.
+- `test_factory_runner_owner_ingress_service.py`: 2 testes de serviço Ingress.
+- O Dockerfile declara validação com `bash -n`, `py_compile`, `unittest discover` da suíte `test_factory_runner_*.py`, mais rodadas não-root de workspace sync e E2E probe. `validate_offline.py` é a entrada offline que gera logs, exit codes e hashes.
+
+**Contagem acima é inspeção estática dos métodos de teste, não resultado de execução.**
+
+### Limite objetivo de validação nesta etapa
+
+- A árvore atual não contém arquivos em `.github/workflows/`; não existe workflow local de CI a consultar/disparar para esta candidata.
+- Check-runs e status associados ao HEAD documental M049 retornaram vazios (`check_runs=[]`, status sem contextos). Isso não representa PASS.
+- O conector GitHub disponível nesta sessão permite inspecionar e alterar conteúdo Git, mas não disponibiliza checkout/terminal para executar `validate_offline.py` ou Docker build.
+- A instalação comprovada no HA permanece RC28; RC30 não está instalada. A atualização do add-on não foi autorizada nesta etapa e não deve ser usada como atalho para executar testes.
+- Portanto, **a suíte RC30, a validação offline completa e o build Docker/ARM64 não foram executados nesta etapa**. Não declarar PASS, GO técnico final ou candidata pronta para publicação.
+
+### Reconciliação documental concluída
+
+O cabeçalho anterior deste manual (M019/RC20/RC19 baseline), o cabeçalho de `CONTINUIDADE.md` e o de `OPERACAO-ESTEIRA.md` estavam obsoletos em relação a M047/M049. Foram atualizados para declarar RC30 como estado de desenvolvimento e RC28 como última instalação comprovada. O histórico anterior foi preservado; as afirmações antigas não são mais apresentadas como estado vigente.
+
+### Resultado M050
+
+**AUDITORIA ESTÁTICA E RECONCILIAÇÃO DOCUMENTAL CONCLUÍDAS. VALIDAÇÃO EXECUTÁVEL PENDENTE.**
+
+Próxima ação para encerrar a Entrega 1: executar `python3 validate_offline.py --output <diretório-novo>` em checkout confiável da fonte e, conforme os resultados, o build Docker da etapa de validação que exercita `bash -n`, `py_compile`, suíte completa e probes não-root. Corrigir falhas, repetir apenas os testes afetados e registrar logs/exit codes/hashes vinculados ao HEAD exato. Até essa evidência, não iniciar a Entrega 2 nem publicar/instalar RC30.
 
 ## Operação disponível
 
@@ -67,8 +116,8 @@ simular PASS. Fixtures modificam somente evidência sintética em diretórios te
 - O serviço Publisher roda sob UID próprio e recebe requisições do Runner por socket Unix com SO_PEERCRED e ACL.
 - Approval, Publisher e Owner UI são iniciados por `env -i` com PATH mínimo antes de `su-exec`; não recebem os tokens do Runner nem variáveis de workspace. O processo Runner/API mantém apenas os tokens necessários; o token de escrita do Publisher continua em arquivo privado separado. Regressão em `tests/test_factory_runner_security.py`.
 - O token GitHub de escrita fica em arquivo privado separado do token de leitura dos workspaces; sem ele, o transporte é somente leitura.
-- A ativação root-managed é uma trava independente. O consentimento do proprietário é por proposta, com reautenticação, grant Ed25519, TTL, nonce e revogação.
-- A rota /api/publish existe, mas o gate de ativação permanece fechado. A publicação do próprio add-on RC20 no catálogo não ativa a publicação de pacotes dos produtos.
+- A ativação root-managed é uma trava independente. O consentimento do proprietário é por proposta, com sessão HA verificada, CSRF/nonce de uso único, confirmação explícita `PUBLICAR`, grant Ed25519, TTL e revogação. Não exige redigitação da senha do cadastro.
+- A rota `/api/publish` existe, mas o gate de ativação permanece fechado no último estado documentado. A publicação do próprio add-on Factory Runner no catálogo não ativa a publicação de pacotes dos produtos.
 
 ## Publicador de referência em laboratório Git local — histórico RC18
 
