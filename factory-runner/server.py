@@ -28,6 +28,9 @@ from declarative_export import (DeclarativeExportError, prepare_declarative,
                                 write_distribution_provenance)
 from release_receipt import (seal_receipt, verify_receipt, digest,
                              ReceiptError)
+from publisher_permissions import share_readonly
+from publisher_ipc import PublisherRPCClient
+from publication_contract import PublicationError
 
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
@@ -100,7 +103,9 @@ def recent_operations():
         lines = raw.splitlines()[-256:]
         safe_actions = OPERATIONS | {
             "/api/preflight", "/api/prepare", "/api/prepare-declarative",
-            "/api/release-plan",
+            "/api/release-plan", "/api/publication-preview",
+            "/api/publication-propose", "/api/publish",
+            "/api/publication-reconcile",
             "/api/worker/run:diagnose", "/api/worker/run:profile",
             "/api/worker/run:preflight"
         }
@@ -108,7 +113,8 @@ def recent_operations():
             "requested", "blocked_authorization", "blocked_policy",
             "blocked_workspace_or_git", "blocked_worker", "completed_read_only",
             "completed_preparation", "completed_workspace_sync",
-            "blocked_workspace_sync"
+            "blocked_workspace_sync", "completed_publication",
+            "published_verified_pending_homologation", "completed_reconciliation"
         }
         found = {}
         for line in reversed(lines):
@@ -210,6 +216,23 @@ def preflight_project(project_id, expected_sha):
         from artesao_adapter import evaluate_artesao
         return evaluate_artesao(source, distribution, expected_sha, profile=profile)
     return evaluate(source, distribution, expected_sha, profile=profile)
+
+
+def unique_json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate_json_key")
+        result[key] = value
+    return result
+
+
+def publisher_request(action, **body):
+    import pwd
+    client = PublisherRPCClient(
+        "/data/factory-runner-authority/publisher-ipc/publisher.sock",
+        pwd.getpwnam("publisher").pw_uid)
+    return client.request(action, **body)
 
 
 def release_plan(project_id, expected_sha):
@@ -387,6 +410,7 @@ def _store_declarative(destination, project_id, expected_sha, profile,
     output = destination / (project_id + "-" + identity)
     if output.exists() or output.is_symlink():
         receipt = verify_receipt(output)
+        share_readonly(output)
         if (receipt["source_sha"] != expected_sha
                 or receipt["profile_sha256"] != digest(profile)
                 or receipt["expected_distribution_sha"] != report["public_main_sha"]):
@@ -408,6 +432,7 @@ def _store_declarative(destination, project_id, expected_sha, profile,
         ci_patch_source=(ci_contract["patch_source"] if ci_contract else None),
         allowed_shared_paths=profile["allowed_shared_paths"])
     receipt = seal_receipt(staging, profile=profile, report=report)
+    share_readonly(staging)
     staging.rename(output)
     return {"eligible": True, "state": "PREPARED_NOT_PUBLISHED",
             "files": len(manifest["files"]), "source_sha": expected_sha,
@@ -616,7 +641,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
         if self.path == "/api/publication-status":
-            return self.respond(200, publication_capabilities())
+            try:
+                return self.respond(200, publisher_request("status"))
+            except (PublicationError, KeyError, OSError):
+                return self.respond(200, {**publication_capabilities(),
+                                          "ipc": "unavailable", "publication": "disabled"})
         if self.path == "/api/projects":
             return self.respond(200, {"projects": list(listed_projects().values())})
         if self.path == "/api/operations":
@@ -635,7 +664,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         })
 
     def do_POST(self):
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run"):
+        publication_routes = {
+            "/api/publication-preview": "preview",
+            "/api/publication-propose": "propose",
+            "/api/publish": "publish",
+            "/api/publication-reconcile": "reconcile",
+        }
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run") and self.path not in publication_routes:
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -646,11 +681,64 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not 0 < length <= MAX_BODY:
             return self.respond(413, {"error": "invalid_size"})
         try:
-            body = json.loads(self.rfile.read(length).decode("utf-8"))
+            body = json.loads(self.rfile.read(length).decode("utf-8"), object_pairs_hook=unique_json_object)
         except (UnicodeDecodeError, ValueError):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
+        if self.path in publication_routes:
+            action = publication_routes[self.path]
+            expected = {
+                "preview": {"project", "issue", "receipt_digest"},
+                "propose": {"project", "issue", "receipt_digest"},
+                "publish": {"project", "issue", "receipt_digest", "proposal_id"},
+                "reconcile": {"project", "nonce"},
+            }[action]
+            if set(body) != expected:
+                return self.respond(400, {"error": "invalid_publication_payload"})
+            project = body.get("project")
+            if not isinstance(project, str) or not PROJECT_ID.fullmatch(project):
+                return self.respond(400, {"error": "invalid_project"})
+            if action in ("preview", "propose", "publish"):
+                issue = body.get("issue")
+                receipt_digest = body.get("receipt_digest")
+                if (type(issue) is not int or not ISSUE.fullmatch(str(issue))
+                        or not isinstance(receipt_digest, str)
+                        or not re.fullmatch(r"[0-9a-f]{64}", receipt_digest)):
+                    return self.respond(400, {"error": "invalid_publication_binding"})
+            if action == "publish" and (
+                    not isinstance(body.get("proposal_id"), str)
+                    or not re.fullmatch(r"[a-f0-9]{32}", body["proposal_id"])):
+                return self.respond(400, {"error": "invalid_proposal"})
+            if action == "reconcile" and (
+                    not isinstance(body.get("nonce"), str)
+                    or not re.fullmatch(r"[a-f0-9]{32}", body["nonce"])):
+                return self.respond(400, {"error": "invalid_nonce"})
+            operation_id = str(uuid.uuid4())
+            try:
+                record(self.path, body.get("issue"), "requested", operation_id)
+                result = publisher_request(action, **body)
+                state = result.get("state") if isinstance(result, dict) else None
+                audit_state = ("published_verified_pending_homologation"
+                               if state == "PUBLISHED_VERIFIED_PENDING_HOMOLOGATION"
+                               else "completed_reconciliation" if action == "reconcile"
+                               else "completed_publication" if action == "publish"
+                               else "completed_read_only")
+                record(self.path, body.get("issue"), audit_state, operation_id)
+                return self.respond(200, {"operation_id": operation_id, "result": result})
+            except PublicationError as exc:
+                try:
+                    record(self.path, body.get("issue"), "blocked_authorization", operation_id)
+                except RuntimeError:
+                    return self.respond(503, {"error": "audit_unavailable"})
+                if str(exc) in ("publisher_ipc_unavailable", "publisher_peer_mismatch"):
+                    return self.respond(503, {"error": "publisher_unavailable", "operation_id": operation_id})
+                return self.respond(409, {"error": "publication_blocked", "operation_id": operation_id})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
+            except (OSError, KeyError):
+                return self.respond(503, {"error": "publisher_unavailable", "operation_id": operation_id})
+
         if self.path == "/api/worker/run":
             task = body.get("task")
             project = body.get("project")
