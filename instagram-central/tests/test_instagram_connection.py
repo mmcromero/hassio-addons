@@ -102,6 +102,10 @@ class ConnectionTests(unittest.TestCase):
         value = ic.subscribe_messages(CONFIG, cred, opener=fake)
         self.assertGreater(value, 0)
         req = observed["request"]
+        debug = observed["debug"]
+        self.assertEqual(parse_qs(urlsplit(debug.full_url).query)["input_token"], ["P" * 50])
+        self.assertNotIn("FAKE_APP_SECRET_REALLY_LONG", debug.full_url)
+        self.assertEqual(debug.get_header("Authorization"), "Bearer 1234567890123456|FAKE_APP_SECRET_REALLY_LONG")
         self.assertEqual(req.get_method(), "POST")
         self.assertEqual(urlsplit(req.full_url).path,
                          "/v27.0/17841454345931235/subscribed_apps")
@@ -114,6 +118,7 @@ class ConnectionTests(unittest.TestCase):
         def fake(req, timeout):
             path = urlsplit(req.full_url).path
             if path.endswith('/debug_token'):
+                observed["debug"] = req
                 return Response({"data": {"is_valid": True,
                     "scopes": ["pages_messaging", "instagram_manage_messages"]}})
             observed["request"] = req
