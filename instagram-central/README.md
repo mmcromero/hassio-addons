@@ -1,4 +1,8 @@
-# Central Instagram — 0.1.53 (recuperação de sessão)
+# Central Instagram — 0.1.56 (janela OAuth)
+
+**Autorização Meta:** o state OAuth e seu cookie de navegador têm validade de 30 minutos. O state continua aleatório, armazenado somente por hash, de uso único e vinculado à conta/configuração. Diagnósticos de callback registram somente presença do cookie e metadados limitados de validade; nunca registram state, código, cookies ou tokens.
+
+## Histórico de versão anterior — 0.1.53 (recuperação de sessão)
 
 **Sessão expirada:** a Central direciona a navegação protegida ao login e retorna à conta e tela permitidas após autenticar. Requisições de interface reconhecem o marcador de sessão; ações interrompidas não são repetidas automaticamente. O tratamento não renova tokens Meta nem altera credenciais, proxy ou automação. Edições pendentes mantêm a confirmação de saída. Homologação no navegador ainda pendente.
 

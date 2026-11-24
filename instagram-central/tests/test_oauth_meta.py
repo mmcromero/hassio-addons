@@ -91,6 +91,7 @@ class OAuthTests(unittest.TestCase):
         self.assertNotIn(CONFIG["meta_app_secret"], url)
         self.assertIn("Secure; HttpOnly; SameSite=Lax", cookie)
         self.assertIn("Path=/oauth/meta/callback", cookie)
+        self.assertIn("Max-Age=1800", cookie)
         cookie_name, cookie_value = cookie.split(";", 1)[0].split("=", 1)
         self.assertEqual(cookie_name, oauth._state_cookie_name(params["state"][0]))
         self.assertEqual(cookie_value, params["state"][0])
@@ -201,7 +202,22 @@ class OAuthTests(unittest.TestCase):
         state2 = parse_qs(urlsplit(new_url).query)["state"][0]
         self.db.commit()
         with self.assertRaises(oauth.OAuthError):
-            oauth.consume_state(self.db, state2, now=100700, cfg=CONFIG)
+            oauth.consume_state(self.db, state2, now=101901, cfg=CONFIG)
+
+    def test_state_diagnostics_report_expiry_without_exposing_state(self):
+        with patch.object(oauth.time, "time", return_value=100000):
+            url, cookie = oauth.start(self.db, CONFIG)
+        state = parse_qs(urlsplit(url).query)["state"][0]
+        self.db.commit()
+        active = oauth.state_diagnostics(self.db, state, now=100100)
+        self.assertEqual(active, {"registered": True, "expired": False,
+                                  "consumed": False, "seconds_remaining": 1700})
+        expired = oauth.state_diagnostics(self.db, state, now=101901)
+        self.assertTrue(expired["expired"])
+        self.assertFalse(expired["consumed"])
+        self.assertNotIn(state, str(expired))
+        missing = oauth.state_diagnostics(self.db, "x" * 43, now=100100)
+        self.assertFalse(missing["registered"])
 
     def test_cancel_rejected_without_exchange(self):
         url, cookie = oauth.start(self.db, CONFIG)

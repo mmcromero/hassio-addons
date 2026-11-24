@@ -1,3 +1,9 @@
+# 0.1.56 — Janela de autorização Meta
+
+- Amplia o prazo do state/cookie OAuth de 10 para 30 minutos para comportar fluxos de autorização demorados, mantendo token aleatório, uso único, vínculo à conta/configuração e cookie Secure/HttpOnly/SameSite=Lax.
+- Registra apenas metadados seguros de expiração do state quando o callback falha; nenhum state, código, cookie ou token é registrado.
+- Inclui `test_oauth_meta.py` no gate de testes executado durante o build do add-on.
+
 # 0.1.55 — Falhas de envio
 
 - Exibe falhas de entrega sem transferir controle para atendimento humano.

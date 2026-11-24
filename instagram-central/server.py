@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.55"
+APP_VERSION = "0.1.56"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -1901,11 +1901,21 @@ class Handler(BaseHTTPRequestHandler):
                     authority_match = bool(
                         expected_authority and received_authority == expected_authority)
                     forwarded_https = self.transport_https()
+                    try:
+                        callback_values = parse_qs(route.query, keep_blank_values=True, max_num_fields=10)
+                        state_values = callback_values.get("state", [])
+                        callback_state = state_values[0] if len(state_values) == 1 else ""
+                        with database() as conn:
+                            state_status = oauth_meta.state_diagnostics(conn, callback_state)
+                    except (ValueError, sqlite3.Error):
+                        state_status = {"registered": False, "expired": False, "seconds_remaining": None}
+                    transport = oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", ""))
+                    transport["cookie_header_fields"] = self.cookie_header_fields
                     LOGGER.error(
                         "Meta OAuth callback rejected at stage=%s: %s "
-                        "(redirect_authority_match=%s, forwarded_https=%s) transport=%s",
+                        "(redirect_authority_match=%s, forwarded_https=%s) transport=%s state=%s",
                         callback_stage, str(exc), authority_match, forwarded_https,
-                        oauth_meta.cookie_diagnostics(route.query, self.headers.get("Cookie", "")))
+                        transport, state_status)
                 elif isinstance(exc, oauth_meta.OAuthExchangeError):
                     LOGGER.error("Meta OAuth callback rejected at stage=%s: %s %s",
                                  callback_stage, str(exc), exc.safe_details())

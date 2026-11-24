@@ -21,7 +21,7 @@ from cryptography.fernet import Fernet
 
 AUTHORIZE = "https://www.facebook.com/dialog/oauth"
 MAX_TOKEN_BYTES = 32768
-STATE_TTL = 600
+STATE_TTL = 1800
 KEY_FILENAME = "meta-oauth-fernet.key"
 TOKEN_FILENAME = "meta-oauth-token.enc"
 
@@ -149,7 +149,7 @@ def start(conn, cfg, now=None):
         "state": state,
     })
     cookie_name = _state_cookie_name(state)
-    cookie = cookie_name + "=" + state + "; Max-Age=600; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax"
+    cookie = cookie_name + "=" + state + "; Max-Age=1800; Path=/oauth/meta/callback; Secure; HttpOnly; SameSite=Lax"
     return AUTHORIZE + "?" + query, cookie
 
 
@@ -272,6 +272,22 @@ def consume_state(conn, state, now=None, *, cfg=None):
     if found.rowcount != 1:
         raise OAuthError("OAuth state expired, already used or configuration changed")
 
+
+
+def state_diagnostics(conn, state, now=None):
+    """Return only bounded state age metadata; never expose the state or its digest."""
+    now = int(time.time()) if now is None else int(now)
+    if not isinstance(state, str) or not re.fullmatch(r"[A-Za-z0-9_-]{40,100}", state):
+        return {"registered": False, "expired": False, "seconds_remaining": None}
+    digest = hashlib.sha256(state.encode("ascii")).hexdigest()
+    prepare_schema(conn)
+    row = conn.execute("SELECT expires_at,consumed_at FROM meta_oauth_states WHERE digest=?", (digest,)).fetchone()
+    if row is None:
+        return {"registered": False, "expired": False, "seconds_remaining": None}
+    remaining = int(row[0]) - now
+    return {"registered": True, "expired": remaining < 0,
+            "consumed": row[1] is not None,
+            "seconds_remaining": max(-STATE_TTL, min(STATE_TTL, remaining))}
 
 
 def business_for_state(conn, state, now=None):
