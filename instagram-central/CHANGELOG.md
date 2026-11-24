@@ -1,3 +1,10 @@
+# 0.1.44 — corrigir CSRF da configuração de atendimento
+
+- Inclui a ação `automation` na allowlist de ações administrativas para token CSRF, mantendo o escopo restrito à sessão do painel e à conta principal.
+- Corrige os dois testes de gravação da política de atendimento que recebiam HTTP 403 por token CSRF vazio.
+- Mantém o padrão Testes com lista vazia; nenhum perfil é autorizado automaticamente.
+- Nenhuma credencial, opção de runtime, banco ou configuração Meta é alterada.
+
 # 0.1.43 — validação da permissão no token efetivamente usado
 
 - Corrige a verificação pré-envio para consultar o token de acesso da Página que será usado na Send API, em vez do token de usuário do sistema que o obteve.
