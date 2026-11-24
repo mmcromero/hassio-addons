@@ -1,3 +1,8 @@
+# 0.1.52 — alinhar smoke test ao gate de teste autorizado
+
+- Corrige expectativa antiga de maySend no smoke test; mantém gate e testes de segurança.
+- Build 0.1.51 falhou nessa asserção; versão anterior permanece instalada.
+
 # 0.1.51 — envio automático exclusivo para testes
 
 - Autoriza envio apenas em modo testes, com perfil explícito e não excluído, claim válido e decisão local favorável.

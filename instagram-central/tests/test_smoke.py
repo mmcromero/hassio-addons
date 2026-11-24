@@ -49,7 +49,8 @@ class BuildSmoke(unittest.TestCase):
         reference = {key: claimed[key] for key in keys}
         decision = server.evaluate_claim(reference)
         self.assertEqual(decision["action"], "greeting")
-        self.assertFalse(decision["maySend"])
+        self.assertTrue(decision["maySend"])
+        self.assertTrue(decision["testSendAuthorized"])
         self.assertTrue(decision["mayCallGemini"])
         self.assertTrue(server.acknowledge_message(reference))
         self.assertFalse(server.acknowledge_message(reference))
