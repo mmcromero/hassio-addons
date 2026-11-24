@@ -20,6 +20,7 @@ import tempfile
 import time
 from urllib import parse, request
 import uuid
+from publisher_permissions import share_readonly, share_root_traverse
 
 from rc_fastlane import PreflightError, evaluate, fullsha, git_blob, load_profile, read_json
 
@@ -200,6 +201,10 @@ def _safe_workspace_root(root: Path) -> None:
     root.mkdir(mode=0o700, parents=True, exist_ok=True)
     if root.stat().st_uid != os.geteuid():
         raise SyncError("workspace_owner_mismatch")
+    try:
+        share_root_traverse(root)
+    except (OSError, ValueError, KeyError) as exc:
+        raise SyncError("publisher_workspace_acl_unavailable") from exc
 
 
 def _existing(workspace: Path, profile: dict) -> dict | None:
@@ -288,6 +293,10 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
                     profile, workspace / "source", workspace / "distribution", source_sha)
             except (PreflightError, OSError, ValueError, subprocess.SubprocessError) as exc:
                 raise SyncError("preflight_failed") from exc
+            try:
+                share_readonly(workspace)
+            except (OSError, ValueError, KeyError) as exc:
+                raise SyncError("publisher_workspace_acl_unavailable") from exc
             if existing_public_sha == public_sha:
                 return {"state": "UNCHANGED", "project": project,
                         "source_sha": source_sha, "public_sha": public_sha,
@@ -333,6 +342,10 @@ def synchronize(project: str, *, token: str, projects_dir: Path,
                   "source_sha": source_sha, "public_sha": public_sha}
         (stage / MANAGED).write_text(json.dumps(status, sort_keys=True), encoding="utf-8")
         (stage / MANAGED).chmod(0o600)
+        try:
+            share_readonly(stage)
+        except (OSError, ValueError, KeyError) as exc:
+            raise SyncError("publisher_workspace_acl_unavailable") from exc
         if previous is not None:
             saved = root / (".archive-" + project + "-" + uuid.uuid4().hex[:12])
             os.rename(workspace, saved)
