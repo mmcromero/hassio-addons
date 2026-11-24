@@ -1,3 +1,11 @@
+# 0.1.0-rc.27 — correções do build ARM64 e diagnóstico do cadastro
+
+- Envia diagnósticos sanitizados para stderr, preservando stdout para respostas JSON dos testes integrados.
+- Trata erros de validação de formulário como recusa de entrada (403), sem confundi-los com falhas internas (503).
+- Atualiza a regressão IPC para esperar o código seguro específico `ipc_action_denied`.
+- Mantém propagação limitada de códigos, sem registrar credenciais ou conteúdo do formulário.
+- Mantém nonce CSRF de 120 segundos, Origin HTTPS exata, identidade HA, permissões IPC e publicação de produtos bloqueada.
+
 # 0.1.0-rc.26 — diagnóstico seguro da recusa no cadastro
 
 - Registra códigos de erro constantes do cadastro sem registrar senha, corpo do formulário, cookies, cabeçalhos ou caminhos privados.

@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Factory Runner"
-version: "0.1.0-rc.26"
+version: "0.1.0-rc.27"
 slug: fabrica_software
 description: "Preparação declarativa e worker controlado; publicação bloqueada"
 url: "https://github.com/mmcromero/hassio-addons"

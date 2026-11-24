@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import re
+import sys
 from urllib.parse import parse_qs, urlsplit
 
 from ha_ingress_identity import is_supervisor_ingress_peer, verify_ha_ingress_context
@@ -78,6 +79,8 @@ def _owner_error_response(reason, *, enrollment):
         message = "Confira os campos: senha com pelo menos 16 caracteres, confirmação idêntica e a palavra CADASTRAR."
     elif enrollment and reason == "owner_already_enrolled":
         message = "O cadastro já foi concluído. Volte à página inicial e atualize."
+    elif enrollment and reason == "invalid_request":
+        message = "Os dados enviados não passaram na validação. Reabra o formulário e confira os campos."
     elif enrollment:
         message = "Falha técnica no cadastro. Não envie novamente até confirmar o estado do cadastro."
     else:
@@ -223,10 +226,13 @@ def dispatch_owner_consent(
                 reason = str(exc)
                 if not _REASON_CODE.fullmatch(reason):
                     reason = "internal_error"
-                print(f"[OWNER-UI] {action} REJECTED: {reason}", flush=True)
+                print(f"[OWNER-UI] {action} REJECTED: {reason}", file=sys.stderr, flush=True)
+            elif isinstance(exc, ValueError):
+                reason = "invalid_request"
+                print(f"[OWNER-UI] {action} REJECTED: invalid_request", file=sys.stderr, flush=True)
             else:
                 reason = "internal_error"
-                print(f"[OWNER-UI] {action} ERROR: {type(exc).__name__}", flush=True)
+                print(f"[OWNER-UI] {action} ERROR: {type(exc).__name__}", file=sys.stderr, flush=True)
             return _owner_error_response(reason, enrollment=enrollment)
         ingress_path = _one_header(headers, "X-Ingress-Path")
         cookie_path = ingress_path.rstrip("/") + ("/owner-enroll/" if enrollment else "/owner-consent/")

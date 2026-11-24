@@ -269,7 +269,7 @@ class M006Tests(unittest.TestCase):
         thread=threading.Thread(target=rpc.serve_forever,daemon=True);thread.start()
         self.addCleanup(rpc.server_close);self.addCleanup(rpc.shutdown)
         client=ApprovalRPCClient(directory/'approval.sock',os.geteuid())
-        with self.assertRaisesRegex(PublicationError,'approval_request_denied'):client.request('propose',body={})
+        with self.assertRaisesRegex(PublicationError,'ipc_action_denied'):client.request('propose',body={})
         with self.assertRaisesRegex(PublicationError,'issuer_peer_mismatch'):
             ApprovalRPCClient(directory/'approval.sock',os.geteuid()+100).request('view',proposal='x')
         grant=self.grant()
