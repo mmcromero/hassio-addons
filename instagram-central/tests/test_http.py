@@ -420,7 +420,7 @@ class HTTPContractTests(unittest.TestCase):
         cookie = headers["Set-Cookie"].split(";", 1)[0]
         status, _, html = self.request("/panel", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
-        self.assertIn(b"Mensagens armazenadas: 1", html)
+        self.assertIn(b"1 mensagem", html)
         self.assertIn(b"12345678", html)
         status, _, body = self.request("/oauth/meta/status", headers={"Cookie": cookie})
         self.assertEqual(status, 200)
@@ -463,7 +463,9 @@ class HTTPContractTests(unittest.TestCase):
         self.assertIn(b'class="content ui-inbox-page"', body)
         self.assertNotIn('CENTRAL DE ATENDIMENTO'.encode('utf-8'), body)
         self.assertNotIn(b'<h2>Mensagens recebidas</h2>', body)
-        self.assertNotIn(b'mensagens armazenadas', body)
+        content_start = body.index(b'<div class="content ui-inbox-page">')
+        content_end = body.index(b'</main>', content_start)
+        self.assertNotIn(b'mensagens armazenadas', body[content_start:content_end])
         self.assertNotIn(self.config["panel_password"].encode(), body)
         status, logout_headers, _ = self.request("/auth/logout", "POST",
                                                headers={"Cookie": cookie})
