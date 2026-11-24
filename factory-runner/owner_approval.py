@@ -104,6 +104,28 @@ class ApprovalIssuer:
           CREATE TABLE IF NOT EXISTS throttle (id INTEGER PRIMARY KEY,failures INTEGER,locked INTEGER);
           INSERT OR IGNORE INTO throttle VALUES (1,0,0);''')
 
+    @serialized
+    def grant(self, proposal):
+        row=self.db.execute('SELECT grant,expires,revoked FROM proposals WHERE id=?',(proposal,)).fetchone()
+        if not row or not row[0] or row[2] or row[1] <= time.time():
+            raise PublicationError('owner_grant_unavailable')
+        grant=json.loads(row[0])
+        if grant.get('payload',{}).get('proposal_id') != proposal:
+            raise PublicationError('owner_grant_binding_invalid')
+        return grant
+
+    @serialized
+    def public_key(self):
+        env={'PATH':'/usr/bin:/bin','HOME':'/nonexistent','LANG':'C'}
+        try:
+            result=subprocess.run(['/usr/bin/openssl','pkey','-in',str(self.key),'-pubout'],
+                env=env,stdin=subprocess.DEVNULL,capture_output=True,timeout=5)
+        except (OSError,subprocess.TimeoutExpired) as exc:
+            raise PublicationError('public_key_unavailable') from exc
+        if result.returncode or not result.stdout.startswith(b'-----BEGIN PUBLIC KEY-----'):
+            raise PublicationError('public_key_unavailable')
+        return base64.b64encode(result.stdout).decode('ascii')
+
     def close(self):self.db.close()
     def event(self,proposal,state):
         self.db.execute('INSERT INTO audit VALUES (?,?,?)',(int(time.time()),proposal,state))
@@ -248,3 +270,122 @@ class GrantVerifier:
                 or type(proof.get('at')) is not int or not 0<=time.time()-proof['at']<=30):
             raise PublicationError('grant_revoked_or_status_stale')
         return p['nonce'],digest(p)
+
+class OwnerEnrollment:
+    """One-time owner enrollment, callable only through the trusted HA UI UID."""
+    def __init__(self, state_dir, owner_id):
+        self.state_dir = safe_directory(state_dir)
+        if (not re.fullmatch(r"[a-zA-Z0-9_-]{1,64}", owner_id)
+                or self.state_dir.stat().st_uid != os.geteuid()
+                or self.state_dir.stat().st_mode & 0o077):
+            raise PublicationError("unsafe_owner_enrollment_store")
+        self.owner_id = owner_id
+        self.credentials_dir = self.state_dir / "credentials"
+        self.private_key = self.credentials_dir / "signing.pem"
+        self.owner_record = self.credentials_dir / "owner.json"
+        self.lock = threading.RLock()
+
+    def enrolled(self):
+        if not self.credentials_dir.exists() and not self.credentials_dir.is_symlink():
+            return False
+        info = self.credentials_dir.lstat()
+        if (not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid()
+                or stat.S_IMODE(info.st_mode) != 0o700 or self.credentials_dir.is_symlink()):
+            raise PublicationError("unsafe_owner_credentials_directory")
+        if not self.private_key.is_file() or self.private_key.is_symlink():
+            raise PublicationError("partial_owner_enrollment")
+        if not self.owner_record.is_file() or self.owner_record.is_symlink():
+            raise PublicationError("partial_owner_enrollment")
+        protected_file(self.private_key)
+        protected_file(self.owner_record)
+        if set(path.name for path in self.credentials_dir.iterdir()) != {"signing.pem", "owner.json"}:
+            raise PublicationError("unexpected_owner_credentials")
+        return True
+
+    @serialized
+    def enroll(self, password, password_confirm, confirmation):
+        if self.enrolled():
+            raise PublicationError("owner_already_enrolled")
+        if (confirmation != "CADASTRAR" or not isinstance(password, str)
+                or not isinstance(password_confirm, str)
+                or not hmac.compare_digest(password, password_confirm)
+                or not 16 <= len(password) <= 256):
+            raise PublicationError("owner_enrollment_input_invalid")
+        salt = secrets.token_bytes(16)
+        record = {"owner_id": self.owner_id, "salt": salt.hex(),
+                  "password_scrypt": password_digest(password, salt)}
+        env = {"PATH": "/usr/bin:/bin", "HOME": "/nonexistent", "LANG": "C"}
+        with tempfile.TemporaryDirectory(prefix=".owner-enroll-", dir=self.state_dir) as tmp:
+            stage = Path(tmp)
+            key_tmp = stage / "signing.pem"
+            record_tmp = stage / "owner.json"
+            try:
+                result = subprocess.run(
+                    ["/usr/bin/openssl", "genpkey", "-algorithm", "ED25519", "-out", str(key_tmp)],
+                    env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=10)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                raise PublicationError("owner_key_generation_unavailable") from exc
+            if result.returncode:
+                raise PublicationError("owner_key_generation_unavailable")
+            key_tmp.chmod(0o600)
+            fd = os.open(record_tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(canonical(record))
+                stream.flush()
+                os.fsync(stream.fileno())
+            directory_fd = os.open(stage, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+            try:
+                os.rename(stage, self.credentials_dir)
+            except FileExistsError:
+                raise PublicationError("owner_already_enrolled") from None
+            parent_fd = os.open(self.state_dir, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            try:
+                os.fsync(parent_fd)
+            finally:
+                os.close(parent_fd)
+        if not self.enrolled():
+            raise PublicationError("owner_enrollment_not_durable")
+        return {"enrolled": True, "owner_id": self.owner_id}
+
+
+class ApprovalAuthority:
+    """Enrollment facade that becomes the normal ApprovalIssuer after setup."""
+    def __init__(self, state_dir, private_key, owner_record, authority, owner_id):
+        self.state_dir = Path(state_dir)
+        self.private_key = Path(private_key)
+        self.owner_record = Path(owner_record)
+        self.authority = authority
+        self.enrollment = OwnerEnrollment(state_dir, owner_id)
+        self.issuer = None
+        if self.enrollment.enrolled():
+            self._load_issuer()
+
+    def _load_issuer(self):
+        issuer = ApprovalIssuer(
+            self.state_dir, self.private_key, self.owner_record, self.authority)
+        if issuer.owner.get("owner_id") != self.enrollment.owner_id:
+            issuer.close()
+            raise PublicationError("approval_owner_identity_mismatch")
+        self.issuer = issuer
+
+    def enrollment_status(self):
+        return {"enrolled": self.enrollment.enrolled()}
+
+    def enroll(self, password, password_confirm, confirmation):
+        result = self.enrollment.enroll(password, password_confirm, confirmation)
+        self._load_issuer()
+        return result
+
+    def close(self):
+        if self.issuer is not None:
+            self.issuer.close()
+
+    def __getattr__(self, name):
+        if self.issuer is None:
+            raise PublicationError("owner_enrollment_required")
+        return getattr(self.issuer, name)
+
