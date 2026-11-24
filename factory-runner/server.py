@@ -36,6 +36,7 @@ from publication_contract import PublicationError
 HOST = os.environ.get("RUNNER_BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RUNNER_PORT", "9876"))
 MAX_BODY = 4096
+MAX_EXECUTION_BODY = 16 * 1024
 LOCK = threading.Lock()
 OPERATIONS = {"/api/fechar-pacote", "/api/corrigir-issue"}
 ISSUE = re.compile(r"^[1-9][0-9]{0,7}$")
@@ -44,6 +45,7 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 PROJECTS_DIR = Path(os.environ.get("RUNNER_PROJECTS_DIR", "/app/projects"))
 WORKSPACES_DIR = Path(os.environ.get("RUNNER_WORKSPACES_DIR", "/data/factory-runner/workspaces"))
 PREPARATIONS_DIR = Path(os.environ.get("RUNNER_PREPARATIONS_DIR", "/data/factory-runner/preparations"))
+EXECUTIONS_DIR = Path(os.environ.get("RUNNER_EXECUTIONS_DIR", "/data/factory-runner/executions"))
 AUDIT_PATH = Path(os.environ.get("RUNNER_AUDIT_PATH", "/data/factory-runner/audit.jsonl"))
 
 def authenticated(header):
@@ -119,7 +121,7 @@ def recent_operations():
             "/api/preflight", "/api/prepare", "/api/prepare-declarative",
             "/api/release-plan", "/api/publication-preview",
             "/api/publication-propose", "/api/publish",
-            "/api/publication-reconcile",
+            "/api/publication-reconcile", "/api/execution-plan",
             "/api/worker/run:diagnose", "/api/worker/run:profile",
             "/api/worker/run:preflight"
         }
@@ -684,10 +686,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        if self.path not in ("/", "/api/status", "/api/projects", "/api/operations", "/api/publication-status"):
+        execution_match = re.fullmatch(r"/api/executions/([0-9a-f-]{36})", self.path)
+        if (self.path not in ("/", "/api/status", "/api/projects", "/api/operations", "/api/publication-status")
+                and execution_match is None):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
+        if execution_match is not None:
+            try:
+                from execution_planner import get_execution, PlannerError
+                plan = get_execution(EXECUTIONS_DIR, execution_match.group(1))
+                return self.respond(200, {"plan": plan})
+            except PlannerError:
+                return self.respond(404, {"error": "execution_not_found"})
         if self.path == "/api/publication-status":
             try:
                 return self.respond(200, publisher_request("status"))
@@ -718,7 +729,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "/api/publish": "publish",
             "/api/publication-reconcile": "reconcile",
         }
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run") and self.path not in publication_routes:
+        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run", "/api/execution-plan") and self.path not in publication_routes:
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -726,7 +737,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not 1 <= len(raw_length) <= 5 or not raw_length.isascii() or not raw_length.isdecimal():
             return self.respond(400, {"error": "invalid_length"})
         length = int(raw_length)
-        if not 0 < length <= MAX_BODY:
+        body_limit = MAX_EXECUTION_BODY if self.path == "/api/execution-plan" else MAX_BODY
+        if not 0 < length <= body_limit:
             return self.respond(413, {"error": "invalid_size"})
         try:
             body = json.loads(self.rfile.read(length).decode("utf-8"), object_pairs_hook=unique_json_object)
@@ -734,6 +746,57 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
+        if self.path == "/api/execution-plan":
+            if not LOCK.acquire(blocking=False):
+                return self.respond(409, {"error": "busy"})
+            operation_id = str(uuid.uuid4())
+            try:
+                record(self.path, None, "requested", operation_id)
+                project = body.get("project")
+                if not isinstance(project, str) or not PROJECT_ID.fullmatch(project):
+                    record(self.path, None, "blocked_policy", operation_id)
+                    return self.respond(400, {"error": "invalid_project"})
+                try:
+                    profile, source, _distribution = project_workspace(project)
+                    from workspace_sync import _existing
+                    from execution_planner import plan_execution, PlannerError
+                    from execution_contract import ContractError
+                    marker = _existing(WORKSPACES_DIR / project, profile)
+                    if marker is None:
+                        raise PlannerError("managed_workspace_unavailable")
+                    plan, idempotent = plan_execution(
+                        body, profile, source, marker, executions_dir=EXECUTIONS_DIR)
+                except ContractError as exc:
+                    record(self.path, None, "blocked_policy", operation_id)
+                    code = str(exc)
+                    if not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", code):
+                        code = "invalid_contract"
+                    status = 409 if code == "execution_id_conflict" else 400
+                    return self.respond(status, {"error": code, "operation_id": operation_id})
+                except PlannerError as exc:
+                    record(self.path, None, "blocked_workspace_or_git", operation_id)
+                    code = str(exc)
+                    if not re.fullmatch(r"[a-z][a-z0-9_]{0,63}", code):
+                        code = "execution_plan_unavailable"
+                    status = 409 if code in (
+                        "workspace_source_binding_mismatch", "base_not_ancestor",
+                        "changed_file_limit_exceeded", "source_commit_unavailable",
+                        "test_catalog_stale_for_source_sha", "destination_outside_approved_profile"
+                    ) else 503
+                    return self.respond(status, {"error": code, "operation_id": operation_id})
+                except (PreflightError, OSError, ValueError, TypeError, KeyError,
+                        subprocess.SubprocessError, RuntimeError):
+                    record(self.path, None, "blocked_workspace_or_git", operation_id)
+                    return self.respond(503, {"error": "execution_plan_unavailable",
+                                              "operation_id": operation_id})
+                record(self.path, None, "completed_read_only", operation_id)
+                return self.respond(200, {"operation_id": operation_id,
+                                          "idempotent": idempotent, "plan": plan})
+            except RuntimeError:
+                return self.respond(503, {"error": "audit_unavailable"})
+            finally:
+                LOCK.release()
+
         if self.path in publication_routes:
             action = publication_routes[self.path]
             expected = {
