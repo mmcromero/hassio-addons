@@ -1,8 +1,8 @@
-"""Pi-local trusted workflow. Present in runtime, NEVER activated by Bearer/env.
+"""Pi-local publication workflow behind trusted Unix IPC and independent owner consent.
 
-The installed service has no publish/consent route and launches no issuer or
-publisher. Formal security acceptance, owner enrollment and separate activation
-change remain required. Tests inject a gate only into disposable local fixtures.
+Publication remains disabled unless a root-managed activation file and a
+per-operation Ed25519 owner grant are valid. The workflow never executes project
+code; tests inject a gate only into disposable local fixtures.
 """
 import json
 import time
@@ -18,10 +18,11 @@ def disabled_gate():raise PublicationError('publication_disabled_pending_formal_
 
 
 def capabilities():
-    return {'publication':'disabled','activation':'requires_security_and_owner_acceptance',
+    return {'publication':'gated_by_default','activation':'root_managed_activation_file',
             'operation_host':'existing_rpi4_home_assistant',
-            'approval':'independent_owner_reauthentication_not_configured',
-            'transport':'github_bytes_cas_component_not_activated','project_code_execution':False}
+            'approval':'separate_owner_reauthentication_via_ha_ingress',
+            'transport':'github_bytes_cas_requires_separate_write_token',
+            'project_code_execution':False}
 
 
 class PublicationWorkflow:
