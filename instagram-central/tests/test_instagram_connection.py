@@ -7,8 +7,9 @@ import instagram_connection as ic
 
 CONFIG = {"instagram_account_id": "17841454345931235",
           "meta_graph_version": "v27.0",
-          "meta_verify_token": "not-a-real-token-this-is-only-a-test",
+          "meta_app_id": "1234567890123456",
           "meta_app_secret": "FAKE_APP_SECRET_REALLY_LONG",
+          "meta_verify_token": "not-a-real-token-this-is-only-a-test",
           "ingress_enabled": True}
 
 class Response:
@@ -34,12 +35,35 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(found["account_id"], CONFIG["instagram_account_id"])
         self.assertEqual(found["username"], "umdoislab")
         self.assertEqual(found["client_business_id"], "338861439025441")
-        self.assertEqual(len(observed), 2)
+        self.assertEqual(len(observed), 3)
         self.assertTrue(all(x.get_header("Authorization") == "Bearer " + "X" * 50
                             for x in observed))
         self.assertTrue(all(urlsplit(x.full_url).netloc == "graph.facebook.com"
                             for x in observed))
         self.assertNotIn("X" * 50, observed[0].full_url)
+
+    def test_verify_access_resolves_exact_linked_page_token(self):
+        observed = []
+        def fake(req, timeout):
+            observed.append(req)
+            path = urlsplit(req.full_url).path
+            if path.endswith('/assigned_instagram_accounts'):
+                return Response({"data": [{"id": CONFIG["instagram_account_id"], "username": "umdoislab"}]})
+            if path.endswith('/me/accounts'):
+                return Response({"data": [
+                    {"id": "1122334455667788", "name": "Umdoislab Page",
+                     "access_token": "P" * 50, "tasks": ["MESSAGING"],
+                     "instagram_business_account": {"id": CONFIG["instagram_account_id"], "username": "umdoislab"}},
+                    {"id": "9988776655443322", "name": "Other Page",
+                     "access_token": "Q" * 50, "tasks": ["MESSAGING"],
+                     "instagram_business_account": {"id": "12345678901234567", "username": "other"}}
+                ]})
+            return Response({"client_business_id": "338861439025441", "id": "9"})
+        found = ic.verify_access(CONFIG, "X" * 50, opener=fake)
+        self.assertEqual(found["page_id"], "1122334455667788")
+        self.assertEqual(found["messaging_page_id"], found["page_id"])
+        self.assertEqual(found["page_access_token"], "P" * 50)
+        self.assertNotIn("P" * 50, observed[-1].full_url)
 
     def test_reject_wrong_account_even_if_token_is_valid(self):
         def wrong(req, timeout):
@@ -84,6 +108,62 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(parse_qs(req.data.decode())["subscribed_fields"], ["messages"])
         self.assertNotIn("send", req.full_url)
         self.assertEqual(req.get_header("Authorization"), "Bearer " + "T" * 50)
+
+    def test_send_text_uses_fixed_meta_endpoint_and_verified_account(self):
+        observed = {}
+        def fake(req, timeout):
+            path = urlsplit(req.full_url).path
+            if path.endswith('/debug_token'):
+                return Response({"data": {"is_valid": True,
+                    "scopes": ["pages_messaging", "instagram_manage_messages"]}})
+            observed["request"] = req
+            body = parse_qs(req.data.decode())
+            observed["recipient"] = json.loads(body["recipient"][0])
+            observed["message"] = json.loads(body["message"][0])
+            return Response({"recipient_id": "12345678901234567", "message_id": "mid-123"})
+        cred = {"access_token": "T" * 50, "account_id": CONFIG["instagram_account_id"],
+                "business_id": "umdoislab", "username": "umdoislab", "verified_at": 10000,
+                "page_id": "1122334455667788", "page_access_token": "P" * 50,
+                "messaging_page_id": "1122334455667788"}
+        result = ic.send_text_message(CONFIG, cred, "12345678901234567", "Olá, tudo bem?", opener=fake)
+        req = observed["request"]
+        self.assertEqual(req.get_method(), "POST")
+        self.assertEqual(urlsplit(req.full_url).netloc, "graph.facebook.com")
+        self.assertEqual(urlsplit(req.full_url).path, "/v27.0/me/messages")
+        self.assertEqual(req.get_header("Authorization"), "Bearer " + "P" * 50)
+        self.assertNotIn("P" * 50, req.full_url)
+        self.assertEqual(observed["recipient"], {"id": "12345678901234567"})
+        self.assertEqual(observed["message"], {"text": "Olá, tudo bem?"})
+        self.assertEqual(result["message_id"], "mid-123")
+
+    def test_send_text_requires_both_meta_messaging_permissions(self):
+        observed = []
+        def fake(req, timeout):
+            observed.append(req)
+            return Response({"data": {"is_valid": True, "scopes": ["instagram_manage_messages"]}})
+        cred = {"access_token": "T" * 50, "account_id": CONFIG["instagram_account_id"],
+                "business_id": "umdoislab", "username": "umdoislab", "verified_at": 10000,
+                "page_id": "1122334455667788", "page_access_token": "P" * 50,
+                "messaging_page_id": "1122334455667788"}
+        with self.assertRaises(ic.GraphError):
+            ic.send_text_message(CONFIG, cred, "12345678901234567", "Olá", opener=fake)
+        self.assertEqual(len(observed), 1)
+        self.assertTrue(urlsplit(observed[0].full_url).path.endswith('/debug_token'))
+
+    def test_send_text_rejects_unverified_or_oversized_before_network(self):
+        cred = {"access_token": "T" * 50, "account_id": CONFIG["instagram_account_id"]}
+        def forbidden(*args, **kwargs):
+            raise AssertionError("network must not be called")
+        with self.assertRaises(ic.ConnectionError):
+            ic.send_text_message(CONFIG, cred, "12345678901234567", "Oi", opener=forbidden)
+        verified = {"access_token": "T" * 50, "account_id": CONFIG["instagram_account_id"],
+                    "business_id": "umdoislab", "username": "umdoislab", "verified_at": 10000,
+                    "page_id": "1122334455667788", "page_access_token": "P" * 50,
+                    "messaging_page_id": "1122334455667788"}
+        with self.assertRaises(ic.ConnectionError):
+            ic.send_text_message(CONFIG, verified, "12345678901234567", "x" * 1001, opener=forbidden)
+        with self.assertRaises(ic.ConnectionError):
+            ic.send_text_message(CONFIG, verified, "not-an-id", "Oi", opener=forbidden)
 
     def test_reject_subscription_without_webhook_gate(self):
         cred = {"access_token": "T" * 50, "account_id": CONFIG["instagram_account_id"]}
