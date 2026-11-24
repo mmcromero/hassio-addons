@@ -226,3 +226,30 @@ A RC31 acrescenta `declarative_workspace_probe.py`, chamado depois de uma sincro
 - Bubblewrap continua bloqueado no ambiente, sem bypass. A prova declarativa usa Git blobs e não depende dele.
 - A política de pacote Avisaqui permanece fechada; não alterar status ou contornar preflight.
 - Estado: **RC31 PUBLICADA, INSTALADA, INICIADA; BUILD/TESTES DO DOCKERFILE E PROBE DECLARATIVO REAL PASS; HOMOLOGAÇÃO FUNCIONAL AMPLA PENDENTE.**
+
+
+## M057 — roadmap de conclusão e início da Etapa 1 (24/11/2026)
+
+Roadmap aprovado pelo proprietário: `docs/ROADMAP-CONCLUSAO-001.md`. Sequência: (1) fechar funcionalmente RC31; (2) implementar FR-EXEC-001 e inteligência de testes; (3) concluir orquestração; (4) integrar Publisher e controles; (5) implementar isolamento de código não confiável por Bubblewrap ou alternativa comprovada; (6) homologação integral multiprojeto. O isolamento é a última etapa de construção, mas seu contrato de integração é respeitado desde o início. Código não confiável permanece bloqueado até a etapa 5.
+
+**Etapa 1 em andamento.** Baseline HA confirmada: RC31 instalada/iniciada, sem update pendente; dois workspaces sincronizados; auditoria sanitizada PASS; release-plan executado para Avisaqui e Artesão com bloqueios de política preservados; probe declarativo real PASS (136 arquivos); API loopback authenticated/worker read-only/publication disabled. Publisher continua DORMANT. Bubblewrap/Landlock seguem sem isolamento aprovado. Não foram alteradas opções, dados, workspaces ou políticas.
+
+Limites: testes HTTP autenticados sintéticos e cadeia de testes Dockerfile concluídos no build RC31. A chamada autenticada direta aos endpoints do runtime não foi repetida nesta auditoria porque o Bearer está protegido e a porta 9876 não está publicada; não expor token nem abrir porta para contornar. Persistência após reinício ainda precisa de evidência dirigida. Estado da Etapa 1: **PARCIALMENTE VALIDADA / EM EXECUÇÃO**. Ver matriz e próxima ação em `docs/CONTINUIDADE-ATIVA.md`, seção M057.
+
+
+## M058 — matriz de rotas e persistência (24/11/2026)
+
+Revisão de código da Etapa 1 concluída. Todas as rotas API exigem Bearer e o listener é loopback `127.0.0.1:9876`, sem porta publicada. GET status/projects/operations/publication-status são leitura; POST preflight/release-plan são leitura de política com auditoria; worker aceita apenas diagnose/profile/preflight; prepare/declarative pode gravar bundle local/recibo somente se elegível; preview/propose são fases distintas; publish/reconcile exigem Publisher e grant independente; fechar-pacote/corrigir-issue permanecem bloqueados.
+
+Persistência: auditoria append sanitizada com `O_NOFOLLOW`, arquivo regular, link-count 1 e modo 0600; preparação declarativa usa identidade determinística, staging, recibo, rename atômico e retry idempotente. Testes cobrem idempotência e segurança. **Não há fsync explícito em `record()` e a persistência do volume real após reinício ainda não foi demonstrada.**
+
+Tentativa MCP de API direta falhou por isolamento de rede (9876 não publicada); Ingress 8099 negou o peer MCP como esperado. Não abrir porta nem expor token. Próxima implementação de Etapa 1: probe autenticado interno de loopback para o processo vivo, limitado a endpoints read-only/preflight, sem chamar prepare/publish. Estado: **PARCIAL / EM EXECUÇÃO**.
+
+
+## M059 — probe autenticado do processo vivo (RC32)
+
+RC32 adiciona `runtime_api_probe.py`, executado em processo separado dentro do contêiner após o start da API. Usa o Bearer já provisionado no ambiente, sem imprimi-lo e sem passar tokens GitHub/Supervisor ao processo. Exercita autenticação negativa, status, projetos, status de publicação, auditoria sanitizada e preflight/release-plan dos workspaces reais. Não chama prepare, preview, propose, publish ou reconcile; não executa código de projeto e não abre porta.
+
+O probe aguarda workspace sync/lock, é não bloqueante para o serviço e falha sem derrubar a API. Dockerfile inclui py_compile, testes e cópia para runtime. Fonte: `desenvolvimento`, RC32, commits `8e06905d53436afecec0b2e41eac495fc4040727` e `863377a4baa5b0e843a302619abfe4b31e4e6dfc`.
+
+**Ainda não validado no HA:** build ARM64, suíte Dockerfile e log `[API-PROBE]`. Próxima ação autorizada: promoção/publicação isolada RC32 e atualização da instalação existente pelo Supervisor, preservando opções/dados.

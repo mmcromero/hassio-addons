@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.31",
+  "version": "0.1.0-rc.32",
   "repository": "mmcromero/factory-runner",
-  "commit": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
-  "catalog_sha": "e501c858f7ed9f91746e1418aa40d139fa455dd2",
-  "previous_source": "8eb7f7cce7958313b0c28f1d09bb16af8686642b",
-  "reviewed_source": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
-  "publication": "OWNER_AUTHORIZED_RC31_CANDIDATE_DISTRIBUTION",
+  "commit": "d9488678b9b58a3d519e10f1a405b6c7ce6dbc4f",
+  "catalog_sha": "00510d125203b07a3a7051a8f1ba9180dc7606f1",
+  "previous_source": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
+  "reviewed_source": "d9488678b9b58a3d519e10f1a405b6c7ce6dbc4f",
+  "publication": "OWNER_AUTHORIZED_RC32_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC31_DECLARATIVE_REAL_WORKSPACE_PROBE",
-  "tests": "PASS_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "INSTALLED_PENDING_HOMOLOGATION",
+  "candidate_distribution": "FACTORY_RUNNER_RC32_LIVE_AUTHENTICATED_API_PROBE",
+  "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
+  "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "975373ef29270e9943af9cb53cbb84a4b76a7d06",
-      "size": 37138,
+      "git_blob_sha": "5741ce4e3e35dc5cea3602139a7413533e319d2d",
+      "size": 37903,
       "mode": "100644"
     },
     {
@@ -79,8 +79,8 @@
     {
       "path": "factory-runner/Dockerfile",
       "source_path": "factory-runner-add-on/Dockerfile",
-      "git_blob_sha": "bcaa88b72e06fae9b635891f215d45ad55dc783d",
-      "size": 5260,
+      "git_blob_sha": "397758009824b6247fd719d1a94c9574d26452e0",
+      "size": 5370,
       "mode": "100644"
     },
     {
@@ -156,8 +156,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "9b0bb07a213496aa50b21835c264b09ab4202117",
-      "size": 21018,
+      "git_blob_sha": "404243189c84d61099f76ae3969a436ee1acb28b",
+      "size": 25052,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "85a58dd6462b33b195b6b6c31264cfb61ca3904c",
+      "git_blob_sha": "80135bb2c0ee1d3fdbe70636d592aa8330368ba7",
       "size": 1037,
       "mode": "100644"
     },
@@ -408,8 +408,15 @@
     {
       "path": "factory-runner/run.sh",
       "source_path": "factory-runner-add-on/run.sh",
-      "git_blob_sha": "dcea0f4b5f5a64157ffd4c9d1f5cb08252c9c01b",
-      "size": 8899,
+      "git_blob_sha": "6c39da078b5c02ef17e341652171c9337f59568b",
+      "size": 9382,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/runtime_api_probe.py",
+      "source_path": "factory-runner-add-on/runtime_api_probe.py",
+      "git_blob_sha": "10bbe03ac9a4d75bff0b650b3990098de8e6db62",
+      "size": 10272,
       "mode": "100644"
     },
     {
@@ -644,6 +651,13 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/tests/test_factory_runner_runtime_api_probe.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_runtime_api_probe.py",
+      "git_blob_sha": "e68b397a798512c77e06d682adf3e0f02dc1b541",
+      "size": 4639,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/tests/test_factory_runner_sandbox.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_sandbox.py",
       "git_blob_sha": "3ae77a40dfa69719929f512f5bead5f10ce645d5",
@@ -710,16 +724,14 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.31",
-    "build": "success",
-    "installation": "success",
-    "runtime_state": "started",
-    "completed_at": "2026-11-24T18:17:22-03:00",
+    "version": "0.1.0-rc.32",
+    "build": "pending",
+    "installation": "pending",
+    "runtime_state": "RC31 started before RC32 update",
     "owner_enrollment": "unchanged",
-    "product_publication": "disabled",
-    "evidence": "Supervisor reports app successfully updated; installed version rc.31 started; no update available; Dockerfile validation RUN chain completed; [DECLARATIVE-REAL-PROBE] PASS for avisaqui"
+    "product_publication": "disabled"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral gerado da árvore factory-runner-add-on/ no commit de origem indicado (RC31 release-candidate, incluindo M056). catalog_sha identifica o commit de publicação da RC31; o registro de validação Supervisor está nesta proveniência. Documentos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados e não integram o payload da fonte. O Supervisor concluiu o build/validação Dockerfile e iniciou RC31; o probe declarativo real passou para Avisaqui. Isso não equivale à homologação funcional completa de todos os fluxos nem libera publicação de produtos.",
-  "status": "RC31_INSTALLED_STARTED_REAL_WORKSPACE_PROBE_PASS_PENDING_HOMOLOGATION"
+  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC32 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados. O probe API real está incluído, mas build, testes, instalação e homologação RC32 ainda não foram executados no Supervisor.",
+  "status": "RC32_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
 }

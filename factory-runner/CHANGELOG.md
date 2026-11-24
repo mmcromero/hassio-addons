@@ -1,3 +1,11 @@
+# 0.1.0-rc.32 — probe autenticado da API viva
+
+- Adiciona smoke probe interno no contêiner para exercitar a API loopback real com o Bearer já provisionado, sem expor ou imprimir o segredo.
+- Verifica rejeição sem autenticação, status, projetos aprovados, status do Publisher, auditoria sanitizada e preflight/release-plan dos workspaces sincronizados.
+- O probe não chama prepare, publication-preview/propose, publish, reconcile, nem executa código dos projetos; apenas preflight/release-plan read-only, com eventos de auditoria.
+- Executa em processo separado, não bloqueia a inicialização do serviço e não altera portas/rede do add-on.
+- Inclui testes sintéticos do contrato do probe e o integra à validação do Dockerfile e à imagem runtime.
+
 # 0.1.0-rc.31 — probe declarativo em workspace Git real
 
 - Exercita a exportação declarativa confiável contra os blobs reais do workspace sincronizado, usando SHA de origem e distribuição fixados.

@@ -155,6 +155,16 @@ fi
 
 su-exec runner python3 -u /app/server.py &
 API_PID=$!
+# Live API smoke probe inherits only the API token and the sync expectation.
+# It exercises reads/preflight only; it never blocks the API or receives GitHub tokens.
+(
+    export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+    export HOME=/nonexistent
+    export RUNNER_API_PROBE_EXPECT_WORKSPACES="$RUNNER_WORKSPACE_SYNC_ENABLED"
+    unset RUNNER_GITHUB_READ_TOKEN GITHUB_PUBLISH_TOKEN SUPERVISOR_TOKEN
+    exec su-exec runner python3 -I -u /app/runtime_api_probe.py
+) &
+SERVICE_PIDS+=("$!")
 shutdown_services() {
     trap - TERM INT
     kill "$API_PID" 2>/dev/null || true
