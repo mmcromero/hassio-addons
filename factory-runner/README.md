@@ -1,14 +1,15 @@
 > **ESTADO VIGENTE — 24/11/2026**
 >
-> - Fonte ativa: mmcromero/factory-runner, branch desenvolvimento, diretório factory-runner-add-on/.
-> - Candidata para homologação final: 0.1.0-rc.20. A RC19 continua como baseline publicada/instalada até a homologação da nova candidata.
-> - Distribuição: somente mmcromero/hassio-addons:main/factory-runner/. Não publicar branches alternativas nem alterar outros add-ons.
-> - O Supervisor executa o build do Dockerfile e a etapa de testes durante a atualização no Home Assistant. Docker externo, QEMU e Actions não são gates genéricos.
-> - HA Ingress usa a porta interna 8099, sem porta de host. A página de status é somente leitura por padrão; owner_ingress_enabled=false. O consentimento exige opt-in, identidade HA e origem HTTPS.
-> - A API de publicação permanece bloqueada sem ativação root-managed e grant assinado. O token Bearer não autoriza escrita.
-> - Estado e próxima ação: [continuidade ativa](../docs/CONTINUIDADE-ATIVA.md) e [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Roadmap aprovado:** [ROADMAP-CONCLUSAO-001](../docs/ROADMAP-CONCLUSAO-001.md), seis etapas; isolamento de código não confiável é a última etapa de construção, mas continua obrigatório antes de executar código de projetos.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; candidata corrente em preparação: `0.1.0-rc.33`.
+> - **Última candidata publicada/instalada antes desta correção:** `0.1.0-rc.32`, catálogo `mmcromero/hassio-addons:main/factory-runner/`, Supervisor `started`.
+> - **Etapa 1:** RC31/RC32 confirmaram startup, dois workspaces, auditoria sanitizada e probe declarativo real PASS. O novo probe HTTP interno da RC32 não gerou marcador `[API-PROBE]`; RC33 corrige o import path sob Python `-I` e adiciona marcador de início. Ainda depende de build/execução no Supervisor.
+> - **Publisher:** DORMANT; publicação de produtos permanece desativada. Não ativar nesta etapa.
+> - **Isolamento:** Bubblewrap continua bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed. A exportação declarativa não depende do sandbox.
+> - **Distribuição:** publicar somente a pasta `factory-runner/`; não alterar outros add-ons nem arquivos compartilhados.
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seções M057–M059; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
-> O conteúdo histórico abaixo foi preservado. Referências a branches, versões e etapas antigas não substituem a continuidade ativa.
+> O histórico abaixo foi preservado. Referências antigas a RC20, RC19 e RCs anteriores são registros históricos, não o estado operacional atual.
 
 ---
 

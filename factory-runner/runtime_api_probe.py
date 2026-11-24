@@ -12,6 +12,10 @@ import time
 import urllib.error
 import urllib.request
 
+# Python -I omits the script directory from sys.path; only this trusted path is added.
+if "/app" not in sys.path:
+    sys.path.insert(0, "/app")
+
 BASE_URL = "http://127.0.0.1:9876"
 MAX_RESPONSE = 262144
 OPERATION_ID = re.compile(r"^[0-9a-f-]{36}$")
@@ -186,6 +190,7 @@ def main():
     if len(token) < 32:
         print("[API-PROBE] BLOCKED: auth_token_unavailable", flush=True)
         return 1
+    print("[API-PROBE] START: authenticated loopback; read/preflight only", flush=True)
 
     # The server starts independently. Do not make its startup depend on this probe.
     ready = False

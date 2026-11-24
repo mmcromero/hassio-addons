@@ -1,3 +1,10 @@
+# 0.1.0-rc.33 — correção do probe sob Python isolado
+
+- Corrige o caminho de importação do probe interno quando executado com `python -I`, adicionando somente o diretório fixo `/app` ao `sys.path`.
+- Emite marcador de início para distinguir processo iniciado de probe concluído.
+- Mantém o processo em background, sem abrir portas, sem expor Bearer e sem chamar preparação/publicação.
+- Inclui teste de regressão do caminho de importação isolado.
+
 # 0.1.0-rc.32 — probe autenticado da API viva
 
 - Adiciona smoke probe interno no contêiner para exercitar a API loopback real com o Bearer já provisionado, sem expor ou imprimir o segredo.

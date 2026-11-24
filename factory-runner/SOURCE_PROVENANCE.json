@@ -1,15 +1,15 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.32",
+  "version": "0.1.0-rc.33",
   "repository": "mmcromero/factory-runner",
-  "commit": "d9488678b9b58a3d519e10f1a405b6c7ce6dbc4f",
-  "catalog_sha": "00510d125203b07a3a7051a8f1ba9180dc7606f1",
-  "previous_source": "627e7d1a6a44647b1ba3432ef1660ef15b1b4d37",
-  "reviewed_source": "d9488678b9b58a3d519e10f1a405b6c7ce6dbc4f",
-  "publication": "OWNER_AUTHORIZED_RC32_CANDIDATE_DISTRIBUTION",
+  "commit": "d69396cfecc9520ef86693790e4e31960277d94e",
+  "catalog_sha": "16ff747abf35cb1bb5ff086abd477de55f2719d8",
+  "previous_source": "d9488678b9b58a3d519e10f1a405b6c7ce6dbc4f",
+  "reviewed_source": "d69396cfecc9520ef86693790e4e31960277d94e",
+  "publication": "OWNER_AUTHORIZED_RC33_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC32_LIVE_AUTHENTICATED_API_PROBE",
+  "candidate_distribution": "FACTORY_RUNNER_RC33_ISOLATED_PYTHON_IMPORT_FIX",
   "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
   "review_status": "PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION",
   "files": [
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "5741ce4e3e35dc5cea3602139a7413533e319d2d",
-      "size": 37903,
+      "git_blob_sha": "d0c51b5c679d7a58a3de997a4e59af2b8c20a6e3",
+      "size": 38368,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "2ca4518b68f382b33acde5aec6a999d0064c7363",
-      "size": 6701,
+      "git_blob_sha": "8dfa1783cf4bf45e50416c15e5f94c98158605e9",
+      "size": 7098,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "404243189c84d61099f76ae3969a436ee1acb28b",
-      "size": 25052,
+      "git_blob_sha": "d48a999783ae7d2ea2c0509cf84ef49b4115ce3a",
+      "size": 25806,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "80135bb2c0ee1d3fdbe70636d592aa8330368ba7",
+      "git_blob_sha": "2bcc7d2e6d641c4dfd751d1d350af7b63699f7d2",
       "size": 1037,
       "mode": "100644"
     },
@@ -415,8 +415,8 @@
     {
       "path": "factory-runner/runtime_api_probe.py",
       "source_path": "factory-runner-add-on/runtime_api_probe.py",
-      "git_blob_sha": "10bbe03ac9a4d75bff0b650b3990098de8e6db62",
-      "size": 10272,
+      "git_blob_sha": "8f0764cd1d8382e440ee2b37d76e91056ffe1195",
+      "size": 10506,
       "mode": "100644"
     },
     {
@@ -653,8 +653,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_runtime_api_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_runtime_api_probe.py",
-      "git_blob_sha": "e68b397a798512c77e06d682adf3e0f02dc1b541",
-      "size": 4639,
+      "git_blob_sha": "5c92ba3d3609cb737ee725c70fc0419ae862d354",
+      "size": 4792,
       "mode": "100644"
     },
     {
@@ -724,14 +724,14 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.32",
+    "version": "0.1.0-rc.33",
     "build": "pending",
     "installation": "pending",
-    "runtime_state": "RC31 started before RC32 update",
+    "runtime_state": "RC32 started before RC33 update",
     "owner_enrollment": "unchanged",
     "product_publication": "disabled"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC32 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados. O probe API real está incluído, mas build, testes, instalação e homologação RC32 ainda não foram executados no Supervisor.",
-  "status": "RC32_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
+  "provenance_note": "Inventário integral de 101 arquivos da fonte factory-runner-add-on/ no commit RC33 indicado. catalog_sha identifica o commit main usado como base anterior à publicação. Arquivos exclusivos do catálogo, incluindo RC4-VALIDACAO.md, foram preservados. RC33 corrige o import path do probe sob Python -I; build, testes, instalação e resultado [API-PROBE] ainda pendentes no Supervisor.",
+  "status": "RC33_PUBLISHED_PENDING_SUPERVISOR_BUILD_INSTALL_AND_HOMOLOGATION"
 }

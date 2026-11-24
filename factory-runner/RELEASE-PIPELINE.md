@@ -253,3 +253,10 @@ RC32 adiciona `runtime_api_probe.py`, executado em processo separado dentro do c
 O probe aguarda workspace sync/lock, é não bloqueante para o serviço e falha sem derrubar a API. Dockerfile inclui py_compile, testes e cópia para runtime. Fonte: `desenvolvimento`, RC32, commits `8e06905d53436afecec0b2e41eac495fc4040727` e `863377a4baa5b0e843a302619abfe4b31e4e6dfc`.
 
 **Ainda não validado no HA:** build ARM64, suíte Dockerfile e log `[API-PROBE]`. Próxima ação autorizada: promoção/publicação isolada RC32 e atualização da instalação existente pelo Supervisor, preservando opções/dados.
+
+
+## M060 — RC32 e correção RC33 do probe live API
+
+RC32 (`0.1.0-rc.32`) foi instalada/iniciada no Supervisor; build/validação do Dockerfile concluiu. O probe não passou: log `[API-PROBE] BLOCKED: workspace_sync_in_progress`. Diagnóstico: `python3 -I` não inclui `/app` no `sys.path`, então os imports confiáveis `server`/ `workspace_sync` falhavam dentro do retry.
+
+RC33 (`0.1.0-rc.33`), commit `d09aff0a1fc6641ec1e0ad087200acc501d8ed5e`, adiciona somente o caminho fixo `/app` ao `sys.path`, marcador `[API-PROBE] START`, teste de regressão e README vigente. Ainda não publicada/instalada. Próximo passo: promover/publicar RC33 e validar build/testes/probe real no Supervisor. Não abrir porta, não expor Bearer e não ativar Publisher.

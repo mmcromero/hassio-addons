@@ -56,6 +56,10 @@ class RuntimeApiProbeTests(unittest.TestCase):
             raise AssertionError("unexpected route: " + path)
         return request, calls
 
+    def test_isolated_runtime_import_path_is_explicit(self):
+        import runtime_api_probe
+        self.assertIn("/app", runtime_api_probe.sys.path)
+
     def test_live_api_probe_uses_only_read_and_preflight_routes(self):
         requester, calls = self.fake_requester()
         result = run_probe(self.TOKEN, [("avisaqui", "a" * 40)], requester)
