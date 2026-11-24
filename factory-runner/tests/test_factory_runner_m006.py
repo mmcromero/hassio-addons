@@ -305,7 +305,7 @@ class M006Tests(unittest.TestCase):
         self.publish(grant)
 
     def test_api_status_keeps_publish_disabled_without_owner_route(self):
-        self.assertEqual(capabilities()['publication'],'disabled')
+        self.assertEqual(capabilities()['publication'],'gated_by_default')
         self.assertNotIn('/api/publish',server.OPERATIONS)
         with self.assertRaisesRegex(PublicationError,'publication_disabled'):disabled_gate()
 
@@ -377,7 +377,7 @@ class M006Tests(unittest.TestCase):
         with self.assertRaisesRegex(PublicationError,'remote_http_302'):
             RedirectHTTP(self.token,lambda:None).request('GET','/repos/fixture/distribution')
 
-    def test_read_only_api_status_http_and_no_publish_route(self):
+    def test_read_only_api_status_and_publish_route_gated(self):
         from http.server import ThreadingHTTPServer
         fixture=ThreadingHTTPServer(('127.0.0.1',0),server.Handler)
         threading.Thread(target=fixture.serve_forever,daemon=True).start()
@@ -388,7 +388,7 @@ class M006Tests(unittest.TestCase):
             conn.request('GET','/api/publication-status',headers={'Authorization':'Bearer '+'t'*40})
             response=conn.getresponse();self.assertEqual(response.status,200);self.assertEqual(json.loads(response.read())['publication'],'disabled')
             conn.request('POST','/api/publish',body='{}',headers={'Authorization':'Bearer '+'t'*40})
-            response=conn.getresponse();self.assertEqual(response.status,404);response.read();conn.close()
+            response=conn.getresponse();payload=json.loads(response.read());self.assertEqual(response.status,503);self.assertEqual(payload['error'],'publisher_unavailable');conn.close()
 
     def test_recovery_after_cas_sync_expiry_and_process_restart_is_read_only(self):
         grant=self.grant();self.http.cut_cas=True
