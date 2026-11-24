@@ -56,6 +56,7 @@ class ExecutionEvidenceTests(unittest.TestCase):
 
     def test_corrupt_lines_are_ignored_not_reused(self):
         self.ledger.write_text("{invalid}\n", encoding="utf-8")
+        os.chmod(self.ledger, 0o600)
         self.assertEqual(evidence.load_evidence(self.ledger), [])
 
     def test_untrusted_pass_record_is_rejected(self):
