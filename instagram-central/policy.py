@@ -34,5 +34,6 @@ def prepare_decision(event):
         return {"action": "reject", "maySend": False, "mayCallGemini": False}
     if event["handoffState"] != "bot":
         return {"action": "hold_for_human", "maySend": False, "mayCallGemini": False}
-    return {"action": classify(event["messageText"]), "maySend": False,
-            "mayCallGemini": False}
+    action = classify(event["messageText"])
+    return {"action": action, "maySend": False,
+            "mayCallGemini": action in ("greeting", "commercial_question")}
