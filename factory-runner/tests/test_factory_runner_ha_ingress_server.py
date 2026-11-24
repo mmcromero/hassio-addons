@@ -180,7 +180,7 @@ class HAIngressServerTests(unittest.TestCase):
             headers[name] = value
         headers["Cookie"] = "ingress_session=ha-session"
         headers["Cookie"] = "factory_owner_session=" + "a" * 64
-        body = urlencode({"csrf": "x", "password": "y", "confirmation": "PUBLICAR"}).encode()
+        body = urlencode({"csrf": "x", "confirmation": "PUBLICAR"}).encode()
         self.assertEqual(self.dispatch(ui, "POST", "/owner-consent/consent",
                                         headers=headers, body=body)[0], 200)
         headers["Cookie"] = "factory_owner_session=" + "b" * 64
