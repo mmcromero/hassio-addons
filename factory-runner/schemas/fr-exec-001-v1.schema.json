@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://factory-runner.local/schemas/fr-exec-001-v1.json",
+  "title": "FR-EXEC-001 Execution Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "execution_id",
+    "created_at",
+    "objective",
+    "project",
+    "source",
+    "scope",
+    "requested_operations",
+    "authorization",
+    "destinations",
+    "acceptance_criteria",
+    "limits"
+  ],
+  "properties": {
+    "schema_version": { "const": "FR-EXEC-001/v1" },
+    "execution_id": { "type": "string", "format": "uuid" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "objective": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "project": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{1,47}$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "ref", "sha", "base_sha"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+        "ref": { "type": "string", "pattern": "^refs/remotes/origin/[A-Za-z0-9._/-]+$" },
+        "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "base_sha": { "oneOf": [{ "type": "string", "pattern": "^[0-9a-f]{40}$" }, { "type": "null" }] }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["include_paths", "exclude_paths", "constraints"],
+      "properties": {
+        "include_paths": { "type": "array", "maxItems": 128, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 240 } },
+        "exclude_paths": { "type": "array", "maxItems": 128, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 240 } },
+        "constraints": { "type": "array", "maxItems": 32, "items": { "type": "string", "minLength": 1, "maxLength": 300 } }
+      }
+    },
+    "requested_operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 11,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["analyze", "plan", "develop", "test", "prepare", "package", "publish", "deploy", "update", "homologate", "promote"]
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "declared_operations"],
+      "properties": {
+        "reference": { "oneOf": [{ "type": "string", "minLength": 1, "maxLength": 256 }, { "type": "null" }] },
+        "declared_operations": {
+          "type": "array", "maxItems": 11, "uniqueItems": true,
+          "items": { "enum": ["analyze", "plan", "develop", "test", "prepare", "package", "publish", "deploy", "update", "homologate", "promote"] }
+        }
+      }
+    },
+    "destinations": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["repository", "ref", "environment"],
+        "properties": {
+          "repository": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+          "ref": { "type": "string", "pattern": "^refs/(heads|remotes/origin)/[A-Za-z0-9._/-]+$" },
+          "environment": { "type": "string", "minLength": 1, "maxLength": 80 }
+        }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 30,
+      "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeout_seconds", "max_changed_files", "network_policy", "data_access", "max_cost_usd"],
+      "properties": {
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 3600 },
+        "max_changed_files": { "type": "integer", "minimum": 1, "maximum": 1000 },
+        "network_policy": { "enum": ["none", "read_only"] },
+        "data_access": { "enum": ["metadata_only", "approved_workspace"] },
+        "max_cost_usd": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 10000 }, { "type": "null" }] }
+      }
+    }
+  }
+}
