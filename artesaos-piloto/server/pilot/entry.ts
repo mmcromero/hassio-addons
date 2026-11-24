@@ -23,17 +23,17 @@ export const entryCss=`
 :root body.pilot-entry-page{padding-bottom:0}
 :root .pilot-entry-page #pilot-build-info{position:static;font-size:14px;gap:8px 16px;margin-top:32px}
 :root .pilot-entry-page #pilot-build-info a{display:inline-flex;align-items:center;min-height:44px}
-:root .pilot-entry{--entry-green:var(--mata,#1E4D3B);--entry-line:var(--areia,#CBB493);--entry-paper:var(--linho,#F5F5EF);--entry-text:var(--carvao,#1F2A25);width:100%;max-width:1080px;margin:32px auto;padding:0 32px;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;color:var(--entry-text)}
+:root .pilot-entry{--entry-green:var(--mata,#1E4D3B);--entry-line:var(--areia,#CBB493);--entry-paper:var(--linho,#F5F5EF);--entry-text:var(--carvao,#1F2A25);width:100%;max-width:1080px;margin:32px auto;padding:0 32px;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;color:var(--entry-text)}
 :root .pilot-entry [hidden]{display:none!important}
 :root .pilot-entry .entry-brand{display:block;text-align:center;margin-bottom:24px}
 :root .pilot-entry [data-pilot-brand]{padding:0;margin:0 auto;max-width:200px}
 :root .pilot-entry [data-pilot-brand] img{width:160px;min-width:120px;height:auto}
 :root .pilot-entry .entry-card{max-width:560px;margin:0 auto;padding:32px;border:1px solid var(--entry-line);border-radius:16px;background:#fff;box-shadow:0 8px 32px #1e4d3b08}
-:root .pilot-entry h1{font:600 32px/1.25 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;margin:0 0 16px;color:var(--entry-green);outline-offset:6px}
+:root .pilot-entry h1{font:600 32px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0 0 16px;color:var(--entry-green);outline-offset:6px}
 :root .pilot-entry p{margin:0 0 24px}
 :root .pilot-entry input:not([type=checkbox]){min-height:48px;margin:8px 0 16px;border:1px solid #6b8074;border-radius:10px;background:white;font:inherit}
 :root .pilot-entry label{font-weight:600;display:block}
-:root .pilot-entry button{min-height:48px;padding:12px 20px;margin:16px 0 0;border:1px solid var(--entry-green);border-radius:10px;background:var(--entry-green);color:#fff;font:600 16px/1.5 Inter,system-ui,sans-serif;cursor:pointer}
+:root .pilot-entry button{min-height:48px;padding:12px 20px;margin:16px 0 0;border:1px solid var(--entry-green);border-radius:10px;background:var(--entry-green);color:#fff;font:600 16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;cursor:pointer}
 :root .pilot-entry button:disabled{background:#e2e8e2;color:#43564b;border-color:#8c9d91;opacity:1;cursor:wait}
 :root .pilot-entry .google-signin{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1px solid #747775;color:#1f1f1f;font:500 14px/20px "Google Sans",Arial,Helvetica,sans-serif;letter-spacing:0;border-radius:7px;min-height:48px;padding:12px;margin-top:9px}
 :root .pilot-entry .google-signin:enabled:hover{background:#f7f8f8;box-shadow:0 2px 6px #1112}

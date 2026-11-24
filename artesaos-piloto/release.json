@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.34",
+  "version": "0.2.0-dev.35",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.34",
-  "sourceCommit": "2ec9fc84fc14e383e770d322243abe0b114cfba8",
+  "releaseVersion": "0.2.0-dev.35",
+  "sourceCommit": "93a435d68b56a5a382a3d7a455dac8819fdd5b45",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,28 +22,38 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-23T23:30:00+00:00",
+  "preparedAt": "2026-11-24T02:08:17.678Z",
   "builtAt": null,
-  "businessSourceSha256": "6551caa6bb95ccc4a2b2edf76243565b9a26c37ee7c5ee3f26bab89581b7b588",
+  "businessSourceSha256": "e6db7c5080ebc1328561e71862ba36e37c00425b8e2bee1183b7e8caf81a5f12",
   "validation": {
-    "sourceCommit": "2ec9fc84fc14e383e770d322243abe0b114cfba8",
+    "sourceCommit": "93a435d68b56a5a382a3d7a455dac8819fdd5b45",
     "status": "pending-supervisor",
     "directedChecks": [
       {
-        "name": "exact-onboarding-guard-static-review",
+        "name": "source-scope-review",
         "status": "passed",
-        "evidence": "Exact approved single-line change; both Git blob IDs matched; successful PUT and POST precede dirty-state clearing and navigation; blocked guard remains intact."
+        "evidence": "Diff dev.34→dev.35 revisado: brand.ts altera somente os blocos CSS communityCss/identityCss; entry.ts altera somente entryCss; welcome.css ajusta tipografia. Sem lógica de autenticação, rotas, API, schema, dependências ou contrato operacional."
       },
       {
-        "name": "source-and-store-scope",
+        "name": "pdv-preservation",
         "status": "passed",
-        "evidence": "Allowlist inventory matched frozen Git tree; schema/dependencies/config and store PNG blobs unchanged; Docker transformation reproduces preceding recipe."
+        "evidence": "Diff Git não contém Sales.tsx, SalesSessions.tsx, pdv.css, pdv-theme.tsx nem componentes internos do PDV; somente camada global e páginas de entrada."
+      },
+      {
+        "name": "fast-lane-exporter-tests",
+        "status": "passed",
+        "evidence": "scripts/test-ha-source.py: 12/12 PASS, execução registrada em docs/especificacoes/AD-UX-STD-001/tasks.md para os arquivos da branch desenvolvimento."
+      },
+      {
+        "name": "store-identity-and-config",
+        "status": "passed",
+        "evidence": "Nome oficial e slug artesaos_piloto preservados; config exportada somente aarch64; opções, volume, portas e assets oficiais preservados."
       }
     ],
     "build": "not-performed",
     "physicalValidation": "not-performed",
     "browserJourneys": "pending",
-    "exportMethod": "Equivalent Git Data API export; frozen source blobs, unchanged prior published hashes, SHA256 computed for changed files; Python exporter not executed."
+    "exportMethod": "Exportação equivalente pela Git Data API: blobs da fonte congelada, inventário allowlist, hashes SHA256 recalculados; o script Python não foi executado nesta sessão."
   },
   "schemaChecksums": {
     "tenant": [
@@ -175,7 +185,7 @@
   "schemaEvidence": {
     "mode": "unchanged-from-validated-source",
     "sourceCommit": "e6b48ed1149a0e06fb74c268acfd20253306035c",
-    "publishedCommit": "1f612ef94f457835517c8380eb249ab1f27b2c07",
+    "publishedCommit": "2eebb31992e057cf4b1d67156833065af62d2bd5",
     "supervisorCheck": "pending"
   },
   "compatibility": {

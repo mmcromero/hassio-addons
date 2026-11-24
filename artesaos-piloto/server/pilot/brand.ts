@@ -1,10 +1,10 @@
 export const communityCss=`*{box-sizing:border-box}.pilot-admin{max-width:1080px;margin:32px auto;padding:24px}.pilot-table{overflow:auto}table{border-collapse:collapse;width:100%}th,td{padding:12px;text-align:left;border-bottom:1px solid #b8c7be;overflow-wrap:anywhere}.pilot-auth section{margin-top:32px;border-top:1px solid #b8c7be;padding-top:16px}.pilot-auth .pilot-consent{display:flex;align-items:flex-start;gap:10px;font-size:14px}.pilot-auth .pilot-consent input{width:20px;height:20px;flex-shrink:0;margin:0}#interest-privacy{font-size:14px;line-height:1.5}#pilot-account{min-height:96px}.pilot-session-active{padding-top:112px}.pilot-account-title img{max-width:100%;height:72px;width:auto;object-fit:contain;border-radius:6px;background:#f7f6f1}#root .app-version{display:none}.pilot-auth [data-pilot-brand]{text-align:center}.pilot-auth [data-pilot-brand] img{height:120px;width:auto;max-width:100%;object-fit:contain}.pilot-admin button{padding:10px 14px;font:inherit}#admin-pagination:not([hidden]){display:flex;gap:16px;align-items:center;margin-top:20px}#pilot-account button{max-width:100%;overflow-wrap:anywhere}@media(max-width:480px){.pilot-table table,.pilot-table tbody,.pilot-table tr,.pilot-table td{display:block}.pilot-table thead{display:none}.pilot-table tr{border:1px solid #b8c7be;border-radius:8px;margin:12px 0;padding:8px}.pilot-table td{border:0;padding:8px}.pilot-table td::before{content:attr(data-label);display:block;font-size:12px;font-weight:700;margin-bottom:4px}.pilot-admin{padding:16px 12px}.pilot-admin h1{font-size:26px}#pilot-account{padding:10px 12px}.pilot-account-title{font-size:15px}#pilot-account button{font-size:13px;padding:8px}}#pilot-account.pilot-account-user-layout{grid-template-columns:minmax(0,auto) minmax(0,1fr) auto;column-gap:16px;padding-inline:max(20px,calc((100% - 860px)/2 + 20px))}#pilot-account.pilot-account-user-layout .pilot-account-user{text-align:right}`;
 export const identityCss=`
 :root{--mata:#1E4D3B;--areia:#CBB493;--linho:#F5F5EF;--broto:#4F8A5B;--terracota:#B5653A;--carvao:#1F2A25}
-:root body{background:var(--linho);color:var(--carvao);font:16px/1.5 Arial,Helvetica,sans-serif}
-:root h1,:root h2,:root h3{font-family:Georgia,"Times New Roman",serif;color:var(--mata);line-height:1.3}
+:root body{background:var(--linho);color:var(--carvao);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+:root h1,:root h2,:root h3{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--mata);line-height:1.3}
 :root a{color:var(--mata)}
-:root button,:root .pilot-auth button{background:var(--mata);color:var(--linho);font-family:Arial,Helvetica,sans-serif}
+:root button,:root .pilot-auth button{background:var(--mata);color:var(--linho);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 :root input,:root select,:root textarea{font:inherit;color:var(--carvao);accent-color:var(--mata)}
 :root :focus-visible{outline:3px solid var(--terracota);outline-offset:3px}
 :root section,:root .wf-card{border-color:var(--areia)}
@@ -18,8 +18,8 @@ export const identityCss=`
 :root .pilot-auth [data-pilot-brand] img{display:block;width:180px;min-width:120px;height:auto;max-width:100%;margin:auto}
 :root .pilot-auth [data-pilot-brand] img[hidden]{display:none}
 :root #pilot-build-info{background:var(--linho);color:var(--carvao);border-color:var(--areia)}
-:root .wf-shell{font-family:Arial,Helvetica,sans-serif;color:var(--carvao);background:var(--linho)}
-:root .wf-shell h1,:root .wf-shell h2,:root .wf-shell h3{font-family:Georgia,"Times New Roman",serif}
+:root .wf-shell{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--carvao);background:var(--linho)}
+:root .wf-shell h1,:root .wf-shell h2,:root .wf-shell h3{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 :root .wf-banner{background:var(--mata)}
 :root .wf-shell .wf-secondary,:root .products-screen .more-prices{color:var(--mata);border-color:var(--mata);background:var(--linho)}
 :root .quote-modal-body{background:var(--linho)}
@@ -119,8 +119,15 @@ export const identityCss=`
 :root .support-admin textarea{min-height:120px}
 :root .support-admin button{border:1px solid var(--mata);border-radius:8px;cursor:pointer}
 :root .support-admin button:disabled{opacity:.5;cursor:wait}
-:root .pilot-session-active{padding-bottom:110px}
-@media(max-width:480px){:root .support-compose{padding:20px 16px}:root .support-admin #support-detail{padding:16px}:root .pilot-session-active{padding-bottom:132px}}
+:root .pilot-session-active{padding-bottom:0}
+@media(max-width:480px){:root .support-compose{padding:20px 16px}:root .support-admin #support-detail{padding:16px}:root .pilot-session-active{padding-bottom:0}}
+/* UX-SHELL-001: one document-flow shell for login, first access and authenticated modules. */
+:root body{display:flex;flex-direction:column;min-height:100dvh;padding-bottom:0!important}
+:root body.pilot-session-active{padding-bottom:0!important}
+:root .pilot-session-active #root{display:block;flex:1 0 auto;min-width:0;width:100%;padding-top:0}
+:root #pilot-build-info{position:static!important;left:auto;right:auto;top:auto;bottom:auto;z-index:auto;flex:none;width:100%;margin-top:auto;display:flex;justify-content:center;align-items:center;gap:8px 16px;padding:14px 20px;font-size:14px;line-height:1.45}
+:root #pilot-build-info a{display:inline-flex;align-items:center;min-height:44px;max-width:100%;overflow-wrap:anywhere}
+:root #pilot-build-info .pilot-current-version{flex:0 0 100%;text-align:center;order:99}
 
 `;
 export function brandScript(prefix:string,version:string,available:boolean){return `(()=>{window.pilotBrand=parent=>{parent.replaceChildren();const text=document.createElement('span');text.textContent='Artesão Digital';parent.append(text);if(!${available})return;const img=document.createElement('img');img.alt='Artesão Digital';img.hidden=true;img.onload=()=>{text.hidden=true;img.hidden=false;};img.onerror=()=>{img.remove();text.hidden=false;};parent.append(img);img.src=parent.matches('.pilot-account-title,[data-pilot-brand=horizontal]')?${JSON.stringify(prefix+'brand/logo-horizontal.png?v='+version)}:${JSON.stringify(prefix+'brand/logo.png?v='+version)};};addEventListener('DOMContentLoaded',async()=>{try{await window.pilotBrowserReady;}catch{return;}document.querySelectorAll('[data-pilot-brand]').forEach(window.pilotBrand);});})();`;}

@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - Artesão Digital"
-version: "0.2.0-dev.34"
+version: "0.2.0-dev.35"
 slug: artesaos_piloto
 description: "Contingência temporária com acionamento manual; Forja 01 é o servidor principal. Recuperação e transferência de dados entre ambientes ainda não concluídas. Sem sincronização automática de bancos."
 arch:
