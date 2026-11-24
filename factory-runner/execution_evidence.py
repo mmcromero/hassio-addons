@@ -20,6 +20,7 @@ MAX_LEDGER_BYTES = 8 * 1024 * 1024
 MAX_RECORD_BYTES = 16 * 1024
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 IDENT = re.compile(r"^[a-z][a-z0-9_.:-]{1,127}$")
+VERSION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$")
 ISSUER = "factory-runner-trusted-executor-v1"
 
 
@@ -47,7 +48,7 @@ def _valid_record(value):
     except (ValueError, TypeError, AttributeError):
         return False
     if (not isinstance(value["test_id"], str) or not IDENT.fullmatch(value["test_id"])
-            or not isinstance(value["test_version"], str) or not IDENT.fullmatch(value["test_version"])
+            or not isinstance(value["test_version"], str) or not VERSION.fullmatch(value["test_version"])
             or not isinstance(value["source_sha"], str) or not re.fullmatch(r"[0-9a-f]{40}", value["source_sha"])
             or not isinstance(value["unit_digest"], str) or not SHA256.fullmatch(value["unit_digest"])
             or not isinstance(value["dependency_digest"], str) or not SHA256.fullmatch(value["dependency_digest"])
