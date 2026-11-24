@@ -88,7 +88,7 @@ class HTTPContractTests(unittest.TestCase):
         # Regression: v0.1.2 crashed every GET with UnboundLocalError on urlsplit.
         health_status, _, health_body = self.request("/health")
         self.assertEqual(health_status, 200)
-        self.assertEqual(json.loads(health_body)["version"], "0.1.46")
+        self.assertEqual(json.loads(health_body)["version"], "0.1.47")
         status, headers, body = self.request("/panel")
         self.assertEqual(status, 200)
         self.assertNotIn("WWW-Authenticate", headers)
@@ -270,7 +270,7 @@ class HTTPContractTests(unittest.TestCase):
                 "/oauth/meta/callback?" + probe_query, headers=public_headers)
         self.assertEqual(status, 200)
         self.assertIn(b"Teste aprovado", body)
-        self.assertIn(b"0.1.46", body)
+        self.assertIn(b"0.1.47", body)
         self.assertNotIn(nonce.encode("ascii"), body)
         # Missing browser cookie fails before any Meta request.
         with self.assertLogs(server.LOGGER, level="ERROR") as captured:
@@ -288,7 +288,7 @@ class HTTPContractTests(unittest.TestCase):
                     "/oauth/meta/callback?" + probe_query,
                     headers={**public_headers, **changes})
             self.assertEqual(status, 400)
-            self.assertIn(b"0.1.46", body)
+            self.assertIn(b"0.1.47", body)
 
     def test_meta_oauth_link_opens_in_new_tab(self):
         cfg = {
@@ -381,7 +381,8 @@ class HTTPContractTests(unittest.TestCase):
         cookie=headers['Set-Cookie'].split(';',1)[0]
         _,_,page=self.request('/panel',headers={'Cookie':cookie})
         self.assertIn(event['message']['text'].encode(),page)
-        self.assertIn(b'Mensagens armazenadas: 1',page)
+        self.assertIn(b'1 mensagem',page)
+        self.assertNotIn(b'Mensagens armazenadas',page)
 
     def test_unified_webhook_invalid_signature_is_not_parsed_or_stored(self):
         payload=json.loads(self.event());entry=payload['entry'][0]
