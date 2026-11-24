@@ -93,115 +93,26 @@ class HAIngressServerTests(unittest.TestCase):
         self.assertIn(b"form-action 'self'", headers["Content-Security-Policy"].encode())
         self.assertEqual(ui.views[0][0], self.PROPOSAL)
 
-    def test_owner_home_and_enrollment_get_routes(self):
+    def test_owner_home_and_legacy_enrollment_routes_are_disabled(self):
         ui = FakeOwnerUI()
         status, headers, body = self.dispatch(ui, "GET", "/")
         self.assertEqual(status, 200)
         self.assertIn(b"Factory Runner", body)
 
-        status, headers, body = self.dispatch(ui, "GET", "/owner-enroll/")
-        self.assertEqual(status, 200)
-        self.assertNotIn("Set-Cookie", headers)
-
-    def test_owner_enrollment_short_route_redirects_to_slash(self):
-        status, headers, body = self.dispatch(FakeOwnerUI(), "GET", "/owner-enroll")
-        self.assertEqual(status, 303)
-        self.assertEqual(headers["Location"],
-                         "/api/hassio_ingress/0123456789abcdef/owner-enroll/")
-
-    def test_owner_enrollment_post_uses_exact_fields_without_cookie(self):
-        ui = FakeOwnerUI()
-        form = urlencode({
-            "csrf": "a" * 64,
-            "password": "strong-owner-password-123",
-            "password_confirm": "strong-owner-password-123",
-            "confirmation": "CADASTRAR",
-        }).encode()
-        headers = self.headers(
-            Origin=ui.origin,
-            **{"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        status, response_headers, body = self.dispatch(
-            ui, "POST", "/owner-enroll/submit", headers=headers, body=form
-        )
-        self.assertEqual(status, 200)
-        self.assertIn(b"Cadastro do propriet", body)
-        self.assertNotIn("Set-Cookie", response_headers)
-        self.assertEqual(ui.enrollments[0][1]["confirmation"], "CADASTRAR")
-
-    def test_enrollment_rejection_logs_only_safe_reason_and_returns_actionable_message(self):
-        class RejectingOwnerUI(FakeOwnerUI):
-            def enroll(self, session, body, context, origin):
-                raise PublicationError("owner_enrollment_input_invalid")
-
-        ui = RejectingOwnerUI()
-        form = urlencode({
-            "csrf": "a" * 64,
-            "password": "x" * 20,
-            "password_confirm": "x" * 20,
-            "confirmation": "CADASTRAR",
-        }).encode()
-        headers = self.headers(
-            Origin=ui.origin,
-            **{"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        with patch("builtins.print") as logged:
-            status, response_headers, body = self.dispatch(
-                ui, "POST", "/owner-enroll/submit", headers=headers, body=form
+        # Initial owner enrollment is performed only through HA add-on Settings.
+        # Legacy Ingress routes must remain unavailable and must never invoke UI enrollment.
+        for method, path, form in (
+            ("GET", "/owner-enroll/", b""),
+            ("GET", "/owner-enroll", b""),
+            ("POST", "/owner-enroll/submit", b"password=synthetic"),
+        ):
+            headers = self.headers(
+                Origin=ui.origin,
+                **{"Content-Type": "application/x-www-form-urlencoded"},
             )
-        self.assertEqual(status, 403)
-        self.assertIn(b"16 caracteres", body)
-        self.assertIn(b"owner_enrollment_input_invalid", body)
-        self.assertTrue(any(
-            call.args and call.args[0] == "[OWNER-UI] ENROLLMENT REJECTED: owner_enrollment_input_invalid"
-            for call in logged.call_args_list
-        ))
-        self.assertNotIn(b"x" * 20, body)
-
-    def test_unexpected_enrollment_error_is_sanitized_and_not_retried_blindly(self):
-        class BrokenOwnerUI(FakeOwnerUI):
-            def enroll(self, session, body, context, origin):
-                raise RuntimeError("private diagnostic detail")
-
-        ui = BrokenOwnerUI()
-        form = urlencode({
-            "csrf": "a" * 64,
-            "password": "synthetic-password-123",
-            "password_confirm": "synthetic-password-123",
-            "confirmation": "CADASTRAR",
-        }).encode()
-        headers = self.headers(
-            Origin=ui.origin,
-            **{"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        with patch("builtins.print") as logged:
-            status, response_headers, body = self.dispatch(
-                ui, "POST", "/owner-enroll/submit", headers=headers, body=form
-            )
-        self.assertEqual(status, 503)
-        self.assertIn(b"internal_error", body)
-        self.assertIn(b"Falha t", body)
-        self.assertNotIn(b"private diagnostic detail", body)
-        self.assertTrue(any(
-            call.args and call.args[0] == "[OWNER-UI] ENROLLMENT ERROR: RuntimeError"
-            for call in logged.call_args_list
-        ))
-
-    def test_owner_enrollment_post_rejects_extra_fields(self):
-        ui = FakeOwnerUI()
-        headers = self.headers(
-            Cookie="factory_owner_session=" + "a" * 64,
-            Origin=ui.origin,
-            **{"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        body = urlencode({
-            "csrf": "x", "password": "strong-owner-password-123",
-            "password_confirm": "strong-owner-password-123",
-            "confirmation": "CADASTRAR", "extra": "unexpected",
-        }).encode()
-        self.assertEqual(self.dispatch(
-            ui, "POST", "/owner-enroll/submit", headers=headers, body=body
-        )[0], 400)
+            self.assertEqual(self.dispatch(
+                ui, method, path, headers=headers, body=form
+            )[0], 404)
         self.assertEqual(ui.enrollments, [])
 
     def test_oversized_consent_page_is_rejected(self):
@@ -214,7 +125,7 @@ class HAIngressServerTests(unittest.TestCase):
 
     def test_wrong_origin_is_rejected_by_owner_ui(self):
         ui = FakeOwnerUI()
-        body = urlencode({"csrf": "x", "password": "y", "confirmation": "PUBLICAR"}).encode()
+        body = urlencode({"csrf": "x", "confirmation": "PUBLICAR"}).encode()
         headers = self.headers(
             Cookie="factory_owner_session=" + "a" * 64,
             Origin="https://evil.invalid",
