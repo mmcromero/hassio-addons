@@ -3,10 +3,10 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.30",
   "repository": "mmcromero/factory-runner",
-  "commit": "c3b02cb8416c96fafaf8b4fa12b9cc2a223a8559",
+  "commit": "8eb7f7cce7958313b0c28f1d09bb16af8686642b",
   "catalog_sha": "fb97f2564d9aae071f8f4be3d6ce007404e8bdfb",
   "previous_source": "9a28e348740c971116a96374d25f7da1bd8d88eb",
-  "reviewed_source": "c3b02cb8416c96fafaf8b4fa12b9cc2a223a8559",
+  "reviewed_source": "8eb7f7cce7958313b0c28f1d09bb16af8686642b",
   "publication": "OWNER_AUTHORIZED_RC30_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CANDIDATE_DISTRIBUTION",
   "candidate_distribution": "FACTORY_RUNNER_RC30_OWNER_SETTINGS_ENROLLMENT",
@@ -625,7 +625,7 @@
     {
       "path": "factory-runner/tests/test_factory_runner_release_pipeline.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_release_pipeline.py",
-      "git_blob_sha": "1cbbf78554f5a7c4a0104e61748f284e1cbee47b",
+      "git_blob_sha": "5c09d1c2b254038818bb0a1baefc279e460e98ea",
       "size": 22285,
       "mode": "100644"
     },
@@ -706,5 +706,5 @@
   },
   "branch": "desenvolvimento",
   "provenance_note": "Manifesto e runtime críticos sincronizados diretamente da fonte RC30. Arquivos listados em files preservam o inventário da RC28 anterior; não usar essa lista como prova de identidade integral dos blobs RC30. Auditoria de árvore integral pendente.",
-  "status": "RC30_FINAL_TEST_ADJUSTMENT_PUBLISHED_PENDING_SUPERVISOR_VALIDATION"
+  "status": "RC30_FINAL_VALIDATION_FIX_PUBLISHED_PENDING_SUPERVISOR_VALIDATION"
 }
