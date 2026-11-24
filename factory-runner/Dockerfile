@@ -16,7 +16,8 @@ RUN chmod -R a+rX /app && chmod 0755 /app/workspace_askpass.py \
  && bash -n /app/run.sh \
  && python3 -m py_compile /app/owner_approval.py /app/approval_ipc.py /app/owner_consent_ui.py /app/github_bytes_transport.py /app/publication_workflow.py /app/approval_service.py /app/owner_ingress_service.py /app/publisher_service.py /app/publisher_ipc.py /app/publisher_permissions.py /app/artesao_artifacts.py /app/release_receipt.py /app/release_console.py /app/local_publisher.py /app/server.py /app/rc_fastlane.py /app/artesao_adapter.py /app/artesao_isolated_executor.py /app/sandbox_export.py /app/declarative_export.py /app/declarative_runtime_probe.py /app/factory_e2e_probe.py /app/workspace_sync.py /app/workspace_askpass.py /app/runtime_probe.py /app/controlled_worker.py /app/landlock_probe.py /app/trusted_export_plan.py /app/ha_ingress_identity.py /app/ha_ingress_server.py /app/owner_bootstrap.py /app/publisher_permissions.py /app/autonomous_dev.py \
  && python3 -m unittest discover -s /app/tests -p 'test_factory_runner_*.py' -v \
- && su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_workspace_sync.py' -v
+ && su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_workspace_sync.py' -v \
+ && su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_e2e_probe.py' -v
 
 # Separate runtime image. No test suite or test credentials in final image.
 FROM alpine:3.23
