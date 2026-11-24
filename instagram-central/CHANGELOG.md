@@ -1,3 +1,20 @@
+# 0.1.45 — corrigir sintaxe das regressões de versão
+
+- Corrige três asserções de versão em `tests/test_http.py` que ficaram com aspas incompletas na atualização anterior.
+- Preserva a correção funcional 0.1.44: ação `automation` permitida na allowlist CSRF.
+- Mantém o teste explícito de geração e validação do token CSRF de automação.
+- Incorpora também o ajuste responsivo da caixa de entrada já desenvolvido: título único, contagem compacta, conteúdo aproximado do cabeçalho e ausência de títulos redundantes; testes browser verificam hierarquia e espaçamento em larguras desktop e mobile.
+- Nenhuma opção, credencial, banco ou dado de runtime foi alterado.
+
+# 0.1.45 — hierarquia compacta da caixa de entrada e densidade editorial
+
+- Remove a linha extensa de metadados do topo da caixa; a contagem passa a ser um indicador compacto ao lado do título único **Caixa de entrada**.
+- Remove a redundância de títulos auxiliares e reduz o espaço entre cabeçalho global e início do conteúdo na caixa de entrada.
+- Mantém a explicação da consulta manual à Meta sob demanda, sem esconder limitações operacionais.
+- Compacta espaçamentos gerais de páginas e painéis do Editorial sem alterar campos, dados, rotas, fluxos de publicação ou ações.
+- Acrescenta regressões para título único, ausência de rótulos repetidos e distância do conteúdo ao cabeçalho em larguras desktop e mobile.
+- Nenhuma mudança em APIs, OAuth, Meta, webhook, recebimento, envio, n8n, Drive ou persistência.
+
 # 0.1.44 — corrigir CSRF da configuração de atendimento
 
 - Inclui a ação `automation` na allowlist de ações administrativas para token CSRF, mantendo o escopo restrito à sessão do painel e à conta principal.
