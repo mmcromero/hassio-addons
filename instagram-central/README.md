@@ -1,8 +1,8 @@
-# Central Instagram — 0.1.44 (controle de atendimento automático e integração restrita)
+# Central Instagram — 0.1.45 (hierarquia compacta e navegação responsiva)
 
 **Links de navegação:** a Central aceita parâmetros de atribuição UTM conhecidos em `/` e `/panel`, inclusive `?utm_source=chatgpt.com`. Sem sessão, exibe login; com sessão, mantém a página solicitada. Não altera o webhook, OAuth ou a entrega de DMs reais. A validação na instalação depende de homologação.
 
-A Central prioriza o uso no celular. Configurações tem quatro abas: **Conexão, Diagnósticos, Ferramentas e Atendimento**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor global do cabeçalho; sem foto, aparecem as iniciais. O menu lateral não repete a identidade da conta e organiza os destinos em Editorial, Atendimento e Gestão. O padrão global está documentado em [CENTRAL-DESIGN-SYSTEM-001](../docs/ux/CENTRAL-DESIGN-SYSTEM-001.md).
+A Central prioriza o uso no celular. Configurações tem quatro abas: **Conexão, Diagnósticos, Ferramentas e Atendimento**. Contas separa a lista do cadastro. No editor, **Conteúdo e Prévia** alternam no celular e aparecem juntos em telas amplas, sem perder campos ou mídias. Revisão e Histórico mostram cartões resumidos e detalhes sob demanda. A conta ativa tem foto/nome/@ no seletor global do cabeçalho; sem foto, aparecem as iniciais. O menu lateral não repete a identidade da conta e organiza os destinos em Editorial, Atendimento e Gestão. O padrão global está documentado em [CENTRAL-DESIGN-SYSTEM-001](../docs/ux/CENTRAL-DESIGN-SYSTEM-001.md). A caixa de entrada usa um único título funcional, contagem compacta e explicação da busca sob demanda; as telas do Editorial usam espaçamento estrutural reduzido e consistente.
 
 Há proteção contra perda de alterações e **Continuar composição** para retomar o que ainda não foi salvo. **Criar publicação** continua abrindo uma composição nova após confirmar o descarte quando necessário. O menu agrupa Editorial, Atendimento e Gestão; os destinos e rotas funcionais permanecem os mesmos. O cabeçalho usa breadcrumb curto e seletor global de conta. Em telas compactas, a navegação abre como gaveta modal com suporte a teclado e foco acessível. O seletor global de conta fica exclusivamente no cabeçalho.
 
@@ -10,7 +10,7 @@ Há proteção contra perda de alterações e **Continuar composição** para re
 
 No novo modal **Excluir**, escolha **Somente da Central Editorial** ou, para publicações com ID remoto confirmado, **Da Central Editorial e do Instagram**. A opção remota pede confirmação da conta indicada e só remove o registro local após a Meta confirmar a exclusão. Pode exigir incluir `instagram_manage_contents` no aplicativo e na configuração do Login do Facebook para Empresas e usar **Conexão Meta → Atualizar permissões da conta → Renovar autorização da conta**. A permissão e o suporte da conexão são conferidos antes de enviar a exclusão; uma recusa preserva registro e arquivos. Carrosséis são excluídos inteiros, não uma imagem isolada. Em caso de resultado incerto, confira o Instagram antes de autorizar nova tentativa; a Central não repete a exclusão automaticamente. As mídias usadas por outras publicações continuam preservadas.
 
-## Atendimento automático — 0.1.44
+## Atendimento automático — 0.1.45
 
 A aba **Configurações Meta → Atendimento** controla o modo da conta principal Umdoislab. O padrão é **Testes**, com lista de perfis autorizados vazia; portanto, ninguém recebe resposta automática até que um ID técnico de remetente seja cadastrado. O modo **Produção** aceita todos os remetentes, exceto os da lista de exclusão. Exclusões prevalecem em qualquer modo. Os perfis são identificados pelo ID numérico estável do Instagram, não pelo @.
 
