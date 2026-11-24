@@ -25,6 +25,10 @@ class SettingsNavigation(unittest.TestCase):
         return self.fixture.request(path, headers=self.headers)
 
     def test_settings_are_separate_cached_only_documents_without_message_content(self):
+        event = json.loads(self.fixture.event())
+        private_message = 'private synthetic inbox message'
+        event['entry'][0]['messaging'][0]['message']['text'] = private_message
+        self.fixture.event = lambda: json.dumps(event).encode()
         self.assertEqual(self.fixture.post_event()[0], 200)
         cached = {'ready': True, 'message': 'Diagnóstico sintético', 'checkedAt': 1795317079}
         with patch.object(server.PUBLICATIONS, 'public_state', return_value=cached) as state, \
@@ -33,6 +37,7 @@ class SettingsNavigation(unittest.TestCase):
             self.assertEqual(status, 200)
             state.assert_not_called()
             self.assertIn(b'12345678', messages)
+            self.assertIn(private_message.encode(), messages)
             self.assertIn(b'id="messages"', messages)
             self.assertNotIn(b'id="meta-actions"', messages)
             self.assertNotIn(b'id="check-publication"', messages)
@@ -42,7 +47,7 @@ class SettingsNavigation(unittest.TestCase):
                 self.assertIn(b'id="meta-actions"', settings)
                 self.assertIn(b'id="check-publication"', settings)
                 self.assertIn(b'12345678', messages)
-                self.assertNotIn(b'12345678', settings)
+                self.assertNotIn(private_message.encode(), settings)
                 self.assertNotIn(b'id="messages"', settings)
                 self.assertIn(b'Diagn\xc3\xb3stico sint\xc3\xa9tico', settings)
                 self.assertIn("connect-src 'self'", headers['Content-Security-Policy'])
