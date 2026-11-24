@@ -76,7 +76,7 @@ class WorkspaceSyncTests(unittest.TestCase):
 
     def fake_clone(self, repo, dest, token):
         base = self.source if repo == "fixture/source" else self.dist
-        subprocess.run(["git", "clone", "-q", "--no-checkout", str(base), str(dest)],check=True)
+        subprocess.run(["git", "clone", "-q", "--no-checkout", "--no-hardlinks", str(base), str(dest)],check=True)
         self.git(dest, "remote", "set-url", "origin", "https://github.com/"+repo+".git")
 
     def run_sync(self):
