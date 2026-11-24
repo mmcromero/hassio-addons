@@ -1,3 +1,11 @@
+# 0.1.0-rc.25 — validação final da candidata de cadastro
+
+- Corrige fixture unitária para fornecer o caminho Ingress autenticado exigido pelo cadastro.
+- Mantém nonce CSRF de uso único, identidade HA vinculada, Origin HTTPS exata e vínculo ao caminho Ingress.
+- Mantém consentimento de publicação separado por cookie HttpOnly, CSRF e reautenticação.
+- Build ARM64 e suíte completa obrigatórios no Supervisor; homologação real do cadastro após instalação.
+- Publicação de produtos continua bloqueada.
+
 # 0.1.0-rc.24 — cadastro inicial sem dependência de cookie próprio
 
 - Evidência real RC23: owner_session_cookie_missing_or_invalid.

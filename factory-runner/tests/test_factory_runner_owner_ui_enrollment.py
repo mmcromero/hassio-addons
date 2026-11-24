@@ -24,7 +24,7 @@ class OwnerUIEnrollmentTests(unittest.TestCase):
         self.rpc=FakeApprovalRPC()
         self.ui=OwnerConsentUI(self.rpc,"https://ha.example.invalid",
                                ingress_verifier=lambda context:"owner-fixed")
-        self.context={"verified":True}
+        self.context={"verified":True,"ingress_path":"/api/hassio_ingress/test-token"}
     def test_one_time_enrollment_requires_csrf_origin_and_password_confirmation(self):
         view=self.ui.enroll_view(self.context)
         self.assertIn("minlength=\"16\"",view["html"])
