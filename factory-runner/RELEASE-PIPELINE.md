@@ -1,4 +1,4 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC44 instalada e homologada no Home Assistant ARM64)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 candidata / RC44 instalada e homologada no Home Assistant ARM64)
 
 > **Estado de código e homologação — 25/11/2026 / M082:** RC44 (`0.1.0-rc.44`) integrada em `release-candidate`, publicada em `hassio-addons:main/factory-runner/` e instalada no Supervisor. Build ARM64 concluído; Dockerfile executou com sucesso `bash -n`, `py_compile`, suíte `test_factory_runner_*.py`, workspace-sync tests não-root e E2E probe não-root. App `started`, sem update pendente. Probe autenticado real da API de jobs PASS para Avisaqui e Artesão: submissão, idempotência, polling, estado terminal, consulta de plano/recibo, digest, filtros e auditoria. Ambos os jobs retornaram `PARCIAL` como esperado: 68/54 testes selecionados e nenhum executado; `tests_execution_performed=false`, `authorization_verified=false`. Backup pré-update RC41: `4e6ea0d9`. Nenhum código Avisaqui/Artesão executado; Publisher DORMANT; isolamento continua Etapa 5.
 >
@@ -7,6 +7,8 @@
 > O cadastro inicial do proprietário é feito uma única vez pelas Configurações nativas do add-on. A senha temporária é encaminhada no startup pelo helper root-only à autoridade Approval via IPC local e os campos temporários são limpos somente após confirmação durável. O Ingress não cadastra o proprietário: oferece status e consentimento por proposta. O consentimento não redigita a senha; exige sessão/identidade HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR`. O Publisher continua protegido por ativação root-managed, token separado e grant Ed25519; nenhuma destas proteções foi liberada por esta RC.
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
+
+**Estado de desenvolvimento M084 (25/11/2026):** Etapa 4 em execução na branch `desenvolvimento`. Foi conectada a revogação de grants à autoridade Approval IPC e à interface HA; regressões novas cobrem revogação, ACL e roteamento Runner→Publisher. Esses testes ainda não foram executados. RC44 permanece a versão instalada/homologada; nenhuma atualização HA ou publicação M084 foi feita. Publisher permanece DORMANT/desativado; Etapa 5 continua obrigatória antes da execução de código não confiável.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 
