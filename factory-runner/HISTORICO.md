@@ -151,3 +151,17 @@ Próxima ação objetiva e responsável:
 - A atualização do store também atualizou apenas metadados disponíveis do add-on Home Assistant MCP Dev (9.3.0.dev3723 → 9.3.0.dev3725); nenhum add-on foi instalado ou atualizado por esse refresh.
 - Testes do Dockerfile, build ARM64 da RC42 e probe real de jobs ainda não executados. Nenhum código de Avisaqui/Artesão executado; Publisher DORMANT; sandbox Etapa 5 preservado.
 - Próximo gate: autorização específica do proprietário para atualizar Factory Runner RC41 → RC42 no Supervisor e executar build/testes ARM64 e homologação da API de jobs.
+
+## 25/11/2026 — M085: RC45 instalada e homologação restrita no Supervisor ARM64
+
+- Autorização do proprietário: backup add-on-only da RC44 e atualização para RC45.
+- Backup pré-update concluído: ID `e00cf68f`, nome `Factory Runner RC44 pre-update RC45 2026-11-25`, somente add-on `45c28620_fabrica_software`, versão `0.1.0-rc.44`, 1.218.263.040 bytes, sem falhas; sem HA config/DB e sem outros add-ons.
+- Fonte `release-candidate` SHA `b9644bd53972af1eba1a785c036e5c358fcb3a2f`; catálogo `hassio-addons:main` SHA `2fb8e5a5a4f454935af427098a3997df2c16a6f8` no momento da atualização; RC45 `0.1.0-rc.45`.
+- Supervisor build real `linux/arm64` iniciado 03:00:17 e concluído 03:03:38 BRT. Atualização confirmada 03:03:41; app `started`, versão RC45, sem update pendente.
+- Dockerfile validation stage concluído: `bash -n`, `py_compile`, `unittest discover -p 'test_factory_runner_*.py'` (241 testes em 35,535 s) e comandos adicionais não-root para workspace-sync e E2E probe; build concluído sem erro.
+- Inicialização RC45: API autenticada PASS (2 projetos, 10 operações read-only auditadas); E2E PASS (5 blobs Git sintéticos, publicação negada, sem workspaces reais); declarative preparation não-root/SHA-256 PASS.
+- Cobertura de revogação de grant, UI/Ingress, Approval IPC/ACL e reserva foi incluída na suíte de 241 testes. Revogação ao vivo não exercitada: Publisher permanece DORMANT por falta de enrollment/runtime config pinada; nenhum grant foi emitido.
+- Opções preservadas: `workspace_auto_prepare=false`, `workspace_sync_enabled=true`, Owner Ingress habilitado, runner/read tokens configurados; senha de enrollment e GitHub write token vazios. Nenhuma opção/credencial alterada.
+- Avisaqui e Artesão continuam bloqueados pelas políticas específicas; nenhum código/teste desses projetos foi executado. Bubblewrap segue falhando no mount namespace e Landlock indisponível; Etapa 5 permanece obrigatória.
+- Supervisor registrou aviso no encerramento da imagem antiga RC44: não tratou SIGTERM e saiu com código 143. Não impediu a atualização; RC45 iniciou normalmente. Reavaliar shutdown gracioso em manutenção futura.
+- Estado: RC45 instalada e homologada para o escopo restrito de orquestração read-only e regressões automatizadas da Etapa 4; não libera Publisher nem publicação/execução de produtos.
