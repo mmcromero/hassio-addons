@@ -1,6 +1,6 @@
 FROM node:22-alpine
 
-RUN apk add --no-cache su-exec jq \
+RUN apk add --no-cache bash su-exec jq \
  && addgroup -S portal \
  && adduser -S -D -H -G portal -s /sbin/nologin portal
 
