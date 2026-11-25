@@ -327,6 +327,55 @@ class InstagramIngressTests(unittest.TestCase):
         item=server.claim_message()
         return {k:item[k] for k in ("accountId","senderId","messageId","claimToken")}
 
+    def _stage5_handoff(self, fail=False):
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="handoff-in",text="Quero falar com alguém")).encode(),'business-1'),1)
+        item=server.claim_message()
+        pair=(item["messageId"],item["claimToken"])
+        data={"accountId":item["accountId"],"senderId":item["senderId"],"state":"pending"}
+        calls=[]
+        def sender(cfg, credential, recipient, text):
+            with server.database() as conn:
+                self.assertEqual(conn.execute("SELECT state FROM handoff").fetchone()[0],"pending")
+                self.assertEqual(conn.execute("SELECT status FROM automation_sends").fetchone()[0],"sending")
+            calls.append((recipient,text))
+            if fail:
+                raise RuntimeError("synthetic uncertainty")
+            return {"message_id":"notice-out"}
+        cfg={"instagram_account_id":"business-1"}
+        self.assertFalse(server.handoff_and_notify(data,cfg,{},reason="human_review",claim=(pair[0],"x"*43),sender=sender)["saved"])
+        self.assertFalse(calls)
+        result=server.handoff_and_notify(data,cfg,{},reason="human_review",claim=pair,sender=sender)
+        self.assertTrue(result["saved"])
+        self.assertEqual(result["notified"],not fail)
+        self.assertEqual(calls,[(item["senderId"],server.HANDOFF_NOTICE)])
+        self.assertFalse(server.handoff_and_notify(data,cfg,{},reason="human_review",claim=pair,sender=sender)["saved"])
+        self.assertEqual(len(calls),1)
+        with server.database() as conn:
+            self.assertEqual(conn.execute("SELECT state FROM handoff").fetchone()[0],"pending")
+            self.assertEqual(conn.execute("SELECT status FROM automation_sends").fetchone()[0],"failed" if fail else "sent")
+        self.assertIsNone(server.claim_message())
+
+    def test_stage5_handoff_notification_saved_first_and_once(self):
+        self._stage5_handoff()
+
+    def test_stage5_uncertain_notice_preserves_handoff_no_retry(self):
+        self._stage5_handoff(fail=True)
+
+    def test_stage5_handoff_after_offer_confirmation(self):
+        self._stage4_offer()
+        claim=self._stage4_next("yes","SIM")
+        self.assertEqual(server.evaluate_claim(claim)["action"],"human_review")
+        calls=[]
+        def send(cfg, credential, recipient, text):
+            calls.append(text)
+            return {"message_id":"confirmation-out"}
+        result=server.handoff_and_notify({"accountId":claim["accountId"],"senderId":claim["senderId"],"state":"pending"},
+            {"instagram_account_id":"business-1"}, {}, reason="human_review",
+            claim=(claim["messageId"],claim["claimToken"]),sender=send)
+        self.assertTrue(result["saved"] and result["notified"])
+        self.assertEqual(calls,[server.HANDOFF_NOTICE])
+        self.assertIsNone(server.claim_message())
+
     def test_stage4_offer_yes_is_claim_bound(self):
         self._stage4_offer()
         claim=self._stage4_next("yes","SIM")

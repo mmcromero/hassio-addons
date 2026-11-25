@@ -47,7 +47,8 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.62"
+APP_VERSION = "0.1.63"
+HANDOFF_NOTICE = "Não consegui resolver sua solicitação agora. Vou encaminhar seu atendimento para uma pessoa da Umdoislab. Assim que possível, alguém entra em contato. 😊"
 HUMAN_OFFER_PROMPT = "Quer que eu encaminhe sua dúvida para um atendente? Responda SIM ou NÃO."
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
@@ -546,13 +547,15 @@ def save_draft(data):
         return inserted.rowcount == 1
 
 
-def set_handoff(data, *, actor="system", reason=None, claim=None):
+def set_handoff(data, *, actor="system", reason=None, claim=None, notification=None):
     if not isinstance(data, dict) or set(data) != {"accountId", "senderId", "state"}:
         return False
     account, sender, state = data["accountId"], data["senderId"], data["state"]
     if (not isinstance(account, str) or not 1 <= len(account) <= 160 or
         not isinstance(sender, str) or not 1 <= len(sender) <= 160 or
         state not in ("bot", "pending", "human", "done")):
+        return False
+    if notification is not None and (claim is None or actor != "bridge" or state != "pending"):
         return False
     with _AUTOMATION_LOCK, database() as conn:
         conn.execute("BEGIN IMMEDIATE")
@@ -582,6 +585,15 @@ def set_handoff(data, *, actor="system", reason=None, claim=None):
         if old_state == state:
             return True
         now = _utc_now().isoformat()
+        if notification is not None:
+            # Reserve before any provider call, in the same transaction as pending.
+            # Existing attempts never receive a second send, even after a crash.
+            cur = conn.execute("""INSERT INTO automation_sends
+                (recipient_id,sender_id,message_id,status,created_at,updated_at)
+                VALUES(?,?,?,'sending',?,?)
+                ON CONFLICT(recipient_id,sender_id,message_id) DO NOTHING""",
+                (account,sender,claim[0],now,now))
+            notification["reserved"] = cur.rowcount == 1
         conn.execute("DELETE FROM human_offers WHERE recipient_id=? AND sender_id=?", (account,sender))
         conn.execute("""INSERT INTO handoff VALUES(?,?,?,?)
           ON CONFLICT(recipient_id,sender_id) DO UPDATE SET
@@ -602,6 +614,46 @@ def set_handoff(data, *, actor="system", reason=None, claim=None):
             conn.execute("""UPDATE inbound SET claim_token=NULL, claim_until=NULL
               WHERE recipient_id=? AND sender_id=? AND processed_at IS NULL""", (account, sender))
     return True
+
+
+def handoff_and_notify(data, cfg, credential, *, reason, claim,
+                       sender=instagram_connection.send_text_message):
+    """Save pending first, attempt exactly one fixed notice, preserve handoff on failure."""
+    if not isinstance(data, dict) or data.get("accountId") != cfg.get("instagram_account_id"):
+        return {"saved": False, "notified": False}
+    with _AUTOMATION_LOCK:
+        reservation = {}
+        if not set_handoff(data, actor="bridge", reason=reason, claim=claim,
+                           notification=reservation):
+            return {"saved": False, "notified": False}
+        if not reservation.get("reserved"):
+            return {"saved": True, "notified": False, "notificationStatus": "already_attempted"}
+        account, profile, mid = data["accountId"], data["senderId"], claim[0]
+        # The outer lock excludes concurrent operator transitions and policy edits.
+        # A lease is consumed by the committed pending transition, not reused.
+        try:
+            result = sender(cfg, credential, profile, HANDOFF_NOTICE)
+            remote_id = result["message_id"]
+            if not isinstance(remote_id, str) or not remote_id:
+                raise ValueError("provider receipt missing")
+        except Exception:
+            with database() as conn:
+                conn.execute("""UPDATE automation_sends SET status='failed',
+                    error_reason='handoff_notification_unconfirmed',updated_at=?
+                    WHERE recipient_id=? AND sender_id=? AND message_id=? AND status='sending'""",
+                    (_utc_now().isoformat(),account,profile,mid))
+            return {"saved": True, "notified": False, "notificationStatus": "unconfirmed"}
+        with database() as conn:
+            conn.execute("""UPDATE automation_sends SET status='sent',remote_message_id=?,
+                reply_text=?,updated_at=? WHERE recipient_id=? AND sender_id=? AND message_id=?
+                AND status='sending'""",
+                (remote_id,HANDOFF_NOTICE,_utc_now().isoformat(),account,profile,mid))
+            conn.execute("""UPDATE automation_sends SET reply_text=NULL
+                WHERE recipient_id=? AND sender_id=? AND status='sent' AND reply_text IS NOT NULL
+                  AND message_id NOT IN (SELECT message_id FROM automation_sends
+                    WHERE recipient_id=? AND sender_id=? AND status='sent' AND reply_text IS NOT NULL
+                    ORDER BY updated_at DESC LIMIT 8)""", (account,profile,account,profile))
+        return {"saved": True, "notified": True, "notificationStatus": "sent"}
 
 
 def signature_valid(body, signature, app_secret):
@@ -2460,6 +2512,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(403, {"error": "wrong account scope"})
             if self.path == "/bridge/handoff":
                 reason = data.pop("reason", None)
+                notify = data.pop("notify", False)
+                if type(notify) is not bool:
+                    return self.respond(422, {"error": "invalid notification flag"})
                 if reason not in (None, "human_review", "unsafe_content", "model_requested_handoff"):
                     return self.respond(422, {"error": "invalid handoff reason"})
                 claim = None
@@ -2467,6 +2522,12 @@ class Handler(BaseHTTPRequestHandler):
                     if "messageId" not in data or "claimToken" not in data:
                         return self.respond(422, {"error": "incomplete handoff claim"})
                     claim = (data.pop("messageId"), data.pop("claimToken"))
+                if notify:
+                    if claim is None or data.get("state") != "pending":
+                        return self.respond(422, {"error": "notification requires pending live claim"})
+                    result = handoff_and_notify(data, cfg, _meta_credential(account_registry.PRIMARY_BUSINESS),
+                                                reason=reason, claim=claim)
+                    return self.respond(200 if result["saved"] else 409, result)
                 if not set_handoff(data, actor="bridge", reason=reason, claim=claim):
                     return self.respond(409 if claim is not None else 422,
                                         {"error": "invalid handoff"})

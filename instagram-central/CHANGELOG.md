@@ -1,3 +1,8 @@
+# 0.1.63 — confirmação de encaminhamento (Etapa 5)
+
+- Handoff autorizado com notify=true reserva confirmação fixa na mesma transação da mudança para pending, antes de qualquer envio Meta. Se o envio falhar ou for incerto, mantém pending e não reenvia. Resposta separa saved e notified. API legada preservada, sem alteração de permissões.
+- Três regressões adicionais; gates obrigatórios no build oficial. Sem alterações WhatsApp, núcleo ou Editorial.
+
 # 0.1.62 — paridade da oferta de atendimento humano (Etapa 4)
 
 - Oferta opcional usa texto fixo da Central, sem transferir antes de confirmação; somente a primeira entrada nova após envio aceito, da mesma conversa, em até duas horas, pode confirmar. SIM isolado não transfere.

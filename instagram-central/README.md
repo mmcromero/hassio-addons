@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.62 (paridade da oferta humana)
+# Central Instagram — 0.1.63 (confirmação do encaminhamento)
 
 **Voltar ao bot:** encerra a fila anterior da conversa sem enviar respostas retroativas. O histórico mostra quais mensagens foram encerradas sem resposta automática; somente um novo evento posterior à retomada pode entrar na fila. As demais guardas de atendimento permanecem. O operador não precisa apagar o histórico.
 
@@ -426,3 +426,6 @@ Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmc
 
 
 **Etapa 4:** `/bridge/reply` aceita `kind: human_offer` e `text: ""`; a Central usa texto fixo e registra oferta somente após aceitação. A próxima entrada nova da mesma conversa pode confirmar até duas horas; sem efeito sobre mensagens anteriores, outras conversas ou modo não autorizado. O pedido humano explícito continua como handoff direto. Um claim ativo por conversa.
+
+
+**Etapa 5:** `/bridge/handoff` aceita `notify: true` somente com reserva válida, estado pending solicitado, escopo da conta, modo Testes e janela vigente. Central persiste encaminhamento e reserva única antes do envio fixo; retorna `saved` e `notified` separadamente. Falha não desfaz atendimento humano e não permite reenvio. Sem mudança do contrato legado.
