@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M103 — RC59 instalada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M103 — RC60 instalada)
 
-> **Estado de código e homologação — 25/11/2026 / M103:** RC59 (0.1.0-rc.59) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe bounded-stream safe PASS: chroot read-only, UID drop, FD audit, seccomp, escrita/rede/criação de processos negadas; `project_code_executed=false`. O cenário overflow foi coberto no teste de build, mas ainda não foi executado no startup real. RC60 em desenvolvimento adiciona overflow live e prova RLIMIT_CPU. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
+> **Estado de código e homologação — 25/11/2026 / M103:** RC60 (0.1.0-rc.60) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe real confirmou RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live `blocked_output_limit`, 129 bytes, filho morto por SIGKILL e tmpfs restaurado. `project_code_executed=false`. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -288,3 +288,8 @@ RC35 em desenvolvimento acrescenta medição de eventos de auditoria anteriores 
 ## M103 — prova de CPU por processo e overflow live (25/11/2026)
 
 RC60 candidata mantém o protótipo stream-only da RC59 e acrescenta: (1) teste RLIMIT_CPU em filho sintético descartável, com soft=1 s/hard=2 s e timeout externo; (2) chamada de startup ao cenário `bounded_stream_probe.py overflow 128`, que deve registrar `status=blocked_output_limit`, `output_limit_enforced=true` e `stdout_bytes=129`, seguida de limpeza tmpfs. O cenário safe continua separado e `output_limit_enforced=false` é esperado nele. Não executa código de projeto. Esses ensaios não comprovam orçamento agregado de CPU/memória nem quota por job; cgroup v2 segue read-only/sem delegação, Publisher DORMANT e `sandbox_export` fail-closed.
+
+
+### Resultado operacional M103 — RC60 (25/11/2026)
+
+Supervisor registrou build ARM64 concluído às 15:37:32 e atualização bem-sucedida às 15:37:35. Instalada/started; `update_available=false`. O primeiro pedido MCP de update expirou em conflito com job group ocupado, mas o build iniciado concluiu; não houve repetição cega. Logs reais: RLIMIT_CPU `enforced=true`; overflow `stdout_bytes=129`, `child_signal=9`, `child_killed_for_output_limit=true`, `tmpfs_cleanup_restored=true`. Opções não foram enviadas para alteração; `protected=true`, `privileged=[]`, `full_access=false`, AppArmor default. Nenhum backup da RC59 foi criado. Nenhum código de projeto executado.

@@ -3,7 +3,7 @@
 - Adiciona ensaio sintético de RLIMIT_CPU em processo filho descartável, com limite soft=1 s/hard=2 s, deadline externo de 4 s e limpeza em caso de timeout.
 - Mantém RC59 bounded-stream probe e acrescenta execução real do cenário `overflow 128` no startup: o processo confiável deve ler exatamente 129 bytes, encerrar o filho e registrar `blocked_output_limit`.
 - O cenário seguro continua executado separadamente e deve registrar `status=pass`; no cenário seguro `output_limit_enforced=false` é esperado.
-- Testes ARM64 de build devem confirmar `rlimit_cpu_primitive_enforced=true`, overflow limitado e recuperação da capacidade do tmpfs.
+- Resultado real RC60 no Supervisor ARM64: build e suíte Dockerfile concluídos; `rlimit_cpu_primitive_enforced=true`, status `ok`, 1 s; overflow live `status=blocked_output_limit`, 129 bytes, filho encerrado por SIGKILL e tmpfs restaurado.
 - Nenhum código de projeto é executado; nenhuma capability, AppArmor, mount, opção do Supervisor, rede, Docker ou credencial é alterada.
 - Isso prova primitivas sintéticas por processo/canal, não orçamento agregado de job nem sandbox homologado. `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 

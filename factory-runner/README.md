@@ -1,12 +1,13 @@
 > **ESTADO VIGENTE — 25/11/2026 / M103**
 >
-> - **Baseline HA:** RC59 (`0.1.0-rc.59`) instalada/started; RC60 em desenvolvimento.
-> - **M102 / RC59:** build ARM64 concluído; probe sintético safe PASS; chroot read-only, UID drop, FD audit, seccomp e negação de escrita/rede/criação de processos. O caso overflow ainda não foi executado no startup real do Raspberry.
-> - **M103 / RC60:** adiciona ensaio RLIMIT_CPU em filho descartável e chama o cenário overflow do canal stdout no startup, com teto de 128 bytes e encerramento do filho ao ler o 129º byte.
-> - **Armazenamento:** `/dev/shm` teto contêiner de 4.091.707.392 bytes (~3,81 GiB); quota por job não comprovada. `/data` ext4 sem quota identificada.
+> - **Baseline HA:** RC60 (`0.1.0-rc.60`) instalada/started no Raspberry Pi 4; `update_available=false`.
+> - **M102 / RC59:** probe safe passou no Raspberry: chroot read-only, UID drop, FD audit, seccomp e negação de escrita/rede/criação de processos.
+> - **M103 / RC60:** build ARM64 e suíte Dockerfile concluídos. Probe real confirmou `rlimit_cpu_primitive_enforced=true` (`status=ok`, 1 s). Overflow live confirmou `status=blocked_output_limit`, `stdout_bytes=129`, `child_signal=9`, `child_killed_for_output_limit=true` e `tmpfs_cleanup_restored=true`.
+> - **Proteções:** `protected=true`, `privileged=[]`, `full_access=false`, AppArmor `default`; nenhuma permissão adicional concedida.
+> - **Armazenamento:** `/dev/shm` teto de contêiner de 4.091.707.392 bytes (~3,81 GiB); quota por job não comprovada. `/data` ext4 sem quota identificada.
 > - **Limitações:** cgroup v2 read-only/sem delegação; sem orçamento agregado independente por job; rootfs é fixture diagnóstica, não runtime completo. Nenhum código de projeto executado.
 > - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
-> - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar Git, proveniência, hashes, opções e dados persistentes.
+> - **Operação:** atualização normal sem backup da RC anterior; opções persistentes não foram alteradas.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
