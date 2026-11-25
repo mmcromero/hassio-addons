@@ -1,3 +1,9 @@
+# 0.1.0-rc.46 — Etapa 5A: gate de isolamento agregado e diagnóstico cgroup (M086)
+
+- Bloqueia execução de exportador mesmo se o smoke test Bubblewrap passar, até homologação de isolamento agregado.
+- Consulta cgroup v2 no processo não-root, sem alterar controles, host ou credenciais.
+- Adiciona regressões sintéticas. Build e prova operacional pendentes. Publisher DORMANT.
+
 # 0.1.0-rc.45 — integração do Publisher e revogação (M084)
 
 - Conecta a revogação de grants ao Approval IPC e à interface do proprietário no HA Ingress.

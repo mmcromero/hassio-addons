@@ -93,6 +93,13 @@ class SandboxTests(unittest.TestCase):
                 self.call()
             launch.assert_not_called()
 
+    def test_namespace_success_alone_never_runs_project_code(self):
+        result=type('Result',(),{'returncode':0,'stderr':b''})()
+        with patch.object(sandbox.shutil,'which',return_value='/usr/bin/bwrap'), patch.object(sandbox.os,'geteuid',return_value=1000), patch.object(sandbox.subprocess,'run',return_value=result), patch.object(sandbox.subprocess,'Popen') as launch:
+            with self.assertRaisesRegex(sandbox.SandboxUnavailable,'Aggregate sandbox isolation'):
+                self.call()
+            launch.assert_not_called()
+
     def test_fresh_helper_session_and_cleanup_without_preexec(self):
         (self.target/'.git').mkdir()
         process=type('Process',(),{'returncode':0,'pid':987654,'poll':lambda self:0})()
@@ -100,6 +107,7 @@ class SandboxTests(unittest.TestCase):
         with patch.object(sandbox.shutil,'which',return_value='/usr/bin/bwrap'), \
              patch.object(sandbox.os,'geteuid',return_value=1000), \
              patch.object(sandbox.subprocess,'run',return_value=result), \
+             patch.object(sandbox,'_require_aggregate_isolation'), \
              patch.object(sandbox.subprocess,'Popen',return_value=process) as launch, \
              patch.object(sandbox.os,'killpg') as kill:
             self.call()

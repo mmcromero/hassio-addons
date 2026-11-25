@@ -6,14 +6,68 @@ It runs as the non-root service UID, never mounts /data, never enables privilege
 and logs only PASS/BLOCKED/ERROR with a bounded diagnostic.
 """
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
+
+def cgroup_inventory(proc=Path("/proc/self"), mount=Path("/sys/fs/cgroup")):
+    """Read-only feasibility diagnostic. Never creates or modifies a cgroup."""
+    report = {"cgroup_v2": False, "mount_read_only": None,
+              "controllers": [], "aggregate_controls_present": False,
+              "delegation_candidate": False, "enforcement_verified": False,
+              "safe_for_untrusted_code": False, "status": "unavailable"}
+    try:
+        matches = []
+        for line in (proc / "mountinfo").read_text().splitlines():
+            left, right = line.split(" - ", 1)
+            fields, fs = left.split(), right.split()
+            if fields[4] == str(mount) and fs[0] == "cgroup2":
+                matches.append((fields, fs))
+        if len(matches) != 1:
+            return report
+        fields, fs = matches[0]
+        report["cgroup_v2"] = True
+        report["mount_read_only"] = ("ro" in fields[5].split(",")
+                                     or "ro" in fs[2].split(","))
+        members = [line[3:] for line in (proc / "cgroup").read_text().splitlines()
+                   if line.startswith("0::")]
+        if len(members) != 1:
+            return report
+        member = members[0]
+        root = fields[3]
+        if (not member.startswith("/") or not root.startswith("/")
+                or any(p in (".", "..") for p in member.split("/") + root.split("/"))
+                or chr(92) in member or chr(92) in root):
+            return report
+        if root != "/" and member != root and not member.startswith(root + "/"):
+            return report
+        relative = member[len(root):].lstrip("/")
+        current = mount / relative
+        available = set((current / "cgroup.controllers").read_text().split())
+        wanted = {"cpu", "memory", "pids"}
+        report["controllers"] = sorted(available & wanted)
+        controls = ("cpu.max", "memory.max", "pids.max", "cgroup.kill",
+                    "cgroup.procs", "cgroup.subtree_control")
+        report["aggregate_controls_present"] = all(
+            (current / name).is_file() for name in controls)
+        report["delegation_candidate"] = (
+            os.geteuid() != 0 and not report["mount_read_only"]
+            and wanted <= available and report["aggregate_controls_present"]
+            and os.access(current, os.W_OK | os.X_OK)
+            and os.access(current / "cgroup.subtree_control", os.W_OK)
+            and os.access(current / "cgroup.procs", os.W_OK))
+        report["status"] = "inventory_only"
+    except (OSError, ValueError, IndexError):
+        pass
+    return report
+
 
 def main():
     if os.geteuid() == 0:
         print("[ISOLATION] ERROR: expected non-root service", flush=True)
         return 0
+    print("[ISOLATION-CGROUP] " + json.dumps(cgroup_inventory(), sort_keys=True), flush=True)
     bwrap = shutil.which("bwrap")
     if not bwrap:
         print("[ISOLATION] BLOCKED: bubblewrap executable unavailable", flush=True)

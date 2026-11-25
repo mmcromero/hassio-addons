@@ -55,6 +55,12 @@ def _limits(cpu_seconds, memory_bytes, max_file_bytes, *, process_limit=True):
         actual = val if hard == resource.RLIM_INFINITY else min(val, hard)
         resource.setrlimit(key, (actual, actual))
 
+def _require_aggregate_isolation():
+    # Etapa 5: a namespace smoke test is not an aggregate containment proof.
+    # No environment variable, client parameter or project profile may bypass this.
+    raise SandboxUnavailable("Aggregate sandbox isolation not homologated")
+
+
 def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes,
                    memory_bytes, cpu_seconds, elapsed_seconds):
     """Run only inside bwrap, with network off and no access to HA /data.
@@ -124,6 +130,7 @@ def sandbox_export(*, source, target, script, sha, verify, env, max_output_bytes
     if probe.returncode:
         detail = probe.stderr.decode("utf-8", "replace")[:512].strip()
         raise SandboxUnavailable("Bubblewrap namespace probe failed: " + detail)
+    _require_aggregate_isolation()
     # NPROC counts the service's real UID before unshare. Apply it only after
     # user/PID namespace setup, in a trusted read-only helper, before any
     # exporter code. The fixed process ceiling is unchanged.
