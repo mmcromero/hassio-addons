@@ -37,6 +37,32 @@ def _identity(user, group, uid_for, gid_for):
     return uid, gid
 
 
+def _directory_mismatch(name, info, uid, gid, mode):
+    if stat.S_ISDIR(info.st_mode):
+        kind = "directory"
+    elif stat.S_ISLNK(info.st_mode):
+        kind = "symlink"
+    elif stat.S_ISREG(info.st_mode):
+        kind = "regular_file"
+    else:
+        kind = "other"
+    mismatches = []
+    if kind != "directory":
+        mismatches.append(f"kind={kind}_expected=directory")
+    if info.st_uid != uid:
+        mismatches.append(f"uid={info.st_uid}_expected={uid}")
+    if info.st_gid != gid:
+        mismatches.append(f"gid={info.st_gid}_expected={gid}")
+    actual_mode = stat.S_IMODE(info.st_mode)
+    if actual_mode != mode:
+        mismatches.append(f"mode={actual_mode:04o}_expected={mode:04o}")
+    if not mismatches:
+        return None
+    # Relative service name and filesystem metadata only; never expose absolute paths,
+    # file contents, credentials, or the contents of persistent service directories.
+    return f"unsafe_existing_service_directory:{name}:" + ",".join(mismatches)
+
+
 def provision_layout(root, *, uid_for=None, gid_for=None,
                      root_uid=None, root_gid=None, root_mode=0o711):
     """Create missing service directories; refuse mismatches without repair."""
@@ -66,33 +92,21 @@ def provision_layout(root, *, uid_for=None, gid_for=None,
         except FileNotFoundError:
             info = None
         if info is not None:
-            actual_mode = stat.S_IMODE(info.st_mode)
-            mismatches = []
-            if not stat.S_ISDIR(info.st_mode):
-                mismatches.append("kind=not_directory")
-            if info.st_uid != uid:
-                mismatches.append(f"uid={info.st_uid}_expected={uid}")
-            if info.st_gid != gid:
-                mismatches.append(f"gid={info.st_gid}_expected={gid}")
-            if actual_mode != mode:
-                mismatches.append(f"mode={actual_mode:04o}_expected={mode:04o}")
-            if mismatches:
-                # Safe metadata only: never print credentials, file contents or absolute paths.
-                raise ValueError(
-                    f"unsafe_existing_service_directory:{name}:" + ",".join(mismatches)
-                )
+            mismatch = _directory_mismatch(name, info, uid, gid, mode)
+            if mismatch:
+                raise ValueError(mismatch)
         entries.append((path, uid, gid, mode))
 
     for path, uid, gid, mode in entries:
         try:
             os.mkdir(path, 0o700)
         except FileExistsError:
-            # Recheck a concurrent creation; never follow a symlink.
+            # Recheck a concurrent creation; never follow a symlink. Preserve the
+            # exact safe metadata diagnostic used by the initial preflight.
             info = path.lstat()
-            if not stat.S_ISDIR(info.st_mode):
-                raise ValueError("unsafe_existing_service_directory")
-            if (info.st_uid, info.st_gid, stat.S_IMODE(info.st_mode)) != (uid, gid, mode):
-                raise ValueError("unsafe_existing_service_directory")
+            mismatch = _directory_mismatch(path.name, info, uid, gid, mode)
+            if mismatch:
+                raise ValueError(mismatch)
             continue
         fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
         try:

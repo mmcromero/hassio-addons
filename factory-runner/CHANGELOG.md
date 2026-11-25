@@ -1,3 +1,11 @@
+# 0.1.0-rc.51 — Etapa 5B: diagnóstico completo da corrida de criação M092
+
+- Unifica a verificação de metadados para diretórios persistentes preexistentes e para a janela de concorrência `mkdir`/`FileExistsError`.
+- Se a criação concorrente encontrar tipo, UID, GID ou modo divergente, informa somente o nome relativo e os metadados esperados/encontrados; nunca repara, faz chown/chmod ou imprime caminhos absolutos/conteúdo.
+- Adiciona regressão sintética que força a corrida e verifica diagnóstico exato e preservação do modo divergente.
+- RC50 está instalada no Supervisor, mas o app permanece ERROR; os logs disponíveis ainda mostram a mensagem genérica, sem identificar o diretório. RC51 visa fechar essa lacuna de diagnóstico.
+- Probe de isolamento permanece não homologado; Publisher DORMANT; nenhum código de projeto executado.
+
 # 0.1.0-rc.50 — Etapa 5B: diagnóstico exato do bootstrap (M091)
 
 - Bootstrap continua fail-closed, sem reparar diretórios persistentes; erro agora identifica somente o nome relativo e os metadados divergentes (tipo, UID, GID e modo), sem conteúdo/segredos/caminhos absolutos.

@@ -68,6 +68,29 @@ class BootstrapTests(unittest.TestCase):
                 self.provision(root)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o755)
 
+    def test_concurrent_creation_reports_relative_name_and_safe_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            root.chmod(0o711)
+            real_mkdir = os.mkdir
+
+            def concurrent_mkdir(path, mode=0o777, *, dir_fd=None):
+                if Path(path).name == "approval":
+                    real_mkdir(path, mode)
+                    os.chmod(path, 0o755)
+                    raise FileExistsError
+                if dir_fd is None:
+                    return real_mkdir(path, mode)
+                return real_mkdir(path, mode, dir_fd=dir_fd)
+
+            with patch("owner_bootstrap.os.mkdir", side_effect=concurrent_mkdir):
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"unsafe_existing_service_directory:approval:mode=0755_expected=0700",
+                ):
+                    self.provision(root)
+            self.assertEqual(stat.S_IMODE((root / "approval").stat().st_mode), 0o755)
+
     def test_unsafe_root_mode_or_symlink_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

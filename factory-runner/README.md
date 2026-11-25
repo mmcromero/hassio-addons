@@ -1,12 +1,12 @@
-> **ESTADO VIGENTE — 25/11/2026 / M091**
+> **ESTADO VIGENTE — 25/11/2026 / M092**
 >
 > - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação. Etapa 5/6 não homologadas.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC50 preparada para diagnóstico exato do bootstrap. `release-candidate` está na RC49.
-> - **Catálogo/HA:** RC49 (`0.1.0-rc.49`) publicada e instalada no Supervisor ARM64; build ARM64 PASS. App segue ERROR porque o bootstrap recusa um diretório de serviço persistente. Backup RC48 `6a024e69`; backup RC49 será criado antes da próxima atualização.
-> - **Causa:** a hipótese de deslocamento UID/GID foi corrigida na ordem do Dockerfile, mas o bloqueio persistiu. A causa exata ainda NÃO está identificada; RC50 passa a registrar o nome relativo e a divergência de tipo/UID/GID/modo sem modificar os dados.
-> - **Probe:** a RC49 não executou a sonda após falha do bootstrap. A última evidência da sonda (RC48) permanece inválida e não comprova chroot/seccomp/RLIMIT.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC51 preparada para diagnóstico da ramificação concorrente do bootstrap. `release-candidate` permanece RC50 até integração.
+> - **Catálogo/HA:** RC50 (`0.1.0-rc.50`) instalada no Supervisor; estado `error`. Backup add-on-only pré-RC50 `da6fcd4e`, sem falhas.
+> - **Causa:** RC50 ainda emite mensagem genérica na janela `mkdir/FileExistsError`; não há evidência suficiente para identificar o diretório ou metadado divergente. RC51 acrescenta diagnóstico seguro sem reparar.
+> - **Probe:** chroot/seccomp/RLIMIT ainda sem prova positiva válida; não executar código de projeto.
 > - **Proteções:** protected=true, privileged=[], full_access=false, AppArmor default. Publisher DORMANT; Avisaqui/Artesão não executados nem alterados.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M091; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M092; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
 
