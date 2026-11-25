@@ -4,6 +4,14 @@
 
 **Antes de declarar impedimento:** identificar sintoma, repositório, versão/HEAD, add-on e etapa; consultar este arquivo e a documentação específica vigente; executar o procedimento autorizado; verificar alternativas já aprovadas, inclusive GOV-BLK-002. Sem evidência de que a rotina não atende ao caso, um NO-GO é **DESVIO DE PROCEDIMENTO**, e deve ser devolvido para corrigir apenas a etapa necessária. Não presumir que hardware, CI, Actions, QEMU ou virtualização ausentes bloqueiam a publicação.
 
+## P0 — Identidade visível obrigatória
+
+Todo add-on deste catálogo deve usar o prefixo literal **`Fábrica de Ideias - `** no campo `name` do `config.yaml` e também em `panel_title`, quando declarado.
+
+Exemplos: `Fábrica de Ideias - Portal de Governança`, `Fábrica de Ideias - Design System Lab`, `Fábrica de Ideias - Kanban`.
+
+Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no artefato exportado. Qualquer ausência ou variação do prefixo reprova a validação. Não aceitar `Fábrica de Softwares` nem variações. A regra não altera `slug`, diretório, IDs técnicos ou origem do repositório; não renomear instalações existentes nem executar instalação/atualização por causa desta conferência. Aplicável a novos add-ons e a toda atualização futura.
+
 ## 1. Organização e fonte
 
 - Cada add-on possui sua **pasta própria na raiz**, `config.yaml` com `name`, `version`, `slug` único e `arch`, e documentação/versão próprias; `repository.yaml` fica **somente na raiz**.
@@ -49,7 +57,7 @@ Não versionar `options.json`, tokens, senhas, bancos, sessões, backups, mídia
 
 - Fonte privada: `mmcromero/fabricacao_e_orcamentos`.
 - Distribuição única Home Assistant: pasta raiz `artesaos-piloto/` neste repositório.
-- Identidade do add-on: nome `Fábrica de Softwares - Artesão Digital`; slug `artesaos_piloto`; manter `icon.png` e `logo.png` oficiais na raiz da pasta.
+- Identidade do add-on: nome `Fábrica de Ideias - Artesão Digital`; slug `artesaos_piloto`; manter `icon.png` e `logo.png` oficiais na raiz da pasta.
 - A pasta do add-on deve conter o pacote completo exportado da fonte aprovada, sem misturar documentação privada, credenciais, bancos, opções ou dados de runtime.
 - Seguir `docs/operacao/AD_ESTEIRA_RAPIDA_001.md` no repositório de fonte para corte de versão, revisão de escopo, exportação e proveniência. Publicar somente `artesaos-piloto/` na `main` deste catálogo.
 - O Supervisor do Home Assistant executa o build local quando o add-on usa Dockerfile sem `image`; build ARM64 externo, Actions e Factory Runner não são pré-requisitos genéricos. Instalação e homologação no HA permanecem etapas distintas da publicação Git.
