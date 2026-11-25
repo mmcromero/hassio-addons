@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 candidata / RC44 instalada e homologada no Home Assistant ARM64)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 instalada e homologada no escopo restrito ARM64)
 
-> **Estado de código e homologação — 25/11/2026 / M082:** RC44 (`0.1.0-rc.44`) integrada em `release-candidate`, publicada em `hassio-addons:main/factory-runner/` e instalada no Supervisor. Build ARM64 concluído; Dockerfile executou com sucesso `bash -n`, `py_compile`, suíte `test_factory_runner_*.py`, workspace-sync tests não-root e E2E probe não-root. App `started`, sem update pendente. Probe autenticado real da API de jobs PASS para Avisaqui e Artesão: submissão, idempotência, polling, estado terminal, consulta de plano/recibo, digest, filtros e auditoria. Ambos os jobs retornaram `PARCIAL` como esperado: 68/54 testes selecionados e nenhum executado; `tests_execution_performed=false`, `authorization_verified=false`. Backup pré-update RC41: `4e6ea0d9`. Nenhum código Avisaqui/Artesão executado; Publisher DORMANT; isolamento continua Etapa 5.
+> **Estado de código e homologação — 25/11/2026 / M085:** RC45 (`0.1.0-rc.45`) integrada em `release-candidate`, publicada em `hassio-addons:main/factory-runner/` e instalada no Supervisor ARM64. Build concluído; Dockerfile executou `bash -n`, `py_compile`, suíte `test_factory_runner_*.py` (241 testes), workspace-sync não-root e E2E probe não-root; app `started`, sem update pendente. API autenticada PASS (2 projetos, 10 operações read-only auditadas), E2E sintético PASS (5 blobs; nenhum workspace real) e preparação declarativa não-root/SHA-256 PASS. Revogação de grant coberta por testes, mas não exercitada ao vivo porque Publisher permanece DORMANT e nenhum grant foi emitido. Avisaqui/Artesão continuam bloqueados por política; nenhum código/teste de projeto executado. Backup add-on-only RC44: `e00cf68f`. Bubblewrap/Landlock permanecem sem isolamento comprovado; Etapa 5 continua obrigatória.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
@@ -8,7 +8,7 @@
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 
-**Estado de desenvolvimento M084 (25/11/2026):** Etapa 4 em execução na branch `desenvolvimento`. Foi conectada a revogação de grants à autoridade Approval IPC e à interface HA; regressões novas cobrem revogação, ACL e roteamento Runner→Publisher. RC45 foi publicada em `hassio-addons:main/factory-runner/` com 115 arquivos comparados e zero divergências. O refresh do Supervisor reconheceu RC45 como atualização disponível; RC44 permanece instalada/started. Os novos testes ainda não foram executados e a atualização HA não foi iniciada. Publisher permanece DORMANT/desativado; Etapa 5 continua obrigatória antes da execução de código não confiável.
+**M085 (25/11/2026):** RC45 instalada e iniciada no Supervisor; backup RC44 `e00cf68f`; build ARM64 e suíte Dockerfile PASS (241 testes principais e comandos não-root); API/E2E/declaração PASS. Publisher DORMANT; revogação ao vivo não exercitada; Etapa 5 ainda obrigatória.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 
