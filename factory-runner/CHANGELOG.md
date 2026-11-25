@@ -1,3 +1,12 @@
+# 0.1.0-rc.62 — M105: diagnóstico segmentado do build ARM64
+
+- Não altera runtime, permissões, opções, mounts, capabilities, AppArmor, rede ou comportamento de execução.
+- Separa no Dockerfile a sintaxe shell, py_compile, regressões de archive_stream, suíte unitária completa, workspace-sync não-root e E2E não-root em etapas BuildKit identificáveis.
+- A suíte archive_stream é executada isoladamente e novamente dentro da suíte completa; nenhum teste é removido ou enfraquecido.
+- Objetivo: identificar qual etapa falhou nas tentativas RC61, pois o Supervisor expôs somente exit code 1 para o RUN monolítico.
+- RC62 é candidata de diagnóstico. Só instalar se todo o build ARM64 e todos os testes passarem.
+- safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed; nenhum código de projeto executado.
+
 # 0.1.0-rc.61 — M104: validador de archive stream com allowlist
 
 - Adiciona `archive_stream.py`, validador/extrator confiável para tar stream não confiável, sem executar conteúdo.

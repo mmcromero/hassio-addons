@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M103 — RC60 instalada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M105 — RC60 instalada; RC62 diagnóstico em preparação)
 
-> **Estado de código e homologação — 25/11/2026 / M104:** RC60 (0.1.0-rc.60) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe real confirmou RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live `blocked_output_limit`, 129 bytes, filho morto por SIGKILL e tmpfs restaurado. `project_code_executed=false`. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
+> **Estado de código e homologação — 25/11/2026 / M105:** RC60 (0.1.0-rc.60) permanece instalada/started. RC61 publicada (123/123 blobs) mas duas tentativas de build ARM64 falharam no RUN monolítico de validação (exit code 1), sem identificação do subcomando. RC62 separa sintaxe, py_compile, archive_stream, suíte completa, workspace-sync e E2E em etapas BuildKit distintas, sem remover testes nem alterar runtime. RC62 só será instalada se todos os gates passarem. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -298,3 +298,8 @@ Supervisor registrou build ARM64 concluído às 15:37:32 e atualização bem-suc
 ## M104 — validador de archive stream
 
 RC61 adiciona `archive_stream.py` como componente confiável de validação/extração de tar stream. O contrato exige allowlist exata, paths obrigatórios, budgets de archive/file/total/count/depth/time, rejeição de links/special files/PAX/sparse/traversal e staging atômico. O módulo não executa conteúdo e ainda não está conectado ao `sandbox_export`; o executor permanece fail-closed. Build ARM64 e suíte Dockerfile pendentes.
+
+
+## M105 — diagnóstico segmentado do build ARM64
+
+A candidata RC62 altera apenas o Dockerfile da etapa de validação para separar shell syntax, py_compile, a suíte archive_stream (também executada na suíte completa), todos os testes Factory Runner, workspace-sync não-root e E2E não-root em RUNs distintos. O objetivo é identificar o subgate que falhou na RC61. A suíte integral permanece obrigatória; nenhuma falha é ignorada e nenhum teste é removido. Nenhuma alteração de runtime, opção, permissão, mount, AppArmor, capability ou rede. Não instalar RC62 se qualquer gate falhar.

@@ -14,12 +14,17 @@ COPY test_catalogs/ /app/test_catalogs/
 COPY schemas/ /app/schemas/
 COPY tests/ /app/tests/
 RUN addgroup -S runner && adduser -S -D -H -G runner -s /sbin/nologin runner && addgroup -S executor && adduser -S -D -H -G executor -s /sbin/nologin executor && addgroup -S publisher && addgroup -S publisher_clients && addgroup runner publisher && addgroup runner publisher_clients
-RUN chmod -R a+rX /app && chmod 0755 /app/workspace_askpass.py \
- && bash -n /app/run.sh \
- && python3 -m py_compile /app/owner_approval.py /app/approval_ipc.py /app/owner_consent_ui.py /app/github_bytes_transport.py /app/publication_workflow.py /app/approval_service.py /app/owner_ingress_service.py /app/publisher_service.py /app/publisher_ipc.py /app/publisher_permissions.py /app/artesao_artifacts.py /app/release_receipt.py /app/release_console.py /app/local_publisher.py /app/server.py /app/rc_fastlane.py /app/artesao_adapter.py /app/artesao_isolated_executor.py /app/sandbox_export.py /app/declarative_export.py /app/declarative_workspace_probe.py /app/declarative_runtime_probe.py /app/factory_e2e_probe.py /app/runtime_api_probe.py /app/workspace_sync.py /app/workspace_askpass.py /app/runtime_probe.py /app/controlled_worker.py /app/landlock_probe.py /app/seccomp_policy.py /app/isolation_backend_probe.py /app/bounded_stream_probe.py /app/archive_stream.py /app/trusted_export_plan.py /app/ha_ingress_identity.py /app/ha_ingress_server.py /app/owner_bootstrap.py /app/owner_settings_enroll.py /app/execution_contract.py /app/execution_evidence.py /app/execution_planner.py /app/execution_orchestrator.py /app/execution_plan_worker.py /app/publisher_permissions.py /app/autonomous_dev.py \
- && python3 -m unittest discover -s /app/tests -p 'test_factory_runner_*.py' -v \
- && su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_workspace_sync.py' -v \
- && su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_e2e_probe.py' -v
+# Keep each validation gate in its own BuildKit step. This preserves the full suite
+# while making the failing stage identifiable in Supervisor build diagnostics.
+RUN chmod -R a+rX /app && chmod 0755 /app/workspace_askpass.py
+RUN bash -n /app/run.sh
+RUN python3 -m py_compile /app/owner_approval.py /app/approval_ipc.py /app/owner_consent_ui.py /app/github_bytes_transport.py /app/publication_workflow.py /app/approval_service.py /app/owner_ingress_service.py /app/publisher_service.py /app/publisher_ipc.py /app/publisher_permissions.py /app/artesao_artifacts.py /app/release_receipt.py /app/release_console.py /app/local_publisher.py /app/server.py /app/rc_fastlane.py /app/artesao_adapter.py /app/artesao_isolated_executor.py /app/sandbox_export.py /app/declarative_export.py /app/declarative_workspace_probe.py /app/declarative_runtime_probe.py /app/factory_e2e_probe.py /app/runtime_api_probe.py /app/workspace_sync.py /app/workspace_askpass.py /app/runtime_probe.py /app/controlled_worker.py /app/landlock_probe.py /app/seccomp_policy.py /app/isolation_backend_probe.py /app/bounded_stream_probe.py /app/archive_stream.py /app/trusted_export_plan.py /app/ha_ingress_identity.py /app/ha_ingress_server.py /app/owner_bootstrap.py /app/owner_settings_enroll.py /app/execution_contract.py /app/execution_evidence.py /app/execution_planner.py /app/execution_orchestrator.py /app/execution_plan_worker.py /app/publisher_permissions.py /app/autonomous_dev.py
+# Isolate the new untrusted-archive parser suite; it is intentionally repeated in
+# the full suite below so no regression coverage is omitted.
+RUN python3 -m unittest discover -s /app/tests -p 'test_factory_runner_archive_stream.py' -v
+RUN python3 -m unittest discover -s /app/tests -p 'test_factory_runner_*.py' -v
+RUN su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_workspace_sync.py' -v
+RUN su-exec runner python3 -m unittest discover -s /app/tests -p 'test_factory_runner_e2e_probe.py' -v
 
 # Separate runtime image. No test suite or test credentials in final image.
 FROM alpine:3.23
