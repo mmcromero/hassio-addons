@@ -1,9 +1,7 @@
 name: Validar add-ons
+# PAUSADO: execução somente manual enquanto o catálogo não adotar CI.
+# Preservado para eventual reativação explícita; sem gatilhos push/pull_request.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       addon:
@@ -18,7 +16,7 @@ permissions:
   contents: read
 concurrency:
   group: validate-addons-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 jobs:
   syntax:
     runs-on: ubuntu-latest
@@ -51,7 +49,7 @@ jobs:
           PY
       - name: Validar cadastro e seleção de add-on
         env:
-          SELECTED_ADDON: ${{ github.event_name == 'workflow_dispatch' && inputs.addon || '' }}
+          SELECTED_ADDON: ${{ inputs.addon || '' }}
         run: python3 .github/scripts/validate-addon-registry.py ${SELECTED_ADDON:+--addon "$SELECTED_ADDON"}
       - name: Checar scripts
         run: find . -name run.sh -type f -exec sh -n '{}' ';'
@@ -67,7 +65,7 @@ jobs:
           PY
   build-arm64:
     # Build pesado somente sob acionamento manual autorizado.
-    if: github.event_name == 'workflow_dispatch' && inputs.addon == 'evolution-api'
+    if: inputs.addon == 'evolution-api'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: syntax
@@ -81,7 +79,7 @@ jobs:
         run: bash .github/scripts/smoke-evolution.sh
   build-pager-arm64:
     # Build pesado somente sob acionamento manual autorizado.
-    if: github.event_name == 'workflow_dispatch' && inputs.addon == 'pager-virtual'
+    if: inputs.addon == 'pager-virtual'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     needs: syntax
@@ -112,7 +110,6 @@ jobs:
             console.log(name + '.html: JavaScript válido');
           }
           JS
-
   test-pager-auth:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -161,10 +158,9 @@ jobs:
         if: steps.scope.outputs.run != 'false'
         working-directory: pager-virtual
         run: npm test
-
   build-factory-runner-arm64:
-    # Heavy ARM64 build requires explicit manual selection, never automatic on push/PR.
-    if: github.event_name == 'workflow_dispatch' && inputs.addon == 'factory-runner'
+    # Build ARM64 pesado somente sob acionamento manual autorizado.
+    if: inputs.addon == 'factory-runner'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: syntax
