@@ -86,6 +86,39 @@ class SecurityTests(unittest.TestCase):
             self.assertEqual(code, 403)
             self.assertEqual(data["error"], "owner_approval_required")
 
+    def test_runner_publication_routes_forward_only_strict_bindings_to_publisher_ipc(self):
+        auth = "Bearer test-secret-not-for-production-0123456789"
+        calls = []
+        def fake_publisher(action, **body):
+            calls.append((action, body))
+            return {"state": "PREVIEW_NOT_CONSENT", "publication": "disabled"}
+        preview = {"project": "avisaqui", "issue": 7, "receipt_digest": "a" * 64}
+        publish = {**preview, "proposal_id": "b" * 32}
+        reconcile = {"project": "avisaqui", "nonce": "c" * 32}
+        with patch.object(server, "publisher_request", side_effect=fake_publisher):
+            self.assertEqual(self.request("POST", "/api/publication-preview", preview)[0], 401)
+            self.assertEqual(calls, [])
+            for path, payload, action in (
+                ("/api/publication-preview", preview, "preview"),
+                ("/api/publication-propose", preview, "propose"),
+                ("/api/publish", publish, "publish"),
+                ("/api/publication-reconcile", reconcile, "reconcile"),
+            ):
+                code, response = self.request("POST", path, payload, auth)
+                self.assertEqual(code, 200, response)
+                self.assertEqual(response["result"]["publication"], "disabled")
+                self.assertEqual(calls[-1], (action, payload))
+            invalid = {**publish, "grant": {"forged": True}}
+            self.assertEqual(
+                self.request("POST", "/api/publish", invalid, auth)[0], 400
+            )
+        self.assertEqual(len(calls), 4)
+        audit = server.AUDIT_PATH.read_text(encoding="utf-8")
+        self.assertNotIn("test-secret-not-for-production-0123456789", audit)
+        self.assertNotIn("a" * 64, audit)
+        self.assertNotIn("b" * 32, audit)
+        self.assertNotIn("c" * 32, audit)
+
     def test_status_is_authenticated_and_sanitized(self):
         self.assertEqual(self.request("GET", "/api/status")[0], 401)
         code, data = self.request("GET", "/api/status", token="Bearer test-secret-not-for-production-0123456789")
