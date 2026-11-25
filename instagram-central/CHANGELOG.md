@@ -1,3 +1,9 @@
+# 0.1.61 — contrato do adapter Instagram, Etapa 3 — 24/11/2026
+
+- Contexto vinculado à identidade do inbound reclamado, limitado aos turnos anteriores e ao turno atual por último; não inclui entradas posteriores.
+- Handoff do adapter aceita messageId/claimToken e revalida reserva, estado bot, política Testes e janela de 24h atomicamente. Contrato legado preservado durante transição.
+- Sem migração destrutiva, mudança de credenciais, fila, webhook, permissões Meta ou outros serviços. Testes dirigidos adicionados; aprovação depende do build oficial.
+
 # 0.1.60 — retomada segura do atendimento — 24/11/2026
 
 - Voltar ao bot encerra pendências anteriores daquela conversa sem envio automático; preserva mensagens, auditoria e recibos de envio.

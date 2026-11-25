@@ -303,6 +303,37 @@ class InstagramIngressTests(unittest.TestCase):
                          ["teste 2", "Vamos conferir isso juntos.", "E quanto custa?"])
         self.assertNotIn("TEXTO DE OUTRA CONVERSA", repr(context))
 
+    def test_stage3_context_excludes_future_and_binds_current(self):
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="current", text="texto atual")).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="later", text="texto posterior")).encode(), 'business-1'), 1)
+        ctx = server.conversation_context(claim)
+        self.assertEqual({k: ctx[k] for k in ("accountId", "senderId", "messageId")},
+                         {k: claim[k] for k in ("accountId", "senderId", "messageId")})
+        self.assertEqual(ctx["turns"], [{"role": "client", "text": "texto atual", "createdAt": item["messageAt"]}])
+
+    def test_stage3_handoff_cannot_override_human_or_replay_claim(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        data = {"accountId": item["accountId"], "senderId": item["senderId"], "state": "pending"}
+        pair = (item["messageId"], item["claimToken"])
+        self.assertFalse(server.set_handoff(data, actor="bridge", reason="human_review", claim=(item["messageId"], "x"*43)))
+        self.assertTrue(server.set_handoff({**data, "state": "human"}))
+        self.assertFalse(server.set_handoff(data, actor="bridge", reason="human_review", claim=pair))
+        self.assertEqual(server.list_pending()[0]["handoffState"], "human")
+        self.assertTrue(server.set_handoff({**data, "state": "bot"}))
+        self.assertFalse(server.set_handoff(data, actor="bridge", reason="human_review", claim=pair))
+
+    def test_stage3_valid_claim_handoff_once(self):
+        self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        data = {"accountId": item["accountId"], "senderId": item["senderId"], "state": "pending"}
+        pair = (item["messageId"], item["claimToken"])
+        self.assertTrue(server.set_handoff(data, actor="bridge", reason="human_review", claim=pair))
+        self.assertFalse(server.set_handoff(data, actor="bridge", reason="human_review", claim=pair))
+        self.assertEqual(server.list_pending()[0]["handoffState"], "pending")
+
     def test_context_requires_live_test_claim_and_bot_control(self):
         self.assertEqual(server.persist(json.dumps(self.sample()).encode(), 'business-1'), 1)
         item = server.claim_message()

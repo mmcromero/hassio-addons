@@ -46,7 +46,7 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.60"
+APP_VERSION = "0.1.61"
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -378,7 +378,7 @@ def conversation_context(data):
         return None
     now = _utc_now()
     with database() as conn:
-        current = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot')
+        current = conn.execute("""SELECT i.message_at,COALESCE(h.state,'bot'),i.rowid,i.message_text,i.received_at
           FROM inbound i LEFT JOIN handoff h
             ON i.recipient_id=h.recipient_id AND i.sender_id=h.sender_id
           WHERE i.recipient_id=? AND i.sender_id=? AND i.message_id=?
@@ -392,17 +392,23 @@ def conversation_context(data):
         inbound_rows = conn.execute("""SELECT message_text,message_at
           FROM inbound WHERE recipient_id=? AND sender_id=? AND source='webhook'
             AND message_at IS NOT NULL AND message_text<>''
-          ORDER BY message_at DESC LIMIT 12""", (account, sender)).fetchall()
-        reply_rows = conn.execute("""SELECT reply_text,updated_at
-          FROM automation_sends WHERE recipient_id=? AND sender_id=? AND status='sent'
-            AND reply_text IS NOT NULL AND reply_text<>''
-          ORDER BY updated_at DESC LIMIT 12""", (account, sender)).fetchall()
+          AND message_at<=? AND rowid<?
+          ORDER BY message_at DESC,rowid DESC LIMIT 12""", (account, sender,current[0],current[2])).fetchall()
+        reply_rows = conn.execute("""SELECT s.reply_text,s.updated_at
+          FROM automation_sends s JOIN inbound i ON i.recipient_id=s.recipient_id
+            AND i.sender_id=s.sender_id AND i.message_id=s.message_id
+          WHERE s.recipient_id=? AND s.sender_id=? AND s.status='sent'
+            AND s.reply_text IS NOT NULL AND s.reply_text<>''
+            AND i.message_at<=? AND i.rowid<? AND s.updated_at<=?
+          ORDER BY s.updated_at DESC LIMIT 12""", (account,sender,current[0],current[2],current[4])).fetchall()
     turns = ([{"role": "client", "text": row[0], "createdAt": row[1]}
               for row in inbound_rows] +
              [{"role": "assistant", "text": row[0], "createdAt": row[1]}
               for row in reply_rows])
     turns.sort(key=lambda turn: turn["createdAt"])
-    return {"turns": turns[-8:]}
+    return {"accountId": account, "senderId": sender, "messageId": message_id,
+            "turns": turns[-7:] + [{"role": "client", "text": current[3],
+                                    "createdAt": current[0]}]}
 
 
 def acknowledge_message(data):
@@ -489,7 +495,7 @@ def save_draft(data):
         return inserted.rowcount == 1
 
 
-def set_handoff(data, *, actor="system", reason=None):
+def set_handoff(data, *, actor="system", reason=None, claim=None):
     if not isinstance(data, dict) or set(data) != {"accountId", "senderId", "state"}:
         return False
     account, sender, state = data["accountId"], data["senderId"], data["state"]
@@ -506,6 +512,22 @@ def set_handoff(data, *, actor="system", reason=None):
         prev = conn.execute("SELECT state FROM handoff WHERE recipient_id=? AND sender_id=?",
                             (account, sender)).fetchone()
         old_state = prev[0] if prev else "bot"
+        if claim is not None:
+            # New adapter effects are bound to the exact current live claim.
+            # Legacy panel callers retain their existing contract.
+            mid, token = claim
+            now_dt = _utc_now()
+            if (state != "pending" or old_state != "bot"
+                    or not _valid_message_identity(account, sender, mid)
+                    or not isinstance(token, str) or not 32 <= len(token) <= 256
+                    or not automation_policy.allowed_test_send(conn, account, sender)):
+                return False
+            row = conn.execute("""SELECT message_at FROM inbound
+              WHERE recipient_id=? AND sender_id=? AND message_id=? AND source='webhook'
+                AND processed_at IS NULL AND claim_token=? AND claim_until>?""",
+                (account, sender, mid, token, now_dt.isoformat())).fetchone()
+            if not row or not within_messaging_window(row[0], now_dt):
+                return False
         if old_state == state:
             return True
         now = _utc_now().isoformat()
@@ -2387,8 +2409,14 @@ class Handler(BaseHTTPRequestHandler):
                 reason = data.pop("reason", None)
                 if reason not in (None, "human_review", "unsafe_content", "model_requested_handoff"):
                     return self.respond(422, {"error": "invalid handoff reason"})
-                if not set_handoff(data, actor="bridge", reason=reason):
-                    return self.respond(422, {"error": "invalid handoff"})
+                claim = None
+                if "messageId" in data or "claimToken" in data:
+                    if "messageId" not in data or "claimToken" not in data:
+                        return self.respond(422, {"error": "incomplete handoff claim"})
+                    claim = (data.pop("messageId"), data.pop("claimToken"))
+                if not set_handoff(data, actor="bridge", reason=reason, claim=claim):
+                    return self.respond(409 if claim is not None else 422,
+                                        {"error": "invalid handoff"})
                 return self.respond(200, {"saved": True})
             if self.path == "/bridge/context":
                 context = conversation_context(data)

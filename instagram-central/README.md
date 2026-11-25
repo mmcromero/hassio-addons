@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.60 (retomada segura do atendimento)
+# Central Instagram — 0.1.61 (contrato do adapter compartilhado)
 
 **Voltar ao bot:** encerra a fila anterior da conversa sem enviar respostas retroativas. O histórico mostra quais mensagens foram encerradas sem resposta automática; somente um novo evento posterior à retomada pode entrar na fila. As demais guardas de atendimento permanecem. O operador não precisa apagar o histórico.
 
@@ -420,3 +420,6 @@ Essas evidências **não comprovam** build `aarch64` ou execução no Home Assis
 A versão 0.1.8 foi publicada no catálogo, mas **não passou na compilação dos testes dentro do Dockerfile no HA**, conforme o log do proprietário. O erro ocorreu antes da execução dos testes e da inicialização da nova versão. A 0.1.9 corrige a expressão Python inválida, usando `.encode("utf-8")` na asserção do `aria-label`. Nenhum módulo de execução, dado `/data`, token, opção de autenticação, ícone ou slug é alterado. A fonte do pacote novo está nesta branch; a publicação é feita pela P0 do catálogo apenas após conferência do diff e dos testes dirigidos. O Supervisor validará `py_compile` e a suíte no próximo build de atualização autorizada. O estado instalado atual deve ser confirmado no HA, não inferido do GitHub.
 
 Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001.md), [relatório Codex](https://github.com/mmcromero/instagram-automacoes/blob/f6ad64bc55bb3d8299c1e3cd71d40f5e63897082/docs/IG-MULTICONTAS-001-RELATORIO-CODEX.md), [plano de homologação](https://github.com/mmcromero/instagram-automacoes/blob/6a6b4766c013d856b40856c06b47f53bef4a2d69/docs/IG-PR7-HOM-001-PLANO-CANDIDATA-HOMOLOGACAO.md). Consulte `CHANGELOG.md` para o histórico de versões anteriores.
+
+
+**Etapa 3:** `/bridge/context` retorna accountId, senderId e messageId da reserva, até sete turnos anteriores e o inbound exato por último. `/bridge/handoff` aceita os mesmos identificadores e claimToken para transição a pending somente com reserva válida, estado bot, política Testes e janela vigente; contrato legado mantido durante transição. Não modifica a política da Central, histórico ou integração Meta.
