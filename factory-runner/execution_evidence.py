@@ -183,7 +183,7 @@ def record_evidence(path, *, test_id, test_version, source_sha, unit_digest,
         stream = os.fdopen(fd, "ab")
         fd = -1
         with stream:
-            stream.write(canonical(record) + b"\\n")
+            stream.write(canonical(record) + b"\n")
             stream.flush()
             os.fsync(stream.fileno())
         if created:
