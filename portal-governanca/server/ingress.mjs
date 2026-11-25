@@ -22,7 +22,16 @@ export function getIngressBasePath(value){
 }
 export function stripIngressPath(pathname,basePath){
  if(typeof pathname!=="string"||typeof basePath!=="string")return null;
- if(pathname===basePath)return "/";
+ // Supervisor/proxy variants: some preserve the external Ingress prefix in
+ // the upstream path; others strip it before forwarding. The caller MUST
+ // validate both the trusted proxy peer and X-Ingress-Path before using this.
+ if(pathname===basePath||pathname===basePath+"/")return "/";
  if(pathname.startsWith(basePath+"/"))return pathname.slice(basePath.length)||"/";
+ // The session header is the authority for the dynamic base path. When the
+ // trusted proxy has already stripped that prefix, retain the app-relative path.
+ if(pathname.startsWith("/")&&!pathname.startsWith("//"))return pathname;
+ // Normalize the duplicated root slash defensively, without accepting other
+ // doubled path segments or an unrelated Ingress prefix.
+ if(pathname==="//")return "/";
  return null;
 }
