@@ -1,13 +1,13 @@
-> **ESTADO VIGENTE — 25/11/2026 / M103**
+> **ESTADO VIGENTE — 25/11/2026 / M104**
 >
 > - **Baseline HA:** RC60 (`0.1.0-rc.60`) instalada/started no Raspberry Pi 4; `update_available=false`.
-> - **M102 / RC59:** probe safe passou no Raspberry: chroot read-only, UID drop, FD audit, seccomp e negação de escrita/rede/criação de processos.
-> - **M103 / RC60:** build ARM64 e suíte Dockerfile concluídos. Probe real confirmou `rlimit_cpu_primitive_enforced=true` (`status=ok`, 1 s). Overflow live confirmou `status=blocked_output_limit`, `stdout_bytes=129`, `child_signal=9`, `child_killed_for_output_limit=true` e `tmpfs_cleanup_restored=true`.
-> - **Proteções:** `protected=true`, `privileged=[]`, `full_access=false`, AppArmor `default`; nenhuma permissão adicional concedida.
+> - **M103:** build ARM64 e suíte Dockerfile PASS; RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live PASS (`stdout_bytes=129`, SIGKILL, tmpfs restaurado).
+> - **M104 / RC61:** novo validador de tar stream com allowlist exata, limites de bytes/arquivos/membros/tempo, rejeição de links e paths perigosos, extração em staging privado e rename atômico. Testes Dockerfile pendentes.
+> - **Integração:** `archive_stream.py` ainda não está conectado a `sandbox_export`; nenhum executor de projeto é ativado.
 > - **Armazenamento:** `/dev/shm` teto de contêiner de 4.091.707.392 bytes (~3,81 GiB); quota por job não comprovada. `/data` ext4 sem quota identificada.
 > - **Limitações:** cgroup v2 read-only/sem delegação; sem orçamento agregado independente por job; rootfs é fixture diagnóstica, não runtime completo. Nenhum código de projeto executado.
 > - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
-> - **Operação:** atualização normal sem backup da RC anterior; opções persistentes não foram alteradas.
+> - **Operação:** atualizações normais sem backup da RC anterior; preservar Git, proveniência, hashes e opções persistentes.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.

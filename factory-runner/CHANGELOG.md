@@ -1,3 +1,13 @@
+# 0.1.0-rc.61 — M104: validador de archive stream com allowlist
+
+- Adiciona `archive_stream.py`, validador/extrator confiável para tar stream não confiável, sem executar conteúdo.
+- Exige allowlist exata e paths obrigatórios; rejeita traversal, caminhos absolutos/Windows, `.git`, segredos, duplicatas, colisões, symlinks, hardlinks, dispositivos, FIFO, PAX/sparse, modos especiais e dados finais não-zero.
+- Impõe limites de bytes do archive, bytes por arquivo, bytes agregados, quantidade de arquivos/membros, profundidade de path e tempo entre leituras.
+- Extrai somente em staging privado 0700, normaliza permissões para 0644/0755 segundo allowlist confiável e faz rename atômico somente após validação completa. Em falha, remove staging.
+- Testes cobrem caminhos, links, arquivos especiais, budgets, duplicatas, metadados, trailing data, timeout e atomicidade.
+- Módulo incluído no build e runtime, mas ainda **não conectado** a `sandbox_export` nem a um executor de projeto. Leituras de pipe bloqueantes ainda exigem watchdog externo do supervisor.
+- Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` continua fail-closed.
+
 # 0.1.0-rc.60 — M103: comprovar CPU e overflow do canal stdout
 
 - Adiciona ensaio sintético de RLIMIT_CPU em processo filho descartável, com limite soft=1 s/hard=2 s, deadline externo de 4 s e limpeza em caso de timeout.

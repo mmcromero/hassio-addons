@@ -1,6 +1,6 @@
 # Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M103 — RC60 instalada)
 
-> **Estado de código e homologação — 25/11/2026 / M103:** RC60 (0.1.0-rc.60) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe real confirmou RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live `blocked_output_limit`, 129 bytes, filho morto por SIGKILL e tmpfs restaurado. `project_code_executed=false`. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
+> **Estado de código e homologação — 25/11/2026 / M104:** RC60 (0.1.0-rc.60) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe real confirmou RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live `blocked_output_limit`, 129 bytes, filho morto por SIGKILL e tmpfs restaurado. `project_code_executed=false`. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -293,3 +293,8 @@ RC60 candidata mantém o protótipo stream-only da RC59 e acrescenta: (1) teste 
 ### Resultado operacional M103 — RC60 (25/11/2026)
 
 Supervisor registrou build ARM64 concluído às 15:37:32 e atualização bem-sucedida às 15:37:35. Instalada/started; `update_available=false`. O primeiro pedido MCP de update expirou em conflito com job group ocupado, mas o build iniciado concluiu; não houve repetição cega. Logs reais: RLIMIT_CPU `enforced=true`; overflow `stdout_bytes=129`, `child_signal=9`, `child_killed_for_output_limit=true`, `tmpfs_cleanup_restored=true`. Opções não foram enviadas para alteração; `protected=true`, `privileged=[]`, `full_access=false`, AppArmor default. Nenhum backup da RC59 foi criado. Nenhum código de projeto executado.
+
+
+## M104 — validador de archive stream
+
+RC61 adiciona `archive_stream.py` como componente confiável de validação/extração de tar stream. O contrato exige allowlist exata, paths obrigatórios, budgets de archive/file/total/count/depth/time, rejeição de links/special files/PAX/sparse/traversal e staging atômico. O módulo não executa conteúdo e ainda não está conectado ao `sandbox_export`; o executor permanece fail-closed. Build ARM64 e suíte Dockerfile pendentes.
