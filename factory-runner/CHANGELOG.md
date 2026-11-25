@@ -1,3 +1,10 @@
+# 0.1.0-rc.47 — Etapa 5B: diagnóstico chroot/seccomp/RLIMIT (M088)
+
+- Adiciona UID executor sem shell/home/login, ainda sem uso por serviços.
+- Inclui libseccomp e política deny de rede, IPC, introspecção e operações de escape; usada somente no processo filho sintético do probe.
+- Probe root efêmero mede CAP_SYS_CHROOT/KILL, chroot seguido de drop de UID, no_new_privs, seccomp e RLIMITs; inventaria /tmp e /dev/shm.
+- Não integra nem habilita execução de projetos; Publisher permanece DORMANT. Build e diagnóstico ARM64 pendentes.
+
 # 0.1.0-rc.46 — Etapa 5A: gate de isolamento agregado e diagnóstico cgroup (M086)
 
 - Bloqueia execução de exportador mesmo se o smoke test Bubblewrap passar, até homologação de isolamento agregado.

@@ -5,6 +5,8 @@ export RUNNER_API_PROBE_BOOT_STARTED_AT
 umask 077
 
 echo "[STARTUP] Factory Runner — modo restrito"
+# Ephemeral primitives probe only; no project code, options, or persistent writes.
+/usr/bin/python3 -I -u /app/isolation_backend_probe.py || echo "[ISOLATION-BACKEND] ERROR: diagnostic unavailable; execution remains blocked"
 
 # Segredos vêm somente das opções privadas do Home Assistant.
 OPTIONS_FILE="/data/options.json"

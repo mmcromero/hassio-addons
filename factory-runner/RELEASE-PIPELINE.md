@@ -1,14 +1,17 @@
 # Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 instalada e homologada no escopo restrito ARM64)
 
-> **Estado de código e homologação — 25/11/2026 / M085:** RC45 (`0.1.0-rc.45`) integrada em `release-candidate`, publicada em `hassio-addons:main/factory-runner/` e instalada no Supervisor ARM64. Build concluído; Dockerfile executou `bash -n`, `py_compile`, suíte `test_factory_runner_*.py` (241 testes), workspace-sync não-root e E2E probe não-root; app `started`, sem update pendente. API autenticada PASS (2 projetos, 10 operações read-only auditadas), E2E sintético PASS (5 blobs; nenhum workspace real) e preparação declarativa não-root/SHA-256 PASS. Revogação de grant coberta por testes, mas não exercitada ao vivo porque Publisher permanece DORMANT e nenhum grant foi emitido. Avisaqui/Artesão continuam bloqueados por política; nenhum código/teste de projeto executado. Backup add-on-only RC44: `e00cf68f`. Bubblewrap/Landlock permanecem sem isolamento comprovado; Etapa 5 continua obrigatória.
+> **Estado de código e homologação — 25/11/2026 / M088:** RC46 (`0.1.0-rc.46`) publicada em `hassio-addons:main/factory-runner/`, instalada e iniciada no Supervisor ARM64. Build ARM64 e cadeia obrigatória Dockerfile concluídos; 116/116 blobs conferidos. Backup add-on-only pré-update RC45: `dbc7fbdc`. M087 confirmou cgroup v2 somente leitura/sem delegação, Bubblewrap bloqueado e Landlock syscall indisponível. RC47 está em desenvolvimento para diagnóstico de uma alternativa chroot/seccomp/RLIMIT; ainda não publicada, instalada ou testada no Pi. Nenhum código de projeto foi executado; Publisher DORMANT. A contagem de 241 testes atribuída à RC45 não pôde ser vinculada com segurança ao Factory Runner e não deve ser reutilizada como métrica.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
 > O cadastro inicial do proprietário é feito uma única vez pelas Configurações nativas do add-on. A senha temporária é encaminhada no startup pelo helper root-only à autoridade Approval via IPC local e os campos temporários são limpos somente após confirmação durável. O Ingress não cadastra o proprietário: oferece status e consentimento por proposta. O consentimento não redigita a senha; exige sessão/identidade HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR`. O Publisher continua protegido por ativação root-managed, token separado e grant Ed25519; nenhuma destas proteções foi liberada por esta RC.
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
+>
+> **M087:** RC46 instalada/iniciada e diagnóstico real cgroup registrado; isolamento agregado não homologado. Probe API de jobs retornou alerta de auditoria; correção em desenvolvimento, testes pendentes.
+>
+> **M088:** alternativa chroot/seccomp/RLIMIT em avaliação; probe root efêmero e UID executor preparados em desenvolvimento, sem execução de projeto. RC46 permanece instalada; RC47 ainda aguarda validação pela esteira.
 
-**M085 (25/11/2026):** RC45 instalada e iniciada no Supervisor; backup RC44 `e00cf68f`; build ARM64 e suíte Dockerfile PASS (241 testes principais e comandos não-root); API/E2E/declaração PASS. Publisher DORMANT; revogação ao vivo não exercitada; Etapa 5 ainda obrigatória.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 

@@ -11,7 +11,8 @@ class RuntimeApiProbeTests(unittest.TestCase):
     TOKEN = "synthetic-probe-token-that-is-not-real-012345"
 
     def fake_requester(self, *, publish=False, bad_audit=False, prior_audit=False,
-                       bad_idempotency=False, bad_job_digest=False):
+                       bad_idempotency=False, bad_job_digest=False,
+                       reused_terminal=False, missing_completion=False):
         calls = []
         operations = []
         job_posts = 0
@@ -67,7 +68,7 @@ class RuntimeApiProbeTests(unittest.TestCase):
                 operation = (str(uuid.UUID(int=job_posts + 100)))
                 operations.append({"operation_id": operation, "action": path,
                                    "status": "requested" if job_posts == 1
-                                   else "completed_read_only"})
+                                   and not reused_terminal else "completed_read_only"})
                 if job_posts == 1:
                     execution_id = payload["execution_id"]
                     plan = {
@@ -92,8 +93,9 @@ class RuntimeApiProbeTests(unittest.TestCase):
                     plan_digest = digest(plan)
                     if bad_job_digest:
                         plan_digest = "f" * 64
-                    operations.append({"operation_id": execution_id, "action": path,
-                                       "status": "completed_read_only"})
+                    if not reused_terminal and not missing_completion:
+                        operations.append({"operation_id": execution_id, "action": path,
+                                           "status": "completed_read_only"})
                     job = {
                         "execution_id": execution_id,
                         "project": payload["project"],
@@ -116,6 +118,9 @@ class RuntimeApiProbeTests(unittest.TestCase):
                         },
                         "events": [{"sequence": 5, "code": "job_finished"}],
                     }
+                    if reused_terminal:
+                        return 200, {"operation_id": operation, "idempotent": True,
+                                     "job": dict(job)}
                     initial_job = {**job, "status": "RECEBIDA", "result": None,
                                    "events": [{"sequence": 1, "code": "job_received"}]}
                     return 202, {"operation_id": operation, "idempotent": False,
@@ -181,6 +186,27 @@ class RuntimeApiProbeTests(unittest.TestCase):
         self.assertIn("/api/executions/00000000-0000-4000-8000-000000000001", paths)
         self.assertEqual(result["audited_read_only_operations"], 5)
         self.assertEqual(result["results"][0][4]["job_status"], "PARCIAL")
+
+    def test_reused_terminal_job_does_not_require_old_recent_audit_entry(self):
+        requester, _ = self.fake_requester(reused_terminal=True)
+        result = run_probe(
+            self.TOKEN, [("avisaqui", "a" * 40)], requester,
+            execution_contract_factory=lambda project, sha: {
+                "execution_id": "00000000-0000-4000-8000-000000000001",
+                "project": project, "source": {"sha": sha},
+            })
+        self.assertEqual(result["audited_read_only_operations"], 4)
+        self.assertEqual(result["results"][0][4]["job_status"], "PARCIAL")
+
+    def test_new_job_missing_completion_still_fails(self):
+        requester, _ = self.fake_requester(missing_completion=True)
+        with self.assertRaisesRegex(ProbeError, "read_only_operation_not_audited"):
+            run_probe(
+                self.TOKEN, [("avisaqui", "a" * 40)], requester,
+                execution_contract_factory=lambda project, sha: {
+                    "execution_id": "00000000-0000-4000-8000-000000000001",
+                    "project": project, "source": {"sha": sha},
+                })
 
     def test_live_api_probe_detects_non_idempotent_submission(self):
         requester, _ = self.fake_requester(bad_idempotency=True)

@@ -178,9 +178,21 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
             _expect(isinstance(operation_id, str)
                     and OPERATION_ID.fullmatch(operation_id),
                     "job_submission_operation_id_invalid")
-            requested_operation_ids.append(operation_id)
-
+            first_idempotent = response.get("idempotent")
+            _expect((status == 200 and first_idempotent is True)
+                    or (status == 202 and first_idempotent is False),
+                    "job_submission_status_mismatch")
             job = response["job"]
+            reused_terminal = (first_idempotent is True
+                               and job.get("status") in ("CONCLUIDA", "PARCIAL"))
+            # A reused terminal job's original completion can predate the
+            # bounded recent-operations window. Verify the current response's
+            # audit event and the durable job/receipt separately.
+            if reused_terminal:
+                completed_operation_ids.append(operation_id)
+            else:
+                requested_operation_ids.append(operation_id)
+
             _expect(job.get("execution_id") == execution_id
                     and job.get("project") == project
                     and job.get("source_sha") == source_sha,
@@ -241,7 +253,8 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
                     and OPERATION_ID.fullmatch(duplicate_operation),
                     "job_idempotency_operation_id_invalid")
             completed_operation_ids.append(duplicate_operation)
-            completed_operation_ids.append(execution_id)
+            if not reused_terminal:
+                completed_operation_ids.append(execution_id)
 
             event_codes = {item.get("code") for item in job.get("events", [])
                            if isinstance(item, dict)}
