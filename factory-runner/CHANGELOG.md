@@ -1,3 +1,10 @@
+# 0.1.0-rc.44 — corrige sintaxe e falha fechada do worker
+
+- Corrige o bloco try externo de `_worker_loop`, que estava sem except/finally e impedia o build ARM64 durante `py_compile`.
+- Falhas ao reivindicar o próximo job agora interrompem o worker em estado fail-closed.
+- Adiciona regressão para confirmar a parada segura quando o claim da fila falha.
+- RC43 não foi instalada; RC41 permanece a versão ativa. Build e suíte completa serão executados novamente no Supervisor após a publicação da RC44.
+
 # 0.1.0-rc.43 — correção de estado visível após retry
 
 - Ao aceitar retry de um job impedido, limpa o resultado anterior e reinicia as etapas com somente a validação do contrato; não exibe PASSs da tentativa anterior como progresso atual.

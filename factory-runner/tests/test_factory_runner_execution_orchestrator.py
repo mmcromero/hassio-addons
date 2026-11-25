@@ -76,6 +76,14 @@ class ExecutionOrchestratorTests(unittest.TestCase):
             catalog_dir=self.root / "catalogs",
         )
 
+    def test_worker_loop_stops_when_queue_claim_fails_closed(self):
+        with patch.object(
+            self.orchestrator, "_claim_next",
+            side_effect=orchestration.OrchestrationError("job_event_log_corrupt"),
+        ):
+            self.orchestrator._worker_loop()
+        self.assertTrue(self.orchestrator._stop.is_set())
+
     def _mutate(self, execution_id, code, **changes):
         fd = self.orchestrator._locked()
         try:

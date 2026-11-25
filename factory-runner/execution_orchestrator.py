@@ -673,6 +673,9 @@ class ExecutionOrchestrator:
                         self._finish_blocked(execution_id, "orchestrator_internal_error")
                     except Exception:
                         self._stop.set()
+            except Exception:
+                # Queue-claim or scheduler failures stop the worker closed.
+                self._stop.set()
 
     def _claim_next(self) -> str | None:
         fd = self._locked()
