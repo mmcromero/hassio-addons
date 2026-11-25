@@ -157,6 +157,39 @@ class CentralTests(unittest.TestCase):
             self.assertEqual(repeated,409)
             self.assertEqual(send.call_count,1)
 
+    def test_sendtext_lid_reply_persists_bot_id_and_observes_echo(self):
+        sender = "5511999999999@s.whatsapp.net"
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"synthetic-key",
+            "evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab", "auto_test_sender":sender}))
+        mid = "3EB0-REPLY-LID:rc2"
+        class Dummy:
+            def respond(self, status, data): return status, data
+        class FakeHTTP:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): return False
+            def read(self, n): return json.dumps({"key":{
+                "id":mid, "remoteJid":"123456789012345@lid",
+                "remoteJidAlt":sender, "fromMe":True}}).encode("utf-8")
+        payload = {"instance":"umdoislab", "senderId":sender,
+                   "messageId":"inbound-rc2", "text":"Resposta sintética"}
+        with patch.object(self.mod.urllib.request, "urlopen", return_value=FakeHTTP()) as send:
+            status, result = self.mod.Handler.send_automated(Dummy(), payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["delivery"], "accepted_not_confirmed")
+        send.assert_called_once()
+        with self.mod.connect() as db:
+            self.assertIsNotNone(db.execute(
+                "SELECT 1 FROM bot_outbound_ids WHERE sender_id=? AND message_id=?",
+                (sender, mid)).fetchone())
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            echo = self.mod.observe_outgoing({"instance":"umdoislab",
+                "senderId":sender, "messageId":mid, "fromMe":True, "isGroup":False})
+        self.assertEqual(echo["classification"], "bot")
+        self.assertTrue(self.mod.routing_decision("umdoislab", sender)["allowAutoReply"])
+
     def test_pending_ack_question_and_explicit_resume(self):
         self.assertEqual(self.mod.process_inbound(self.event())["action"], "handoff")
         self.assertEqual(self.mod.process_inbound(self.event(messageId="m2", messageText="ok, obrigado",
@@ -369,6 +402,116 @@ class CentralTests(unittest.TestCase):
         self.assertFalse(self.mod.store_event(self.event(senderId="")))
         with self.mod.connect() as db:
             self.assertEqual(db.execute("select count(*) from conversations").fetchone()[0],0)
+
+
+    def test_unverified_outgoing_quarantines_without_human_takeover(self):
+        sender = "5511999999999@s.whatsapp.net"
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='done',choice_state='idle'")
+        ev = {"instance":"umdoislab","senderId":sender,"messageId":"echo-unknown-1",
+              "fromMe":True,"isGroup":False}
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            result = self.mod.observe_outgoing(ev)
+        self.assertEqual(result["classification"], "uncertain")
+        with self.mod.connect() as db:
+            row = db.execute("""SELECT status,choice_state,choice_message_id
+                FROM conversations WHERE sender_id=?""", (sender,)).fetchone()
+            self.assertEqual(tuple(row), ("pending","origin_review","echo-unknown-1"))
+        decision = self.mod.routing_decision("umdoislab", sender)
+        self.assertFalse(decision["allowAutoReply"])
+        self.assertEqual(decision["reason"], "origin_unverified")
+        self.assertFalse(decision["needsCustomerChoice"])
+        self.assertEqual(self.mod.process_inbound(self.event(
+            messageId="new-inbound-after-unknown",messageText="E os proximos eventos?",
+            handoffRequested=False))["action"], "silent")
+
+    def test_unknown_outgoing_preserves_confirmed_human(self):
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='human',choice_state='idle'")
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            result = self.mod.observe_outgoing({
+                "instance":"umdoislab","senderId":"5511999999999@s.whatsapp.net",
+                "messageId":"echo-unknown-2","fromMe":True,"isGroup":False})
+        self.assertEqual(result["classification"],"uncertain")
+        with self.mod.connect() as db:
+            row = db.execute("SELECT status,choice_state FROM conversations").fetchone()
+            self.assertEqual(tuple(row),("human","idle"))
+
+    def test_unknown_outgoing_revokes_opted_in_until_review(self):
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='pending',choice_state='opted_in'")
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            self.mod.observe_outgoing({
+                "instance":"umdoislab","senderId":"5511999999999@s.whatsapp.net",
+                "messageId":"echo-unknown-3","fromMe":True,"isGroup":False})
+        with self.mod.connect() as db:
+            row = db.execute("SELECT status,choice_state FROM conversations").fetchone()
+            self.assertEqual(tuple(row),("pending","origin_review"))
+        self.assertFalse(self.mod.routing_decision(
+            "umdoislab","5511999999999@s.whatsapp.net")["allowAutoReply"])
+
+    def test_verified_bot_eco_does_not_quarantine(self):
+        sender = "5511999999999@s.whatsapp.net"
+        self.mod.store_event(self.event())
+        with self.mod.connect() as db:
+            db.execute("UPDATE conversations SET status='done',choice_state='idle'")
+            db.execute("INSERT INTO bot_outbound_ids VALUES(?,?,?)",
+                       (sender,"echo-known-bot",self.mod.now()))
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            result = self.mod.observe_outgoing({
+                "instance":"umdoislab","senderId":sender,
+                "messageId":"echo-known-bot","fromMe":True,"isGroup":False})
+        self.assertEqual(result["classification"],"bot")
+        self.assertTrue(self.mod.routing_decision("umdoislab",sender)["allowAutoReply"])
+
+    def test_duplicate_uncertain_does_not_reblock_resolved_conversation(self):
+        sender = "5511999999999@s.whatsapp.net"
+        ev = {"instance":"umdoislab","senderId":sender,
+              "messageId":"echo-uncertain-dup","fromMe":True,"isGroup":False}
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            first = self.mod.observe_outgoing(ev)
+            self.assertEqual(first["classification"],"uncertain")
+            with self.mod.connect() as db:
+                db.execute("""UPDATE conversations SET status='done',
+                    choice_state='idle',choice_message_id='' WHERE sender_id=?""",(sender,))
+            second = self.mod.observe_outgoing(ev)
+        self.assertTrue(second["duplicate"])
+        self.assertEqual(second["classification"],"uncertain")
+        self.assertTrue(self.mod.routing_decision("umdoislab",sender)["allowAutoReply"])
+
+    def test_review_blocks_send_auto_before_evolution_call(self):
+        sender = "5511999999999@s.whatsapp.net"
+        Path(os.environ["CENTRAL_OPTIONS"]).write_text(json.dumps({
+            "evolution_api_key":"test-not-real","evolution_url":"http://example.invalid:8080",
+            "evolution_instance":"umdoislab","auto_test_sender":sender}))
+        with patch.object(self.mod, "verify_outgoing", return_value=True):
+            self.mod.observe_outgoing({"instance":"umdoislab","senderId":sender,
+                "messageId":"echo-review","fromMe":True,"isGroup":False})
+        class FakeRequest:
+            def respond(self, code, body):
+                return code, body
+        with patch.object(self.mod.urllib.request, "urlopen") as send:
+            code, result = self.mod.Handler.send_automated(FakeRequest(), {
+                "instance":"umdoislab","senderId":sender,"messageId":"inbound-001",
+                "kind":"normal","text":"Resposta de teste"})
+            self.assertEqual(code, 409)
+            self.assertEqual(result["state"],"pending")
+            send.assert_not_called()
+
+    def test_unverified_echo_cannot_change_state_without_evolution_proof(self):
+        sender = "5511999999999@s.whatsapp.net"
+        ev = {"instance":"umdoislab","senderId":sender,
+              "messageId":"echo-not-proved","fromMe":True,"isGroup":False}
+        with patch.object(self.mod, "verify_outgoing", return_value=False):
+            self.assertIsNone(self.mod.observe_outgoing(ev))
+        with self.mod.connect() as db:
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM outgoing_observations").fetchone()[0],0)
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM conversations").fetchone()[0],0)
 
 if __name__ == "__main__":
     unittest.main()

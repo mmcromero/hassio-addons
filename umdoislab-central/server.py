@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Umdoislab Central: Ingress UI + authenticated n8n ingest, SQLite state."""
 import hashlib
+import stage2_bridge
 import json
 import os
 import re
@@ -138,6 +139,7 @@ def update_contacts(category, submitted, account=None):
         for number in unique:
             db.execute("INSERT OR IGNORE INTO contact_rules(sender_id,category) VALUES(?,?)",
                        (number,category))
+            stage2_bridge.revoke(db, number)
     return unique
 
 
@@ -339,6 +341,7 @@ def process_inbound(ev, enqueue=False, account=None):
                           (sender, mid)).fetchone()
         if seen:
             return {"action": "ignore", "state": "duplicate", "messageId": mid}
+        stage2_bridge.revoke(db, sender)
         old = db.execute("SELECT * FROM conversations WHERE sender_id=?", (sender,)).fetchone()
         offer = db.execute("SELECT message_id,created_at FROM handoff_offers WHERE sender_id=?", (sender,)).fetchone()
         if offer:
@@ -505,6 +508,7 @@ def observe_outgoing(ev, account=None):
                  "Saida sem autoria confirmada; requer revisao",
                  "", mid, "pending", now(), now(), "origin_review", mid))
             cancel_for_manual(db, sender)
+            stage2_bridge.revoke(db, sender)
         db.execute("""INSERT INTO outgoing_observations
             (sender_id,message_id,classification,created_at) VALUES(?,?,?,?)""",
             (sender, mid, classification, now()))
@@ -547,6 +551,7 @@ def record_operator_activity(ev, account=None):
                        (sender, "Contato", "Atendimento manual", "Operador respondeu pelo WhatsApp",
                         "", mid, "human", stamp, stamp, "idle"))
         canceled = cancel_for_manual(db, sender)
+        stage2_bridge.revoke(db, sender)
         db.execute("DELETE FROM handoff_offers WHERE sender_id=?", (sender,))
     return {"ok": True, "duplicate": False, "manualActive": True, "queue": canceled}
 
@@ -885,6 +890,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(502, {"error":"Envio incerto. Não repetir sem conferir WhatsApp"})
 
     def post_account(self):
+        if self.path.startswith(stage2_bridge.PREFIX):
+            return stage2_bridge.handle(
+                self, self.read_json(), connect=connect, get_policy=get_policy,
+                contact_policy=contact_policy, valid_event=valid_event,
+                valid_sender=valid_sender_for_send, process_inbound=process_inbound,
+                routing_decision=routing_decision, now=now)
         if self.path == "/evolution/ingress-check":
             # Isolated preflight: does NOT persist, dispatch, or send.
             if not self.account.authenticate(self.headers.get("Authorization", ""), "evolution_webhook_secret"):
@@ -932,6 +943,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self.respond(422, {"error": "Contato inválido"})
                 with self.account.lock, connect(self.account) as db:
                     db.execute("DELETE FROM contact_rules WHERE sender_id=? AND category=?", (sender, category))
+                    stage2_bridge.revoke(db, sender)
                 return self.respond(200, {"ok": True})
             if self.path == "/api/policy/mode":
                 mode = body.get("mode")
@@ -942,6 +954,7 @@ class Handler(BaseHTTPRequestHandler):
                         return self.respond(409, {"error": "Sincronize o histórico antes de ativar contatos novos"})
                     db.execute("""INSERT INTO policy_settings VALUES('mode',?)
                                   ON CONFLICT(key) DO UPDATE SET value=excluded.value""",(mode,))
+                    stage2_bridge.revoke(db)
                 return self.respond(200, {"ok": True, "mode": mode})
             try:
                 found = historical_baseline(self.account)
@@ -1034,6 +1047,7 @@ class Handler(BaseHTTPRequestHandler):
                 status = {"assume": "human", "resolve": "done", "reopen": "pending"}[action]
                 db.execute("UPDATE conversations SET status=?, updated_at=? WHERE sender_id=?",
                            (status, now(), sender))
+                stage2_bridge.revoke(db, sender)
                 if action == "assume":
                     cancel_for_manual(db, sender)
                 if action == "resolve":
@@ -1057,6 +1071,7 @@ class Handler(BaseHTTPRequestHandler):
             db.execute("UPDATE conversations SET status='human', updated_at=? WHERE sender_id=?",
                        (now(), sender))
             cancel_for_manual(db, sender)
+            stage2_bridge.revoke(db, sender)
         url = endpoint + "/message/sendText/" + instance
         body = json.dumps({"number":sender.split("@")[0], "text":message}).encode()
         req = urllib.request.Request(url, data=body,

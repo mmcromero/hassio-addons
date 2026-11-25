@@ -1,5 +1,5 @@
 name: "Fábrica de Softwares - WhatsApp Umdoislab"
-version: "0.5.0-rc.3"
+version: "0.5.0-rc.4"
 slug: umdoislab_central
 description: "Painel mobile-first para atendimento humano da Umdoislab"
 arch:

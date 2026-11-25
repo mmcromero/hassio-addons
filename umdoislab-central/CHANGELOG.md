@@ -1,5 +1,11 @@
 # Histórico da distribuição — Central WhatsApp Umdoislab
 
+## 0.5.0-rc.4 — candidata de compatibilidade Etapa 2 (24/11/2026)
+
+- API de integração restrita ao modo de testes, com admissão temporária, vinculação ao inbound e prevenção de reenvio. Rotas legadas preservadas.
+- Build exige compilação Python e execução das suítes completas antes da imagem final.
+- Testes dirigidos aprovados; validação integral no Supervisor ainda pendente nesta publicação. Nenhum workflow n8n foi modificado.
+
 ## 0.5.0-rc.3 — saída incerta não assume atendimento humano (20/11/2026)
 
 - A observação de saída `fromMe=true` sem vínculo em `bot_outbound_ids` continua `classification=uncertain`, mas **não grava `status=human`** sem evidência de intervenção humana.
