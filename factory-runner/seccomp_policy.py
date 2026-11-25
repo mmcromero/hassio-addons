@@ -56,8 +56,8 @@ def _load_library():
     return lib
 
 
-def install_restrictions():
-    lib = _load_library()
+def install_restrictions(library=None):
+    lib = library if library is not None else _load_library()
     context = lib.seccomp_init(SCMP_ACT_ALLOW)
     if not context:
         raise RuntimeError("seccomp_init failed")
@@ -107,8 +107,8 @@ def _denied(lib, name, *args):
     return denied
 
 
-def self_test():
-    lib = _load_library()
+def self_test(library=None):
+    lib = library if library is not None else _load_library()
     pid = os.getpid()
     return {
         "getppid": _denied(lib, "getppid"),

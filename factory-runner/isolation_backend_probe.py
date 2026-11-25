@@ -1,11 +1,19 @@
 """Read-only capability probe for a possible chroot + seccomp backend.
 Runs synthetic operations in a forked child only. No project code or HA secrets.
 """
-import ctypes, errno, json, os, pwd, resource, signal, tempfile, time
+import ctypes, errno, json, os, pwd, resource, signal, tempfile, time, sys
+sys.path.insert(0, "/app")
+try:
+    import seccomp_policy
+    SECCOMP_LIBRARY = seccomp_policy._load_library()
+except Exception:
+    seccomp_policy = None
+    SECCOMP_LIBRARY = None
 from pathlib import Path
 
 CAP_KILL, CAP_SETGID, CAP_SETUID, CAP_SYS_CHROOT, CAP_SYS_ADMIN, CAP_SYS_RESOURCE = 5, 6, 7, 18, 21, 24
-PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS = 38, 39\nSAFE_FOR_UNTRUSTED_CODE = False
+PR_SET_NO_NEW_PRIVS, PR_GET_NO_NEW_PRIVS = 38, 39
+SAFE_FOR_UNTRUSTED_CODE = False
 
 
 def _status_fields(path=Path("/proc/self/status")):
@@ -150,13 +158,14 @@ def _child_report(write_fd, root, outside_file, uid, gid):
                     report["rlimit_fsize_enforced"] = exc.errno == errno.EFBIG
         except OSError as exc:
             report["rlimit_fsize_enforced"] = exc.errno == errno.EFBIG
-        from seccomp_policy import install_restrictions, self_test
-        report["seccomp_loaded"] = install_restrictions()
+        if seccomp_policy is None or SECCOMP_LIBRARY is None:
+            raise RuntimeError("seccomp_library_unavailable")
+        report["seccomp_loaded"] = seccomp_policy.install_restrictions(SECCOMP_LIBRARY)
         if report["seccomp_loaded"]:
-            report["seccomp_denials"] = self_test()
+            report["seccomp_denials"] = seccomp_policy.self_test(SECCOMP_LIBRARY)
             pid = os.fork()
             if pid == 0:
-                os._exit(0 if self_test().get("getppid") else 1)
+                os._exit(0 if seccomp_policy.self_test(SECCOMP_LIBRARY).get("getppid") else 1)
             _, status = os.waitpid(pid, 0)
             report["descendants_inherit_filter"] = os.WIFEXITED(status) and os.WEXITSTATUS(status) == 0
     except Exception as exc:

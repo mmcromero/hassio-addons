@@ -1,3 +1,10 @@
+# 0.1.0-rc.48 — Etapa 5B: corrige sintaxe e preload libseccomp (M089)
+
+- Corrige literal de quebra de linha que causou a falha de py_compile da RC47.
+- Importa o módulo confiável e carrega libseccomp antes do chroot vazio; o filho herda a biblioteca mapeada e aplica o filtro sem depender de /app ou /lib dentro da raiz.
+- Mantém o protótipo fora do executor de produção; nenhum código de projeto é executado.
+- RC47 publicada, mas não instalada: build falhou em py_compile na etapa final de validação. RC46 continua ativa.
+
 # 0.1.0-rc.47 — Etapa 5B: diagnóstico chroot/seccomp/RLIMIT (M088)
 
 - Adiciona UID executor sem shell/home/login, ainda sem uso por serviços.
