@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 umask 077
 
-if [[ -z "\${GITHUB_TOKEN:-}" ]]; then
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
   echo "ERRO: configure github_read_token na aba Configuração do app."
   exit 2
 fi
