@@ -1,3 +1,11 @@
+# 0.1.0-rc.55 — M098: corrigir snapshot de descritores /proc/self/fd
+
+- Corrige auditoria FD: a enumeração usa um descritor explícito para /proc/self/fd e exclui esse próprio descritor temporário da fotografia, evitando falso positivo.
+- Mantém somente pipe de relatório e scratch FD autorizados; fecha todos os demais descritores antes do chroot.
+- Regressão agora inclui o relatório completo de contagens/status em caso de falha.
+- RC54 build ARM64 executou a suíte integral até encontrar uma única falha: test_fd_audit_closes_unapproved_descriptors_in_child (status='failed', esperado 'ok'). O teste de rootfs passou; os demais testes registrados passaram ou foram skips esperados.
+- Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 # 0.1.0-rc.54 — M097: auditoria de rootfs, FDs e sinais de quota
 
 - Fixture de rootfs separa scratch gravável da área de trabalho root-owned 0555.

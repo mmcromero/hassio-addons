@@ -1,12 +1,11 @@
-> **ESTADO VIGENTE — 25/11/2026 / M097**
+> **ESTADO VIGENTE — 25/11/2026 / M098**
 >
 > - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação; Etapas 5/6 não homologadas.
-> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`, candidata RC54 em validação.
-> - **Baseline HA:** RC53 (`0.1.0-rc.53`) instalada e `started` no Supervisor ARM64; RC54 ainda não publicada/instalada.
-> - **M096 / medição real:** cgroup v2 read-only, sem delegação; uma hierarquia visível; sem limite finito exposto para CPU/memória; `pids.max=8781`. Não prova quota por job nem isolamento.
-> - **M097 / RC54:** probe sintético testa escrita negada em `/workspace` root-owned 0555, fecha FDs herdados não autorizados e inventaria sinais de quota em /data. Testes novos ainda precisam ser executados pela cadeia de validação.
-> - **Segurança:** quota rígida agregada de armazenamento e equivalência do rootfs de produção continuam sem comprovação; `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado.
-> - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar commits, proveniência, hashes, opções e dados persistentes; não excluir backups existentes.
+> - **Baseline HA:** RC53 (`0.1.0-rc.53`) continua instalada e `started`; RC54 não foi instalada porque o build ARM64 falhou em um teste de auditoria FD.
+> - **RC54:** catálogo publicado e proveniência conferida; build chegou à suíte integral; falhou somente `test_fd_audit_closes_unapproved_descriptors_in_child` (`status='failed'`, esperado `ok`). O teste rootfs passou.
+> - **RC55:** correção em desenvolvimento: excluir o FD temporário da própria enumeração de `/proc/self/fd`; teste reforçado para imprimir contagens no erro.
+> - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado; sandbox_export fail-closed.
+> - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar commits, proveniência, hashes, opções e dados persistentes.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.

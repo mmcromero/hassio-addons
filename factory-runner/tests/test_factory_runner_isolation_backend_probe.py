@@ -110,7 +110,7 @@ class IsolationBackendProbeTests(unittest.TestCase):
         _, status = os.waitpid(pid, 0)
         self.assertTrue(os.WIFEXITED(status))
         result = json.loads(b"".join(chunks).decode("utf-8"))
-        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["status"], "ok", result)
         self.assertEqual(result["unexpected_remaining"], 0)
         self.assertEqual(result["allowed_missing"], 0)
 

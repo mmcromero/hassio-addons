@@ -187,12 +187,23 @@ def prepare_probe_root(root):
     return root
 
 
+def _snapshot_open_fds():
+    """List open FDs without counting the temporary /proc directory FD itself."""
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0)
+    directory_fd = os.open("/proc/self/fd", flags)
+    try:
+        names = os.listdir(directory_fd)
+        return sorted(int(name) for name in names
+                      if name.isdigit() and int(name) != directory_fd)
+    finally:
+        os.close(directory_fd)
+
+
 def audit_and_close_unapproved_fds(allowed_fds):
     """Keep only explicit control/scratch FDs; never disclose their targets."""
     allowed = {int(fd) for fd in allowed_fds if int(fd) >= 0}
     try:
-        before = sorted(int(name) for name in os.listdir("/proc/self/fd")
-                        if name.isdigit())
+        before = _snapshot_open_fds()
     except OSError as exc:
         return {"status": "unavailable", "errno": exc.errno,
                 "before_count": None, "closed_count": 0,
@@ -206,8 +217,7 @@ def audit_and_close_unapproved_fds(allowed_fds):
             if exc.errno != errno.EBADF:
                 close_errors += 1
     try:
-        after = sorted(int(name) for name in os.listdir("/proc/self/fd")
-                       if name.isdigit())
+        after = _snapshot_open_fds()
     except OSError as exc:
         return {"status": "post_close_unavailable", "errno": exc.errno,
                 "before_count": len(before), "closed_count": len(unexpected),
