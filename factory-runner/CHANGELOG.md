@@ -1,3 +1,9 @@
+# 0.1.0-rc.43 — correção de estado visível após retry
+
+- Ao aceitar retry de um job impedido, limpa o resultado anterior e reinicia as etapas com somente a validação do contrato; não exibe PASSs da tentativa anterior como progresso atual.
+- Regressão cobre o reset de steps/result.
+- Alteração ainda sem execução de testes/build; validação ARM64 depende de homologação autorizada no Supervisor.
+
 # 0.1.0-rc.42 — Etapa 3: orquestração persistente (candidata publicada; build pendente)
 
 - Adiciona fila persistente de trabalhos, worker único, estados explícitos, idempotência, timeout, retry limitado, cancelamento e recuperação após reinício.
