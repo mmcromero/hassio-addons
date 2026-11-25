@@ -1,15 +1,14 @@
-> **ESTADO VIGENTE — 25/11/2026 / M090**
+> **ESTADO VIGENTE — 25/11/2026 / M091**
 >
-> - **Roadmap:** Etapas 1–4 preservadas no escopo homologado; Etapa 5B em investigação. Etapa 5/6 não homologadas.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC49 preparada para corrigir regressão de identidade e instrumentar o probe. `release-candidate` está na RC48.
-> - **Catálogo/HA:** RC48 (`0.1.0-rc.48`) publicada e instalada no Supervisor ARM64; build ARM64 PASS. Estado do app: ERROR na inicialização, com bootstrap fail-closed. RC46 permanece recuperável no backup `af28f093`; backup RC48 pré-RC49 será criado antes da próxima atualização.
-> - **Causa provável do bootstrap:** a conta executor foi inserida antes das contas persistentes no Dockerfile runtime, deslocando IDs numéricos subsequentes. O bootstrap recusou um diretório existente; nenhum diretório foi reparado ou sobrescrito. RC49 move executor para depois das identidades existentes.
-> - **Probe M089:** chroot e drop UID ocorreram, mas a prova não é válida: o scratch /tmp estava 0700 e o sentinel externo 0600, permitindo falsos positivos/PermissionError. Seccomp/RLIMIT não foram comprovados.
-> - **RC49:** corrige ordem de identidades, executa probe só após bootstrap, torna scratch gravável no chroot, corrige a permissão do diretório pai e do sentinel e registra errno/etapa de cada primitive. Ainda não construída nem testada no HA.
+> - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação. Etapa 5/6 não homologadas.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC50 preparada para diagnóstico exato do bootstrap. `release-candidate` está na RC49.
+> - **Catálogo/HA:** RC49 (`0.1.0-rc.49`) publicada e instalada no Supervisor ARM64; build ARM64 PASS. App segue ERROR porque o bootstrap recusa um diretório de serviço persistente. Backup RC48 `6a024e69`; backup RC49 será criado antes da próxima atualização.
+> - **Causa:** a hipótese de deslocamento UID/GID foi corrigida na ordem do Dockerfile, mas o bloqueio persistiu. A causa exata ainda NÃO está identificada; RC50 passa a registrar o nome relativo e a divergência de tipo/UID/GID/modo sem modificar os dados.
+> - **Probe:** a RC49 não executou a sonda após falha do bootstrap. A última evidência da sonda (RC48) permanece inválida e não comprova chroot/seccomp/RLIMIT.
 > - **Proteções:** protected=true, privileged=[], full_access=false, AppArmor default. Publisher DORMANT; Avisaqui/Artesão não executados nem alterados.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M090; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M091; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
-> O histórico abaixo foi preservado; referências anteriores à RC46/RC47 são registros históricos, não o estado operacional atual.
+> O histórico abaixo foi preservado; referências anteriores são registros históricos.
 
 ---
 

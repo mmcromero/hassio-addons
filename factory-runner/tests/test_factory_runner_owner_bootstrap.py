@@ -55,6 +55,19 @@ class BootstrapTests(unittest.TestCase):
                 self.provision(root)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o755)
 
+    def test_existing_directory_reports_relative_name_and_safe_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            root.chmod(0o711)
+            path = self.provision(root)[0]
+            path.chmod(0o755)
+            with self.assertRaisesRegex(
+                ValueError,
+                r"unsafe_existing_service_directory:approval:mode=0755_expected=0700",
+            ):
+                self.provision(root)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o755)
+
     def test_unsafe_root_mode_or_symlink_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -1,3 +1,10 @@
+# 0.1.0-rc.50 — Etapa 5B: diagnóstico exato do bootstrap (M091)
+
+- Bootstrap continua fail-closed, sem reparar diretórios persistentes; erro agora identifica somente o nome relativo e os metadados divergentes (tipo, UID, GID e modo), sem conteúdo/segredos/caminhos absolutos.
+- Adiciona regressão para assegurar diagnóstico de modo e preservar o diretório sem alteração.
+- RC49 build ARM64 PASS, mas o bootstrap ainda bloqueou `unsafe_existing_service_directory`; a hipótese de deslocamento de UID/GID não foi confirmada. RC50 permitirá identificar a divergência real antes de qualquer correção.
+- Nenhuma execução de projeto; Publisher DORMANT e `SAFE_FOR_UNTRUSTED_CODE=false`. Build e homologação ARM64 pendentes.
+
 # 0.1.0-rc.49 — Etapa 5B: preserva identidades e corrige prova chroot (M090)
 
 - Move a criação do usuário/grupo executor para depois das contas/grupos persistentes já existentes, preservando UID/GID de approval, publisher, owner_ui e grupos IPC no volume do HA.

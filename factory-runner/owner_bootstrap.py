@@ -65,10 +65,22 @@ def provision_layout(root, *, uid_for=None, gid_for=None,
             info = path.lstat()
         except FileNotFoundError:
             info = None
-        if info is not None and (
-                not stat.S_ISDIR(info.st_mode) or info.st_uid != uid
-                or info.st_gid != gid or stat.S_IMODE(info.st_mode) != mode):
-            raise ValueError("unsafe_existing_service_directory")
+        if info is not None:
+            actual_mode = stat.S_IMODE(info.st_mode)
+            mismatches = []
+            if not stat.S_ISDIR(info.st_mode):
+                mismatches.append("kind=not_directory")
+            if info.st_uid != uid:
+                mismatches.append(f"uid={info.st_uid}_expected={uid}")
+            if info.st_gid != gid:
+                mismatches.append(f"gid={info.st_gid}_expected={gid}")
+            if actual_mode != mode:
+                mismatches.append(f"mode={actual_mode:04o}_expected={mode:04o}")
+            if mismatches:
+                # Safe metadata only: never print credentials, file contents or absolute paths.
+                raise ValueError(
+                    f"unsafe_existing_service_directory:{name}:" + ",".join(mismatches)
+                )
         entries.append((path, uid, gid, mode))
 
     for path, uid, gid, mode in entries:

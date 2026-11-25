@@ -1,19 +1,16 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 instalada e homologada no escopo restrito ARM64)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M091)
 
-> **Estado de código e homologação — 25/11/2026 / M090:** RC48 (`0.1.0-rc.48`) publicada e instalada no Supervisor ARM64; build real PASS. O app iniciou em estado ERROR porque o bootstrap recusou um diretório de serviço persistente com ownership/mode divergente. A ordem de criação do usuário executor antes das contas persistentes é a causa provável (desloca UID/GID numéricos); RC49 move essa conta para depois das identidades existentes. Nenhum diretório persistente foi corrigido ou sobrescrito.
+> **Estado de código e homologação — 25/11/2026 / M091:** RC49 (`0.1.0-rc.49`) publicada e instalada; build ARM64 PASS. App segue ERROR com `unsafe_existing_service_directory`. A correção da ordem de criação de executor não resolveu o bloqueio; a causa exata ainda não foi identificada. RC50 adiciona diagnóstico metadata-only (nome relativo, tipo, UID, GID e modo esperados/atuais), sem reparar diretórios. Backup RC48 `6a024e69`; RC49 será respaldada antes da atualização seguinte.
 >
-> O probe M089 não comprovou isolamento: o diretório /tmp do chroot estava 0700 e o sentinel externo 0600, de modo que PermissionError podia ser confundido com ocultação. Seccomp, RLIMITs, ausência de /proc e ocultação de /data/options.json continuam sem prova. RC49 corrige o fixture e acrescenta diagnóstico por etapa/errno; não habilita execução.
+> O probe não foi executado na RC49 porque o bootstrap falhou antes de sua chamada; a evidência antiga da RC48 não comprova isolamento. Seccomp, RLIMITs, ausência de /proc e ocultação de /data/options.json permanecem sem prova. Não executar código de projeto.
 >
-> **RC49 em desenvolvimento:** preservação dos UIDs/GIDs históricos, probe somente após bootstrap bem-sucedido, rootfs efêmero com /tmp 01777, diretório pai de controle 0755 e sentinel 0644. Build ARM64 e homologação pendentes. RC46 segue disponível no backup `af28f093`; backup específico RC48 será feito antes de RC49.
->
-> O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
+> O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. O Supervisor realiza build ARM64 no dispositivo quando o add-on usa Dockerfile sem `image`; instalação e homologação são estados separados.
 >
 > O cadastro inicial do proprietário é feito uma única vez pelas Configurações nativas do add-on. A senha temporária é encaminhada no startup pelo helper root-only à autoridade Approval via IPC local e os campos temporários são limpos somente após confirmação durável. O Ingress não cadastra o proprietário: oferece status e consentimento por proposta. O consentimento não redigita a senha; exige sessão/identidade HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR`. O Publisher continua protegido por ativação root-managed, token separado e grant Ed25519; nenhuma destas proteções foi liberada por esta RC.
 >
-> O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
+> **Histórico M087–M090:** preservado na Issue #2 e na continuidade ativa. RC48 não homologada por falha de bootstrap e probe inconclusivo; RC49 build/instalação PASS, mas bootstrap permanece fail-closed. RC50 adiciona somente diagnóstico seguro de metadados, sem reparar diretórios.
 >
-> **M087–M089:** históricos preservados em Issue #2 e na continuidade ativa; RC48 não homologada por falha de bootstrap e prova de isolamento inconclusiva.
-
+> O restante deste documento preserva o contrato técnico M006.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 
