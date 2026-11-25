@@ -217,3 +217,18 @@ Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publica
 - RC67 replica explicitamente esse padrão no novo probe. Nenhuma alteração em permissões, capabilities, AppArmor, seccomp, cgroups ou host.
 - RC67 ainda não publicada/instalada; o resultado de namespaces continua desconhecido. Nenhum código de projeto executado.
 - Gates mantidos: `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
+
+## M113 — RC67 instalada; resultado real do probe userns (25/11/2026)
+
+- Fonte `release-candidate`: `f519fcd30dfbf89bae00b3f3b467fc367ef21b62`; pacote catálogo `fd13140c1ad656bf9a483127b3c8d62d9218fac9`; proveniência `6e2e165aa96b1d04216aa07b33d5901c71b07aa8`.
+- Auditoria: 128/128 blobs da fonte correspondem ao catálogo; 2 arquivos exclusivos preservados; nenhum caminho fora de `factory-runner/` alterado.
+- Supervisor: build ARM64 iniciado 19:49:27.752 BRT e concluído 19:52:54.466 BRT. RC67 instalada/started; update_available=false.
+- Dockerfile completo concluído (bash -n, py_compile, suíte integral, workspace-sync não-root e E2E não-root). API-PROBE, E2E sintético e archive stream sintético PASS; contagem individual de testes não capturada.
+- Manifesto HA: nome `Fábrica de Ideias - Factory Runner`; `ingress_entry` omitido para raiz. Ingress real termina em uma única barra. Opções persistentes preservadas; nenhum backup da RC66 criado conforme regra do proprietário.
+- Probe real: user namespace, UID/GID maps, network namespace e PID namespace/PID 1 PASS. Mount namespace criado, mas `MS_REC|MS_PRIVATE` falhou com `EACCES`. Tmpfs não foi montado e quota por job não foi testada, pois o probe corretamente não tenta mount antes de garantir propagação privada. Parent capabilities inalteradas, SYS_ADMIN ausente antes/depois, nenhum mount vazou, sem timeout. Resultado `partial`.
+- A causa exata de EACCES não está demonstrada; AppArmor/seccomp são hipóteses. Consultas de logs host/Supervisor não retornaram auditoria de negação. App permanece AppArmor default, privileged vazio, full_access=false; nenhuma proteção foi relaxada.
+- Nenhum código de projeto executado. `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
+### Próximo gate M114
+Investigar a origem de EACCES apenas por evidências não mutantes (capabilities dentro do user namespace, perfil AppArmor efetivo e audit logs disponíveis). Não contornar com SYS_ADMIN, privileged, host mounts, Docker API/socket, alteração de AppArmor/seccomp ou capabilities. Se a política do host bloquear mount, registrar a limitação e avaliar alternativa sem mount; manter execução genérica bloqueada até comprovar quotas agregadas e contenção entre jobs.

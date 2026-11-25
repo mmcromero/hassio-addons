@@ -1,12 +1,12 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M112 / 25/11/2026:** RC66 (0.1.0-rc.66) está instalada/started no Raspberry Pi 4; build ARM64 PASS. O probe userns não executou syscalls por `ModuleNotFoundError` sob `python3 -I`; portanto, o suporte do kernel a namespaces continua desconhecido.
+**Estado vigente — M113 / 25/11/2026:** RC67 publicada, instalada/started no Raspberry Pi 4; build ARM64 e cadeia Dockerfile concluídos. Opções preservadas, sem backup da RC anterior. Ingress corrigido (barra única).
 
-**RC67 (0.1.0-rc.67) em candidata:** corrige o caminho de importação em modo isolado, acrescenta regressão para esse modo, corrige a identidade do App para `Fábrica de Ideias - Factory Runner` e remove `ingress_entry: "/"` para corrigir o Ingress raiz (RC66 retornou URL com `//`). Ainda não publicada, instalada ou homologada.
+**Probe userns:** user namespace, UID/GID mapping, netns e PID namespace PASS; mount namespace criado, mas MS_REC|MS_PRIVATE falhou com EACCES. Tmpfs/quota por job não foram testados. Resultado partial; origem de EACCES ainda não determinada.
 
-**Gates permanentes:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed. Mesmo um PASS do probe userns/tmpfs não comprova quotas agregadas de CPU/memória nem libera o executor.
+**Gates:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Quotas agregadas CPU/memória e contenção entre jobs continuam não comprovadas.
 
-**Fonte:** `mmcromero/factory-runner`; branch ativa de desenvolvimento `desenvolvimento`; candidata de homologação `release-candidate`; distribuição isolada `mmcromero/hassio-addons:main/factory-runner/`. O procedimento universal está em `hassio-addons/CONTRIBUTING.md`.
+**Fonte/distribuição:** factory-runner:release-candidate → hassio-addons:main/factory-runner/. Manual de catálogo: hassio-addons/CONTRIBUTING.md.
 
 ---
 

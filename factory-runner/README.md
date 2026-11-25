@@ -1,9 +1,9 @@
-> **ESTADO VIGENTE — 25/11/2026 / M112**
+> **ESTADO VIGENTE — 25/11/2026 / M113**
 >
-> - **Baseline HA:** RC66 (0.1.0-rc.66) instalada/started; build ARM64 PASS.
-> - **RC66:** userns probe não executou syscalls por erro de import em python3 -I; namespaces permanecem sem resultado.
-> - **RC67 candidata:** corrige sys.path, identidade obrigatória do App e remove ingress_entry raiz que gerava URL com barra dupla. Build/instalação pendentes.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+> - **HA:** RC67 (0.1.0-rc.67) instalada/started; build ARM64 e suíte Dockerfile concluídos; update_available=false.
+> - **User namespaces:** userns/UID/GID/net/PID/PID1 PASS; mount namespace criado, mas MS_REC|MS_PRIVATE falhou EACCES; tmpfs/quota por job não testados; status partial.
+> - **Ingress:** nome oficial corrigido; URL agora termina em uma única barra; opções persistentes preservadas.
+> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
 >
 
 # Factory Runner — fonte, operação e continuidade
