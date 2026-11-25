@@ -133,6 +133,9 @@ class ApprovalRPCClient:
     def enrollment_status(self):
         return self.request('enrollment_status')
 
+    def revoke(self,nonce,password):
+        return self.request('revoke',nonce=nonce,password=password)
+
     def propose(self,body,preview,receipt):
         return self.request('propose',body=body,preview=preview,receipt=receipt)
     def grant(self,proposal):
