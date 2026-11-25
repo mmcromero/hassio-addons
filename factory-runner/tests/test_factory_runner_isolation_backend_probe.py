@@ -90,6 +90,11 @@ class IsolationBackendProbeTests(unittest.TestCase):
             if os.geteuid() == 0:
                 self.assertEqual(work.stat().st_uid, 0)
 
+    def test_fd_snapshot_contains_only_live_descriptors(self):
+        import os
+        for fd in probe._snapshot_open_fds():
+            os.fstat(fd)
+
     def test_fd_audit_closes_unapproved_descriptors_in_child(self):
         import json, os
         read_fd, write_fd = os.pipe()

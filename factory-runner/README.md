@@ -1,9 +1,9 @@
-> **ESTADO VIGENTE — 25/11/2026 / M098**
+> **ESTADO VIGENTE — 25/11/2026 / M099**
 >
 > - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação; Etapas 5/6 não homologadas.
-> - **Baseline HA:** RC53 (`0.1.0-rc.53`) continua instalada e `started`; RC54 não foi instalada porque o build ARM64 falhou em um teste de auditoria FD.
-> - **RC54:** catálogo publicado e proveniência conferida; build chegou à suíte integral; falhou somente `test_fd_audit_closes_unapproved_descriptors_in_child` (`status='failed'`, esperado `ok`). O teste rootfs passou.
-> - **RC55:** correção em desenvolvimento: excluir o FD temporário da própria enumeração de `/proc/self/fd`; teste reforçado para imprimir contagens no erro.
+> - **Baseline HA:** RC53 (`0.1.0-rc.53`) continua instalada e `started`; RC54 e RC55 não foram instaladas porque o build ARM64 falhou no teste de auditoria FD.
+> - **RC54/55:** build chegou à suíte integral; falha única `test_fd_audit_closes_unapproved_descriptors_in_child`; teste rootfs passou.
+> - **RC56:** snapshot de `/proc/self/fd` agora confirma cada FD com `fstat` e descarta somente `EBADF`; nova regressão valida que os descritores listados continuam abertos.
 > - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado; sandbox_export fail-closed.
 > - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar commits, proveniência, hashes, opções e dados persistentes.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).

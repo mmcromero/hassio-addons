@@ -188,15 +188,23 @@ def prepare_probe_root(root):
 
 
 def _snapshot_open_fds():
-    """List open FDs without counting the temporary /proc directory FD itself."""
-    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_CLOEXEC", 0)
-    directory_fd = os.open("/proc/self/fd", flags)
-    try:
-        names = os.listdir(directory_fd)
-        return sorted(int(name) for name in names
-                      if name.isdigit() and int(name) != directory_fd)
-    finally:
-        os.close(directory_fd)
+    """List only FDs that remain open after /proc enumeration returns."""
+    names = os.listdir("/proc/self/fd")
+    result = []
+    for name in names:
+        if not name.isdigit():
+            continue
+        fd = int(name)
+        try:
+            os.fstat(fd)
+        except OSError as exc:
+            if exc.errno == errno.EBADF:
+                # /proc/self/fd can list the directory FD used transiently
+                # by listdir; it is already closed once listdir returns.
+                continue
+            raise
+        result.append(fd)
+    return sorted(result)
 
 
 def audit_and_close_unapproved_fds(allowed_fds):

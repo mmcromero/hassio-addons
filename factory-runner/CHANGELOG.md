@@ -1,3 +1,11 @@
+# 0.1.0-rc.56 — M099: snapshot de FDs somente com descritores vivos
+
+- Corrige o snapshot: após enumerar /proc/self/fd, valida cada número com fstat e descarta EBADF, removendo o FD transitório já fechado pela própria listagem.
+- Mantém fechamento de todos os FDs não autorizados e preserva somente pipe de relatório e scratch FD.
+- Nova regressão verifica que o snapshot retorna exclusivamente descritores que permanecem abertos; teste de auditoria imprime contagens em caso de falha.
+- RC54 e RC55 falharam no teste de auditoria FD por falsos positivos de descritores transitórios; o teste de rootfs passou. RC53 segue instalada/started.
+- Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 # 0.1.0-rc.55 — M098: corrigir snapshot de descritores /proc/self/fd
 
 - Corrige auditoria FD: a enumeração usa um descritor explícito para /proc/self/fd e exclui esse próprio descritor temporário da fotografia, evitando falso positivo.

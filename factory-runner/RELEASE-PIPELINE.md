@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M098)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M099)
 
-> **Estado de código e homologação — 25/11/2026 / M098:** RC53 (`0.1.0-rc.53`) continua instalada/started. RC54 falhou na suíte ARM64 em `test_fd_audit_closes_unapproved_descriptors_in_child`; demais testes registrados passaram ou foram skips esperados. RC55 corrige a contagem do FD temporário de /proc/self/fd. Gate `safe_for_untrusted_code=false` mantido.
+> **Estado de código e homologação — 25/11/2026 / M099:** RC53 (`0.1.0-rc.53`) continua instalada/started. RC54 e RC55 falharam na suíte ARM64 somente em `test_fd_audit_closes_unapproved_descriptors_in_child`; RC56 valida cada FD enumerado com fstat e descarta EBADF. Gate `safe_for_untrusted_code=false` mantido.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
