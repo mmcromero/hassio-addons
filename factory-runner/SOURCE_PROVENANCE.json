@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.60",
+  "version": "0.1.0-rc.61",
   "repository": "mmcromero/factory-runner",
-  "commit": "f56b701beed3b7dad8cb02474a396ba58149e21e",
-  "catalog_sha": "bbc7902e165a88a8ba2ee294797d4adf7c41b691",
-  "previous_source": "acf76952185ee6c786623dd50af976d9364c9009",
-  "reviewed_source": "f56b701beed3b7dad8cb02474a396ba58149e21e",
+  "commit": "1a61dff8669e3df1184d6791c27742960751d750",
+  "catalog_sha": "f6a7f598ff4312846a31b2937ec0082deee01a55",
+  "previous_source": "f56b701beed3b7dad8cb02474a396ba58149e21e",
+  "reviewed_source": "1a61dff8669e3df1184d6791c27742960751d750",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC60_M103_RLIMIT_CPU_AND_LIVE_STDOUT_OVERFLOW",
-  "tests": "SUPERVISOR_ARM64_BUILD_PASS; DOCKERFILE_UNIT_SUITE_PASS; LIVE_RLIMIT_CPU_PRIMITIVE_PASS; LIVE_BOUNDED_STREAM_SAFE_PASS; LIVE_OVERFLOW_SIGKILL_PASS; TMPFS_CLEANUP_RESTORED; NO_PROJECT_CODE_EXECUTION",
-  "review_status": "RC60_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
+  "candidate_distribution": "FACTORY_RUNNER_RC61_M104_BOUNDED_TAR_VALIDATOR",
+  "tests": "SUPERVISOR_ARM64_BUILD_PENDING; ARCHIVE_STREAM_SECURITY_REGRESSIONS_PENDING; NO_PROJECT_CODE_EXECUTION",
+  "review_status": "RC61_DIAGNOSTIC_ONLY_BUILD_PENDING_NO_SANDBOX_APPROVAL",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "f84618180450ff48840df40f8688d56c34867829",
-      "size": 59579,
+      "git_blob_sha": "6ed428838c86bb799591f8fb05200fee99005567",
+      "size": 60784,
       "mode": "100644"
     },
     {
@@ -79,8 +79,8 @@
     {
       "path": "factory-runner/Dockerfile",
       "source_path": "factory-runner-add-on/Dockerfile",
-      "git_blob_sha": "07fb2b2d6e48b12326bbb60eca96d06e61f2aaf5",
-      "size": 6574,
+      "git_blob_sha": "f1c1c25c10606ab8bd731a9105b7841fe3e76f37",
+      "size": 6672,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "e40660fe6ae49e78b5dc1115c49c44776a0e376a",
-      "size": 6983,
+      "git_blob_sha": "b072b710e5beefd6407c79295ecadaecc40ea5ec",
+      "size": 6938,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "2643db3d959139d5464b8e61e2fdf7bf51b5889a",
-      "size": 29358,
+      "git_blob_sha": "389066759dfc7ad49043720c7cce00bef6edbf0d",
+      "size": 29843,
       "mode": "100644"
     },
     {
@@ -172,6 +172,13 @@
       "source_path": "factory-runner-add-on/approval_service.py",
       "git_blob_sha": "48d27cd24187c51ef942ec5d39b2b152e3c0debb",
       "size": 1886,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/archive_stream.py",
+      "source_path": "factory-runner-add-on/archive_stream.py",
+      "git_blob_sha": "5f71f03316085efae27e2ad1caf00e7f2d60c44c",
+      "size": 13413,
       "mode": "100644"
     },
     {
@@ -212,7 +219,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "3565d681d5fa8679ce5154e53ccfbf031e7ebe9a",
+      "git_blob_sha": "6ac74a08a2c6f6e52dcb664d9b5ad1ca551d63f5",
       "size": 1037,
       "mode": "100644"
     },
@@ -553,6 +560,13 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/tests/test_factory_runner_archive_stream.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_archive_stream.py",
+      "git_blob_sha": "0d5bb5a84b09de223b94f24ec3c543359885542f",
+      "size": 10909,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/tests/test_factory_runner_artesao_adapter.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_adapter.py",
       "git_blob_sha": "76fc7c0212929ddb37b1fb13a791b2eec90d4e27",
@@ -862,30 +876,23 @@
     }
   ],
   "validation": {
-    "source_file_count": 121,
-    "package_commit": "bbc7902e165a88a8ba2ee294797d4adf7c41b691",
+    "source_file_count": 123,
+    "package_commit": "f6a7f598ff4312846a31b2937ec0082deee01a55",
     "package_paths_changed": [
       "factory-runner/CHANGELOG.md",
+      "factory-runner/Dockerfile",
       "factory-runner/README.md",
-      "factory-runner/RELEASE-PIPELINE.md"
+      "factory-runner/RELEASE-PIPELINE.md",
+      "factory-runner/archive_stream.py",
+      "factory-runner/config.yaml",
+      "factory-runner/tests/test_factory_runner_archive_stream.py"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
       "factory-runner/SOURCE_PROVENANCE.json"
     ],
     "no_paths_outside_factory_runner": true,
-    "installed_version": "0.1.0-rc.60",
-    "supervisor_build": "ARM64_BUILD_DONE_2026-11-25T15:37:32-03:00",
-    "supervisor_update": "SUCCESS_2026-11-25T15:37:35-03:00",
-    "live_markers": {
-      "rlimit_cpu_primitive_enforced": true,
-      "bounded_stream_safe_status": "pass",
-      "overflow_status": "blocked_output_limit",
-      "overflow_stdout_bytes": 129,
-      "overflow_child_signal": 9,
-      "overflow_child_killed_for_output_limit": true,
-      "tmpfs_cleanup_restored": true
-    },
+    "installed_baseline": "0.1.0-rc.60",
     "owner_backup_policy": "NO_PREVIOUS_RC_BACKUP_FOR_NORMAL_FACTORY_RUNNER_RC_UPDATES"
   }
 }
