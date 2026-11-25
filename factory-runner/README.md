@@ -1,14 +1,13 @@
-> **ESTADO VIGENTE — 25/11/2026 / M106**
+> **ESTADO VIGENTE — 25/11/2026 / M107**
 >
-> - **Baseline HA:** RC60 (0.1.0-rc.60) continua instalada/started; RC61 falhou no RUN monolítico; RC62 isolou a suíte archive_stream e confirmou que a falha está nela, mas o Supervisor não mostrou o método.
-> - **RC63:** adiciona runner que executa cada método archive_stream isoladamente e codifica o primeiro método com falha no exit code 51..(50+n). 90=erro de import/setup; 91=nenhum teste encontrado.
-> - **Cobertura:** nenhum teste é removido; depois do diagnóstico individual, a suíte completa continua obrigatória.
-> - **Runtime:** nenhuma alteração de runtime, permissões, opções, mounts, capabilities, AppArmor, rede ou credenciais.
+> - **Baseline HA:** RC60 (0.1.0-rc.60) continua instalada/started; a tentativa de atualização RC63 falhou no build ARM64.
+> - **Diagnóstico:** o método 27, `test_valid_archive_extracts_allowlisted_files_and_hashes`, falhou por uma tupla aninhada incorreta na fixture de teste (`AttributeError: 'tuple' object has no attribute 'tobuf'`).
+> - **RC64:** corrige somente a fixture, passando diretamente o par retornado por `dir_member("pkg")`. O módulo `archive_stream.py` e o runtime não foram alterados.
+> - **Validação pendente:** build ARM64 RC64, diagnóstico individual e suíte completa. RC64 não está publicada nem instalada neste ponto.
 > - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
-> - **Operação:** atualizações normais sem backup da RC anterior; preservar Git, proveniência, hashes e opções persistentes.
+> - **Operação:** sem backup da RC60; preservar opções e dados persistentes.
 > - **Continuidade:** Issue #2 do Orquestrador.
->
-> O histórico abaixo foi preservado; referências anteriores são registros históricos.
+
 ---
 
 # Factory Runner — fonte, operação e continuidade
