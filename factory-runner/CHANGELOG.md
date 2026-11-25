@@ -1,3 +1,11 @@
+# 0.1.0-rc.67 — M112: corrigir import isolado e contrato do App HA
+
+- Corrige o caminho de importação local do userns probe quando iniciado com `python3 -I`.
+- Adiciona teste de regressão para importação em modo isolado sem executar o probe.
+- Corrige a identidade visível para `Fábrica de Ideias - Factory Runner`.
+- Remove `ingress_entry: "/"` para a raiz Ingress, evitando URL com barra dupla no Supervisor.
+- Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 # 0.1.0-rc.66 — M111: diagnóstico de user namespaces
 
 - Adiciona probe sintético de user/mount/net/PID namespaces e tmpfs limitado a 1 MiB em mount namespace privado.

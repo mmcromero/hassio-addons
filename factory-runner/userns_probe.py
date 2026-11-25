@@ -14,8 +14,11 @@ from pathlib import Path
 import select
 import shutil
 import signal
+import sys
 import tempfile
 import time
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from isolation_backend_probe import effective_capabilities_via_capget, root_capabilities
 

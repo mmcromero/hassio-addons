@@ -1,4 +1,7 @@
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 
 from userns_probe import summarize_status
 
@@ -44,6 +47,23 @@ class UserNamespaceProbeSummaryTests(unittest.TestCase):
                          "failed_cleanup_or_parent_state")
         self.assertEqual(summarize_status(child, parent_capabilities_unchanged=False),
                          "failed_cleanup_or_parent_state")
+
+    def test_import_works_under_python_isolated_mode(self):
+        app_dir = Path(__file__).resolve().parents[1]
+        script = app_dir / "userns_probe.py"
+        result = subprocess.run(
+            [sys.executable, "-I", "-c",
+             "import runpy, sys; runpy.run_path(sys.argv[1], run_name='probe_import')",
+             str(script)],
+            capture_output=True, text=True, timeout=5,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_manifest_identity_and_root_ingress_contract(self):
+        app_dir = Path(__file__).resolve().parents[1]
+        manifest = (app_dir / "config.yaml").read_text(encoding="utf-8")
+        self.assertIn('name: "Fábrica de Ideias - Factory Runner"', manifest)
+        self.assertNotIn("ingress_entry:", manifest)
 
     def test_timeout_and_unavailable_userns(self):
         self.assertEqual(summarize_status({}, timed_out=True, parent_capabilities_unchanged=True), "timeout")

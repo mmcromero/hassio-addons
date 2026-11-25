@@ -1,5 +1,5 @@
 name: "Fábrica de Ideias - Factory Runner"
-version: "0.1.0-rc.66"
+version: "0.1.0-rc.67"
 slug: fabrica_software
 description: "Preparação declarativa e worker controlado; publicação bloqueada"
 url: "https://github.com/mmcromero/hassio-addons"
@@ -11,7 +11,6 @@ boot: manual
 stage: experimental
 ingress: true
 ingress_port: 8099
-ingress_entry: "/"
 ports:
   9876/tcp: null
 ports_description:

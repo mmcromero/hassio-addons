@@ -1,25 +1,15 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M111 — RC65 instalada; RC66 em validação)
+# Esteira oficial — Factory Runner
 
-> **ESTADO VIGENTE — 25/11/2026 / M111:** RC65 permanece instalada/started. RC66 em desenvolvimento acrescenta somente probe sintético de user namespaces e tmpfs limitado; ainda não publicada/instalada. Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+**Estado vigente — M112 / 25/11/2026:** RC66 (0.1.0-rc.66) está instalada/started no Raspberry Pi 4; build ARM64 PASS. O probe userns não executou syscalls por `ModuleNotFoundError` sob `python3 -I`; portanto, o suporte do kernel a namespaces continua desconhecido.
 
+**RC67 (0.1.0-rc.67) em candidata:** corrige o caminho de importação em modo isolado, acrescenta regressão para esse modo, corrige a identidade do App para `Fábrica de Ideias - Factory Runner` e remove `ingress_entry: "/"` para corrigir o Ingress raiz (RC66 retornou URL com `//`). Ainda não publicada, instalada ou homologada.
 
-> **Estado de código e homologação — 25/11/2026 / M108:** RC64 (0.1.0-rc.64) permanece instalada/started no Raspberry; build ARM64 e probes M107 PASS. RC65 (0.1.0-rc.65) adiciona somente a integração sintética chroot → stdout limitado → archive_stream, com casos de arquivo válido, traversal, overflow e timeout. RC65 publicada/instalada; build ARM64 e startup real PASS. A prova é sintética e não libera execução de projetos. Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+**Gates permanentes:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed. Mesmo um PASS do probe userns/tmpfs não comprova quotas agregadas de CPU/memória nem libera o executor.
 
+**Fonte:** `mmcromero/factory-runner`; branch ativa de desenvolvimento `desenvolvimento`; candidata de homologação `release-candidate`; distribuição isolada `mmcromero/hassio-addons:main/factory-runner/`. O procedimento universal está em `hassio-addons/CONTRIBUTING.md`.
 
-> **Estado de código e homologação — 25/11/2026 / M107:** RC60 (0.1.0-rc.60) permanece instalada/started. O build ARM64 RC63 executou o runner individual e identificou a falha no método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`: fixture aninhou indevidamente o par retornado por `dir_member`, causando `AttributeError: 'tuple' object has no attribute 'tobuf'`. RC64 corrige somente a fixture e mantém a suíte completa obrigatória; promoção/publicação/build ARM64 ainda pendentes. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+---
 
-
-> **Estado de código e homologação — 25/11/2026 / M106:** RC60 (0.1.0-rc.60) permanece instalada/started. RC61 falhou no RUN monolítico de validação; RC62 isolou o estágio e identificou a suíte archive_stream como a que falha. RC63 executa cada método dessa suíte isoladamente e mapeia a primeira falha a um exit code 51..(50+n), sem remover testes; a suíte completa continua obrigatória. RC63 só será instalada se todos os gates passarem. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
->
-> M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
->
-> `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto foi executado. O exportador permanece fail-closed.
->
-> O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. O Supervisor realiza build ARM64 no dispositivo quando o add-on usa Dockerfile sem `image`; instalação e homologação são estados separados.
->
-> O restante deste documento preserva o contrato técnico M006.
-
-Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 
 ## Regra do proprietário — sem backup da RC anterior no HA (25/11/2026)
 

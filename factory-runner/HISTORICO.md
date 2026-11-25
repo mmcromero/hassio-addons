@@ -208,3 +208,12 @@ Próxima ação objetiva e responsável:
 
 ### Próximo gate M111
 Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publicar somente factory-runner/ pela esteira oficial; atualizar o add-on existente uma vez, sem backup da RC anterior, e ler o marcador `[USERNS-PROBE]` no Supervisor. Se qualquer teste falhar, corrigir apenas a causa comprovada; não elevar privilégios nem alterar AppArmor, host, Docker API ou cgroups.
+
+
+## M112 — RC67: correção de import do probe userns (25/11/2026)
+
+- RC66 build ARM64 concluiu e o add-on iniciou, mas `[USERNS-PROBE] ERROR` ocorreu antes de qualquer syscall: `ModuleNotFoundError: No module named 'isolation_backend_probe'`.
+- Causa confirmada: o script é iniciado com `python3 -I`; esse modo não adiciona automaticamente `/app` ao caminho de importação. O probe anterior já aplica `sys.path.insert(0, str(Path(__file__).resolve().parent))`.
+- RC67 replica explicitamente esse padrão no novo probe. Nenhuma alteração em permissões, capabilities, AppArmor, seccomp, cgroups ou host.
+- RC67 ainda não publicada/instalada; o resultado de namespaces continua desconhecido. Nenhum código de projeto executado.
+- Gates mantidos: `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.

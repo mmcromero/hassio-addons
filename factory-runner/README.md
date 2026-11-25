@@ -1,21 +1,10 @@
-> **ESTADO VIGENTE — 25/11/2026 / M111**
+> **ESTADO VIGENTE — 25/11/2026 / M112**
 >
-> - **Baseline HA:** RC65 (0.1.0-rc.65) instalada/started; update_available=false.
-> - **RC66 candidata:** probe sintético de user/mount/net/PID namespaces e tmpfs com limite de 1 MiB, ainda sem execução no Raspberry.
-> - **M109/M110:** Supervisor não expõe quotas agregadas por job no config.yaml; cgroup v2 read-only/sem delegação; CPU/memória sem limites finitos; PIDs 8.781; tmpfs compartilhado.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
+> - **Baseline HA:** RC66 (0.1.0-rc.66) instalada/started; build ARM64 PASS.
+> - **RC66:** userns probe não executou syscalls por erro de import em python3 -I; namespaces permanecem sem resultado.
+> - **RC67 candidata:** corrige sys.path, identidade obrigatória do App e remove ingress_entry raiz que gerava URL com barra dupla. Build/instalação pendentes.
+> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
-> **REGISTRO HISTÓRICO — 25/11/2026 / M108**
->
-> - **Baseline HA:** RC64 (0.1.0-rc.64) instalada/started; build ARM64 e cadeia Dockerfile concluídos; update_available=false.
-> - **RC65:** candidata 0.1.0-rc.65 acrescenta prova sintética integrada chroot → stdout limitado → validador confiável archive_stream.
-> - **Prova:** child em chroot mínimo, UID/GID executor, ambiente limpo, FDs auditados, capabilities efetivas zero, no_new_privs, seccomp sem escrita/rede/criação de processos, RLIMITs, deadline externo e limite de bytes; pai valida/extrai arquivo TAR sintético com allowlist.
-> - **Adversariais:** path traversal rejeitado; overflow e timeout encerram o filho; staging e tmpfs devem ser limpos.
-> - **Limite:** somente payload sintético interno. Nenhum código de projeto é executado. O exportador Artesão atual usa subprocessos e escrita em diretório; ainda não é compatível com o contrato stream.
-> - **RC65 ainda não publicada/instalada.** Build ARM64 e startup real no Raspberry são os próximos gates.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhuma liberação de execução ou publicação de produtos.
-
----
 
 # Factory Runner — fonte, operação e continuidade
 
