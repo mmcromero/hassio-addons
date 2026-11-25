@@ -1,14 +1,12 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M094)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M096)
 
-> **Estado de código e homologação — 25/11/2026 / M094:** RC51 (`0.1.0-rc.51`) publicada, instalada e started no Supervisor ARM64; build concluído. Backup add-on-only pré-RC51 `b9a76b5b` (RC50). RC52 em desenvolvimento para aprimorar estados de acesso, capget e RLIMIT_FSIZE por FD. Build/diagnóstico RC52 pendentes. `safe_for_untrusted_code=false`; Publisher DORMANT.
+> **Estado de código e homologação — 25/11/2026 / M096:** RC52 (`0.1.0-rc.52`) instalada e `started` no Supervisor ARM64. RC53 em desenvolvimento acrescenta leitura read-only dos limites efetivos herdados de cgroup v2. Testes sintéticos locais do parser: 6/6 PASS; build ARM64 e medição real no Raspberry ainda pendentes.
 >
-> O probe chroot/seccomp/RLIMIT tem evidência real parcial, mas não comprova isolamento completo. RC52 continua diagnóstica. Nenhum código de projeto foi executado.
+> M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
+>
+> `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto foi executado. O exportador permanece fail-closed.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. O Supervisor realiza build ARM64 no dispositivo quando o add-on usa Dockerfile sem `image`; instalação e homologação são estados separados.
->
-> O cadastro inicial do proprietário é feito uma única vez pelas Configurações nativas do add-on. A senha temporária é encaminhada no startup pelo helper root-only à autoridade Approval via IPC local e os campos temporários são limpos somente após confirmação durável. O Ingress não cadastra o proprietário: oferece status e consentimento por proposta. O consentimento não redigita a senha; exige sessão/identidade HA verificada, CSRF de uso único e confirmação explícita `PUBLICAR`. O Publisher continua protegido por ativação root-managed, token separado e grant Ed25519; nenhuma destas proteções foi liberada por esta RC.
->
-> **Histórico M087–M094:** preservado na Issue #2 e na continuidade ativa. M093 registra a primeira prova real parcial de chroot/seccomp/RLIMIT na RC51; ainda não equivale a sandbox homologado.
 >
 > O restante deste documento preserva o contrato técnico M006.
 

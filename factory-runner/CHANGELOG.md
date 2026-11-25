@@ -1,3 +1,18 @@
+# 0.1.0-rc.53 — M096: leitura dos limites cgroup herdados
+
+- Probe read-only percorre a hierarquia cgroup v2 visível e calcula os menores limites finitos herdados de CPU, memória e PIDs.
+- Não cria, escreve ou move processos entre cgroups; mount read-only continua sem delegação e não é tratado como sandbox.
+- Testes sintéticos cobrem limites finitos em ancestrais, hierarquia ilimitada, metadados inválidos e ausência de controles.
+- O diagnóstico não altera `safe_for_untrusted_code=false`; quota de armazenamento, rootfs/FDs e equivalência do backend continuam pendentes.
+
+# 0.1.0-rc.52 — M095: build ARM64 e probe real parcial
+
+- Build ARM64 concluído em 193,826 s; instalação RC52 `started`; backup pré-update RC51 `52be48a6`.
+- Dockerfile validation chain passou; contagem individual de testes não capturada.
+- Probe confirma CapEff zero, chroot, UID/GID drop, no_new_privs, seccomp/herança e RLIMIT_NPROC/AS/FSIZE.
+- /proc, /data/options.json e sentinel externo retornam `permission_denied`, não `absent`.
+- Sem quota agregada rígida de CPU/memória/armazenamento; `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado.
+
 # 0.1.0-rc.52 — Etapa 5B: acesso explícito, capget e RLIMIT_FSIZE por FD (M094)
 
 - O probe diferencia absent, permission_denied, readable e outros erros para /proc, PID 1, /data/options.json e sentinel externo; não registra conteúdo.
