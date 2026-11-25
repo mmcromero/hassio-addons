@@ -8,7 +8,7 @@
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 
-**Estado de desenvolvimento M084 (25/11/2026):** Etapa 4 em execução na branch `desenvolvimento`. Foi conectada a revogação de grants à autoridade Approval IPC e à interface HA; regressões novas cobrem revogação, ACL e roteamento Runner→Publisher. Esses testes ainda não foram executados. RC44 permanece a versão instalada/homologada; nenhuma atualização HA ou publicação M084 foi feita. Publisher permanece DORMANT/desativado; Etapa 5 continua obrigatória antes da execução de código não confiável.
+**Estado de desenvolvimento M084 (25/11/2026):** Etapa 4 em execução na branch `desenvolvimento`. Foi conectada a revogação de grants à autoridade Approval IPC e à interface HA; regressões novas cobrem revogação, ACL e roteamento Runner→Publisher. RC45 foi publicada em `hassio-addons:main/factory-runner/` com 115 arquivos comparados e zero divergências. O refresh do Supervisor reconheceu RC45 como atualização disponível; RC44 permanece instalada/started. Os novos testes ainda não foram executados e a atualização HA não foi iniciada. Publisher permanece DORMANT/desativado; Etapa 5 continua obrigatória antes da execução de código não confiável.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
 
