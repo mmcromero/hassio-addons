@@ -303,6 +303,68 @@ class InstagramIngressTests(unittest.TestCase):
                          ["teste 2", "Vamos conferir isso juntos.", "E quanto custa?"])
         self.assertNotIn("TEXTO DE OUTRA CONVERSA", repr(context))
 
+    def _stage4_offer(self, fail=False):
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="offer-in", text="produto desconhecido")).encode(), 'business-1'), 1)
+        item = server.claim_message()
+        claim = {k: item[k] for k in ("accountId", "senderId", "messageId", "claimToken")}
+        captured = []
+        def sender(cfg, credential, recipient, text):
+            captured.append(text)
+            if fail:
+                raise RuntimeError("synthetic uncertain")
+            return {"message_id": "offer-out"}
+        result = server.send_automatic_reply({**claim, "kind":"human_offer","text":""},
+            {"instagram_account_id":"business-1"}, {}, sender=sender)
+        self.assertEqual(result["status"], "failed" if fail else "sent")
+        self.assertEqual(captured, [server.HUMAN_OFFER_PROMPT])
+        self.assertEqual(server.send_automatic_reply({**claim, "kind":"human_offer","text":""},
+            {"instagram_account_id":"business-1"}, {}, sender=sender)["status"], "rejected")
+        self.assertEqual(len(captured),1)
+
+    def _stage4_next(self, mid, text):
+        time.sleep(0.004)
+        self.assertEqual(server.persist(json.dumps(self.sample(mid=mid,text=text)).encode(), 'business-1'),1)
+        item=server.claim_message()
+        return {k:item[k] for k in ("accountId","senderId","messageId","claimToken")}
+
+    def test_stage4_offer_yes_is_claim_bound(self):
+        self._stage4_offer()
+        claim=self._stage4_next("yes","SIM")
+        self.assertEqual(server.evaluate_claim(claim)["action"],"human_review")
+        self.assertTrue(server.set_handoff({"accountId":claim["accountId"],"senderId":claim["senderId"],"state":"pending"},
+            actor="bridge",reason="human_review",claim=(claim["messageId"],claim["claimToken"])))
+        self.assertIsNone(server.evaluate_claim(claim))
+
+    def test_stage4_offer_no_then_generic_yes_does_not_handoff(self):
+        self._stage4_offer()
+        claim=self._stage4_next("no","NÃO")
+        self.assertEqual(server.evaluate_claim(claim)["action"],"auto")
+        self.assertTrue(server.acknowledge_message(claim))
+        later=self._stage4_next("later","SIM")
+        self.assertEqual(server.evaluate_claim(later)["action"],"auto")
+
+    def test_stage4_uncertain_offer_not_confirmable(self):
+        self._stage4_offer(fail=True)
+        claim=self._stage4_next("yes","SIM")
+        self.assertEqual(server.evaluate_claim(claim)["action"],"auto")
+
+    def test_stage4_expired_offer_not_confirmable(self):
+        self._stage4_offer()
+        with server.database() as conn:
+            conn.execute("UPDATE human_offers SET created_at='2000-01-01T00:00:00+00:00'")
+        claim=self._stage4_next("yes","SIM")
+        self.assertEqual(server.evaluate_claim(claim)["action"],"auto")
+
+    def test_stage4_only_one_live_claim_per_conversation(self):
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="first")).encode(),'business-1'),1)
+        self.assertEqual(server.persist(json.dumps(self.sample(mid="second")).encode(),'business-1'),1)
+        item=server.claim_message()
+        self.assertIsNotNone(item)
+        self.assertIsNone(server.claim_message())
+        claim={k:item[k] for k in ("accountId","senderId","messageId","claimToken")}
+        self.assertTrue(server.acknowledge_message(claim))
+        self.assertIsNotNone(server.claim_message())
+
     def test_stage3_context_excludes_future_and_binds_current(self):
         self.assertEqual(server.persist(json.dumps(self.sample(mid="current", text="texto atual")).encode(), 'business-1'), 1)
         item = server.claim_message()

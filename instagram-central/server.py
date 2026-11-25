@@ -9,6 +9,7 @@ import logging
 import os
 import secrets
 import re
+import unicodedata
 import socket
 import threading
 from contextlib import contextmanager
@@ -46,7 +47,8 @@ DB_PATH = DATA_DIR / "instagram.sqlite3"
 OPTIONS_PATH = Path(os.environ.get("INSTAGRAM_OPTIONS", "/data/options.json"))
 MAX_BODY = 256 * 1024
 LOGGER = logging.getLogger("instagram-central")
-APP_VERSION = "0.1.61"
+APP_VERSION = "0.1.62"
+HUMAN_OFFER_PROMPT = "Quer que eu encaminhe sua dúvida para um atendente? Responda SIM ou NÃO."
 _INBOX_LOCK = threading.Lock()
 _AUTOMATION_LOCK = threading.RLock()
 META_RESULTS = {
@@ -163,6 +165,9 @@ def _open_database():
     send_columns = {row[1] for row in conn.execute("PRAGMA table_info(automation_sends)")}
     if "reply_text" not in send_columns:
         conn.execute("ALTER TABLE automation_sends ADD COLUMN reply_text TEXT")
+    conn.execute("""CREATE TABLE IF NOT EXISTS human_offers (
+      recipient_id TEXT NOT NULL, sender_id TEXT NOT NULL, message_id TEXT NOT NULL,
+      created_at TEXT NOT NULL, PRIMARY KEY(recipient_id,sender_id))""")
     return conn
 
 
@@ -263,11 +268,15 @@ def claim_message(lease_seconds=120, *, account_id=None):
             AND COALESCE(h.state, 'bot')='bot' AND ex.sender_id IS NULL
             AND (COALESCE(ap.mode,'tests')='all' OR te.sender_id IS NOT NULL)
             AND (i.claim_until IS NULL OR i.claim_until <= ?)
+            AND NOT EXISTS (SELECT 1 FROM inbound active
+              WHERE active.recipient_id=i.recipient_id AND active.sender_id=i.sender_id
+                AND active.message_id<>i.message_id AND active.processed_at IS NULL
+                AND active.claim_until>?)
             AND i.message_at IS NOT NULL
             AND datetime(i.message_at)>=datetime(?)
             AND datetime(i.message_at)<=datetime(?)
           ORDER BY i.received_at, i.rowid LIMIT 50""",
-          (account_id, now_iso, (now-timedelta(hours=24)).isoformat(),
+          (account_id, now_iso, now_iso, (now-timedelta(hours=24)).isoformat(),
            (now+timedelta(minutes=1)).isoformat())).fetchall()
         row = next((candidate for candidate in rows
                     if automation_policy.allowed(conn, candidate[0], candidate[1])
@@ -286,10 +295,17 @@ def claim_message(lease_seconds=120, *, account_id=None):
 def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send_text_message):
     """Send only a live, test-policy-authorized inbound reply; never retry an uncertain send."""
     keys = {"accountId", "senderId", "messageId", "claimToken", "text"}
-    if not isinstance(data, dict) or set(data) != keys:
+    if not isinstance(data, dict) or set(data) not in (keys, keys | {"kind"}):
+        return {"status": "rejected", "reason": "invalid_payload"}
+    kind = data.get("kind", "normal")
+    if kind not in ("normal", "human_offer"):
         return {"status": "rejected", "reason": "invalid_payload"}
     account, profile, mid, token, text = (data["accountId"], data["senderId"],
         data["messageId"], data["claimToken"], data["text"])
+    if kind == "human_offer":
+        if text != "":
+            return {"status": "rejected", "reason": "invalid_payload"}
+        text = HUMAN_OFFER_PROMPT
     if (not _valid_message_identity(account, profile, mid) or
             not isinstance(token, str) or not 32 <= len(token) <= 256 or
             not isinstance(text, str) or not 1 <= len(text.strip().encode("utf-8")) <= 1000):
@@ -360,6 +376,11 @@ def send_automatic_reply(data, cfg, credential, sender=instagram_connection.send
                     WHERE recipient_id=? AND sender_id=? AND status='sent' AND reply_text IS NOT NULL
                     ORDER BY updated_at DESC LIMIT 8)""",
                 (account, profile, account, profile))
+            if kind == "human_offer":
+                conn.execute("""INSERT INTO human_offers VALUES(?,?,?,?)
+                  ON CONFLICT(recipient_id,sender_id) DO UPDATE SET
+                  message_id=excluded.message_id,created_at=excluded.created_at""",
+                  (account,profile,mid,completed))
             conn.execute("""UPDATE inbound SET processed_at=?,claim_token=NULL,claim_until=NULL
                 WHERE recipient_id=? AND sender_id=? AND message_id=? AND claim_token=?""",
                 (completed, account, profile, mid, token))
@@ -429,6 +450,32 @@ def acknowledge_message(data):
         return cur.rowcount == 1
 
 
+def confirmed_human_offer(conn, account, sender, mid, text, now):
+    """Only the first new webhook after a successfully accepted offer may confirm it."""
+    normalized = "".join(c for c in unicodedata.normalize("NFD", text.lower())
+                         if unicodedata.category(c) != "Mn").strip(" .!?")
+    if normalized not in ("sim", "s", "pode", "pode sim", "quero", "por favor", "sim por favor"):
+        return False
+    offer = conn.execute("""SELECT message_id,created_at FROM human_offers
+      WHERE recipient_id=? AND sender_id=?""", (account,sender)).fetchone()
+    if not offer:
+        return False
+    try:
+        at = datetime.fromisoformat(offer[1])
+        if not timedelta(0) <= now-at <= timedelta(hours=2):
+            return False
+    except (TypeError, ValueError):
+        return False
+    # A delayed or already queued message cannot become a confirmation.
+    first = conn.execute("""SELECT i.message_id FROM inbound i
+      JOIN inbound original ON original.recipient_id=i.recipient_id
+        AND original.sender_id=i.sender_id AND original.message_id=?
+      WHERE i.recipient_id=? AND i.sender_id=? AND i.source='webhook'
+        AND i.rowid>original.rowid AND i.received_at>=? AND i.message_at>=?
+      ORDER BY i.rowid LIMIT 1""", (offer[0],account,sender,offer[1],offer[1])).fetchone()
+    return first is not None and first[0] == mid
+
+
 def evaluate_claim(data):
     """Classify only an active owned lease; never generate/send a response."""
     keys = {"accountId", "senderId", "messageId", "claimToken"}
@@ -452,6 +499,10 @@ def evaluate_claim(data):
                 not within_messaging_window(row[2])):
             return None
         test_send = automation_policy.allowed_test_send(conn, values[0], values[1])
+        if (test_send and row[1] == "bot" and
+                confirmed_human_offer(conn, values[0], values[1], values[2], row[0], _utc_now())):
+            return {"action": "human_review", "maySend": False, "mayCallGemini": False,
+                    "testSendAuthorized": False}
     if row is None:
         return None
     decision = prepare_decision({
@@ -531,6 +582,7 @@ def set_handoff(data, *, actor="system", reason=None, claim=None):
         if old_state == state:
             return True
         now = _utc_now().isoformat()
+        conn.execute("DELETE FROM human_offers WHERE recipient_id=? AND sender_id=?", (account,sender))
         conn.execute("""INSERT INTO handoff VALUES(?,?,?,?)
           ON CONFLICT(recipient_id,sender_id) DO UPDATE SET
           state=excluded.state, updated_at=excluded.updated_at""",
@@ -2350,6 +2402,7 @@ class Handler(BaseHTTPRequestHandler):
                 with _AUTOMATION_LOCK, database() as conn:
                     automation_policy.save(conn, cfg.get('instagram_account_id', ''),
                         fields['mode'][0], fields['test_ids'][0], fields['excluded_ids'][0])
+                    conn.execute("DELETE FROM human_offers WHERE recipient_id=?", (cfg.get('instagram_account_id',''),))
             except automation_policy.PolicyError:
                 result = 'invalid'
             else:

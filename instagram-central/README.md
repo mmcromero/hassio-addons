@@ -1,4 +1,4 @@
-# Central Instagram — 0.1.61 (contrato do adapter compartilhado)
+# Central Instagram — 0.1.62 (paridade da oferta humana)
 
 **Voltar ao bot:** encerra a fila anterior da conversa sem enviar respostas retroativas. O histórico mostra quais mensagens foram encerradas sem resposta automática; somente um novo evento posterior à retomada pode entrar na fila. As demais guardas de atendimento permanecem. O operador não precisa apagar o histórico.
 
@@ -423,3 +423,6 @@ Documentação técnica: [contrato Mensagens + Editorial](https://github.com/mmc
 
 
 **Etapa 3:** `/bridge/context` retorna accountId, senderId e messageId da reserva, até sete turnos anteriores e o inbound exato por último. `/bridge/handoff` aceita os mesmos identificadores e claimToken para transição a pending somente com reserva válida, estado bot, política Testes e janela vigente; contrato legado mantido durante transição. Não modifica a política da Central, histórico ou integração Meta.
+
+
+**Etapa 4:** `/bridge/reply` aceita `kind: human_offer` e `text: ""`; a Central usa texto fixo e registra oferta somente após aceitação. A próxima entrada nova da mesma conversa pode confirmar até duas horas; sem efeito sobre mensagens anteriores, outras conversas ou modo não autorizado. O pedido humano explícito continua como handoff direto. Um claim ativo por conversa.

@@ -1,3 +1,9 @@
+# 0.1.62 — paridade da oferta de atendimento humano (Etapa 4)
+
+- Oferta opcional usa texto fixo da Central, sem transferir antes de confirmação; somente a primeira entrada nova após envio aceito, da mesma conversa, em até duas horas, pode confirmar. SIM isolado não transfere.
+- Reserva por conversa serializada; entrega incerta não cria oferta, não há reenvio. Intervenção humana ou edição de política invalida ofertas. Contrato legado preservado.
+- Cinco regressões dirigidas adicionais, build oficial obrigatório. Não altera WhatsApp nem núcleo.
+
 # 0.1.61 — contrato do adapter Instagram, Etapa 3 — 24/11/2026
 
 - Contexto vinculado à identidade do inbound reclamado, limitado aos turnos anteriores e ao turno atual por último; não inclui entradas posteriores.
