@@ -139,7 +139,7 @@ jobs:
             echo "Base indisponivel: executar testes completos."
             exit 0
           fi
-          if git diff --name-only "$BASE" HEAD -- pager-virtual/ .github/workflows/validate-addons.yml .github/scripts/validate-addon-registry.py .github/addon-registry.json | grep -q .; then
+          if git diff --name-only "$BASE" HEAD -- pager-virtual/ | grep -q .; then
             echo "Alteracao relevante: executar testes do Pager."
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
