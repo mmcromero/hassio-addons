@@ -3,15 +3,15 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.45",
   "repository": "mmcromero/factory-runner",
-  "commit": "b9644bd53972af1eba1a785c036e5c358fcb3a2f",
-  "catalog_sha": "194d179ec61af3f164439c264e465add88704d91",
-  "previous_source": "73ea7dc5465ff47cd7d2c779f6a47dca84b637e9",
-  "reviewed_source": "b9644bd53972af1eba1a785c036e5c358fcb3a2f",
+  "commit": "f1465506a79ffd124f5465a14a5f8c745ef440a4",
+  "catalog_sha": "5b27a2492d5480bfeb76a17b20339c07fd5eb8d3",
+  "previous_source": "b9644bd53972af1eba1a785c036e5c358fcb3a2f",
+  "reviewed_source": "f1465506a79ffd124f5465a14a5f8c745ef440a4",
   "publication": "OWNER_AUTHORIZED_RC45_CANDIDATE_DISTRIBUTION_M055",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_STAGE4_2026-11-25",
   "candidate_distribution": "FACTORY_RUNNER_RC45_STAGE4_PUBLISHER_GRANT_REVOCATION",
-  "tests": "PENDING_SUPERVISOR_ARM64_DOCKERFILE_PY_COMPILE_UNITTEST_AND_STAGE4_PUBLISHER_INTEGRATION",
-  "review_status": "RC45_CANDIDATE_NOT_HOMOLOGATED_STAGE4_TESTS_PENDING",
+  "tests": "PASS_SUPERVISOR_ARM64_DOCKERFILE_BASH_N_PY_COMPILE_241_UNITTESTS_NONROOT_WORKSPACE_SYNC_NONROOT_E2E_API_PROBE",
+  "review_status": "RC45_INSTALLED_ARM64_RESTRICTED_HOMOLOGATION_PASS",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,8 +86,8 @@
     {
       "path": "factory-runner/HISTORICO.md",
       "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "81531f7108c933fb68b50098964181c2be585ffa",
-      "size": 22847,
+      "git_blob_sha": "d3f16f57ffbd90ff4dbd7c02fc7679f73e365610",
+      "size": 25216,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "b07ea1cee6607c0792bd2b1b6ec49ccb1c9e259d",
-      "size": 7384,
+      "git_blob_sha": "e3dc383c4588ce3c40ff656a7b316a4a9f9170d4",
+      "size": 7495,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "0d2d9257b1f662af43a245c268360a97f0ad8b6b",
-      "size": 28389,
+      "git_blob_sha": "c011aa12353b2ebd2892d7f6813cfc27c070ffdc",
+      "size": 28035,
       "mode": "100644"
     },
     {
@@ -871,8 +871,8 @@
     "product_code_execution": "NOT_EXECUTED"
   },
   "branch": "release-candidate",
-  "provenance_note": "M084: Stage 4 Publisher revocation integration and regression tests promoted to release-candidate. RC45 published to the HA catalog. New tests have not yet run. RC44 remains installed/homologated. Publisher remains DORMANT/fail-closed; no Avisaqui/Artesao project code was executed.",
-  "status": "RC45_PUBLISHED_NOT_INSTALLED_STAGE4_VALIDATION_PENDING",
+  "provenance_note": "M085: RC45 installed and started on Supervisor ARM64. Dockerfile validation chain passed: bash -n, py_compile, 241 main unittest cases, non-root workspace-sync and E2E probe. Runtime authenticated API, synthetic E2E and declarative non-root/SHA-256 probes passed. Publisher remains DORMANT; live grant revocation was not exercised because no owner grant was issued. No Avisaqui/Artesao code was executed; Etapa 5 remains mandatory.",
+  "status": "RC45_INSTALLED_STARTED_ARM64_RESTRICTED_HOMOLOGATION_PASS",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -889,13 +889,21 @@
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
     "version": "0.1.0-rc.45",
-    "build": "PENDING",
-    "dockerfile_tests": "PENDING_BASH_N_PY_COMPILE_UNITTEST_WORKSPACE_SYNC_NONROOT_E2E_NONROOT",
-    "publisher_revocation_tests": "PENDING",
-    "installation": "NOT_INSTALLED",
-    "installed_version": "0.1.0-rc.44",
+    "build": "PASS_2026-11-25T03:03:38-03:00",
+    "dockerfile_tests": "PASS_BASH_N_PY_COMPILE_241_UNITTESTS_NONROOT_WORKSPACE_SYNC_NONROOT_E2E",
+    "publisher_revocation_tests": "PASS_AUTOMATED_241_TEST_SUITE",
+    "live_grant_revocation": "NOT_EXERCISED_PUBLISHER_DORMANT_NO_GRANT_ISSUED",
+    "installation": "INSTALLED_STARTED",
+    "installed_version": "0.1.0-rc.45",
+    "update_available": false,
+    "backup_id": "e00cf68f",
+    "backup_version": "0.1.0-rc.44",
     "publisher": "DORMANT",
-    "product_code_execution": "NOT_EXECUTED"
+    "product_code_execution": "NOT_EXECUTED",
+    "runtime_api_probe": "PASS_AUTHENTICATED_2_PROJECTS_10_READ_ONLY_AUDITED_OPERATIONS",
+    "runtime_e2e_probe": "PASS_SYNTHETIC_5_GIT_BLOBS_NO_REAL_WORKSPACES",
+    "declarative_probe": "PASS_NONROOT_GIT_BLOB_SHA256",
+    "shutdown_warning": "OLD_RC44_DID_NOT_HANDLE_SIGTERM_EXIT_143_RC45_STARTED_SUCCESSFULLY"
   },
   "previous_candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
@@ -912,11 +920,11 @@
   "previous_rc44_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.44",
-    "build": "PASS",
-    "dockerfile_tests": "PASS",
-    "runtime_api_probe": "PASS_TWO_REAL_PROJECT_JOBS",
-    "installation": "PASS_INSTALLED_STARTED",
+    "version": "0.1.0-rc.45",
+    "build": "PENDING",
+    "dockerfile_tests": "PENDING_BASH_N_PY_COMPILE_UNITTEST_WORKSPACE_SYNC_NONROOT_E2E_NONROOT",
+    "publisher_revocation_tests": "PENDING",
+    "installation": "NOT_INSTALLED",
     "installed_version": "0.1.0-rc.44",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
