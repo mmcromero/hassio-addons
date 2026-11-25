@@ -56,3 +56,10 @@ Aplique ao trabalho com interfaces autorizado na demanda. Em firmware, bibliotec
 - Só declarar `ingress_entry` para uma subrota real, usando o caminho da subrota.
 - Após instalar/atualizar, conferir `ingress_url` no Supervisor e testar a abertura pelo botão do HA, incluindo HTML, CSS, JS, API e navegação. `state: started` não comprova Ingress funcional.
 - Referência técnica e evidência comparativa: [CONTRIBUTING.md — Contrato de URL do Ingress](CONTRIBUTING.md#p0--contrato-de-url-do-home-assistant-ingress).
+
+
+## P0 — Acesso Ingress e painel lateral
+
+- Para abrir a interface, usar o botão **Abrir interface** na página do app ou a URL atual `/api/hassio_ingress/<token>/` fornecida pelo Supervisor. Não construir URLs `/app/<slug>`.
+- `panel_icon` e `panel_title` configuram a identidade do atalho lateral; **Mostrar na barra lateral** é uma preferência separada do usuário. `ingress_panel: false` significa apenas que o atalho está desligado, não que o servidor falhou.
+- Para homologar, testar pelo Ingress real no navegador; chamadas diretas à porta interna podem receber `403 Ingress access only` porque o app aceita somente o proxy Supervisor em `172.30.32.2`.
