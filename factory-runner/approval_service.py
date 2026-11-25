@@ -30,7 +30,7 @@ def serve():
     roles={
         0:{"enroll","enrollment_status"},
         config["publisher_uid"]:{"propose","status","grant","public_key"},
-        config["owner_ui_uid"]:{"view","consent","enroll","enrollment_status"},
+        config["owner_ui_uid"]:{"view","consent","revoke","enroll","enrollment_status"},
     }
     server=ApprovalRPCServer(SOCKET,issuer,roles)
     print("[APPROVAL] READY: isolated owner authority and kernel UID ACL",flush=True)
