@@ -1,8 +1,42 @@
-# HA-MCP — acesso operacional somente leitura pelo ChatGPT
+# HA-MCP — acesso operacional de leitura e escrita pelo ChatGPT
 
 **Registro:** 22/11/2026 · **Responsável:** Infraestrutura / Governança  
 **Estado:** HA-MCP e túnel n8n migrado para o Raspberry Pi; consultas pelos dois túneis homologadas após interromper o processo do Windows. Recuperação após reinício do Core/host ainda pendente.  
 **Escopo:** referência central para todas as equipes dos projetos que compartilham o Home Assistant. Esta página pública não é um perfil de conexão nem contém credenciais.
+
+## ATUALIZAÇÃO VIGENTE — 25/11/2026: escrita autorizada pelo proprietário
+
+**Esta seção prevalece sobre as restrições históricas de somente leitura registradas abaixo.** O proprietário confirmou expressamente que habilitou acesso de escrita ao HA-MCP para permitir que os agentes executem, dentro da missão autorizada, o ciclo operacional de diagnóstico, correção, publicação/atualização, instalação e acompanhamento de logs no Home Assistant. A identificação antiga do conector como “Somente leitura” e os testes de 22/11 refletem uma configuração anterior.
+
+**Estado probatório:** autorização de escrita confirmada pelo proprietário nesta data. A configuração efetiva atual do app HA-MCP, os escopos das ferramentas expostas nesta sessão e a execução de uma operação de escrita ainda precisam ser conferidos no ambiente quando a próxima missão exigir isso. A tabela da seção 3 e os testes H07/H08 abaixo são uma fotografia histórica de 22/11/2026; não representam a configuração atual nem comprovam, por si só, escrita funcional.
+
+### Escopo operacional autorizado
+
+Quando o proprietário solicitar uma missão que inclua desenvolvimento e homologação/publicação no Home Assistant, o agente deve usar os recursos de escrita realmente disponíveis para concluir o escopo sem transferir etapas operacionais ao proprietário:
+
+1. Consultar o estado do add-on e os logs relevantes do Supervisor.
+2. Diagnosticar a causa concreta e corrigir o código na fonte/repositório autorizado.
+3. Executar as validações proporcionais e preparar a versão candidata.
+4. Publicar a distribuição prevista pela esteira específica do produto, se a missão incluir publicação.
+5. Atualizar/instalar a versão no add-on existente, se a missão incluir instalação/homologação e o mecanismo autorizado estiver disponível.
+6. Acompanhar build do Supervisor, inicialização, estado e logs; corrigir falhas dentro do escopo e repetir somente as etapas afetadas.
+7. Registrar SHA, versão, resultado, evidências sanitizadas e estado real na Issue da missão.
+
+A autorização para uma missão de ponta a ponta cobre as operações técnicas necessárias e diretamente relacionadas ao add-on/produto indicado. Não solicitar nova confirmação para cada passo rotineiro já incluído no escopo aprovado.
+
+### Limites de segurança e escopo
+
+- Atuar somente no projeto, add-on, repositório e ambiente abrangidos pela missão.
+- Não alterar outros add-ons, workflows, integrações, credenciais, dados persistentes ou serviços compartilhados por conveniência.
+- Reiniciar somente o add-on diretamente afetado quando necessário e autorizado pelo escopo; reinício do Core, Supervisor, host ou serviços não relacionados exige autorização específica.
+- Exclusão de dados/volumes, restauração de backup, mudança de rede/firewall, exposição de portas, rotação de credenciais e alterações destrutivas exigem autorização específica.
+- Não usar escrita para contornar controles de segurança, isolamento, autenticação ou aprovação.
+- A existência de uma ferramenta de escrita não amplia automaticamente o escopo da missão. Verificar a capacidade efetivamente disponível na sessão e usar o menor conjunto de ações necessário.
+- Se a ferramenta de escrita estiver ausente, negada ou limitada, identificar a operação exata, a evidência e a alternativa; não declarar indisponibilidade genérica antes de verificar os mecanismos disponíveis.
+
+**Princípio:** o proprietário autoriza o resultado e delimita o escopo; o agente executa autonomamente os passos técnicos necessários dentro desses limites, acompanha o resultado e presta contas. A permissão não é uma autorização irrestrita para administrar todo o Home Assistant.
+
+---
 
 ## 1. Decisão e arquitetura
 
@@ -50,7 +84,7 @@ O campo Home Assistant access token corresponde internamente a ha_mcp_bearer_tok
 
 Com Bearer token e tunnel-client v0.0.21+, a integração define MCP_OAUTH_DISCOVERY=disabled. A Runtime API key vai por variável de ambiente CONTROL_PLANE_API_KEY; o Bearer token vai por HA_MCP_AUTH_HEADER. A revisão mascara API key, token e URL MCP nos logs. Não criar port forwarding, hostname público, regra de firewall ampla ou rota do Forja para a rede doméstica.
 
-## 3. Configuração efetiva verificada via Supervisor em 22/11/2026
+## 3. Configuração efetiva verificada via Supervisor em 22/11/2026 — REGISTRO HISTÓRICO
 
 App HA-MCP 9.2.0, estado started, boot auto, watchdog true. Opções selecionadas por segurança na resposta da ferramenta (nenhum segredo coletado neste registro):
 
@@ -69,7 +103,7 @@ App HA-MCP 9.2.0, estado started, boot auto, watchdog true. Opções selecionada
 
 A opção enable_snapshot_actions permanece true, mas não concede escrita: backup_read_only e read_only_mode permanecem ativos. Não disparar ações de snapshot para testar a proteção. A filtragem de segredos não é garantia de anonimização de todo log ou campo aplicativo; minimizar a leitura, revisar e sanitizar qualquer saída antes de transferir. Não registrar opções livres com valores potencialmente sensíveis. Boot/watchdog acima são do app HA-MCP, não uma comprovação de recuperação do cliente do túnel.
 
-## 4. Homologação e evidências
+## 4. Homologação e evidências — TESTES HISTÓRICOS DE 22/11/2026
 
 Consultas reais pelo plugin, em 22/11/2026; nenhum comando de escrita executado durante os testes.
 
@@ -108,13 +142,13 @@ A primeira instância (HA-MCP) permaneceu `ready`/`healthy`, com 0 erros MCP, ap
 
 Estado started não comprova saúde funcional ou homologação individual dos produtos. Inventário é fotografia datada, não deve ser copiado para outros projetos. Versões atuais devem ser consultadas novamente por necessidade.
 
-## 5. Disponibilidade para todas as equipes
+## 5. Disponibilidade e autorização de uso para as equipes
 
-Governança, Gerência de Projeto, Tech Lead, Desenvolvimento, Homologação, Segurança/Privacidade, Infraestrutura e UX/Mídias podem usar a capacidade de **leitura pertinente à tarefa e à função**, desde que o plugin esteja disponível no contexto e a conta tenha acesso autorizado. A publicação desta referência não instala o plugin em outras contas, não concede acesso a terceiros e não comprova que chats existentes receberam a instrução.
+Governança, Gerência de Projeto, Tech Lead, Desenvolvimento, Homologação, Segurança/Privacidade, Infraestrutura e UX/Mídias podem usar as capacidades de **leitura e escrita pertinentes à tarefa e à função**, desde que o proprietário tenha autorizado o escopo e a ferramenta esteja efetivamente disponível, desde que o plugin esteja disponível no contexto e a conta tenha acesso autorizado. A publicação desta referência não instala o conector em outras contas, não concede acesso a terceiros e não comprova que chats existentes receberam a instrução. A permissão de escrita é do ambiente do proprietário e não deve ser presumida em outras instalações.
 
 Antes de pedir ao proprietário versões, estados, logs ou inventário, consultar este manual, confirmar a disponibilidade real do plugin e tentar a consulta direcionada. Usar o guia de boas práticas do servidor quando aplicável. Exemplos: overview com campos mínimos; ha_get_app para inventário/estado; ha_get_logs com slug e limite reduzido; ha_get_integration para diagnóstico específico sem divulgar opções privadas. Não consultar câmeras, presença, dados pessoais ou automações residenciais sem necessidade autorizada. Não contornar restrições via n8n, shell, serviço, proxy de API ou outro conector.
 
-Ficam fora do escopo: ligar/desligar dispositivos, chamar serviços de escrita, reiniciar, instalar/remover/atualizar apps, alterar configuração, backup/restore com efeito de escrita, mudança de rede, exposição de credenciais e qualquer operação no Forja. Mesmo ferramentas de nome manage que ofereçam leitura só podem ser usadas em modo explicitamente de leitura, quando necessário. Não tentar a operação para verificar se será bloqueada. Seguir GOV-STD-001 e GOV-BLK-002 para impedimentos reais: informar erro, operação afetada e alternativa segura; não pedir ao proprietário dados já disponíveis.
+Ficam fora do escopo as ações em dispositivos residenciais, serviços e add-ons não relacionados à missão; backup/restore com efeito de escrita; mudança de rede; exposição/rotação de credenciais; alterações destrutivas; e qualquer operação no Forja sem autorização específica. Ferramentas de escrita podem ser usadas para o add-on/produto explicitamente abrangido pela missão, respeitando os limites da seção de atualização vigente. Não executar ações fora do escopo apenas para testar permissões. Seguir GOV-STD-001 e GOV-BLK-002 para impedimentos reais: informar operação afetada, evidência e alternativa segura; não pedir ao proprietário dados já disponíveis.
 
 **Recibo sugerido por chat/equipe:** data; plugin disponível sim/não; consulta mínima realizada e resultado; modo somente leitura confirmado; responsável. Não presumir adoção por outros chats. Governança acompanha distribuição e recebimento conforme as normas vigentes.
 
