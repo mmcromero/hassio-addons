@@ -1,8 +1,9 @@
 > **ESTADO VIGENTE — 25/11/2026 / M114**
 >
-> - **HA:** RC67 (0.1.0-rc.67) instalada/started; build ARM64 PASS.
-> - **Userns:** partial; mount propagation privada falhou com EACCES; causa ainda não determinada.
-> - **RC68 candidata:** adiciona diagnóstico somente leitura de CapEff/CAP_SYS_ADMIN dentro do userns, Seccomp, NoNewPrivs e perfil AppArmor. Ainda não publicada/instalada.
+> - **HA:** RC68 (0.1.0-rc.68) instalada/started; build ARM64 e suíte Dockerfile PASS.
+> - **Userns:** CAP_SYS_ADMIN dentro do user namespace=true; Seccomp=0; AppArmor=docker-default (enforce); mount propagation privada retorna EACCES.
+> - **Causa:** AppArmor docker-default é a causa de alta confiança; o template oficial contém deny mount. Sem audit record específico.
+> - **Próximo:** proposta APPARMOR-MOUNT-PROFILE-001; nenhum apparmor.txt aplicado. Aguardar aprovação antes de qualquer alteração ativa.
 > - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
 

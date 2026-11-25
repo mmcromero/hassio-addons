@@ -244,3 +244,16 @@ Investigar a origem de EACCES apenas por evidências não mutantes (capabilities
 
 ### Próximo gate M114
 Publicar RC68 pelo procedimento oficial, atualizar o app existente sem backup da RC anterior, verificar build ARM64, suíte completa e o novo campo child_security_context. Não ampliar permissões, não mudar AppArmor/seccomp/capabilities e não tentar montar tmpfs se a propagação privada falhar.
+
+## M114 — RC68: diagnóstico real identifica a política AppArmor (25/11/2026)
+
+- RC68 (0.1.0-rc.68) publicada, build ARM64 concluído às 20:08:33.024 BRT, app started; update_available=false.
+- Contexto dentro do user namespace: CapEff=000001ffffffffff; CAP_SYS_ADMIN=true; NoNewPrivs=0; Seccomp=0; AppArmor=docker-default (enforce).
+- mount(MS_REC|MS_PRIVATE) continua retornando EACCES. A ausência de CAP_SYS_ADMIN e o seccomp não são a causa neste probe. O template oficial Moby docker-default contém deny mount; Docker confirma que esse perfil é gerado a partir desse template. AppArmor é a causa de alta confiança, embora não haja audit record host para a negação específica.
+- HA oferece caminho suportado: apparmor.txt na pasta do App substitui o perfil default sem desativar AppArmor. Fontes: https://contributors.home-assistant.io/apps/guides/security/ e https://contributors.home-assistant.io/apps/reference/configuration/.
+- A política seccomp atual inclui deny mount/unshare, mas o módulo se declara protótipo não conectado ao executor genérico. Antes de executar projetos, o worker filho deve remover capabilities, ativar NNP e instalar seccomp antes do exec.
+- Nenhum código de projeto executado; tmpfs continua não montado; quota por job não comprovada.
+- Gates: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
+### Próximo gate M115
+Preparar proposta de perfil AppArmor mínimo em documento/branch isolada. Preservar as regras default e avaliar somente allow rules para rprivate na raiz do mount namespace e tmpfs no diretório scratch do probe. Não criar apparmor.txt, publicar ou instalar sem aprovação explícita do proprietário. Não usar apparmor: false, privileged, SYS_ADMIN no host, full_access ou Docker API/socket.

@@ -1,12 +1,12 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M114 / 25/11/2026:** RC67 instalada/started; build ARM64 e suíte Dockerfile PASS. Probe userns parcial: user/UID/GID/net/PID PASS; MS_REC|MS_PRIVATE retorna EACCES; tmpfs/quota por job não testados.
+**Estado vigente — M114 / 25/11/2026:** RC68 instalada/started; build ARM64 e suíte Dockerfile PASS. Probe userns confirma CAP_SYS_ADMIN dentro do user namespace, Seccomp=0 e AppArmor docker-default (enforce); MS_REC|MS_PRIVATE retorna EACCES.
 
-**RC68 candidata:** acrescenta somente leitura de CapEff/CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor para investigar a origem de EACCES. Nenhuma permissão ou política é alterada. Ainda não publicada/instalada.
+**Diagnóstico:** AppArmor docker-default é a causa de alta confiança, pois o template oficial contém deny mount. Sem audit record host da negação específica. Home Assistant suporta apparmor.txt customizado mantendo AppArmor ativo.
+
+**Proposta:** APPARMOR-MOUNT-PROFILE-001 documenta regras restritas para rprivate e tmpfs no scratch. Não há apparmor.txt no pacote ativo; não publicar/instalar perfil customizado sem aprovação explícita. Seccomp atual ainda não está conectado ao executor genérico.
 
 **Gates:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
-
-**Fonte/distribuição:** factory-runner:release-candidate → hassio-addons:main/factory-runner/. Manual de catálogo: hassio-addons/CONTRIBUTING.md.
 
 ---
 
