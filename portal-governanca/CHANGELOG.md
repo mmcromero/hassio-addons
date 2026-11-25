@@ -1,5 +1,11 @@
 # Changelog — Portal de Governança (add-on)
 
+## 0.1.0-dev.5 — 25/11/2026
+
+- Inclui `icon.png` quadrado e `logo.png` horizontal no padrão de apresentação dos apps Home Assistant.
+- Corrige o empacotador de origem para incluir os dois assets.
+- Não altera o runtime nem as permissões do Portal.
+
 ## 0.1.0-dev.4 — 25/11/2026
 
 - Remove `ingress_entry: /` redundante: a página inicial já está na raiz e o Supervisor concatena esse valor ao URL base, produzindo `//`.
