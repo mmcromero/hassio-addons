@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.57",
+  "version": "0.1.0-rc.58",
   "repository": "mmcromero/factory-runner",
-  "commit": "94cd111a339420312043f92827e0162dbbc441cb",
-  "catalog_sha": "aa7fe9a0ee1fe3867fec8135fd85cc993f49372f",
-  "previous_source": "d1674b430cb300c2feb67028f8f0456e3cfcc5ea",
-  "reviewed_source": "94cd111a339420312043f92827e0162dbbc441cb",
+  "commit": "6a9208c8ff612e6afe6fab64dc168ba192977915",
+  "catalog_sha": "b2ed2c934a57be6929aa5f4f1c7ebc61bbda664a",
+  "previous_source": "94cd111a339420312043f92827e0162dbbc441cb",
+  "reviewed_source": "6a9208c8ff612e6afe6fab64dc168ba192977915",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC57_M100_ROOTFS_METADATA_PRECHROOT",
-  "tests": "SUPERVISOR_DOCKERFILE_VALIDATION_PENDING; RC56_DOCKERFILE_BUILD_PASS_FD_AUDIT_OK_ROOTFS_METADATA_PERMISSION_DENIED; RC57_NOT_YET_EXECUTED",
-  "review_status": "RC57_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
+  "candidate_distribution": "FACTORY_RUNNER_RC58_M101_TMPFS_BOUNDED_ROOTFS_WORKSPACE_LAYOUT",
+  "tests": "SUPERVISOR_DOCKERFILE_VALIDATION_PENDING; RC58_NEW_ROOTFS_AND_TMPFS_TESTS_NOT_YET_EXECUTED",
+  "review_status": "RC58_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "8b1d8295829604602099d26cd4012e3206dd41f0",
-      "size": 56479,
+      "git_blob_sha": "a618324e32248e78a15b4d00c92f29643fcf4956",
+      "size": 57220,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "4dfdba6d7d10b7ec04cc6ef183df465cc8cd86a0",
-      "size": 6651,
+      "git_blob_sha": "d886e2e9a3149be55116dea29b2c2d3d135c451e",
+      "size": 6530,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "ea917d3c000499749316a32e9bf69d0fa951529b",
-      "size": 27855,
+      "git_blob_sha": "38f9870f09f6363e5cf7f5da1188906f76c24376",
+      "size": 27805,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "c334da7afcb05cbf8c397646bca6ffdc81a0b1b3",
+      "git_blob_sha": "49122aba13141919a2af646a6a2059849c5d7d80",
       "size": 1037,
       "mode": "100644"
     },
@@ -310,8 +310,8 @@
     {
       "path": "factory-runner/isolation_backend_probe.py",
       "source_path": "factory-runner-add-on/isolation_backend_probe.py",
-      "git_blob_sha": "83d93ff6882271d724e7410878cdbfaf43242837",
-      "size": 21036,
+      "git_blob_sha": "f5df9af7e6d217eb5778ae7a7c9afd62355eefa4",
+      "size": 23897,
       "mode": "100644"
     },
     {
@@ -674,8 +674,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_isolation_backend_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_isolation_backend_probe.py",
-      "git_blob_sha": "100bb9c25d8047c54161d989218f8979138f4389",
-      "size": 6960,
+      "git_blob_sha": "c1993e1eb256f3db4ccfa7cf1c93b93e2684b458",
+      "size": 9517,
       "mode": "100644"
     },
     {
@@ -849,20 +849,22 @@
   ],
   "validation": {
     "source_file_count": 119,
-    "package_commit": "aa7fe9a0ee1fe3867fec8135fd85cc993f49372f",
+    "package_commit": "b2ed2c934a57be6929aa5f4f1c7ebc61bbda664a",
     "package_paths_changed": [
       "factory-runner/CHANGELOG.md",
       "factory-runner/README.md",
       "factory-runner/RELEASE-PIPELINE.md",
       "factory-runner/config.yaml",
-      "factory-runner/isolation_backend_probe.py"
+      "factory-runner/isolation_backend_probe.py",
+      "factory-runner/tests/test_factory_runner_isolation_backend_probe.py"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
       "factory-runner/SOURCE_PROVENANCE.json"
     ],
     "no_paths_outside_factory_runner": true,
-    "prior_candidate": "RC56 installed/started; Dockerfile validation passed; fd_audit.status=ok; rootfs metadata post-drop failed PermissionError and write status remained not_tested",
+    "previous_candidate": "RC57 installed/started; fd_audit.status=ok; rootfs read-only fixture write denied; RC58 replaces rootfs fixture with executor-writable /workspace and root-owned read-only root/readonly on /dev/shm tmpfs",
+    "storage": "/dev/shm tmpfs capacity is a hard container-level upper bound; per_job_quota_proven=false; /data ext4 has no quota mount options identified",
     "owner_backup_policy": "NO_PREVIOUS_RC_BACKUP_FOR_NORMAL_FACTORY_RUNNER_RC_UPDATES"
   }
 }
