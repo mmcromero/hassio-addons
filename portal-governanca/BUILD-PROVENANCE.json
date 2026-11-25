@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.1",
+  "addon_version": "0.1.0-dev.2",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "8a57e82f4a03c32422e7d0482ed4932fa9b48683",
+  "source_commit": "dbe1484ce84c7e85966d4d5daaf9ec59f894c5ca",
   "design_system_repository": "https://github.com/mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
