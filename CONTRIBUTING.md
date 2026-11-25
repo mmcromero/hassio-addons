@@ -26,6 +26,15 @@ Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no ar
 
 Referências oficiais: [configuração de apps — Ingress](https://contributors.home-assistant.io/apps/reference/configuration/) e [guia oficial de Ingress](https://contributors.home-assistant.io/apps/guides/ingress/).
 
+
+## P0 — Assets de apresentação dos apps
+
+Como convenção visual do catálogo `mmcromero/hassio-addons`, cada app distribuído deve incluir na raiz da pasta do app:
+- `icon.png`: PNG quadrado (128×128 px recomendado).
+- `logo.png`: PNG horizontal (aproximadamente 250×100 px recomendado).
+
+A validação deve conferir existência, formato e dimensões recomendadas no pacote exportado e na pasta publicada. O campo `panel_icon` é o ícone MDI do atalho lateral e é independente desses dois arquivos. Se o app não possuir assets aprovados, isso deve ser tratado antes da publicação, não omitido silenciosamente.
+
 ## 1. Organização e fonte
 
 - Cada add-on possui sua **pasta própria na raiz**, `config.yaml` com `name`, `version`, `slug` único e `arch`, e documentação/versão próprias; `repository.yaml` fica **somente na raiz**.
