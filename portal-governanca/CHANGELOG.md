@@ -1,4 +1,11 @@
-# Changelog — Portal de Governança (add-on)
+# Changelog — Portal de Governança
+
+## 0.1.0-dev.6 — 25/11/2026
+
+- Corrige compatibilidade do Ingress quando o proxy preserva ou remove o prefixo dinâmico antes de encaminhar ao app.
+- Mantém validação do peer confiável e do cabeçalho `X-Ingress-Path`.
+- Não declara `ingress_entry`; entrada permanece na raiz.
+- Acrescenta testes para raiz, barra final, assets, API e caminhos internos nos dois formatos.
 
 ## 0.1.0-dev.5 — 25/11/2026
 
