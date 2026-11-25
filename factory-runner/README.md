@@ -1,14 +1,12 @@
-> **ESTADO VIGENTE — 25/11/2026 / M101**
+> **ESTADO VIGENTE — 25/11/2026 / M102**
 >
-> - **Baseline HA:** RC58 (0.1.0-rc.58) publicada, instalada e started; update_available=false.
-> - **Build/validação:** build ARM64 e suíte Dockerfile concluídos.
-> - **FDs:** fd_audit.status=ok; unexpected_remaining=0; somente pipe de relatório e scratch FD permaneceram.
-> - **Rootfs:** raiz root-owned 0555; /workspace UID 104/mode 0700 gravável; /readonly root-owned 0555 e raiz negam escrita após drop UID/GID.
-> - **Contenção:** chroot entrou; descendants inherit seccomp; capabilities efetivas zeradas; no_new_privs=true; sockets/socketpair negados; /proc, /data/options.json e caminho externo ausentes.
-> - **Armazenamento:** /dev/shm tmpfs com teto rígido de 4091707392 bytes (~3,81 GiB). É limite superior do contêiner, não quota dedicada por job (per_job_quota_proven=false). /data ext4 sem opções de quota identificadas.
-> - **Segurança:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+> - **Baseline HA:** RC58 (`0.1.0-rc.58`) instalada/started; RC59 em validação.
+> - **M101:** rootfs em `/dev/shm`; workspace executor-owned 0700; root/readonly root-owned 0555; FD audit ok; nenhuma escrita fora da workspace.
+> - **Armazenamento:** `/dev/shm` tmpfs tem teto de contêiner de 4091707392 bytes; quota por job não é configurável pela schema atual do Supervisor. O Supervisor aceita `tmpfs` boolean e cria `/tmp` e `/dev/shm` sem opções de tamanho.
+> - **M102 / RC59:** protótipo de chroot read-only sem filesystem gravável; somente stdout pipe; seccomp nega open para escrita, mutações, sockets e criação de processos; parent impõe limite de bytes e encerra overflow.
+> - **Validação pendente:** build ARM64, testes safe-payload e overflow, probe real no Raspberry.
+> - **Segurança:** protótipo sintético apenas; nenhum código de projeto executado; `sandbox_export` fail-closed; `safe_for_untrusted_code=false`; Publisher DORMANT.
 > - **Operação:** não criar backup da RC anterior em atualizações normais de RC.
-> - **Observação operacional:** Supervisor registrou aviso SIGTERM/exit 143 durante a troca; RC58 iniciou normalmente depois. Tratamento de encerramento limpo permanece pendente.
 > - **Continuidade:** Issue #2 do Orquestrador.
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.

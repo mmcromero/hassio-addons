@@ -39,6 +39,7 @@ env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent \
 
 # Run the synthetic isolation probe only after persistent authority layout validation succeeds.
 /usr/bin/python3 -I -u /app/isolation_backend_probe.py || echo "[ISOLATION-BACKEND] ERROR: diagnostic unavailable; execution remains blocked"
+/usr/bin/python3 -I -u /app/bounded_stream_probe.py || echo "[BOUNDED-STREAM] ERROR: diagnostic unavailable; project execution remains blocked"
 
 # A private HA volume may start at 0700 root. Grant the service group search
 # only (no listing/write), without changing options.json ownership or mode.

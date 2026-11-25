@@ -23,13 +23,26 @@ DENIED_SYSCALLS = (
     "mount_setattr", "ptrace", "process_vm_readv", "process_vm_writev",
     "pidfd_open", "pidfd_getfd", "bpf", "perf_event_open", "userfaultfd",
     "io_uring_setup", "io_uring_enter", "io_uring_register",
-    "open_by_handle_at", "name_to_handle_at", "keyctl", "add_key", "request_key",
+    "open_by_handle_at", "name_to_handle_at", "openat2", "keyctl", "add_key", "request_key",
     "capset", "setuid", "setgid", "setgroups", "setresuid", "setresgid",
     "setfsuid", "setfsgid", "mknod", "mknodat", "fanotify_init",
     "iopl", "ioperm", "reboot", "kexec_load", "kexec_file_load",
     "init_module", "finit_module", "delete_module", "swapon", "swapoff",
     "acct", "settimeofday", "clock_settime", "sethostname", "setdomainname",
     "syslog", "getppid",
+)
+
+
+FILESYSTEM_MUTATION_SYSCALLS = (
+    "creat", "unlink", "unlinkat", "rename", "renameat", "renameat2",
+    "mkdir", "mkdirat", "rmdir", "link", "linkat", "symlink", "symlinkat",
+    "truncate", "ftruncate", "fallocate", "chmod", "fchmod", "fchmodat",
+    "fchmodat2", "chown", "fchown", "lchown", "fchownat", "utime",
+    "utimes", "utimensat",
+)
+WRITE_OPEN_FLAGS = (
+    os.O_WRONLY, os.O_RDWR, os.O_CREAT, os.O_TRUNC, os.O_APPEND,
+    getattr(os, "O_TMPFILE", 0x410000),
 )
 
 
@@ -56,7 +69,7 @@ def _load_library():
     return lib
 
 
-def install_restrictions(library=None):
+def install_restrictions(library=None, *, deny_filesystem_writes=False, deny_process_creation=False):
     lib = library if library is not None else _load_library()
     context = lib.seccomp_init(SCMP_ACT_ALLOW)
     if not context:
@@ -69,6 +82,34 @@ def install_restrictions(library=None):
             result = lib.seccomp_rule_add(context, SCMP_ACT_ERRNO, number, 0)
             if result < 0:
                 raise OSError(-result, "seccomp_rule_add failed for " + name)
+        if deny_filesystem_writes:
+            for name in FILESYSTEM_MUTATION_SYSCALLS:
+                number = lib.seccomp_syscall_resolve_name(name.encode("ascii"))
+                if number < 0:
+                    continue
+                result = lib.seccomp_rule_add(context, SCMP_ACT_ERRNO, number, 0)
+                if result < 0:
+                    raise OSError(-result, "seccomp filesystem mutation rule failed for " + name)
+            for syscall_name, flags_arg in (("open", 1), ("openat", 2)):
+                number = lib.seccomp_syscall_resolve_name(syscall_name.encode("ascii"))
+                if number < 0:
+                    continue
+                for flag in WRITE_OPEN_FLAGS:
+                    if not flag:
+                        continue
+                    cmp = ScmpArgCmp(flags_arg, SCMP_CMP_MASKED_EQ, flag, flag)
+                    result = lib.seccomp_rule_add_array(
+                        context, SCMP_ACT_ERRNO, number, 1, ctypes.byref(cmp))
+                    if result < 0:
+                        raise OSError(-result, "seccomp write-open rule failed for " + syscall_name)
+        if deny_process_creation:
+            for name in ("clone", "fork", "vfork", "execve", "execveat"):
+                number = lib.seccomp_syscall_resolve_name(name.encode("ascii"))
+                if number < 0:
+                    continue
+                result = lib.seccomp_rule_add(context, SCMP_ACT_ERRNO, number, 0)
+                if result < 0:
+                    raise OSError(-result, "seccomp process creation rule failed for " + name)
         clone_nr = lib.seccomp_syscall_resolve_name(b"clone")
         if clone_nr >= 0:
             for flag in CLONE_NAMESPACE_FLAGS:

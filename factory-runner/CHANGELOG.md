@@ -1,3 +1,11 @@
+# 0.1.0-rc.59 — M102: prova de saída limitada sem filesystem gravável
+
+- Adiciona bounded_stream_probe: payload sintético em chroot read-only, sem diretório gravável, com FDs auditados e stdout conectado a pipe.
+- Seccomp em modo stream nega abertura de arquivos com flags de escrita, syscalls de mutação, criação de processos e sockets; o payload escreve apenas no pipe de saída.
+- Processo confiável lê o pipe com limite de bytes e mata o filho ao exceder o teto; teste de overflow confirma corte em max_output_bytes+1.
+- Protótipo não executa código de projeto; sandbox_export continua fail-closed.
+- Supervisor atual só aceita tmpfs boolean e monta /tmp e /dev/shm sem opção de tamanho; não há quota dedicada configurável por add-on sem alterar Supervisor ou elevar privilégios.
+
 # 0.1.0-rc.58 — M101: rootfs de job em tmpfs limitado
 
 - A fixture de isolamento passa a ser criada dentro de /dev/shm, que o probe identificou como tmpfs com teto rígido de capacidade no contêiner.
