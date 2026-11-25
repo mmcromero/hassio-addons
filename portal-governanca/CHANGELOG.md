@@ -1,5 +1,10 @@
 # Changelog — Portal de Governança (add-on)
 
+## 0.1.0-dev.3 — 25/11/2026
+
+- Corrige PATH do processo isolado para localizar Node 22 em /usr/local/bin.
+- Mantém whitelist de ambiente e remoção das credenciais Supervisor.
+
 ## 0.1.0-dev.2 — 25/11/2026
 
 - Corrige a imagem-base ARM64 para Node 22 Alpine explícita, sem depender de BUILD_FROM.
