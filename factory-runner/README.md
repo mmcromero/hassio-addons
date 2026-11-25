@@ -1,15 +1,16 @@
-> **ESTADO VIGENTE — 25/11/2026 / M084**
+> **ESTADO VIGENTE — 25/11/2026 / M085**
 >
 > - **Roadmap:** seis etapas; isolamento de código não confiável permanece obrigatório na Etapa 5, antes de executar código de projetos.
-> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`; RC45 (`0.1.0-rc.45`) publicada no catálogo; RC44 (`0.1.0-rc.44`) permanece instalada e homologada; atualização RC45 e testes Etapa 4 pendentes. Fonte de desenvolvimento preservada.
-> - **Catálogo:** RC44 publicada em `mmcromero/hassio-addons:main/factory-runner/`; 114 arquivos comparados, zero divergências; somente seis caminhos da pasta Factory Runner alterados no pacote/proveniência.
-> - **Supervisor:** RC44 instalada e `started` em ARM64; build concluído; sem atualização pendente. Backup pré-update RC41: `4e6ea0d9`.
+> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`; RC45 (`0.1.0-rc.45`) publicada e instalada no Supervisor ARM64; app `started`, sem update pendente. Fonte de desenvolvimento preservada.
+> - **Catálogo:** RC45 publicada em `mmcromero/hassio-addons:main/factory-runner/`; 115 arquivos comparados, zero divergências; somente `factory-runner/` alterada.
+> - **Supervisor:** RC45 instalada e `started` em ARM64; build e suíte Dockerfile concluídos; 241 testes principais PASS; backup add-on-only pré-update RC44: `e00cf68f`.
 > - **Etapa 1:** API/segurança, persistência/idempotência e configuração/bootstrap concluídas para o modo restrito.
 > - **Etapa 2:** FR-EXEC-001 validada em RC41; planos read-only persistidos para os dois workspaces.
-> - **Etapa 3:** homologação RC44 PASS: Dockerfile, sintaxe, compilação Python, suíte automatizada e probe real autenticado da API de jobs. Dois jobs terminaram PARCIAL como esperado; 68/54 testes selecionados, nenhum executado; digest/recibo, polling, idempotência, filtros e auditoria conferidos.
+> - **Etapa 3:** homologação read-only preservada da RC44; API de jobs continua PASS na RC45. Dois jobs terminaram PARCIAL como esperado; 68/54 testes selecionados, nenhum executado; digest/recibo, polling, idempotência, filtros e auditoria conferidos.
 > - **Publisher:** DORMANT; publicação de produtos desativada. Nenhum código de Avisaqui/Artesão executado.
 > - **Isolamento:** Bubblewrap ainda bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed e reservada à Etapa 5.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M082; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Etapa 4:** revogação do grant integrada e coberta pela suíte; validação ao vivo de revogação pendente porque Publisher permanece DORMANT. API autenticada/E2E sintético/declaração não-root PASS na RC45.
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M085; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado. Referências antigas a RCs anteriores são registros históricos, não o estado operacional atual.
 
