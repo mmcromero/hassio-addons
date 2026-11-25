@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.40",
+  "version": "0.1.0-rc.41",
   "repository": "mmcromero/factory-runner",
-  "commit": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
-  "catalog_sha": "cd10d0ae73c4df429ea932e0cbf9057927d6fecb",
-  "previous_source": "0882092c3f9bc60b04b1f427dade742fcc477282",
-  "reviewed_source": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
-  "publication": "OWNER_AUTHORIZED_RC40_CANDIDATE_DISTRIBUTION",
+  "commit": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
+  "catalog_sha": "d164431b1e211e64455e3cd1cf44f6598587e3a0",
+  "previous_source": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
+  "reviewed_source": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
+  "publication": "OWNER_AUTHORIZED_RC41_CANDIDATE_DISTRIBUTION",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_CONTINUOUS_INSTALL_UPDATE_AUTHORIZATION_20261124",
-  "candidate_distribution": "FACTORY_RUNNER_RC40_FR_EXEC_001_LEDGER_DIAGNOSTICS",
-  "tests": "PENDING_SUPERVISOR_DOCKERFILE_VALIDATION",
-  "review_status": "RC40_PUBLISHED_WAITING_SUPERVISOR_BUILD",
+  "candidate_distribution": "FACTORY_RUNNER_RC41_JSONL_FIX",
+  "tests": "7_DIRECTED_LEDGER_TESTS_PASS_HASH_VERIFIED_LINUX_ARM64_FULL_SUITE_PENDING",
+  "review_status": "RC41_PUBLISHED_WAITING_SUPERVISOR_BUILD",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,14 +86,14 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "e7d989cb4a22289a1c014ce9c8b9349a55065492",
-      "size": 43350,
+      "git_blob_sha": "4a3354b1915aa054ee08ffb4b255341a79be7f5a",
+      "size": 43676,
       "mode": "100644"
     },
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "8357e21467efed1f7497e4fe56d09d91e55e3c81",
+      "git_blob_sha": "d0c123b3e5dea2016eb0c15c409a4399682de118",
       "size": 1037,
       "mode": "100644"
     },
@@ -170,8 +170,8 @@
     {
       "path": "factory-runner/execution_evidence.py",
       "source_path": "factory-runner-add-on/execution_evidence.py",
-      "git_blob_sha": "107f865744071293d9d151b76b5ca0d76fe65302",
-      "size": 7504,
+      "git_blob_sha": "f6e938e270519ae5ba0a3a7525501dd1fa9d692f",
+      "size": 7503,
       "mode": "100644"
     },
     {
@@ -590,8 +590,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_execution_evidence.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_evidence.py",
-      "git_blob_sha": "1bc7935845d27210e6eb9d8248012ded50b3d34e",
-      "size": 3492,
+      "git_blob_sha": "4f46636cd5cf63a505ec3636520e7d04a1f4b6b0",
+      "size": 3806,
       "mode": "100644"
     },
     {
@@ -807,8 +807,8 @@
     "publisher": "DORMANT"
   },
   "branch": "release-candidate",
-  "provenance_note": "Inventário integral de 111 arquivos da fonte factory-runner-add-on/ no commit RC40 indicado. RC40 acrescenta diagnóstico por código de campo no ledger e corrige fixture/permissões; build ARM64 e suíte Dockerfile ainda pendentes. Somente factory-runner/ foi alterada; demais add-ons e RC4-VALIDACAO.md preservados. Nenhum código/teste de Avisaqui/Artesão executado; Publisher DORMANT.",
-  "status": "RC40_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
+  "provenance_note": "M073: RC41 corrige delimitador LF do ledger. Sete testes dirigidos PASS com blobs idênticos à fonte. RC40 não instalada na leitura de 23:11 BRT; resultado detalhado do build indisponível. Validação integral ARM64 pendente. Publisher e execução de código de projeto permanecem bloqueados.",
+  "status": "RC41_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -824,11 +824,10 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.40",
+    "version": "0.1.0-rc.41",
     "build": "PENDING",
     "dockerfile_tests": "PENDING",
     "execution_plan_probe": "PENDING",
-    "installation": "NOT_STARTED",
-    "expected_installed_before_update": "0.1.0-rc.37"
+    "installation": "NOT_STARTED"
   }
 }
