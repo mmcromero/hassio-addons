@@ -69,6 +69,15 @@
         "aarch64"
       ],
       "source_repo": "https://github.com/mmcromero/fabricacao_e_orcamentos"
+    },
+    {
+      "id": "design-system-lab",
+      "directory": "design-system-lab",
+      "slug": "design_system_lab",
+      "architectures": [
+        "aarch64"
+      ],
+      "source_repo": "https://github.com/mmcromero/design-system"
     }
   ]
 }

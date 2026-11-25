@@ -1,0 +1,20 @@
+name: "Design System — Laboratório de Homologação"
+version: "0.1.0-test.1"
+slug: design_system_lab
+description: "Executor ARM64 temporário para build, testes automatizados e Demo do Design System"
+url: "https://github.com/mmcromero/design-system"
+arch:
+  - aarch64
+startup: application
+boot: manual
+stage: experimental
+ingress: true
+ingress_port: 8099
+ingress_entry: /
+panel_admin: true
+panel_icon: mdi:test-tube
+panel_title: "Design System Lab"
+watchdog: false
+options: {}
+schema:
+  github_read_token: password?

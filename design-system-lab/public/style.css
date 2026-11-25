@@ -1,0 +1,38 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f3f5f8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+.shell { width: min(100% - 32px, 920px); margin: 0 auto; padding: 32px 0 48px; }
+header { margin-bottom: 24px; }
+.eyebrow { color: #59677e; font-size: .76rem; font-weight: 700; letter-spacing: .08em; }
+h1 { margin: 8px 0; font-size: clamp(1.8rem, 5vw, 2.6rem); }
+h2 { margin: 0 0 16px; font-size: 1.25rem; }
+.intro, .hint { color: #536176; line-height: 1.55; }
+.panel { background: #fff; border: 1px solid #dbe1e9; border-radius: 12px; padding: 22px; margin: 18px 0; }
+.notice { padding: 12px; background: #edf4ff; border-radius: 8px; }
+.warning { color: #7a3d00; background: #fff4e5; padding: 12px; border-radius: 8px; line-height: 1.5; }
+button { min-height: 44px; padding: 10px 18px; border: 0; border-radius: 8px; background: #164e91; color: white; font: inherit; font-weight: 650; cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, a:focus-visible, pre:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
+.status { margin: 14px 0; font-weight: 650; }
+.metadata { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.metadata div { padding: 10px; background: #f7f8fa; border-radius: 8px; min-width: 0; }
+dt { color: #5d6a7e; font-size: .8rem; }
+dd { margin: 4px 0 0; overflow-wrap: anywhere; font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+.actions a { color: #164e91; }
+[hidden] { display: none !important; }
+ol { padding-left: 22px; line-height: 1.8; }
+.log-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.log-heading span { color: #536176; font-size: .85rem; }
+pre { max-height: 460px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: #101827; color: #e5edf8; padding: 16px; border-radius: 8px; font-size: .8rem; line-height: 1.5; }
+footer { color: #657187; font-size: .8rem; text-align: center; padding: 16px 0; }
+@media (max-width: 520px) {
+  .shell { width: min(100% - 20px, 920px); padding-top: 18px; }
+  .panel { padding: 16px; }
+  .actions { flex-direction: column; }
+}

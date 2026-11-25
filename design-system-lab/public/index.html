@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Design System Lab</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <p class="eyebrow">HOME ASSISTANT · LABORATÓRIO TEMPORÁRIO</p>
+      <h1>Design System Lab</h1>
+      <p class="intro">Validação reproduzível no Raspberry Pi ARM64, usando a branch <code>desenvolvimento</code> do repositório privado.</p>
+    </header>
+    <section class="panel" aria-labelledby="run-title">
+      <h2 id="run-title">Validação automatizada</h2>
+      <p id="token-state" class="notice" role="status">Verificando configuração do token GitHub…</p>
+      <p class="hint">O token é lido da configuração protegida deste app. Ele nunca é enviado à página nem incluído nos logs.</p>
+      <button id="run" type="button" disabled>Executar validação</button>
+      <p id="status" class="status" role="status" aria-live="polite">Aguardando execução.</p>
+      <dl class="metadata">
+        <div><dt>Branch</dt><dd>desenvolvimento</dd></div>
+        <div><dt>Commit validado</dt><dd id="sha">Ainda não executado</dd></div>
+        <div><dt>Início</dt><dd id="started">—</dd></div>
+        <div><dt>Fim</dt><dd id="finished">—</dd></div>
+      </dl>
+      <div class="actions">
+        <a id="demo" href="demo/" hidden>Abrir Demo para homologação manual</a>
+        <a href="api/log">Baixar log da última execução</a>
+        <a href="https://github.com/mmcromero/design-system" target="_blank" rel="noreferrer">Abrir repositório privado</a>
+      </div>
+    </section>
+    <section class="panel" aria-labelledby="instructions-title">
+      <h2 id="instructions-title">Configuração única</h2>
+      <ol>
+        <li>Crie um Fine-grained Personal Access Token no GitHub.</li>
+        <li>Restrinja o acesso ao repositório <code>mmcromero/design-system</code>.</li>
+        <li>Conceda somente <strong>Contents: Read-only</strong>.</li>
+        <li>No Home Assistant, abra a configuração deste app e informe o token em <code>github_read_token</code>.</li>
+        <li>Volte aqui e execute a validação.</li>
+      </ol>
+      <p class="warning">Não cole o token no chat, no GitHub, na tela do laboratório ou em logs. Use somente a configuração protegida do app.</p>
+    </section>
+    <section class="panel" aria-labelledby="log-title">
+      <div class="log-heading"><h2 id="log-title">Log da execução</h2><span id="log-state">Sem execução</span></div>
+      <pre id="log" tabindex="0">Os resultados aparecerão aqui.</pre>
+    </section>
+    <footer>App experimental · Sem acesso ao Docker do host, à API do Supervisor, a diretórios do HA ou a portas públicas.</footer>
+  </main>
+</body>
+</html>

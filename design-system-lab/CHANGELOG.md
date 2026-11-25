@@ -1,0 +1,7 @@
+# Changelog — Design System Lab
+
+## 0.1.0-test.1 — 25/11/2026
+- Primeira versão experimental para validação do Design System no Home Assistant ARM64.
+- Clone privado com Fine-grained PAT somente leitura.
+- npm ci, build, Vitest, Playwright/Chromium e Demo estática via Ingress.
+- Sem acesso à API HA/Supervisor, Docker socket, host mounts ou portas públicas.
