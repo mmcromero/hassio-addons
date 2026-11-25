@@ -1,12 +1,12 @@
-> **ESTADO VIGENTE — 25/11/2026 / M107**
+> **ESTADO VIGENTE — 25/11/2026 / M108**
 >
-> - **Baseline HA:** RC60 (0.1.0-rc.60) continua instalada/started; a tentativa de atualização RC63 falhou no build ARM64.
-> - **Diagnóstico:** o método 27, `test_valid_archive_extracts_allowlisted_files_and_hashes`, falhou por uma tupla aninhada incorreta na fixture de teste (`AttributeError: 'tuple' object has no attribute 'tobuf'`).
-> - **RC64:** corrige somente a fixture, passando diretamente o par retornado por `dir_member("pkg")`. O módulo `archive_stream.py` e o runtime não foram alterados.
-> - **Validação pendente:** build ARM64 RC64, diagnóstico individual e suíte completa. RC64 não está publicada nem instalada neste ponto.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
-> - **Operação:** sem backup da RC60; preservar opções e dados persistentes.
-> - **Continuidade:** Issue #2 do Orquestrador.
+> - **Baseline HA:** RC64 (0.1.0-rc.64) instalada/started; build ARM64 e cadeia Dockerfile concluídos; update_available=false.
+> - **RC65:** candidata 0.1.0-rc.65 acrescenta prova sintética integrada chroot → stdout limitado → validador confiável archive_stream.
+> - **Prova:** child em chroot mínimo, UID/GID executor, ambiente limpo, FDs auditados, capabilities efetivas zero, no_new_privs, seccomp sem escrita/rede/criação de processos, RLIMITs, deadline externo e limite de bytes; pai valida/extrai arquivo TAR sintético com allowlist.
+> - **Adversariais:** path traversal rejeitado; overflow e timeout encerram o filho; staging e tmpfs devem ser limpos.
+> - **Limite:** somente payload sintético interno. Nenhum código de projeto é executado. O exportador Artesão atual usa subprocessos e escrita em diretório; ainda não é compatível com o contrato stream.
+> - **RC65 ainda não publicada/instalada.** Build ARM64 e startup real no Raspberry são os próximos gates.
+> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhuma liberação de execução ou publicação de produtos.
 
 ---
 

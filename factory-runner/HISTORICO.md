@@ -180,3 +180,16 @@ Próxima ação objetiva e responsável:
 - **Publicação/instalação:** RC64 ainda não publicada no catálogo nem instalada. Nenhum backup da RC60 criado, conforme regra do proprietário; opções/dados persistentes preservados.
 - **Segurança:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 - **Próxima ação:** revisão final, PR da branch para `release-candidate`, publicação isolada em `hassio-addons:main/factory-runner/` com proveniência/hash, refresh do catálogo e atualização RC64 pela autorização vigente. Confirmar build/testes/startup no Supervisor; não repetir RC63.
+
+
+## 25/11/2026 — M108: prova sintética integrada chroot → archive stream (RC65)
+
+- Baseline confirmada: RC64 `0.1.0-rc.64` instalada/started no Raspberry Pi; build ARM64 e probes M107 PASS; `update_available=false`.
+- Branch de trabalho: `promote/rc65-m108-archive-stream-probe`, baseada na `release-candidate` M107. RC65 ainda não publicada/instalada.
+- Novo `archive_stream_probe.py`: child sintético em chroot mínimo read-only, UID/GID executor, ambiente vazio, FD audit, CapEff zero, no_new_privs, seccomp nega escrita/rede/criação de processos, RLIMIT_CPU/AS/FSIZE/NPROC/NOFILE e stdout como único canal.
+- Pai confiável lê stdout por select/deadline externo, aplica limite de bytes, encerra process group em overflow/timeout e valida TAR com `archive_stream.validate_and_extract_tar`, allowlist, hash, staging privado e rename atômico.
+- Cenários: arquivo válido com SHA esperado; traversal rejeitado e staging removido; overflow interrompido em 129 bytes; timeout externo encerra child; tmpfs deve retornar ao nível anterior.
+- `run.sh` executa a prova com `env -i`; Dockerfile compila o módulo, copia para runtime e inclui o teste na suíte integral.
+- Arquivos de runtime alterados: apenas o probe sintético e sua chamada de diagnóstico; `sandbox_export.py` permanece inalterado/fail-closed. Nenhum projeto executado.
+- Exportador Artesão atual `scripts/prepare-distributions.py` usa subprocessos Git/Python e grava em diretórios; não é compatível diretamente com child stream-only. Nenhuma alteração no repositório Artesão foi feita.
+- Gates: RC65 precisa passar build ARM64 e startup real. Mesmo com probe PASS, isso demonstra apenas o protocolo sintético; não libera `safe_for_untrusted_code`, Publisher ou execução de projetos.

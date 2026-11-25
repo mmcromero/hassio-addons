@@ -1,3 +1,14 @@
+# 0.1.0-rc.65 — M108: integração sintética archive stream em chroot
+
+- Adiciona `archive_stream_probe.py`: prova integrada somente sintética do fluxo child chroot read-only → stdout pipe limitado → supervisor pai → `archive_stream.validate_and_extract_tar`.
+- Child: UID/GID executor, ambiente vazio, FD audit, capabilities efetivas zero, no_new_privs, seccomp nega escrita/rede/criação de processos, RLIMIT_CPU/AS/FSIZE/NPROC/NOFILE e somente FDs 0–3.
+- Pai: leitura não bloqueante com deadline externo, limite de bytes, kill do process group, validação de allowlist/hashes e staging privado com rename atômico.
+- Casos: arquivo sintético válido, traversal rejeitado, overflow limitado a 129 bytes e child morto, timeout externo e cleanup do tmpfs.
+- Probe executado no startup com ambiente limpo; Dockerfile compila o módulo e inclui o teste na suíte completa.
+- Não conecta o probe a `sandbox_export`, não executa scripts de projeto, não altera runtime do Publisher, opções, permissões, mounts, capabilities, AppArmor, rede ou credenciais.
+- O exportador Artesão atual depende de subprocessos e escrita em diretório; não é compatível diretamente com o contrato stream e não foi alterado.
+- RC65 é candidata de diagnóstico; build ARM64 e startup no Raspberry pendentes. `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
 # 0.1.0-rc.64 — M107: corrigir fixture da suíte archive stream
 
 - O build ARM64 RC63 identificou a falha no método `test_valid_archive_extracts_allowlisted_files_and_hashes` (índice 27): a fixture passava uma tupla aninhada para `tarfile.addfile`, gerando `AttributeError: 'tuple' object has no attribute 'tobuf'`.

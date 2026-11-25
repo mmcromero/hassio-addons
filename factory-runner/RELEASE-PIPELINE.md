@@ -1,4 +1,7 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M107 — RC60 instalada; RC63 build falhou; RC64 correção de fixture preparada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M108 — RC64 instalada; RC65 probe stream-only sintético preparada)
+
+> **Estado de código e homologação — 25/11/2026 / M108:** RC64 (0.1.0-rc.64) permanece instalada/started no Raspberry; build ARM64 e probes M107 PASS. RC65 (0.1.0-rc.65) adiciona somente a integração sintética chroot → stdout limitado → archive_stream, com casos de arquivo válido, traversal, overflow e timeout. RC65 ainda não publicada/instalada; build ARM64 e startup real pendentes. Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
 
 > **Estado de código e homologação — 25/11/2026 / M107:** RC60 (0.1.0-rc.60) permanece instalada/started. O build ARM64 RC63 executou o runner individual e identificou a falha no método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`: fixture aninhou indevidamente o par retornado por `dir_member`, causando `AttributeError: 'tuple' object has no attribute 'tobuf'`. RC64 corrige somente a fixture e mantém a suíte completa obrigatória; promoção/publicação/build ARM64 ainda pendentes. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 
@@ -316,3 +319,8 @@ A RC62 confirmou que o estágio que falha é test_factory_runner_archive_stream.
 ## M107 — diagnóstico e correção da fixture archive_stream
 
 O Supervisor ARM64 RC63 informou exit code 77 no runner individual, método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`. A função `dir_member("pkg")` já retorna o par `(TarInfo, None)`; a fixture embrulhava o retorno em outra tupla, fazendo `archive()` passar um objeto tuple para `tarfile.addfile`. RC64 altera somente essa linha de teste. O módulo de runtime `archive_stream.py` permanece inalterado. O build seguinte deve executar novamente o runner individual e a suíte completa; nenhuma cobertura foi removida.
+
+
+## M108 — prova sintética de integração do archive stream
+
+A candidata acrescenta `archive_stream_probe.py`, sem ligar o backend ao `sandbox_export`. Um child sintético executa em chroot mínimo e read-only, com ambiente vazio, UID/GID executor, FD audit, CapEff zero, no_new_privs, seccomp (sem escrita/rede/process creation), RLIMITs e stdout como único canal. O pai aplica leitura não bloqueante, deadline externo, limite de bytes, kill de grupo e validação do TAR com allowlist, hashes e staging atômico. Os cenários de traversal, overflow e timeout devem ser rejeitados; a limpeza precisa ser comprovada. Apenas payloads sintéticos; o exportador Artesão atual usa subprocessos e escrita em diretório e não é compatível diretamente com este contrato. Nenhuma execução de projeto ou liberação de Publisher.
