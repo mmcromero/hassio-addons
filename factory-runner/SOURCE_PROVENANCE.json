@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.45",
+  "version": "0.1.0-rc.46",
   "repository": "mmcromero/factory-runner",
-  "commit": "f1465506a79ffd124f5465a14a5f8c745ef440a4",
-  "catalog_sha": "5b27a2492d5480bfeb76a17b20339c07fd5eb8d3",
-  "previous_source": "b9644bd53972af1eba1a785c036e5c358fcb3a2f",
-  "reviewed_source": "f1465506a79ffd124f5465a14a5f8c745ef440a4",
-  "publication": "OWNER_AUTHORIZED_RC45_CANDIDATE_DISTRIBUTION_M055",
-  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_STAGE4_2026-11-25",
-  "candidate_distribution": "FACTORY_RUNNER_RC45_STAGE4_PUBLISHER_GRANT_REVOCATION",
-  "tests": "PASS_SUPERVISOR_ARM64_DOCKERFILE_BASH_N_PY_COMPILE_241_UNITTESTS_NONROOT_WORKSPACE_SYNC_NONROOT_E2E_API_PROBE",
-  "review_status": "RC45_INSTALLED_ARM64_RESTRICTED_HOMOLOGATION_PASS",
+  "commit": "ad65865a56787f994802355ed27443ec864bcb9c",
+  "catalog_sha": "22c51c5815d55518bfaad3bd088c51f35b1fedd8",
+  "previous_source": "f1465506a79ffd124f5465a14a5f8c745ef440a4",
+  "reviewed_source": "ad65865a56787f994802355ed27443ec864bcb9c",
+  "publication": "OWNER_AUTHORIZED_RC46_CANDIDATE_DISTRIBUTION_M055",
+  "authorization": "OWNER_AUTHORIZED_STAGE5_2026-11-25_AND_CONTINUOUS_RC_PUBLICATION_M055",
+  "candidate_distribution": "FACTORY_RUNNER_RC46_STAGE5A_AGGREGATE_GATE_CGROUP_INVENTORY",
+  "tests": "PENDING_SUPERVISOR_ARM64_DOCKERFILE_VALIDATION",
+  "review_status": "RC46_CANDIDATE_NOT_HOMOLOGATED",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "5f7a12c2c954d474fea58f73f1654b45ffc97b3b",
-      "size": 47101,
+      "git_blob_sha": "7190f553d86ffd986047778356300179f1079bc1",
+      "size": 47488,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "7a4ab5c6399af5cbc912907d5535766efd889480",
+      "git_blob_sha": "ef0468220e5d6456799f0c02da830671328a4534",
       "size": 1037,
       "mode": "100644"
     },
@@ -457,15 +457,15 @@
     {
       "path": "factory-runner/runtime_probe.py",
       "source_path": "factory-runner-add-on/runtime_probe.py",
-      "git_blob_sha": "d7d089099e0f001974f7f95cc723b83b6244d766",
-      "size": 2512,
+      "git_blob_sha": "5d9d6857a1d9a2dfeba1d180785c898c14068486",
+      "size": 5201,
       "mode": "100644"
     },
     {
       "path": "factory-runner/sandbox_export.py",
       "source_path": "factory-runner-add-on/sandbox_export.py",
-      "git_blob_sha": "30044957887f43f6a6ef3fb7e3f01db224b44608",
-      "size": 9049,
+      "git_blob_sha": "2b147dc2e4e444659f29ebaf530d104c77014b09",
+      "size": 9359,
       "mode": "100644"
     },
     {
@@ -550,6 +550,13 @@
       "source_path": "factory-runner-add-on/tests/test_factory_runner_artesao_isolated_executor.py",
       "git_blob_sha": "2eea3c7ac8f9a54db0df65af2a3abe7994cbeacd",
       "size": 17019,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/test_factory_runner_cgroup_inventory.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_cgroup_inventory.py",
+      "git_blob_sha": "7d20ef68800f13c7c5267085b4e988a53c011c6c",
+      "size": 2740,
       "mode": "100644"
     },
     {
@@ -758,8 +765,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_sandbox.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_sandbox.py",
-      "git_blob_sha": "3ae77a40dfa69719929f512f5bead5f10ce645d5",
-      "size": 8708,
+      "git_blob_sha": "e8674cd19a1bf36de716571dd688818ffcc311e3",
+      "size": 9324,
       "mode": "100644"
     },
     {
@@ -871,8 +878,8 @@
     "product_code_execution": "NOT_EXECUTED"
   },
   "branch": "release-candidate",
-  "provenance_note": "M085: RC45 installed and started on Supervisor ARM64. Dockerfile validation chain passed: bash -n, py_compile, 241 main unittest cases, non-root workspace-sync and E2E probe. Runtime authenticated API, synthetic E2E and declarative non-root/SHA-256 probes passed. Publisher remains DORMANT; live grant revocation was not exercised because no owner grant was issued. No Avisaqui/Artesao code was executed; Etapa 5 remains mandatory.",
-  "status": "RC45_INSTALLED_STARTED_ARM64_RESTRICTED_HOMOLOGATION_PASS",
+  "provenance_note": "M086: aggregate gate and read-only cgroup inventory. Stage 5 isolation NOT validated. RC45 build confirmed; exact test count unverified because global Supervisor logs include other add-ons. Publisher DORMANT; no project code.",
+  "status": "RC46_PUBLISHED_NOT_INSTALLED_STAGE5A_DIAGNOSTIC_PENDING",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -888,22 +895,14 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.45",
-    "build": "PASS_2026-11-25T03:03:38-03:00",
-    "dockerfile_tests": "PASS_BASH_N_PY_COMPILE_241_UNITTESTS_NONROOT_WORKSPACE_SYNC_NONROOT_E2E",
-    "publisher_revocation_tests": "PASS_AUTOMATED_241_TEST_SUITE",
-    "live_grant_revocation": "NOT_EXERCISED_PUBLISHER_DORMANT_NO_GRANT_ISSUED",
-    "installation": "INSTALLED_STARTED",
+    "version": "0.1.0-rc.46",
+    "build": "PENDING",
+    "dockerfile_tests": "PENDING",
+    "isolation": "NOT_HOMOLOGATED",
     "installed_version": "0.1.0-rc.45",
-    "update_available": false,
-    "backup_id": "e00cf68f",
-    "backup_version": "0.1.0-rc.44",
+    "installation": "NOT_INSTALLED",
     "publisher": "DORMANT",
-    "product_code_execution": "NOT_EXECUTED",
-    "runtime_api_probe": "PASS_AUTHENTICATED_2_PROJECTS_10_READ_ONLY_AUDITED_OPERATIONS",
-    "runtime_e2e_probe": "PASS_SYNTHETIC_5_GIT_BLOBS_NO_REAL_WORKSPACES",
-    "declarative_probe": "PASS_NONROOT_GIT_BLOB_SHA256",
-    "shutdown_warning": "OLD_RC44_DID_NOT_HANDLE_SIGTERM_EXIT_143_RC45_STARTED_SUCCESSFULLY"
+    "product_code_execution": "NOT_EXECUTED"
   },
   "previous_candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
