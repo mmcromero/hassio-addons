@@ -1,9 +1,7 @@
 name: Validar Central Umdoislab
+# PAUSADO: execução somente manual enquanto o catálogo não adotar CI.
+# Preservado para eventual reativação explícita; sem gatilho pull_request.
 on:
-  pull_request:
-    paths:
-      - 'umdoislab-central/**'
-      - '.github/workflows/validar-umdoislab-central.yml'
   workflow_dispatch:
 jobs:
   tests:
