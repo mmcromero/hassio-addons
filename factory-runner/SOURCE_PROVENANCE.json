@@ -905,8 +905,30 @@
     "rc62_build_result": "SUPERVISOR_ARM64_BUILD_ISOLATED_FAILURE_TO_TEST_FACTORY_RUNNER_ARCHIVE_STREAM_PY_EXIT_1",
     "rc63_validation_plan": "RUN_EACH_ARCHIVE_STREAM_TEST_METHOD_INDIVIDUALLY; EXIT_CODES_51_PLUS_INDEX; THEN_FULL_TEST_SUITE; NO_TESTS_REMOVED",
     "rc64_source_commit": "0d71c8aac2ee7e46db3cd4d9b80da457600bf191",
-    "rc64_validation_status": "PENDING_SUPERVISOR_ARM64_BUILD",
+    "rc64_validation_status": "SUPERVISOR_ARM64_BUILD_PASS_INSTALLED_STARTED",
     "rc63_build_result": "SUPERVISOR_ARM64_BUILD_FAILED_AT_ARCHIVE_STREAM_TEST_METHOD_27; TEST_FIXTURE_NESTED_TUPLE; RUNTIME_MODULE_UNCHANGED",
-    "rc64_correction": "FIXTURE_NOW_PASSES_DIR_MEMBER_PAIR_DIRECTLY; NO_RUNTIME_OR_SECURITY_POLICY_CHANGE"
+    "rc64_correction": "FIXTURE_NOW_PASSES_DIR_MEMBER_PAIR_DIRECTLY; NO_RUNTIME_OR_SECURITY_POLICY_CHANGE",
+    "rc64_build_result": "PASS; supervisor_build_done_2026-11-25T16:51:25-03:00; app_updated_2026-11-25T16:51:28-03:00; Dockerfile validation RUN chain completed",
+    "rc64_installed_version": "0.1.0-rc.64",
+    "rc64_installed_state": "started",
+    "rc64_update_available": false,
+    "rc64_startup_checks": {
+      "api_probe": "PASS; 2 projects; 2 preflights; 8 read-only audited operations; publication disabled",
+      "synthetic_e2e": "PASS",
+      "declarative_real_probe": "PASS; 136 files; 1000106 bytes; Git blobs; no project code executed",
+      "bounded_stream": "synthetic safe PASS; overflow blocked and child killed; tmpfs cleanup restored",
+      "isolation_backend": "synthetic chroot/seccomp primitives observed; not production sandbox proof"
+    },
+    "rc64_security_gate": {
+      "safe_for_untrusted_code": false,
+      "publisher": "DORMANT",
+      "sandbox_export": "FAIL_CLOSED",
+      "bubblewrap": "BLOCKED_BY_NAMESPACE_MOUNT_PERMISSION",
+      "landlock": "SYSCALL_UNAVAILABLE",
+      "cgroup_v2": "READ_ONLY_NO_DELEGATION",
+      "per_job_aggregate_quota": "NOT_PROVEN",
+      "project_code_executed": false
+    },
+    "rc64_backup_policy": "No RC60 add-on backup created per owner decision; options and persistent data preserved"
   }
 }
