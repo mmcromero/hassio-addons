@@ -1,12 +1,13 @@
 > **ESTADO VIGENTE — 25/11/2026 / M096**
 >
 > - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação; Etapas 5/6 não homologadas.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC53 acrescenta diagnóstico read-only dos limites cgroup herdados. RC52 continua instalada no HA.
-> - **Catálogo/HA:** RC52 (`0.1.0-rc.52`) instalada e `started`; build ARM64 concluído. RC53 ainda não publicada nem instalada.
-> - **M096:** análise confirmou que o probe chroot usa rootfs temporário mínimo, não o rootfs de produção; não havia prova de fechamento/inventário dos FDs herdados. `sandbox_export` continua fail-closed.
-> - **Nova medição:** RC53 lerá os limites efetivos herdados de CPU, memória e PIDs sem alterar cgroups. Testes sintéticos locais: 6/6 PASS. Build ARM64 e leitura real no Pi ainda pendentes.
-> - **Segurança:** sem quota rígida de armazenamento demonstrada; `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M096; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`, RC53 (`d1d193e600702d1023532c3f221ac477387ce2e5`).
+> - **Catálogo/HA:** RC53 (`0.1.0-rc.53`) publicada, instalada e `started` no Supervisor ARM64; `update_available=false`.
+> - **M096 / medição real:** cgroup v2 mount read-only, sem delegação; uma hierarquia visível; sem limite finito exposto para CPU/memória; `pids.max=8781`. Isso não prova quota por job nem isolamento.
+> - **Validação:** seis testes sintéticos locais do parser PASS; atualização/build do Supervisor concluída. Suíte integral Dockerfile não foi capturada como execução independente.
+> - **Segurança:** rootfs/FDs de produção e quota rígida agregada de armazenamento continuam sem comprovação; `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado.
+> - **Operação:** por decisão do proprietário (25/11), não criar backup da RC anterior antes de atualizações normais de RC. Preservar commits, proveniência, hashes, opções e dados persistentes; não excluir backups existentes.
+> - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
 ---
