@@ -3,15 +3,15 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.42",
   "repository": "mmcromero/factory-runner",
-  "commit": "38e2a7567da41d52e2c34d70c580ef21e2670fc0",
-  "catalog_sha": "467295c67d1721a1ccff902f2ccd567c1e22f498",
+  "commit": "ba7ba116a322e32517cd47f68f5e3401fdfb733e",
+  "catalog_sha": "dcf555e7cbc5eb577c49264c533e3306b219ec3a",
   "previous_source": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
-  "reviewed_source": "38e2a7567da41d52e2c34d70c580ef21e2670fc0",
+  "reviewed_source": "ba7ba116a322e32517cd47f68f5e3401fdfb733e",
   "publication": "OWNER_AUTHORIZED_RC42_CANDIDATE_DISTRIBUTION_M055",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_ONLY; NO_RC42_INSTALLATION_AUTHORIZATION",
   "candidate_distribution": "FACTORY_RUNNER_RC42_STAGE3_ORCHESTRATION",
-  "tests": "NOT_RUN_PENDING_SUPERVISOR_BUILD_DOCKERFILE_SUITE_AND_ARM64_PROBE",
-  "review_status": "RC42_PUBLISHED_WAITING_SUPERVISOR_BUILD",
+  "tests": "CATALOG_SYNTAX_CI_PASS; DOCKERFILE_TESTS_NOT_RUN; ARM64_BUILD_AND_LIVE_PROBE_PENDING",
+  "review_status": "RC42_PUBLISHED_WAITING_SUPERVISOR_ARM64_BUILD",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,8 +86,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "05439667392d2b5749cb5578436445c9319872f9",
-      "size": 44775,
+      "git_blob_sha": "3ec058a979eb66fbe196883a9270d76145b9968d",
+      "size": 44996,
       "mode": "100644"
     },
     {
@@ -226,8 +226,8 @@
     {
       "path": "factory-runner/HISTORICO.md",
       "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "567858b744dee95a083f976e8c04a86eff376d8a",
-      "size": 21217,
+      "git_blob_sha": "81531f7108c933fb68b50098964181c2be585ffa",
+      "size": 22847,
       "mode": "100644"
     },
     {
@@ -415,8 +415,8 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "1637329e5b2332e0368701db0eeda4783a1d6853",
-      "size": 7523,
+      "git_blob_sha": "3c387f80b5ffd3e55ad52247e8fd1531e96eae34",
+      "size": 7816,
       "mode": "100644"
     },
     {
@@ -436,8 +436,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "a9dca3c14bac32586b30b4efea8a28fc0891f033",
-      "size": 27431,
+      "git_blob_sha": "6b9875ff676d09c31b7af29c69208f3866598f27",
+      "size": 27594,
       "mode": "100644"
     },
     {
@@ -823,11 +823,11 @@
     "runtime_state": "RC41 started",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED",
-    "notes": "M074: build concluído com exit 0 em bash -n, py_compile, suíte test_factory_runner_*.py, testes workspace sync não-root e E2E probe não-root. A janela de logs não expôs a contagem exata. API probe PASS; dois planos persistidos. RC41 é a baseline instalada, não a RC42."
+    "notes": "M074: build RC41 concluído com exit 0 em bash -n, py_compile, suíte test_factory_runner_*.py, testes workspace sync não-root e E2E probe não-root. A janela de logs não expôs a contagem exata. API probe PASS; dois planos persistidos. RC41 é a baseline instalada, não a RC42."
   },
   "branch": "release-candidate",
-  "provenance_note": "M076/M077: RC42 inclui a primeira implementação da Etapa 3 (fila persistente, worker read-only, API de jobs, recuperação, cancelamento, timeout e retry) e correções de persistência atômica, precedência de cancelamento e vínculo dos digests do plano. PR #22 e PR #23 incorporadas em release-candidate; fonte 38e2a756. Publicação restrita a factory-runner/ sob M055. Nenhum teste/build ARM64 da RC42 foi executado; não declarar PASS. RC41 permanece instalada/started; Publisher DORMANT; nenhum código de produto executado; isolamento de código não confiável permanece na Etapa 5.",
-  "status": "RC42_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
+  "provenance_note": "M076/M077/M078: RC42 publicada; 114 arquivos de pacote conferidos contra release-candidate ba7ba116. Workflow de catálogo SUCCESS apenas para syntax/manifests/registry/scripts/arquivos sensíveis; build-factory-runner-arm64 SKIPPED por exigir dispatch manual. Supervisor store refresh reconhece RC42 como atualização disponível; RC41 continua instalada/started. Nenhum teste Dockerfile, build ARM64 ou probe real da RC42 executado. Instalação depende de autorização específica. Publisher DORMANT; código de produtos não executado; isolamento de código não confiável reservado à Etapa 5.",
+  "status": "RC42_PUBLISHED_AVAILABLE_NOT_INSTALLED",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -847,8 +847,11 @@
     "build": "PENDING",
     "dockerfile_tests": "PENDING",
     "runtime_api_probe": "PENDING",
+    "store_version_latest": "0.1.0-rc.42",
+    "update_available": true,
+    "installed_version": "0.1.0-rc.41",
     "installation": "NOT_STARTED_NO_INSTALL_AUTHORIZATION",
-    "runtime_state": "RC41 remains installed and started",
+    "runtime_state": "RC41 started",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
   }
