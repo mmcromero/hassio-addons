@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.54",
+  "version": "0.1.0-rc.55",
   "repository": "mmcromero/factory-runner",
-  "commit": "c4d12d74bf2abaf5c6f712370c6541a2910c1f06",
-  "catalog_sha": "f814a3eaccecaaca95509bcfe19500283abdcdb1",
-  "previous_source": "d1d193e600702d1023532c3f221ac477387ce2e5",
-  "reviewed_source": "c4d12d74bf2abaf5c6f712370c6541a2910c1f06",
+  "commit": "8c7e2491392e05298a6931ff62be71242e523158",
+  "catalog_sha": "0038a348e53a86a7278b3ecc146b349562a95297",
+  "previous_source": "c4d12d74bf2abaf5c6f712370c6541a2910c1f06",
+  "reviewed_source": "8c7e2491392e05298a6931ff62be71242e523158",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC54_M097_ROOTFS_FD_STORAGE_QUOTA_DIAGNOSTIC",
-  "tests": "SUPERVISOR_DOCKERFILE_VALIDATION_PENDING; LOCAL_SYNTHETIC_TESTS_NOT_INDEPENDENTLY_RUN",
-  "review_status": "RC54_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
+  "candidate_distribution": "FACTORY_RUNNER_RC55_M098_FD_AUDIT_SELF_FD_EXCLUSION",
+  "tests": "SUPERVISOR_DOCKERFILE_VALIDATION_PENDING; RC54_FAILED_ONLY_FD_AUDIT_TEST; RC55_CORRECTION_NOT_YET_EXECUTED",
+  "review_status": "RC55_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "29684691361ea5894f79835580eaeadff635eced",
-      "size": 53969,
+      "git_blob_sha": "7ad845154eb3cd17712077eab99f84689856c792",
+      "size": 54786,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "5e46f7efad0f3e7615021b94d52854277b899823",
-      "size": 6880,
+      "git_blob_sha": "8b7e6910986ffd302c134d03ecae41299a0c25af",
+      "size": 6654,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "49481e0d4a203208eb7810dea6f62c936c198a3a",
-      "size": 27766,
+      "git_blob_sha": "79d717c7695bdc8af60e3fb36b06c00f4e42742c",
+      "size": 27796,
       "mode": "100644"
     },
     {
@@ -205,7 +205,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "a2bf5b9d7d7d420c8bd51cc368dba08c21938193",
+      "git_blob_sha": "ed26ce952204a29f65477ad3b2c339bc6d61cd05",
       "size": 1037,
       "mode": "100644"
     },
@@ -310,8 +310,8 @@
     {
       "path": "factory-runner/isolation_backend_probe.py",
       "source_path": "factory-runner-add-on/isolation_backend_probe.py",
-      "git_blob_sha": "1fa295b71104783cb69dc17f0ebcbeebbd8a2a3e",
-      "size": 20539,
+      "git_blob_sha": "5e260688a8e38612a5ad269fe30391657ad711cd",
+      "size": 20844,
       "mode": "100644"
     },
     {
@@ -674,8 +674,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_isolation_backend_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_isolation_backend_probe.py",
-      "git_blob_sha": "3f78cbb39ca923d349fbc5ea44fcfeaa0100667a",
-      "size": 6799,
+      "git_blob_sha": "6d450a24188ce0b630e6c915f0eb89a8bd2b3cca",
+      "size": 6807,
       "mode": "100644"
     },
     {
@@ -849,7 +849,7 @@
   ],
   "validation": {
     "source_file_count": 119,
-    "package_commit": "f814a3eaccecaaca95509bcfe19500283abdcdb1",
+    "package_commit": "0038a348e53a86a7278b3ecc146b349562a95297",
     "package_paths_changed": [
       "factory-runner/CHANGELOG.md",
       "factory-runner/README.md",
@@ -863,6 +863,7 @@
       "factory-runner/SOURCE_PROVENANCE.json"
     ],
     "no_paths_outside_factory_runner": true,
+    "prior_candidate_failure": "RC54 build failed only test_fd_audit_closes_unapproved_descriptors_in_child; rootfs write test passed; no app update",
     "owner_backup_policy": "NO_PREVIOUS_RC_BACKUP_FOR_NORMAL_FACTORY_RUNNER_RC_UPDATES"
   }
 }
