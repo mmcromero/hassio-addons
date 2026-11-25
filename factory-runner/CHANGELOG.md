@@ -7,7 +7,7 @@
 - Probe executado no startup com ambiente limpo; Dockerfile compila o módulo e inclui o teste na suíte completa.
 - Não conecta o probe a `sandbox_export`, não executa scripts de projeto, não altera runtime do Publisher, opções, permissões, mounts, capabilities, AppArmor, rede ou credenciais.
 - O exportador Artesão atual depende de subprocessos e escrita em diretório; não é compatível diretamente com o contrato stream e não foi alterado.
-- RC65 é candidata de diagnóstico; build ARM64 e startup no Raspberry pendentes. `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+- RC65 publicada e instalada no Raspberry Pi 4; build ARM64 e startup PASS. Probe sintético `[ARCHIVE-STREAM-PROBE]` PASS para stream válido, traversal, overflow, timeout e cleanup. A prova não executa código de projeto nem libera o sandbox: `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 
 # 0.1.0-rc.64 — M107: corrigir fixture da suíte archive stream
 

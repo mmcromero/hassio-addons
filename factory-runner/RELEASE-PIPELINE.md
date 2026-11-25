@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M108 — RC64 instalada; RC65 probe stream-only sintético preparada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M108 — RC65 instalada; build ARM64 e probe sintético PASS; execução de projetos continua bloqueada)
 
-> **Estado de código e homologação — 25/11/2026 / M108:** RC64 (0.1.0-rc.64) permanece instalada/started no Raspberry; build ARM64 e probes M107 PASS. RC65 (0.1.0-rc.65) adiciona somente a integração sintética chroot → stdout limitado → archive_stream, com casos de arquivo válido, traversal, overflow e timeout. RC65 ainda não publicada/instalada; build ARM64 e startup real pendentes. Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+> **Estado de código e homologação — 25/11/2026 / M108:** RC64 (0.1.0-rc.64) permanece instalada/started no Raspberry; build ARM64 e probes M107 PASS. RC65 (0.1.0-rc.65) adiciona somente a integração sintética chroot → stdout limitado → archive_stream, com casos de arquivo válido, traversal, overflow e timeout. RC65 publicada/instalada; build ARM64 e startup real PASS. A prova é sintética e não libera execução de projetos. Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 
 
 > **Estado de código e homologação — 25/11/2026 / M107:** RC60 (0.1.0-rc.60) permanece instalada/started. O build ARM64 RC63 executou o runner individual e identificou a falha no método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`: fixture aninhou indevidamente o par retornado por `dir_member`, causando `AttributeError: 'tuple' object has no attribute 'tobuf'`. RC64 corrige somente a fixture e mantém a suíte completa obrigatória; promoção/publicação/build ARM64 ainda pendentes. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
@@ -324,3 +324,17 @@ O Supervisor ARM64 RC63 informou exit code 77 no runner individual, método 27 `
 ## M108 — prova sintética de integração do archive stream
 
 A candidata acrescenta `archive_stream_probe.py`, sem ligar o backend ao `sandbox_export`. Um child sintético executa em chroot mínimo e read-only, com ambiente vazio, UID/GID executor, FD audit, CapEff zero, no_new_privs, seccomp (sem escrita/rede/process creation), RLIMITs e stdout como único canal. O pai aplica leitura não bloqueante, deadline externo, limite de bytes, kill de grupo e validação do TAR com allowlist, hashes e staging atômico. Os cenários de traversal, overflow e timeout devem ser rejeitados; a limpeza precisa ser comprovada. Apenas payloads sintéticos; o exportador Artesão atual usa subprocessos e escrita em diretório e não é compatível diretamente com este contrato. Nenhuma execução de projeto ou liberação de Publisher.
+
+
+## 25/11/2026 — M108: prova sintética integrada chroot → archive stream (RC65)
+
+- Baseline anterior: RC64 `0.1.0-rc.64` instalada/started. PR #55 integrado em `release-candidate`, merge `311db52c41915bab5e1e47dfe94fbeb32872afd0`.
+- RC65 `0.1.0-rc.65` publicada somente em `hassio-addons:main/factory-runner/`; pacote commit `402241eee350057dc1bc218e4bd57926b7dfe758`; proveniência commit `f54d0ce0af40b2b344fdfe988d78b7985d241cba`. 126/126 blobs da fonte conferidos; 2 arquivos exclusivos do catálogo preservados; nenhum caminho externo a `factory-runner/` alterado.
+- Supervisor ARM64: build iniciado 17:34:59.863 e concluído 17:38:33.321 BRT; atualização concluída e app iniciado 17:38:36.398. Estado final RC65 `started`, `update_available=false`.
+- Build Dockerfile concluiu toda a cadeia obrigatória: bash -n, py_compile, diagnóstico individual archive_stream, suíte integral `test_factory_runner_*.py`, workspace-sync não-root e E2E não-root. Contagem individual de testes não capturada.
+- `[ARCHIVE-STREAM-PROBE]` **PASS** no startup: TAR sintético válido extraído/validado (1 arquivo, 38 bytes, conteúdo e hash coincidentes); child comprovou chroot, UID/GID drop, CapEff zero, ambiente vazio, FD audit ok, no_new_privs, seccomp e negação de escrita/rede/process creation.
+- Traversal rejeitado como `unsafe_archive_path`, sem destino; overflow encerrou child por SIGKILL em 129 bytes; timeout externo encerrou child por SIGKILL; tmpfs cleanup restaurado em todos os cenários. `project_code_executed=false`.
+- Opções preservadas: workspace_auto_prepare=false, workspace_sync_enabled=true, Owner Ingress habilitado; runner/read tokens presentes; GitHub write token e senha de enrollment vazios. Nenhum backup da RC64 criado, conforme decisão do proprietário.
+- Nenhum código de projeto foi carregado/executado. O probe retorna `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+- Pendências: quotas agregadas por job não comprovadas (cgroup v2 read-only/sem delegação; /dev/shm é compartilhado); Bubblewrap bloqueado por permissão de namespace/mount; Landlock indisponível; exportador Artesão atual (subprocessos e escrita em diretório) não compatível diretamente com stream. Nenhuma alteração no repositório consumidor.
+- Resultado M108: **prova sintética integrada homologada no Raspberry Pi; Etapa 5B/Etapa 5 ainda NÃO concluídas e execução de código não confiável continua bloqueada.**

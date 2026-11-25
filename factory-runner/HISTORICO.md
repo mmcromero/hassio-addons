@@ -184,12 +184,13 @@ Próxima ação objetiva e responsável:
 
 ## 25/11/2026 — M108: prova sintética integrada chroot → archive stream (RC65)
 
-- Baseline confirmada: RC64 `0.1.0-rc.64` instalada/started no Raspberry Pi; build ARM64 e probes M107 PASS; `update_available=false`.
-- Branch de trabalho: `promote/rc65-m108-archive-stream-probe`, baseada na `release-candidate` M107. RC65 ainda não publicada/instalada.
-- Novo `archive_stream_probe.py`: child sintético em chroot mínimo read-only, UID/GID executor, ambiente vazio, FD audit, CapEff zero, no_new_privs, seccomp nega escrita/rede/criação de processos, RLIMIT_CPU/AS/FSIZE/NPROC/NOFILE e stdout como único canal.
-- Pai confiável lê stdout por select/deadline externo, aplica limite de bytes, encerra process group em overflow/timeout e valida TAR com `archive_stream.validate_and_extract_tar`, allowlist, hash, staging privado e rename atômico.
-- Cenários: arquivo válido com SHA esperado; traversal rejeitado e staging removido; overflow interrompido em 129 bytes; timeout externo encerra child; tmpfs deve retornar ao nível anterior.
-- `run.sh` executa a prova com `env -i`; Dockerfile compila o módulo, copia para runtime e inclui o teste na suíte integral.
-- Arquivos de runtime alterados: apenas o probe sintético e sua chamada de diagnóstico; `sandbox_export.py` permanece inalterado/fail-closed. Nenhum projeto executado.
-- Exportador Artesão atual `scripts/prepare-distributions.py` usa subprocessos Git/Python e grava em diretórios; não é compatível diretamente com child stream-only. Nenhuma alteração no repositório Artesão foi feita.
-- Gates: RC65 precisa passar build ARM64 e startup real. Mesmo com probe PASS, isso demonstra apenas o protocolo sintético; não libera `safe_for_untrusted_code`, Publisher ou execução de projetos.
+- Baseline anterior: RC64 `0.1.0-rc.64` instalada/started. PR #55 integrado em `release-candidate`, merge `311db52c41915bab5e1e47dfe94fbeb32872afd0`.
+- RC65 `0.1.0-rc.65` publicada somente em `hassio-addons:main/factory-runner/`; pacote commit `402241eee350057dc1bc218e4bd57926b7dfe758`; proveniência commit `f54d0ce0af40b2b344fdfe988d78b7985d241cba`. 126/126 blobs da fonte conferidos; 2 arquivos exclusivos do catálogo preservados; nenhum caminho externo a `factory-runner/` alterado.
+- Supervisor ARM64: build iniciado 17:34:59.863 e concluído 17:38:33.321 BRT; atualização concluída e app iniciado 17:38:36.398. Estado final RC65 `started`, `update_available=false`.
+- Build Dockerfile concluiu toda a cadeia obrigatória: bash -n, py_compile, diagnóstico individual archive_stream, suíte integral `test_factory_runner_*.py`, workspace-sync não-root e E2E não-root. Contagem individual de testes não capturada.
+- `[ARCHIVE-STREAM-PROBE]` **PASS** no startup: TAR sintético válido extraído/validado (1 arquivo, 38 bytes, conteúdo e hash coincidentes); child comprovou chroot, UID/GID drop, CapEff zero, ambiente vazio, FD audit ok, no_new_privs, seccomp e negação de escrita/rede/process creation.
+- Traversal rejeitado como `unsafe_archive_path`, sem destino; overflow encerrou child por SIGKILL em 129 bytes; timeout externo encerrou child por SIGKILL; tmpfs cleanup restaurado em todos os cenários. `project_code_executed=false`.
+- Opções preservadas: workspace_auto_prepare=false, workspace_sync_enabled=true, Owner Ingress habilitado; runner/read tokens presentes; GitHub write token e senha de enrollment vazios. Nenhum backup da RC64 criado, conforme decisão do proprietário.
+- Nenhum código de projeto foi carregado/executado. O probe retorna `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+- Pendências: quotas agregadas por job não comprovadas (cgroup v2 read-only/sem delegação; /dev/shm é compartilhado); Bubblewrap bloqueado por permissão de namespace/mount; Landlock indisponível; exportador Artesão atual (subprocessos e escrita em diretório) não compatível diretamente com stream. Nenhuma alteração no repositório consumidor.
+- Resultado M108: **prova sintética integrada homologada no Raspberry Pi; Etapa 5B/Etapa 5 ainda NÃO concluídas e execução de código não confiável continua bloqueada.**
