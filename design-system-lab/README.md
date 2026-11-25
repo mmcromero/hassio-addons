@@ -24,7 +24,7 @@ App experimental para executar a validação do repositório privado mmcromero/d
 
 ## Construção ARM64
 
-O Supervisor constrói a imagem no Raspberry Pi durante instalação/atualização porque o manifest não declara uma imagem pré-compilada. A imagem usa Home Assistant base Debian Bookworm com S6, Node.js 22 e Playwright 1.57.0/Chromium ARM64. A ausência de um job QEMU/Actions dedicado não substitui nem impede o build real no hardware alvo.
+O Supervisor constrói a imagem no Raspberry Pi durante instalação/atualização porque o manifest não declara uma imagem pré-compilada. A imagem usa Node.js 22 oficial sobre Debian Bookworm slim, sem S6. O servidor Node é o processo PID 1 do container; Playwright 1.57.0/Chromium é instalado no build ARM64. A ausência de um job QEMU/Actions dedicado não substitui nem impede o build real no hardware alvo.
 
 ## Limpeza
 

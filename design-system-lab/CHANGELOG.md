@@ -1,5 +1,10 @@
 # Changelog — Design System Lab
 
+## 0.1.0-test.4 — 25/11/2026
+- Substitui a base Home Assistant com S6 pela imagem oficial Node.js 22 Bookworm slim; o servidor inicia diretamente como PID 1, eliminando o conflito s6-overlay-suexec.
+- Mantém a instalação de Chromium/Playwright e o campo protegido github_read_token.
+
+
 ## 0.1.0-test.3 — 25/11/2026
 - Padroniza o nome exibido na loja e no painel com o prefixo oficial “Fábrica de Softwares”.
 
