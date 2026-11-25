@@ -2,17 +2,18 @@
   "schema_version": 1,
   "product": "Fábrica de Softwares - WhatsApp Umdoislab",
   "source_repository": "mmcromero/whatsapp-automacoes",
-  "source_commit": "bc5a9ca4a66f2e792d3d53f38807c035424f0987",
-  "frozen_release_candidate_commit": "2f67e3dbd4421af438c3029bce19f115ca5267a4",
+  "source_commit": "f577743350381b2e8e6a0ddd0af9b401f41042f9",
+  "frozen_release_candidate_commit": "b5eb12d356d95f65d1e0ff57e0db2abfbf169efd",
   "source_pull_request": 11,
   "source_issue": 7,
-  "release_version": "0.5.0-rc.4",
+  "release_version": "0.5.0-rc.5",
   "target_slug": "umdoislab_central",
   "target_folder": "umdoislab-central/",
   "test_result_reported": {
-    "directed_sqlite_pass": 9,
-    "full_suite_executed": false,
-    "arm64_build_executed": false
+    "rc4_root_tests": 241,
+    "rc4_failures": 2,
+    "rc5_full_suite_executed": false,
+    "rc5_arm64_build_executed": false
   },
   "files": [
     {
@@ -27,7 +28,7 @@
     },
     {
       "path": "umdoislab-central/config.yaml",
-      "git_blob_sha": "776454a7982e0d1736f1825c8971a23973ccfe18",
+      "git_blob_sha": "cf02d9861b307c5773da13f9f908d1783b4c5334",
       "bytes": 787
     },
     {
@@ -87,8 +88,8 @@
     },
     {
       "path": "umdoislab-central/test_accounts.py",
-      "git_blob_sha": "d8c403dd83f1fcf0f4adeb8c4079dbb85491fc99",
-      "bytes": 32335
+      "git_blob_sha": "5664dba63999883a9e7e29d7014eece031720ab1",
+      "bytes": 32883
     },
     {
       "path": "umdoislab-central/test_central.py",
@@ -172,7 +173,7 @@
     }
   ],
   "notes": [
-    "31 source blobs verified; catalog changelog updated separately; private workflow exports and project documentation excluded.",
-    "Publication for controlled Supervisor build; not a workflow activation or runtime homologation."
+    "RC5 fixes two obsolete RC3 quarantine test expectations; runtime source code unchanged from RC4.",
+    "Full Supervisor validation remains mandatory."
   ]
 }

@@ -1,5 +1,10 @@
 # Histórico da distribuição — Central WhatsApp Umdoislab
 
+## 0.5.0-rc.5 — regressões de quarentena (24/11/2026)
+
+- Corrige duas expectativas antigas de origem incerta: quarentena pending/origin_review, sem envio automático e sem oferta de escolha. Código de atendimento inalterado.
+- RC4: 241 testes raiz, duas falhas; nova validação integral obrigatória.
+
 ## 0.5.0-rc.4 — candidata de compatibilidade Etapa 2 (24/11/2026)
 
 - API de integração restrita ao modo de testes, com admissão temporária, vinculação ao inbound e prevenção de reenvio. Rotas legadas preservadas.

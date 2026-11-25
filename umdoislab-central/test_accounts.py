@@ -257,7 +257,12 @@ class MultiAccountTests(unittest.TestCase):
                 self.assertIs(verify.call_args.kwargs['account'], a)
                 self.assertEqual(verify.call_args.kwargs['instance'], a.instance)
         self.assertEqual(self.mod.routing_decision(self.a.instance, SENDER, self.a)['state'], 'none')
-        self.assertEqual(self.mod.routing_decision(self.b.instance, SENDER, self.b)['state'], 'human')
+        decision = self.mod.routing_decision(self.b.instance, SENDER, self.b)
+        self.assertEqual(decision['state'], 'pending')
+        self.assertEqual(decision['choiceState'], 'origin_review')
+        self.assertFalse(decision['allowAutoReply'])
+        self.assertFalse(decision['needsCustomerChoice'])
+        self.assertEqual(decision['reason'], 'origin_unverified')
 
     def test_legacy_database_reused_after_restart(self):
         self.mod.process_inbound(self.event(handoffRequested=True))
@@ -471,7 +476,12 @@ class MultiAccountTests(unittest.TestCase):
                 self.assertEqual((code, result['classification']), (200, classification))
             self.assertEqual(lookup.call_count, 4)
         self.assertEqual(self.mod.routing_decision(self.a.instance, SENDER, self.a)['state'], 'none')
-        self.assertEqual(self.mod.routing_decision(self.b.instance, SENDER, self.b)['state'], 'human')
+        decision = self.mod.routing_decision(self.b.instance, SENDER, self.b)
+        self.assertEqual(decision['state'], 'pending')
+        self.assertEqual(decision['choiceState'], 'origin_review')
+        self.assertFalse(decision['allowAutoReply'])
+        self.assertFalse(decision['needsCustomerChoice'])
+        self.assertEqual(decision['reason'], 'origin_unverified')
         with self.mod.connect(self.a) as da, self.mod.connect(self.b) as db:
             self.assertEqual(counts(da), {'pending': 1})
             self.assertEqual(counts(db), {'uncertain': 1})
