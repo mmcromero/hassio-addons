@@ -1,3 +1,9 @@
+# 0.1.0-rc.66 — M111: diagnóstico de user namespaces
+
+- Adiciona probe sintético de user/mount/net/PID namespaces e tmpfs limitado a 1 MiB em mount namespace privado.
+- Verifica quota por ENOSPC, unmount, ausência de mount vazado e máscara de capabilities do processo pai inalterada.
+- Nenhum código de projeto é executado; o probe não libera o executor. RC66 candidata, ainda não publicada/instalada.
+
 # 0.1.0-rc.65 — M108: integração sintética archive stream em chroot
 
 - Adiciona `archive_stream_probe.py`: prova integrada somente sintética do fluxo child chroot read-only → stdout pipe limitado → supervisor pai → `archive_stream.validate_and_extract_tar`.

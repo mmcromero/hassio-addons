@@ -1,4 +1,7 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M108 — RC65 instalada; build ARM64 e probe sintético PASS; execução de projetos continua bloqueada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M111 — RC65 instalada; RC66 em validação)
+
+> **ESTADO VIGENTE — 25/11/2026 / M111:** RC65 permanece instalada/started. RC66 em desenvolvimento acrescenta somente probe sintético de user namespaces e tmpfs limitado; ainda não publicada/instalada. Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 
 > **Estado de código e homologação — 25/11/2026 / M108:** RC64 (0.1.0-rc.64) permanece instalada/started no Raspberry; build ARM64 e probes M107 PASS. RC65 (0.1.0-rc.65) adiciona somente a integração sintética chroot → stdout limitado → archive_stream, com casos de arquivo válido, traversal, overflow e timeout. RC65 publicada/instalada; build ARM64 e startup real PASS. A prova é sintética e não libera execução de projetos. Nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 

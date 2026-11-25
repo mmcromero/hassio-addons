@@ -194,3 +194,17 @@ Próxima ação objetiva e responsável:
 - Nenhum código de projeto foi carregado/executado. O probe retorna `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 - Pendências: quotas agregadas por job não comprovadas (cgroup v2 read-only/sem delegação; /dev/shm é compartilhado); Bubblewrap bloqueado por permissão de namespace/mount; Landlock indisponível; exportador Artesão atual (subprocessos e escrita em diretório) não compatível diretamente com stream. Nenhuma alteração no repositório consumidor.
 - Resultado M108: **prova sintética integrada homologada no Raspberry Pi; Etapa 5B/Etapa 5 ainda NÃO concluídas e execução de código não confiável continua bloqueada.**
+
+
+## M111 — RC66: probe sintético de user namespaces e tmpfs limitado (25/11/2026)
+
+- RC66 candidata acrescenta `userns_probe.py`, um diagnóstico não mutante no próprio contêiner do add-on: tenta user namespace, mapeamento UID/GID, mount namespace com propagação privada, tmpfs de 1 MiB, quota por ENOSPC, network namespace e PID namespace com verificação de PID 1.
+- O tmpfs é montado somente depois de confirmar `MS_REC|MS_PRIVATE` no mount namespace. O teste grava apenas arquivo sintético de até 2 MiB, desmonta e verifica ausência de mount vazado no namespace pai.
+- A máscara de capabilities efetivas do processo pai é comparada antes/depois por capget. Timeout mata o filho; nenhum código de projeto é carregado/executado.
+- Estados: blocked/partial/available/timeout/failed_cleanup_or_parent_state. `available` exige todos os namespaces, tmpfs com quota realmente aplicada, desmontagem e estado do pai preservado. User namespace sozinho não equivale a sandbox.
+- Testes unitários cobrem a classificação fail-closed. A candidata ainda NÃO foi publicada, instalada ou executada no Raspberry; nenhum resultado real está declarado.
+- Mesmo que user/mount/net/PID e quota tmpfs passem, isso prova apenas confinamento de namespaces e scratch limitado. Não prova quota agregada de CPU/memória nem autoriza execução de projeto.
+- Gate permanece: `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
+### Próximo gate M111
+Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publicar somente factory-runner/ pela esteira oficial; atualizar o add-on existente uma vez, sem backup da RC anterior, e ler o marcador `[USERNS-PROBE]` no Supervisor. Se qualquer teste falhar, corrigir apenas a causa comprovada; não elevar privilégios nem alterar AppArmor, host, Docker API ou cgroups.
