@@ -1,16 +1,15 @@
-> **ESTADO VIGENTE — 25/11/2026 / M088**
+> **ESTADO VIGENTE — 25/11/2026 / M090**
 >
-> - **Roadmap:** seis etapas; Etapas 1–4 preservadas no escopo restrito; Etapa 5 em execução, antes de qualquer código de projeto.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC47 em desenvolvimento como diagnóstico de viabilidade chroot/seccomp/RLIMIT. `release-candidate` permanece RC46.
-> - **Catálogo/HA:** RC46 (`0.1.0-rc.46`) publicada e instalada/iniciada no Supervisor ARM64; build Dockerfile concluído; 116/116 blobs conferidos. Backup add-on-only pré-update RC45: `dbc7fbdc`.
-> - **Diagnóstico real M087:** cgroup v2 disponível, mas mount somente leitura e sem delegação; Bubblewrap bloqueado; Landlock syscall indisponível. Proteções preservadas: protected=true, privileged=[], full_access=false, AppArmor default.
-> - **Etapa 5B M088:** protótipo não integrado de seccomp e probe efêmero de chroot/drop de UID/limites preparados. RC47 ainda não publicada, instalada ou testada no Pi. Nenhum código de projeto executado.
-> - **Publisher:** DORMANT; publicação de produtos desativada. Avisaqui/Artesão permanecem bloqueados por suas políticas.
-> - **Etapa 4:** revogação do grant coberta por testes; validação ao vivo permanece pendente porque Publisher está DORMANT.
-> - **Evidência RC45:** build e cadeia Dockerfile confirmados; a contagem de 241 testes não pôde ser vinculada com segurança ao Factory Runner e não deve ser usada como métrica.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M088; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Roadmap:** Etapas 1–4 preservadas no escopo homologado; Etapa 5B em investigação. Etapa 5/6 não homologadas.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC49 preparada para corrigir regressão de identidade e instrumentar o probe. `release-candidate` está na RC48.
+> - **Catálogo/HA:** RC48 (`0.1.0-rc.48`) publicada e instalada no Supervisor ARM64; build ARM64 PASS. Estado do app: ERROR na inicialização, com bootstrap fail-closed. RC46 permanece recuperável no backup `af28f093`; backup RC48 pré-RC49 será criado antes da próxima atualização.
+> - **Causa provável do bootstrap:** a conta executor foi inserida antes das contas persistentes no Dockerfile runtime, deslocando IDs numéricos subsequentes. O bootstrap recusou um diretório existente; nenhum diretório foi reparado ou sobrescrito. RC49 move executor para depois das identidades existentes.
+> - **Probe M089:** chroot e drop UID ocorreram, mas a prova não é válida: o scratch /tmp estava 0700 e o sentinel externo 0600, permitindo falsos positivos/PermissionError. Seccomp/RLIMIT não foram comprovados.
+> - **RC49:** corrige ordem de identidades, executa probe só após bootstrap, torna scratch gravável no chroot, corrige a permissão do diretório pai e do sentinel e registra errno/etapa de cada primitive. Ainda não construída nem testada no HA.
+> - **Proteções:** protected=true, privileged=[], full_access=false, AppArmor default. Publisher DORMANT; Avisaqui/Artesão não executados nem alterados.
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M090; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
-> O histórico abaixo foi preservado. Referências antigas a RCs anteriores são registros históricos, não o estado operacional atual.
+> O histórico abaixo foi preservado; referências anteriores à RC46/RC47 são registros históricos, não o estado operacional atual.
 
 ---
 

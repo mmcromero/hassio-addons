@@ -1,3 +1,12 @@
+# 0.1.0-rc.49 — Etapa 5B: preserva identidades e corrige prova chroot (M090)
+
+- Move a criação do usuário/grupo executor para depois das contas/grupos persistentes já existentes, preservando UID/GID de approval, publisher, owner_ui e grupos IPC no volume do HA.
+- Executa o diagnóstico sintético somente depois de o bootstrap validar os diretórios persistentes; falha de bootstrap não dispara sondas repetidas no watchdog.
+- Corrige o rootfs efêmero: /tmp passa a 01777 e o sentinel externo 0644, evitando falsos positivos por permissão.
+- Distingue ENOENT/ENOTDIR de EACCES, verifica CapEff após drop, e registra estágio/errno por primitive. Falhas RLIMIT são independentes e não impedem a tentativa seccomp.
+- Continua diagnóstico-only; SAFE_FOR_UNTRUSTED_CODE permanece false, Publisher DORMANT e nenhum código de projeto é executado.
+- RC48 build ARM64 PASS, mas startup bloqueou no bootstrap por divergência de diretório de serviço; a sonda também não comprovou seccomp/RLIMIT. RC49 aguarda build e homologação real.
+
 # 0.1.0-rc.48 — Etapa 5B: corrige sintaxe e preload libseccomp (M089)
 
 - Corrige literal de quebra de linha que causou a falha de py_compile da RC47.

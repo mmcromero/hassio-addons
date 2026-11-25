@@ -1,6 +1,10 @@
 # Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; RC45 instalada e homologada no escopo restrito ARM64)
 
-> **Estado de código e homologação — 25/11/2026 / M088:** RC46 (`0.1.0-rc.46`) publicada em `hassio-addons:main/factory-runner/`, instalada e iniciada no Supervisor ARM64. Build ARM64 e cadeia obrigatória Dockerfile concluídos; 116/116 blobs conferidos. Backup add-on-only pré-update RC45: `dbc7fbdc`. M087 confirmou cgroup v2 somente leitura/sem delegação, Bubblewrap bloqueado e Landlock syscall indisponível. RC47 está em desenvolvimento para diagnóstico de uma alternativa chroot/seccomp/RLIMIT; ainda não publicada, instalada ou testada no Pi. Nenhum código de projeto foi executado; Publisher DORMANT. A contagem de 241 testes atribuída à RC45 não pôde ser vinculada com segurança ao Factory Runner e não deve ser reutilizada como métrica.
+> **Estado de código e homologação — 25/11/2026 / M090:** RC48 (`0.1.0-rc.48`) publicada e instalada no Supervisor ARM64; build real PASS. O app iniciou em estado ERROR porque o bootstrap recusou um diretório de serviço persistente com ownership/mode divergente. A ordem de criação do usuário executor antes das contas persistentes é a causa provável (desloca UID/GID numéricos); RC49 move essa conta para depois das identidades existentes. Nenhum diretório persistente foi corrigido ou sobrescrito.
+>
+> O probe M089 não comprovou isolamento: o diretório /tmp do chroot estava 0700 e o sentinel externo 0600, de modo que PermissionError podia ser confundido com ocultação. Seccomp, RLIMITs, ausência de /proc e ocultação de /data/options.json continuam sem prova. RC49 corrige o fixture e acrescenta diagnóstico por etapa/errno; não habilita execução.
+>
+> **RC49 em desenvolvimento:** preservação dos UIDs/GIDs históricos, probe somente após bootstrap bem-sucedido, rootfs efêmero com /tmp 01777, diretório pai de controle 0755 e sentinel 0644. Build ARM64 e homologação pendentes. RC46 segue disponível no backup `af28f093`; backup específico RC48 será feito antes de RC49.
 >
 > O Dockerfile executa bash -n, py_compile e unittest discover na etapa de validação. Para add-on sem image pré-compilada, o Supervisor executa esse build durante a atualização no HA. Não exigir Docker externo, QEMU ou Actions como gate genérico.
 >
@@ -8,9 +12,7 @@
 >
 > O restante deste documento preserva o contrato técnico M006. Declarações históricas de ausência de rotas, ingress ou serviços são anteriores ao incremento M019 e estão supersedidas por este estado.
 >
-> **M087:** RC46 instalada/iniciada e diagnóstico real cgroup registrado; isolamento agregado não homologado. Probe API de jobs retornou alerta de auditoria; correção em desenvolvimento, testes pendentes.
->
-> **M088:** alternativa chroot/seccomp/RLIMIT em avaliação; probe root efêmero e UID executor preparados em desenvolvimento, sem execução de projeto. RC46 permanece instalada; RC47 ainda aguarda validação pela esteira.
+> **M087–M089:** históricos preservados em Issue #2 e na continuidade ativa; RC48 não homologada por falha de bootstrap e prova de isolamento inconclusiva.
 
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.

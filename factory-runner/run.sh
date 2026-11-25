@@ -5,9 +5,6 @@ export RUNNER_API_PROBE_BOOT_STARTED_AT
 umask 077
 
 echo "[STARTUP] Factory Runner — modo restrito"
-# Ephemeral primitives probe only; no project code, options, or persistent writes.
-/usr/bin/python3 -I -u /app/isolation_backend_probe.py || echo "[ISOLATION-BACKEND] ERROR: diagnostic unavailable; execution remains blocked"
-
 # Segredos vêm somente das opções privadas do Home Assistant.
 OPTIONS_FILE="/data/options.json"
 if [ ! -r "$OPTIONS_FILE" ]; then
@@ -39,6 +36,9 @@ if [ ! -e "$AUTHORITY_ROOT" ]; then
 fi
 env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/nonexistent \
     /usr/bin/python3 -I /app/owner_bootstrap.py "$AUTHORITY_ROOT"
+
+# Run the synthetic isolation probe only after persistent authority layout validation succeeds.
+/usr/bin/python3 -I -u /app/isolation_backend_probe.py || echo "[ISOLATION-BACKEND] ERROR: diagnostic unavailable; execution remains blocked"
 
 # A private HA volume may start at 0700 root. Grant the service group search
 # only (no listing/write), without changing options.json ownership or mode.

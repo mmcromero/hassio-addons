@@ -46,6 +46,27 @@ class IsolationBackendProbeTests(unittest.TestCase):
     def test_probe_is_explicitly_diagnostic_not_a_sandbox(self):
         self.assertFalse(probe.SAFE_FOR_UNTRUSTED_CODE)
 
+    def test_path_absence_does_not_accept_permission_denied(self):
+        def denied(_path):
+            raise PermissionError(13, "denied")
+        def missing(_path):
+            raise FileNotFoundError(2, "missing")
+        self.assertFalse(probe.path_is_absent("/synthetic", stat_fn=denied))
+        self.assertTrue(probe.path_is_absent("/synthetic", stat_fn=missing))
+
+    def test_probe_root_tmp_is_writable_sticky_directory(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            root = probe.prepare_probe_root(Path(temp) / "root")
+            self.assertEqual((root / "tmp").stat().st_mode & 0o7777, 0o1777)
+
+    def test_outside_sentinel_parent_is_traversable_for_negative_control(self):
+        import os, tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            os.chmod(temp, 0o755)
+            self.assertEqual(Path(temp).stat().st_mode & 0o777, 0o755)
+
+
 
 if __name__ == "__main__":
     unittest.main()
