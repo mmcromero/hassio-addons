@@ -19,7 +19,8 @@ MAX_PAGE_BYTES = 1024 * 1024
 _PROPOSAL = re.compile(r"^([a-f0-9]{32})$")
 _SESSION = re.compile(r"^[a-f0-9]{64}$")
 _REASON_CODE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
-_ALLOWED_FORM = frozenset(("csrf", "confirmation"))
+_ALLOWED_CONSENT_FORM = frozenset(("csrf", "confirmation"))
+_ALLOWED_REVOKE_FORM = frozenset(("csrf", "confirmation", "password"))
 
 
 def _header_values(headers, wanted):
@@ -77,7 +78,7 @@ def _owner_error_response(reason):
     elif reason == "invalid_request":
         message = "Os dados enviados não passaram na validação. Reabra a proposta e tente novamente."
     else:
-        message = "Falha técnica no consentimento. Nenhuma publicação foi executada."
+        message = "Falha técnica na operação. Nenhuma publicação foi executada."
     page = (
         '<!doctype html><meta charset="utf-8"><title>Operação não concluída</title>'
         '<h1>Não foi possível concluir</h1><p>' + message + '</p>'
@@ -155,8 +156,9 @@ def dispatch_owner_consent(
         })
 
     if method == "POST":
-        if parsed.path != "/owner-consent/consent":
+        if parsed.path not in ("/owner-consent/consent", "/owner-consent/revoke"):
             return _response(404, "Não encontrado.")
+        action = "consent" if parsed.path.endswith("/consent") else "revoke"
         if len(body) > MAX_FORM_BODY:
             return _response(413, "Requisição muito grande.")
         if _header_values(headers, "Transfer-Encoding"):
@@ -178,23 +180,27 @@ def dispatch_owner_consent(
             form = parse_qs(decoded, keep_blank_values=True, strict_parsing=True, max_num_fields=4)
         except (UnicodeDecodeError, ValueError):
             return _response(400, "Formulário inválido.")
-        if set(form) != _ALLOWED_FORM or any(len(values) != 1 for values in form.values()):
+        allowed_form = _ALLOWED_CONSENT_FORM if action == "consent" else _ALLOWED_REVOKE_FORM
+        if set(form) != allowed_form or any(len(values) != 1 for values in form.values()):
             return _response(400, "Formulário inválido.")
         payload = {key: values[0] for key, values in form.items()}
         try:
-            ui.consent(session, payload, context, origin)
+            if action == "consent":
+                ui.consent(session, payload, context, origin)
+            else:
+                ui.revoke(session, payload, context, origin)
         except Exception as exc:
             if isinstance(exc, PublicationError):
                 reason = str(exc)
                 if not _REASON_CODE.fullmatch(reason):
                     reason = "internal_error"
-                print(f"[OWNER-UI] CONSENT REJECTED: {reason}", file=sys.stderr, flush=True)
+                print(f"[OWNER-UI] {action.upper()} REJECTED: {reason}", file=sys.stderr, flush=True)
             elif isinstance(exc, ValueError):
                 reason = "invalid_request"
-                print("[OWNER-UI] CONSENT REJECTED: invalid_request", file=sys.stderr, flush=True)
+                print(f"[OWNER-UI] {action.upper()} REJECTED: invalid_request", file=sys.stderr, flush=True)
             else:
                 reason = "internal_error"
-                print(f"[OWNER-UI] CONSENT ERROR: {type(exc).__name__}", file=sys.stderr, flush=True)
+                print(f"[OWNER-UI] {action.upper()} ERROR: {type(exc).__name__}", file=sys.stderr, flush=True)
             return _owner_error_response(reason)
         ingress_path = _one_header(headers, "X-Ingress-Path")
         if not ingress_path:
@@ -204,7 +210,7 @@ def dispatch_owner_consent(
             f"{COOKIE_NAME}=; Max-Age=0; Path={cookie_path}; "
             "Secure; HttpOnly; SameSite=Strict"
         )
-        return _response(200, "Consentimento registrado. Nenhuma publicação foi executada.", {
+        return _response(200, "Operação registrada. Nenhuma publicação foi executada.", {
             "Set-Cookie": clear_cookie,
         })
 
