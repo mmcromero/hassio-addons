@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.42",
+  "version": "0.1.0-rc.43",
   "repository": "mmcromero/factory-runner",
-  "commit": "ba7ba116a322e32517cd47f68f5e3401fdfb733e",
-  "catalog_sha": "dcf555e7cbc5eb577c49264c533e3306b219ec3a",
-  "previous_source": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
-  "reviewed_source": "ba7ba116a322e32517cd47f68f5e3401fdfb733e",
-  "publication": "OWNER_AUTHORIZED_RC42_CANDIDATE_DISTRIBUTION_M055",
-  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_ONLY; NO_RC42_INSTALLATION_AUTHORIZATION",
-  "candidate_distribution": "FACTORY_RUNNER_RC42_STAGE3_ORCHESTRATION",
-  "tests": "CATALOG_SYNTAX_CI_PASS; DOCKERFILE_TESTS_NOT_RUN; ARM64_BUILD_AND_LIVE_PROBE_PENDING",
-  "review_status": "RC42_PUBLISHED_WAITING_SUPERVISOR_ARM64_BUILD",
+  "commit": "1b6fdee7920656678bed6d955638e5b18f7c758b",
+  "catalog_sha": "c432dbe6207829afc36614d1fce595778db7880e",
+  "previous_source": "ba7ba116a322e32517cd47f68f5e3401fdfb733e",
+  "reviewed_source": "1b6fdee7920656678bed6d955638e5b18f7c758b",
+  "publication": "OWNER_AUTHORIZED_RC43_CANDIDATE_DISTRIBUTION_M055",
+  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_ONLY; NO_RC43_INSTALLATION_AUTHORIZATION",
+  "candidate_distribution": "FACTORY_RUNNER_RC43_RETRY_STATE_RESET",
+  "tests": "NOT_RUN_AFTER_M079_CHANGE; DOCKERFILE_TESTS_ARM64_BUILD_AND_LIVE_PROBE_PENDING",
+  "review_status": "RC43_PUBLISHED_WAITING_SUPERVISOR_VALIDATION",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,14 +86,14 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "3ec058a979eb66fbe196883a9270d76145b9968d",
-      "size": 44996,
+      "git_blob_sha": "3009346289e28e05e91f52f8d61a595af2557c25",
+      "size": 45410,
       "mode": "100644"
     },
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "e91f76cd0808f1771d9c6fcfd88eaf9c8fdafe3c",
+      "git_blob_sha": "8ea7328c0d8e4c91971661026ebd29325c1c4d0c",
       "size": 1037,
       "mode": "100644"
     },
@@ -177,8 +177,8 @@
     {
       "path": "factory-runner/execution_orchestrator.py",
       "source_path": "factory-runner-add-on/execution_orchestrator.py",
-      "git_blob_sha": "0f156411a54a717ce29be695d8ec989000e43bc1",
-      "size": 50004,
+      "git_blob_sha": "cf6db3d362f6ac0dd1f8d0c00eb71806a5f9b8e2",
+      "size": 50391,
       "mode": "100644"
     },
     {
@@ -415,8 +415,8 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "3c387f80b5ffd3e55ad52247e8fd1531e96eae34",
-      "size": 7816,
+      "git_blob_sha": "5b928a7c796f4d816e2564b49fd41432d93f6e01",
+      "size": 7783,
       "mode": "100644"
     },
     {
@@ -436,8 +436,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "6b9875ff676d09c31b7af29c69208f3866598f27",
-      "size": 27594,
+      "git_blob_sha": "b8c14ef5441d5f673cd1ccb5f3088f7de2c26fae",
+      "size": 27726,
       "mode": "100644"
     },
     {
@@ -611,8 +611,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_execution_orchestrator.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_orchestrator.py",
-      "git_blob_sha": "06afc1c87396181577b065e8b85baa9e63176a5a",
-      "size": 18841,
+      "git_blob_sha": "ccc670e2ac0bb80a4f2612b05b3ad4f2b1e7e0e7",
+      "size": 19562,
       "mode": "100644"
     },
     {
@@ -815,19 +815,19 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.41",
-    "build": "PASS_DOCKERFILE_BUILD_ARM64_EXIT_0",
-    "dockerfile_tests": "PASS_EXIT_0_TEST_STAGES; EXACT_TEST_COUNT_NOT_CAPTURED",
-    "runtime_api_probe": "PASS_READ_ONLY_TWO_WORKSPACES_AND_PLAN_PERSISTENCE",
-    "installation": "PASS_INSTALLED_STARTED",
+    "version": "0.1.0-rc.42",
+    "build": "PENDING_NOT_INSTALLED",
+    "dockerfile_tests": "PENDING",
+    "runtime_api_probe": "PENDING",
+    "installed_version": "0.1.0-rc.41",
+    "installation": "NOT_STARTED_NO_SPECIFIC_OWNER_AUTHORIZATION",
     "runtime_state": "RC41 started",
     "publisher": "DORMANT",
-    "product_code_execution": "NOT_EXECUTED",
-    "notes": "M074: build RC41 concluído com exit 0 em bash -n, py_compile, suíte test_factory_runner_*.py, testes workspace sync não-root e E2E probe não-root. A janela de logs não expôs a contagem exata. API probe PASS; dois planos persistidos. RC41 é a baseline instalada, não a RC42."
+    "product_code_execution": "NOT_EXECUTED"
   },
   "branch": "release-candidate",
-  "provenance_note": "M076/M077/M078: RC42 publicada; 114 arquivos de pacote conferidos contra release-candidate ba7ba116. Workflow de catálogo SUCCESS apenas para syntax/manifests/registry/scripts/arquivos sensíveis; build-factory-runner-arm64 SKIPPED por exigir dispatch manual. Supervisor store refresh reconhece RC42 como atualização disponível; RC41 continua instalada/started. Nenhum teste Dockerfile, build ARM64 ou probe real da RC42 executado. Instalação depende de autorização específica. Publisher DORMANT; código de produtos não executado; isolamento de código não confiável reservado à Etapa 5.",
-  "status": "RC42_PUBLISHED_AVAILABLE_NOT_INSTALLED",
+  "provenance_note": "M079/M080: RC43 corrige stale steps/result no retry e inclui regressão. Publicação somente em factory-runner/. 114 arquivos fonte vinculados por Git blob SHA; RC4-VALIDACAO.md preservado; nenhum outro add-on alterado. Nenhum teste da correção foi executado nesta sessão; build/testes ARM64 e probe integrado aguardam autorização específica para atualizar o Supervisor. Publisher DORMANT; nenhum código de Avisaqui/Artesão executado; isolamento permanece Etapa 5.",
+  "status": "RC43_PUBLISHED_AVAILABLE_NOT_INSTALLED",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -843,15 +843,12 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.42",
+    "version": "0.1.0-rc.43",
     "build": "PENDING",
     "dockerfile_tests": "PENDING",
     "runtime_api_probe": "PENDING",
-    "store_version_latest": "0.1.0-rc.42",
-    "update_available": true,
-    "installed_version": "0.1.0-rc.41",
-    "installation": "NOT_STARTED_NO_INSTALL_AUTHORIZATION",
-    "runtime_state": "RC41 started",
+    "installation": "NOT_STARTED_NO_SPECIFIC_OWNER_AUTHORIZATION",
+    "expected_installed_before_update": "0.1.0-rc.41",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
   }
