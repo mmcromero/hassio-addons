@@ -368,7 +368,7 @@ issuer = ApprovalAuthority(state, state/'credentials'/'signing.pem',
                            state/'credentials'/'owner.json', auth, owner)
 roles = {0: {'enroll','enrollment_status'},
          users['publisher']: {'propose','status','grant','public_key'},
-         users['owner_ui']: {'view','consent'}}
+         users['owner_ui']: {'view','consent','revoke'}}
 server = ApprovalRPCServer(approval_path, issuer, roles,
                            group_gid=groups['consent_clients'])
 server.serve_forever()
@@ -558,6 +558,22 @@ else:
         self.assertNotIn('/api/publish',server.OPERATIONS)
         with self.assertRaisesRegex(PublicationError,'publication_disabled'):disabled_gate()
 
+    def test_owner_revocation_is_single_use_and_cannot_revoke_reserved_grant(self):
+        grant=self.grant();nonce=grant['payload']['nonce']
+        result=self.issuer.revoke(nonce,self.password)
+        self.assertTrue(result['revoked'])
+        with self.assertRaisesRegex(PublicationError,'owner_grant_already_revoked'):
+            self.issuer.revoke(nonce,self.password)
+        second=self.grant();nonce2=second['payload']['nonce']
+        self.issuer.status(nonce2,'challenge',digest(second['payload']),'reserve')
+        with self.assertRaisesRegex(PublicationError,'publication_reserved_reconcile_required'):
+            self.issuer.revoke(nonce2,self.password)
+
+    def test_revoke_rejects_unknown_or_malformed_nonce(self):
+        with self.assertRaisesRegex(PublicationError,'invalid_nonce'):
+            self.issuer.revoke('../bad',self.password)
+        with self.assertRaisesRegex(PublicationError,'owner_grant_unavailable'):
+            self.issuer.revoke('f'*32,self.password)
     def test_revoke_before_reservation_blocks_ref_write(self):
         grant=self.grant();real=self.transport.verify_objects;done=[]
         def revoke(plan):
