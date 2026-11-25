@@ -3,15 +3,15 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.44",
   "repository": "mmcromero/factory-runner",
-  "commit": "edf69a09e63defa79e3c19bd8001521f688d190b",
-  "catalog_sha": "a7559f668e2a510d57aace527662704eb7c8ff22",
-  "previous_source": "1b6fdee7920656678bed6d955638e5b18f7c758b",
-  "reviewed_source": "edf69a09e63defa79e3c19bd8001521f688d190b",
+  "commit": "4fb2ffe814ff60bc2d188b93db05a08fd9258153",
+  "catalog_sha": "03236cc77c70c666db4c80e30c7db1de1fbf4b8f",
+  "previous_source": "edf69a09e63defa79e3c19bd8001521f688d190b",
+  "reviewed_source": "4fb2ffe814ff60bc2d188b93db05a08fd9258153",
   "publication": "OWNER_AUTHORIZED_RC44_CANDIDATE_DISTRIBUTION_M055",
   "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_RC44_SUPERVISOR_UPDATE_2026-11-25",
   "candidate_distribution": "FACTORY_RUNNER_RC44_WORKER_LOOP_FAIL_CLOSED",
-  "tests": "NOT_RUN_AFTER_RC44_FIX; DOCKERFILE_TESTS_ARM64_BUILD_AND_LIVE_JOB_API_PROBE_PENDING",
-  "review_status": "RC44_PUBLISHED_WAITING_SUPERVISOR_VALIDATION",
+  "tests": "PASS_SUPERVISOR_ARM64_DOCKERFILE_BASH_N_PY_COMPILE_UNITTEST_WORKSPACE_SYNC_NONROOT_E2E_NONROOT; PASS_LIVE_AUTHENTICATED_JOBS_API_PROBE_TWO_PROJECTS",
+  "review_status": "RC44_ARM64_HOMOLOGATED_STAGE3_READ_ONLY",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "6d8013e042dc90712de647007f43900cc7cda1db",
-      "size": 45924,
+      "git_blob_sha": "3d5b271fd97b4e90a10514daf2b0eb29841fa059",
+      "size": 46368,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "5b928a7c796f4d816e2564b49fd41432d93f6e01",
-      "size": 7783,
+      "git_blob_sha": "f7334a880916cb560eb9198b173b0cb887b4727e",
+      "size": 7269,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "17313c2d6dab37aa890a7441f8465f238e7c23aa",
-      "size": 27546,
+      "git_blob_sha": "8ef77552320765cb24e8b64e9d29e1fa4d874f75",
+      "size": 27695,
       "mode": "100644"
     },
     {
@@ -816,18 +816,56 @@
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
     "version": "0.1.0-rc.44",
-    "build": "PENDING",
-    "dockerfile_tests": "PENDING",
-    "runtime_api_probe": "PENDING",
-    "installed_version": "0.1.0-rc.41",
-    "installation": "AUTHORIZED_PENDING_RC44_UPDATE",
-    "runtime_state": "RC41 started",
+    "build": "PASS_ARM64_SUPERVISOR",
+    "build_started_at": "2026-11-25T02:19:51-03:00",
+    "build_completed_at": "2026-11-25T02:23:03-03:00",
+    "dockerfile_tests": "PASS_BASH_N_PY_COMPILE_UNITTEST_DISCOVER_WORKSPACE_SYNC_NONROOT_E2E_NONROOT",
+    "runtime_api_probe": "PASS_AUTHENTICATED_LOOPBACK_TWO_REAL_WORKSPACES",
+    "job_probe": {
+      "projects": 2,
+      "audited_read_only_operations": 10,
+      "prior_boot_audit_events": 18,
+      "avisaqui": {
+        "job_status": "PARCIAL",
+        "plan_status": "PARTIAL",
+        "selected": 68,
+        "reused": 0,
+        "omitted": 0,
+        "attempts": 0
+      },
+      "artesao_digital": {
+        "job_status": "PARCIAL",
+        "plan_status": "PARTIAL",
+        "selected": 54,
+        "reused": 0,
+        "omitted": 0,
+        "attempts": 1
+      },
+      "checks": [
+        "submission",
+        "polling_terminal_state",
+        "job_get",
+        "plan_get",
+        "plan_digest",
+        "receipt_digest",
+        "list_filters",
+        "idempotent_resubmission",
+        "job_finished_event",
+        "sanitized_audit"
+      ],
+      "tests_execution_performed": false,
+      "authorization_verified": false,
+      "publication": "disabled"
+    },
+    "installed_version": "0.1.0-rc.44",
+    "installation": "PASS_INSTALLED_STARTED",
+    "runtime_state": "RC44 started",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
   },
   "branch": "release-candidate",
-  "provenance_note": "M081: RC43 ARM64 build failed in Dockerfile py_compile at execution_orchestrator.py:677 (outer try without except/finally). RC44 closes the outer try and stops worker fail-closed if queue claim/scheduler raises; regression added. Source release-candidate SHA is pinned below. Only five changed source files were copied into the catalog; 114 source files were hash-compared, with unchanged files preserved. RC4-VALIDACAO.md and all other add-ons preserved. Supervisor build/tests/API jobs probe pending. Publisher DORMANT; no Avisaqui/Artesão code executed; sandbox remains Stage 5.",
-  "status": "RC44_PUBLISHED_AVAILABLE_NOT_INSTALLED",
+  "provenance_note": "M082: RC44 ARM64 Supervisor build PASS; Dockerfile completed bash -n, py_compile, unittest discover test_factory_runner_*.py, workspace-sync non-root tests and E2E non-root probe. Add-on installed and started. Authenticated live loopback API probe submitted one FR-EXEC-001 job for each approved workspace and verified POST/idempotency, polling to terminal, job/plan GET, plan and receipt digests, list filters, job_finished event and sanitized audit. Avisaqui job PARCIAL/PARTIAL selected=68; Artesão job PARCIAL/PARTIAL selected=54, one attempt. Both are expected because tests_execution_performed=false and authorization_verified=false; no project code/tests were executed. Publisher DORMANT; Stage 5 sandbox remains fail-closed. Source release-candidate SHA pinned below; 114 files hash-compared, zero divergences; only Factory Runner package paths modified.",
+  "status": "RC44_INSTALLED_HOMOLOGATED_STAGE3_READ_ONLY",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -843,12 +881,12 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.43",
-    "build": "PENDING",
-    "dockerfile_tests": "PENDING",
-    "runtime_api_probe": "PENDING",
-    "installation": "NOT_STARTED_NO_SPECIFIC_OWNER_AUTHORIZATION",
-    "expected_installed_before_update": "0.1.0-rc.41",
+    "version": "0.1.0-rc.44",
+    "build": "PASS",
+    "dockerfile_tests": "PASS",
+    "runtime_api_probe": "PASS_TWO_REAL_PROJECT_JOBS",
+    "installation": "PASS_INSTALLED_STARTED",
+    "installed_version": "0.1.0-rc.44",
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
   },
