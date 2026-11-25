@@ -12,6 +12,14 @@ Antes de perguntar ao proprietário sobre apps, infraestrutura, repositórios, p
 
 O [manual HA-MCP — acesso somente leitura](HA-MCP-ACESSO-SOMENTE-LEITURA.md) registra instalação, configuração, testes e limites. O plugin pessoal **Home Assistant — Somente leitura** permite consulta direta ao Supervisor e ao Core sem depender do n8n. Resultado observado: 31 apps instalados, 28 em execução, 3 parados e 2 atualizações disponíveis; Core 2026.10.4; HA-MCP 9.2.0, modo somente leitura confirmado. Logs do Supervisor, Instagram e WhatsApp foram consultados com sucesso. Em 22/11, o túnel n8n existente também foi migrado para uma segunda entrada da integração no Raspberry Pi: 5 requisições MCP aceitas/concluídas (HTTP 200), sem erros, retries ou falhas, após interromper o CMD do Windows. A primeira entrada HA-MCP permaneceu saudável. Recuperação de ambos os túneis após reinício do Core/host ainda pendente. Usar consulta atual, quando disponível no chat e autorizada pela função, antes de solicitar dados ao proprietário. Não publicar credenciais nem permitir alterações por essa conexão. O inventário abaixo conserva evidências históricas; não confundir com estado atual.
 
+## Atualização de permissão HA-MCP — 25/11/2026
+
+O proprietário confirmou que a conexão HA-MCP agora dispõe de leitura e escrita. A escrita pode ser utilizada por agentes para diagnóstico, correção, publicação/atualização, instalação e acompanhamento do add-on/projeto abrangido pela missão autorizada, quando as ferramentas correspondentes estiverem disponíveis. O modo somente leitura e os valores de configuração registrados na captura de 22/11 são históricos e não devem ser tratados como configuração vigente. Esta atualização registra a autorização do proprietário; não constitui teste independente da configuração atual nem comprova que toda ferramenta de escrita está disponível em qualquer chat.
+
+**Limites:** atuar somente no escopo aprovado. Não alterar serviços/add-ons alheios, reiniciar Core/host, excluir/restaurar dados, mudar rede/firewall, expor portas ou rotacionar credenciais sem autorização específica. Confirmar a capacidade efetiva na sessão e registrar resultado sem segredos. A conexão n8n é independente e suas permissões não são ampliadas por esta decisão.
+
+---
+
 ## 1. Ambiente compartilhado
 
 - **Hardware informado pelo proprietário e documentado anteriormente:** Raspberry Pi 4, 8 GB, arquitetura ARM64/aarch64, Home Assistant OS; não foi exibida nesta captura a versão exata do sistema, kernel, Supervisor, espaço em disco ou endereço de rede.
