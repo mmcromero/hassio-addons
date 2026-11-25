@@ -3,15 +3,15 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.68",
   "repository": "mmcromero/factory-runner",
-  "commit": "c8dc61f703bce218b081ea2be92715f5bffbb2c9",
-  "catalog_sha": "5c062c84c2992b41d1e78982007f7c22b0268241",
-  "previous_source": "a36ee883d6b0471b49c4eaa13e1dfc688be5de59",
-  "reviewed_source": "c8dc61f703bce218b081ea2be92715f5bffbb2c9",
+  "commit": "f7deb5a7e321801de72cfb42f4c320c426071126",
+  "catalog_sha": "a536dfd710694075b3dfe8eca2eba54d427a22c2",
+  "previous_source": "c8dc61f703bce218b081ea2be92715f5bffbb2c9",
+  "reviewed_source": "f7deb5a7e321801de72cfb42f4c320c426071126",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC68_M114_USERNS_SECURITY_CONTEXT_DIAGNOSTIC",
-  "tests": "PENDING_SUPERVISOR_ARM64_BUILD; DOCKERFILE_VALIDATION; USERNS_CHILD_SECURITY_CONTEXT; PROJECT_CODE_NOT_EXECUTED",
-  "review_status": "RC68_PACKAGE_PUBLISHED_PENDING_SUPERVISOR_ARM64_BUILD_AND_USERNS_CONTEXT_PROBE; NOT_A_PROJECT_EXECUTION_SANDBOX",
+  "candidate_distribution": "FACTORY_RUNNER_RC68_M114_APPARMOR_DIAGNOSIS",
+  "tests": "SUPERVISOR_ARM64_BUILD_PASS; DOCKERFILE_VALIDATION_PASS; USERNS_SECURITY_CONTEXT_CAPTURED; USERNS_PROBE_PARTIAL_EACCES; PROJECT_CODE_NOT_EXECUTED",
+  "review_status": "RC68_ARM64_BUILD_PASS; APPARMOR_DOCKER_DEFAULT_DENY_MOUNT_HIGH_CONFIDENCE; CUSTOM_PROFILE_PROPOSAL_NOT_APPLIED; NOT_A_PROJECT_EXECUTION_SANDBOX",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,8 +86,8 @@
     {
       "path": "factory-runner/HISTORICO.md",
       "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "c9df04aabcf3604260db7ebed8678fa872553ee0",
-      "size": 36709,
+      "git_blob_sha": "943f509b7d677812b78be80cfff8fa830a74d649",
+      "size": 38509,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "2454307c58b84afaff4a07a9dae38976fa60b3df",
-      "size": 5962,
+      "git_blob_sha": "d31f64bc243d8a4dda74c1654d112f56fcf40693",
+      "size": 6138,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "7473af63b7ee421b193b6ac4f3b485697f63d5a2",
-      "size": 34296,
+      "git_blob_sha": "7c87054f5f4b676238c9691c4a8c40ff071fdb78",
+      "size": 34435,
       "mode": "100644"
     },
     {
@@ -912,15 +912,11 @@
   ],
   "validation": {
     "source_file_count": 128,
-    "package_commit": "5c062c84c2992b41d1e78982007f7c22b0268241",
+    "package_commit": "a536dfd710694075b3dfe8eca2eba54d427a22c2",
     "package_paths_changed": [
-      "factory-runner/CHANGELOG.md",
       "factory-runner/HISTORICO.md",
       "factory-runner/README.md",
-      "factory-runner/RELEASE-PIPELINE.md",
-      "factory-runner/config.yaml",
-      "factory-runner/tests/test_factory_runner_userns_probe.py",
-      "factory-runner/userns_probe.py"
+      "factory-runner/RELEASE-PIPELINE.md"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
@@ -1120,17 +1116,61 @@
       "owner_password_confirm": "empty"
     },
     "rc68_source_commit": "c8dc61f703bce218b081ea2be92715f5bffbb2c9",
-    "rc68_validation_status": "PENDING_SUPERVISOR_ARM64_BUILD_AND_USERNS_CHILD_SECURITY_CONTEXT",
+    "rc68_validation_status": "SUPERVISOR_ARM64_BUILD_PASS; USERNS_PROBE_PARTIAL_MOUNT_EACCES; APPARMOR_DOCKER_DEFAULT_ENFORCE_HIGH_CONFIDENCE; CUSTOM_PROFILE_NOT_APPLIED",
     "rc68_validation_plan": "DOCKERFILE_BASH_SYNTAX; PY_COMPILE; FULL_TEST_FACTORY_RUNNER_SUITE; USERNS_STARTUP_PROBE; CAPEFF_CAP_SYS_ADMIN_IN_USERNS; NO_NEW_PRIVS; SECCOMP; APPARMOR_PROFILE; NO_PROJECT_CODE_EXECUTION",
     "rc68_security_gate": {
       "safe_for_untrusted_code": false,
       "publisher": "DORMANT",
       "sandbox_export": "FAIL_CLOSED",
       "aggregate_cpu_memory_quotas": "NOT_PROVEN",
-      "mount_namespace_private_propagation": "BLOCKED_EACCES_PENDING_CONTEXT",
+      "mount_namespace_private_propagation": "BLOCKED_BY_DOCKER_DEFAULT_APPARMOR_HIGH_CONFIDENCE",
       "tmpfs_per_job_quota": "NOT_TESTED",
+      "seccomp_generic_executor": "PROTOTYPE_NOT_CONNECTED",
       "project_code_executed": false
     },
-    "rc68_backup_policy": "No previous RC backup; preserve options and persistent data"
+    "rc68_backup_policy": "No previous RC backup; preserve options and persistent data",
+    "rc68_docs_commit": "f7deb5a7e321801de72cfb42f4c320c426071126",
+    "rc68_startup_probe": {
+      "status": "partial",
+      "mode": "user_namespace_capability_probe",
+      "cap_eff": "000001ffffffffff",
+      "cap_sys_admin_in_userns": true,
+      "no_new_privs": "0",
+      "seccomp_mode": "0",
+      "apparmor_profile": "docker-default (enforce)",
+      "user_namespace_created": true,
+      "uid_map_written": true,
+      "gid_map_written": true,
+      "mount_namespace_created": true,
+      "mount_propagation_private": false,
+      "mount_error": "EACCES",
+      "tmpfs_mounted": false,
+      "tmpfs_quota_enforced": false,
+      "net_namespace_created": true,
+      "pid_namespace_created": true,
+      "pid_namespace_init_verified": true,
+      "parent_capabilities_unchanged": true,
+      "parent_sys_admin_before": false,
+      "parent_sys_admin_after": false,
+      "parent_mount_leaked": false,
+      "timed_out": false,
+      "project_code_executed": false,
+      "safe_for_untrusted_code": false
+    },
+    "rc68_apparmor_diagnosis": {
+      "confidence": "HIGH_INFERENCE_NOT_AUDIT_CONFIRMED",
+      "evidence": [
+        "CAP_SYS_ADMIN present inside user namespace",
+        "Seccomp mode 0",
+        "AppArmor docker-default enforce",
+        "mount returned EACCES",
+        "official Moby docker-default template includes deny mount"
+      ],
+      "host_audit_record": "NOT_AVAILABLE",
+      "proposed_path": "HA apparmor.txt custom profile while keeping AppArmor enabled",
+      "profile_status": "PROPOSAL_ONLY_NOT_APPLIED"
+    },
+    "rc68_profile_proposal": "docs/APPARMOR-MOUNT-PROFILE-001.md",
+    "rc68_options_preserved": true
   }
 }
