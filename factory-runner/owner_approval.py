@@ -150,11 +150,23 @@ class ApprovalIssuer:
 
     @serialized
     def view(self,proposal):
-        row=self.db.execute('SELECT body,expires,nonce,preview,receipt FROM proposals WHERE id=?',(proposal,)).fetchone()
+        row=self.db.execute(
+            'SELECT body,expires,nonce,preview,receipt,revoked,reserved,grant FROM proposals WHERE id=?',
+            (proposal,)).fetchone()
         if not row or row[1]<=time.time():raise PublicationError('proposal_unavailable')
         body=json.loads(row[0])
+        grant=json.loads(row[7]) if row[7] else None
+        payload=grant.get('payload') if isinstance(grant,dict) else None
+        grant_expiry=payload.get('expires_at') if isinstance(payload,dict) else None
+        if row[2] is None: grant_state='not_issued'
+        elif row[5]: grant_state='revoked'
+        elif row[6]: grant_state='reserved'
+        elif type(grant_expiry) is not int: grant_state='invalid'
+        elif grant_expiry<=time.time(): grant_state='expired'
+        else: grant_state='active'
         return {'proposal_id':proposal,'binding':body,'preview':json.loads(row[3]),'receipt':json.loads(row[4]),'consent_digest':digest(body),
-                'expires_at':row[1],'state':'already_consented' if row[2] else 'awaiting_owner_consent'}
+                'expires_at':row[1],'state':'already_consented' if row[2] else 'awaiting_owner_consent',
+                'grant_nonce':row[2],'grant_state':grant_state}
 
     def _authenticate(self,password):
         failures,locked=self.db.execute('SELECT failures,locked FROM throttle WHERE id=1').fetchone()
@@ -194,11 +206,16 @@ class ApprovalIssuer:
 
     @serialized
     def revoke(self,nonce,password):
+        if not isinstance(nonce,str) or not re.fullmatch('[a-f0-9]{32}',nonce):
+            raise PublicationError('invalid_nonce')
         self._authenticate(password)
-        row=self.db.execute('SELECT reserved FROM proposals WHERE nonce=?',(nonce,)).fetchone()
-        if row and row[0]:raise PublicationError('publication_reserved_reconcile_required')
-        self.db.execute('UPDATE proposals SET revoked=1 WHERE nonce=?',(nonce,))
-        self.event(None,'grant_revoked')
+        row=self.db.execute('SELECT id,revoked,reserved,grant FROM proposals WHERE nonce=?',(nonce,)).fetchone()
+        if not row or not row[3]: raise PublicationError('owner_grant_unavailable')
+        if row[2]: raise PublicationError('publication_reserved_reconcile_required')
+        if row[1]: raise PublicationError('owner_grant_already_revoked')
+        self.db.execute('UPDATE proposals SET revoked=1 WHERE id=?',(row[0],))
+        self.event(row[0],'grant_revoked')
+        return {'revoked':True,'proposal_id':row[0]}
 
     @serialized
     def status(self,nonce,challenge,grant_digest,purpose):
