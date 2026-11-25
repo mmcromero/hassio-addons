@@ -1,3 +1,12 @@
+# 0.1.0-rc.64 — M107: corrigir fixture da suíte archive stream
+
+- O build ARM64 RC63 identificou a falha no método `test_valid_archive_extracts_allowlisted_files_and_hashes` (índice 27): a fixture passava uma tupla aninhada para `tarfile.addfile`, gerando `AttributeError: 'tuple' object has no attribute 'tobuf'`.
+- Corrige somente a chamada da fixture de diretório, passando diretamente o par `(TarInfo, payload)` retornado por `dir_member`.
+- Não altera `archive_stream.py`, o comportamento do runtime, permissões, opções, mounts, capabilities, AppArmor, rede ou credenciais.
+- A suíte individual e a suíte completa continuam obrigatórias; nenhuma cobertura é removida.
+- RC64 deve passar pelo build ARM64 completo antes de ser considerada apta à instalação/homologação.
+- safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed; nenhum código de projeto executado.
+
 # 0.1.0-rc.63 — M106: identificar regressão individual do archive stream
 
 - RC62 isolou a suíte archive_stream e confirmou falha nessa suíte; a saída de unittest ainda não foi disponibilizada pelo Supervisor.
