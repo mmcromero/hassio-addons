@@ -232,3 +232,15 @@ Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publica
 
 ### Próximo gate M114
 Investigar a origem de EACCES apenas por evidências não mutantes (capabilities dentro do user namespace, perfil AppArmor efetivo e audit logs disponíveis). Não contornar com SYS_ADMIN, privileged, host mounts, Docker API/socket, alteração de AppArmor/seccomp ou capabilities. Se a política do host bloquear mount, registrar a limitação e avaliar alternativa sem mount; manter execução genérica bloqueada até comprovar quotas agregadas e contenção entre jobs.
+
+
+## M114 — RC68: diagnóstico do contexto de segurança dentro do user namespace (25/11/2026)
+
+- M113 confirmou user namespace, UID/GID maps, network namespace e PID namespace/PID 1. O mount namespace foi criado, mas `MS_REC|MS_PRIVATE` retornou `EACCES`; tmpfs e quota por job não foram testados.
+- RC68 acrescenta leitura não mutante de `/proc/self/status` e `/proc/self/attr/current` dentro do processo filho após criar user namespace e mapear UID/GID. Registra CapEff, presença de CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor.
+- A finalidade é distinguir falta de CAP_SYS_ADMIN dentro do user namespace de uma negação externa do syscall; o perfil/LSM só será apontado como causa se houver evidência correspondente. Não altera políticas nem tenta mount alternativo.
+- Testes unitários cobrem o parser do contexto sintético; nenhum código de projeto é executado.
+- RC68 candidata; build ARM64 e probe real pendentes. Gates mantidos: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
+### Próximo gate M114
+Publicar RC68 pelo procedimento oficial, atualizar o app existente sem backup da RC anterior, verificar build ARM64, suíte completa e o novo campo child_security_context. Não ampliar permissões, não mudar AppArmor/seccomp/capabilities e não tentar montar tmpfs se a propagação privada falhar.

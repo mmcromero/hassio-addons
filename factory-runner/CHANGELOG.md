@@ -1,3 +1,9 @@
+# 0.1.0-rc.68 — M114: diagnosticar contexto de segurança no user namespace
+
+- Registra CapEff/CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor efetivo, somente leitura.
+- Adiciona testes unitários para parser do contexto de segurança.
+- Não altera capabilities, AppArmor, seccomp, mounts, cgroups ou permissões; nenhum código de projeto executado.
+
 # 0.1.0-rc.67 — M112: corrigir import isolado e contrato do App HA
 
 - Corrige o caminho de importação local do userns probe quando iniciado com `python3 -I`.

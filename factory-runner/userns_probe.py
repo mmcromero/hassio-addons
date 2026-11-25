@@ -69,6 +69,43 @@ def _write_map(path: str, value: str):
         os.close(fd)
 
 
+def _parse_security_context(status_text: str, apparmor_profile: str | None):
+    fields = {}
+    for line in status_text.splitlines():
+        if ':' in line:
+            key, value = line.split(':', 1)
+            fields[key.strip()] = value.strip()
+    cap_eff = fields.get('CapEff')
+    try:
+        cap_mask = int(cap_eff, 16) if cap_eff is not None else None
+    except ValueError:
+        cap_mask = None
+    return {
+        'cap_eff': cap_eff,
+        'cap_sys_admin_in_userns': bool(cap_mask & (1 << 21)) if cap_mask is not None else None,
+        'no_new_privs': fields.get('NoNewPrivs'),
+        'seccomp_mode': fields.get('Seccomp'),
+        'apparmor_profile': (apparmor_profile or '').strip()[:128] or None,
+    }
+
+
+def _read_security_context():
+    try:
+        status_text = Path('/proc/self/status').read_text(encoding='ascii', errors='replace')
+    except OSError as exc:
+        status_text = ''
+        status_error = errno.errorcode.get(exc.errno, 'OS_ERROR')
+    else:
+        status_error = None
+    try:
+        profile = Path('/proc/self/attr/current').read_text(encoding='utf-8', errors='replace').strip()
+    except OSError:
+        profile = None
+    result = _parse_security_context(status_text, profile)
+    if status_error is not None:
+        result['status_read_error'] = status_error
+    return result
+
 def _namespace_child(mountpoint: str, report_fd: int):
     report = {
         "user_namespace_created": False,
@@ -84,6 +121,7 @@ def _namespace_child(mountpoint: str, report_fd: int):
         "tmpfs_quota_enforced": False,
         "tmpfs_written_before_enospc": 0,
         "tmpfs_unmount_ok": False,
+        "child_security_context": None,
         "errors": {},
     }
     libc = _libc()
@@ -104,6 +142,7 @@ def _namespace_child(mountpoint: str, report_fd: int):
             report["uid_map_written"] = True
             _write_map("/proc/self/gid_map", f"0 {outer_gid} 1")
             report["gid_map_written"] = True
+            report["child_security_context"] = _read_security_context()
         except OSError as exc:
             report["errors"]["id_map"] = errno.errorcode.get(exc.errno, "OS_ERROR")
             return report

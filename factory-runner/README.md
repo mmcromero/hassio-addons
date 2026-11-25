@@ -1,9 +1,9 @@
-> **ESTADO VIGENTE — 25/11/2026 / M113**
+> **ESTADO VIGENTE — 25/11/2026 / M114**
 >
-> - **HA:** RC67 (0.1.0-rc.67) instalada/started; build ARM64 e suíte Dockerfile concluídos; update_available=false.
-> - **User namespaces:** userns/UID/GID/net/PID/PID1 PASS; mount namespace criado, mas MS_REC|MS_PRIVATE falhou EACCES; tmpfs/quota por job não testados; status partial.
-> - **Ingress:** nome oficial corrigido; URL agora termina em uma única barra; opções persistentes preservadas.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
+> - **HA:** RC67 (0.1.0-rc.67) instalada/started; build ARM64 PASS.
+> - **Userns:** partial; mount propagation privada falhou com EACCES; causa ainda não determinada.
+> - **RC68 candidata:** adiciona diagnóstico somente leitura de CapEff/CAP_SYS_ADMIN dentro do userns, Seccomp, NoNewPrivs e perfil AppArmor. Ainda não publicada/instalada.
+> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
 
 # Factory Runner — fonte, operação e continuidade

@@ -1,15 +1,14 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M113 / 25/11/2026:** RC67 publicada, instalada/started no Raspberry Pi 4; build ARM64 e cadeia Dockerfile concluídos. Opções preservadas, sem backup da RC anterior. Ingress corrigido (barra única).
+**Estado vigente — M114 / 25/11/2026:** RC67 instalada/started; build ARM64 e suíte Dockerfile PASS. Probe userns parcial: user/UID/GID/net/PID PASS; MS_REC|MS_PRIVATE retorna EACCES; tmpfs/quota por job não testados.
 
-**Probe userns:** user namespace, UID/GID mapping, netns e PID namespace PASS; mount namespace criado, mas MS_REC|MS_PRIVATE falhou com EACCES. Tmpfs/quota por job não foram testados. Resultado partial; origem de EACCES ainda não determinada.
+**RC68 candidata:** acrescenta somente leitura de CapEff/CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor para investigar a origem de EACCES. Nenhuma permissão ou política é alterada. Ainda não publicada/instalada.
 
-**Gates:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Quotas agregadas CPU/memória e contenção entre jobs continuam não comprovadas.
+**Gates:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 
 **Fonte/distribuição:** factory-runner:release-candidate → hassio-addons:main/factory-runner/. Manual de catálogo: hassio-addons/CONTRIBUTING.md.
 
 ---
-
 
 ## Regra do proprietário — sem backup da RC anterior no HA (25/11/2026)
 

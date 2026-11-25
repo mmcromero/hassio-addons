@@ -65,6 +65,23 @@ class UserNamespaceProbeSummaryTests(unittest.TestCase):
         self.assertIn('name: "Fábrica de Ideias - Factory Runner"', manifest)
         self.assertNotIn("ingress_entry:", manifest)
 
+    def test_security_context_parses_user_namespace_cap_sys_admin(self):
+        from userns_probe import _parse_security_context
+
+        status = "Name:\tprobe\nCapEff:\t0000000000200000\nNoNewPrivs:\t1\nSeccomp:\t2\n"
+        result = _parse_security_context(status, 'docker-default (enforce)')
+        self.assertTrue(result['cap_sys_admin_in_userns'])
+        self.assertEqual(result['no_new_privs'], '1')
+        self.assertEqual(result['seccomp_mode'], '2')
+        self.assertEqual(result['apparmor_profile'], 'docker-default (enforce)')
+
+    def test_security_context_handles_missing_capabilities(self):
+        from userns_probe import _parse_security_context
+
+        result = _parse_security_context('Name:\\tprobe\\n', None)
+        self.assertIsNone(result['cap_sys_admin_in_userns'])
+        self.assertIsNone(result['apparmor_profile'])
+
     def test_timeout_and_unavailable_userns(self):
         self.assertEqual(summarize_status({}, timed_out=True, parent_capabilities_unchanged=True), "timeout")
         self.assertEqual(summarize_status({}, parent_capabilities_unchanged=True), "blocked")
