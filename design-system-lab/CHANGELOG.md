@@ -1,5 +1,9 @@
 # Changelog — Design System Lab
 
+## 0.1.0-test.2 — 25/11/2026
+- Remove o token GitHub do ambiente antes de executar npm ci, builds e testes do código baixado.
+
+
 ## 0.1.0-test.1 — 25/11/2026
 - Primeira versão experimental para validação do Design System no Home Assistant ARM64.
 - Clone privado com Fine-grained PAT somente leitura.

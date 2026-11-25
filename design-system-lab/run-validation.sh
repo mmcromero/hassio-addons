@@ -18,7 +18,7 @@ export GIT_TERMINAL_PROMPT=0
 echo "Buscando mmcromero/design-system:desenvolvimento com credencial somente leitura..."
 git clone --quiet --depth 1 --single-branch --branch desenvolvimento \
   https://github.com/mmcromero/design-system.git "$SOURCE_DIR"
-unset GIT_ASKPASS GIT_TERMINAL_PROMPT
+unset GIT_ASKPASS GIT_TERMINAL_PROMPT GITHUB_TOKEN
 
 SOURCE_SHA="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
 echo "SOURCE_SHA=$SOURCE_SHA"

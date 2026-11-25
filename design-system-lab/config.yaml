@@ -1,5 +1,5 @@
 name: "Design System — Laboratório de Homologação"
-version: "0.1.0-test.1"
+version: "0.1.0-test.2"
 slug: design_system_lab
 description: "Executor ARM64 temporário para build, testes automatizados e Demo do Design System"
 url: "https://github.com/mmcromero/design-system"
