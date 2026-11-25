@@ -10,7 +10,21 @@ Todo add-on deste catálogo deve usar o prefixo literal **`Fábrica de Ideias - 
 
 Exemplos: `Fábrica de Ideias - Portal de Governança`, `Fábrica de Ideias - Design System Lab`, `Fábrica de Ideias - Kanban`.
 
-Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no artefato exportado. Qualquer ausência ou variação do prefixo reprova a validação. Não aceitar `Fábrica de Softwares` nem variações. A regra não altera `slug`, diretório, IDs técnicos ou origem do repositório; não renomear instalações existentes nem executar instalação/atualização por causa desta conferência. Aplicável a novos add-ons e a toda atualização futura.
+Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no artefato exportado. Qualquer ausência ou variação do prefixo reprova a validação. Não aceitar `Fábrica de Softwares` nem variações. A regra não altera `slug`, diretório, IDs técnicos ou origem do repositório; não renomear instalações existentes nem executar instalação/atualização por causa desta conferência.
+
+## P0 — Contrato de URL do Home Assistant Ingress
+
+**Regra obrigatória para todos os add-ons com `ingress: true`:**
+
+1. Se a página inicial da aplicação estiver na raiz `/` (caso padrão), **omitir completamente a chave `ingress_entry`** do `config.yaml`. Não declarar `ingress_entry: /` nem `ingress_entry: ""`.
+2. Declarar `ingress_entry` somente quando a página inicial estiver em uma subrota real. Nesse caso, informar apenas o caminho da subrota, sem repetir o prefixo do token e sem barra final desnecessária.
+3. Conferir o valor efetivamente retornado pelo Supervisor em `ingress_url` depois da instalação/atualização. Para entrada na raiz, o URL deve terminar em uma única barra: `/api/hassio_ingress/<token>/`.
+4. Testar a interface pelo botão **Abrir interface** do Home Assistant; verificar página inicial, CSS, JavaScript, imagens, chamadas de API e navegação. Estado `started` e build concluído não comprovam Ingress funcional.
+5. Nunca aceitar apenas um teste direto à porta interna como homologação de Ingress. A autenticação e o roteamento reais passam pelo proxy do Supervisor.
+
+**Causa técnica documentada (25/11/2026):** o Supervisor monta o URL como `/api/hassio_ingress/<token>/` e concatena o valor de `ingress_entry` quando a chave está presente. Assim, declarar explicitamente `ingress_entry: /` gera um URL terminado em `//`. No Raspberry Pi 4, os manifests do Design System Lab e Portal de Governança declaravam `/` e o Supervisor retornava URLs com `//`; o add-on WhatsApp Umdoislab, que omite a chave para a raiz, retornava URL com uma única barra. A comparação foi confirmada nos manifests e na API de estado dos três apps. O campo foi removido dos dois manifests afetados.
+
+Referências oficiais: [configuração de apps — Ingress](https://contributors.home-assistant.io/apps/reference/configuration/) e [guia oficial de Ingress](https://contributors.home-assistant.io/apps/guides/ingress/).
 
 ## 1. Organização e fonte
 
