@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M101)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M101 — RC58 instalada)
 
-> **Estado de código e homologação — 25/11/2026 / M101:** RC57 (`0.1.0-rc.57`) instalada/started. Probe real confirma FD audit ok, rootfs root-owned 0555 e escrita negada fora da workspace. RC58 move a fixture para /dev/shm tmpfs, separa workspace executor-owned 0700 de áreas read-only e mede teto rígido do contêiner; quota dedicada por job permanece não provada.
+> **Estado de código e homologação — 25/11/2026 / M101:** RC58 (0.1.0-rc.58) publicada, instalada/started; build ARM64 e suíte Dockerfile PASS. Probe real: fd_audit ok; rootfs root-owned 0555; workspace UID104/mode0700 gravável; readonly/root negam escrita; /proc e /data/options.json ausentes. /dev/shm tmpfs com teto contêiner de 4091707392 bytes; per_job_quota_proven=false. safe_for_untrusted_code=false; Publisher DORMANT.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >

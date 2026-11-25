@@ -4,6 +4,8 @@
 - O rootfs sintético fica root-owned e read-only; /workspace e /tmp são privados e pertencem ao UID executor; /readonly é root-owned 0555.
 - Após o drop de UID/GID, o probe comprova escrita permitida somente em /workspace e negação em /readonly e na raiz do rootfs.
 - Relatório separa hard container tmpfs ceiling de per-job quota: o primeiro pode ser demonstrado; quota dedicada por job continua false.
+- Validação Supervisor ARM64: build Dockerfile concluído; RC58 instalada/started; fd_audit.status=ok; rootfs owner UID 0/mode 0555; /workspace UID 104/mode 0700 gravável; /readonly e / negam escrita; /proc e /data/options.json ausentes no chroot.
+- /dev/shm tmpfs: teto rígido do contêiner 4091707392 bytes; per_job_quota_proven=false. /data ext4 sem opções de quota identificadas.
 - Nenhum código de projeto executado; sandbox_export continua fail-closed; safe_for_untrusted_code=false; Publisher DORMANT.
 
 # 0.1.0-rc.57 — M100: validar metadados do rootfs antes do chroot

@@ -1,12 +1,15 @@
 > **ESTADO VIGENTE — 25/11/2026 / M101**
 >
-> - **Baseline HA:** RC57 (`0.1.0-rc.57`) instalada e `started`; FD audit e escrita negada fora da workspace confirmados.
-> - **RC58:** fixture rootfs criada dentro de `/dev/shm` (tmpfs); raiz e `/readonly` root-owned 0555; `/workspace` e `/tmp` executor-owned 0700.
-> - **Ensaio:** após drop UID/GID, escrita deve ser permitida em `/workspace` e negada em `/readonly` e na raiz.
-> - **Armazenamento:** `/dev/shm` é um teto rígido de tmpfs do contêiner (~4,09 GB medidos). Isso estabelece um limite superior do contêiner, não uma quota dedicada por job; `per_job_quota_proven=false`.
-> - **Segurança:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+> - **Baseline HA:** RC58 (0.1.0-rc.58) publicada, instalada e started; update_available=false.
+> - **Build/validação:** build ARM64 e suíte Dockerfile concluídos.
+> - **FDs:** fd_audit.status=ok; unexpected_remaining=0; somente pipe de relatório e scratch FD permaneceram.
+> - **Rootfs:** raiz root-owned 0555; /workspace UID 104/mode 0700 gravável; /readonly root-owned 0555 e raiz negam escrita após drop UID/GID.
+> - **Contenção:** chroot entrou; descendants inherit seccomp; capabilities efetivas zeradas; no_new_privs=true; sockets/socketpair negados; /proc, /data/options.json e caminho externo ausentes.
+> - **Armazenamento:** /dev/shm tmpfs com teto rígido de 4091707392 bytes (~3,81 GiB). É limite superior do contêiner, não quota dedicada por job (per_job_quota_proven=false). /data ext4 sem opções de quota identificadas.
+> - **Segurança:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 > - **Operação:** não criar backup da RC anterior em atualizações normais de RC.
-> - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Observação operacional:** Supervisor registrou aviso SIGTERM/exit 143 durante a troca; RC58 iniciou normalmente depois. Tratamento de encerramento limpo permanece pendente.
+> - **Continuidade:** Issue #2 do Orquestrador.
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
 ---
