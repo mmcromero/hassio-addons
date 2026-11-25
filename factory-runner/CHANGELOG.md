@@ -1,4 +1,4 @@
-# 0.1.0-rc.42 — Etapa 3: orquestração persistente (candidata não publicada)
+# 0.1.0-rc.42 — Etapa 3: orquestração persistente (candidata publicada; build pendente)
 
 - Adiciona fila persistente de trabalhos, worker único, estados explícitos, idempotência, timeout, retry limitado, cancelamento e recuperação após reinício.
 - Endurece a persistência inicial com gravação atômica do pedido e limpeza de staging incompleto.
@@ -7,7 +7,7 @@
 - Diferencia etapas de teste não executadas, evidência reutilizada e testes não requeridos.
 - Adiciona regressões de persistência atômica, cancelamento concorrente, auditoria e integridade do plano.
 - O worker executa somente o planejador FR-EXEC-001 read-only. Nenhum código/teste de Avisaqui ou Artesão é executado. Publisher permanece DORMANT.
-- Testes unitários, build Docker/ARM64 e probe real ainda NÃO executados nesta candidata. RC41 continua instalada até homologação específica da RC42.
+- Publicação no catálogo confirmada; workflow de validação do catálogo PASS apenas em sintaxe/manifests/registro/scripts/arquivos sensíveis. Build-factory-runner-arm64 foi SKIPPED por exigir acionamento manual; testes Dockerfile, build ARM64 e probe real ainda NÃO executados. RC41 continua instalada até autorização específica para atualizar para RC42.
 
 # 0.1.0-rc.41 — correção do delimitador JSONL
 

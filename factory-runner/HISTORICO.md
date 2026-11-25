@@ -138,3 +138,16 @@ Próxima ação objetiva e responsável:
 1. concluir revisão estática e regressões;
 2. preparar e publicar a próxima RC somente em hassio-addons:main/factory-runner/, conforme M055;
 3. solicitar autorização específica antes de atualizar o HA e executar a homologação ARM64/operacional.
+
+
+## M078 — RC42 publicada; build ARM64 pendente (25/11/2026)
+
+- PR #22 promoveu a implementação M076 para release-candidate; PR #23 registrou a promoção. Fonte final publicada: 38e2a7567da41d52e2c34d70c580ef21e2670fc0.
+- Versão 0.1.0-rc.42 publicada somente em hassio-addons:main/factory-runner/.
+- Commit do pacote: b17a8f01eb3a57f3a7327d94c29a19ab187a1fd3. Commit da proveniência: df1be943fc9a5cd48e3cc85888e4d1abf0445d2d. Tree SHA do pacote antes da atualização da proveniência: 467295c67d1721a1ccff902f2ccd567c1e22f498.
+- Proveniência: 114 arquivos; hashes do pacote conferidos contra a fonte release-candidate. Alterados somente caminhos dentro de factory-runner/.
+- Workflow de catálogo 45544117692 concluiu SUCCESS: manifests, registry, shell syntax e detecção de arquivos sensíveis PASS. O job de build-factory-runner-arm64 foi SKIPPED porque exige acionamento manual; não foi disparado.
+- Supervisor store refresh confirmou version_latest 0.1.0-rc.42 e update_available=true. Versão instalada continua RC41 (0.1.0-rc.41), state started.
+- A atualização do store também atualizou apenas metadados disponíveis do add-on Home Assistant MCP Dev (9.3.0.dev3723 → 9.3.0.dev3725); nenhum add-on foi instalado ou atualizado por esse refresh.
+- Testes do Dockerfile, build ARM64 da RC42 e probe real de jobs ainda não executados. Nenhum código de Avisaqui/Artesão executado; Publisher DORMANT; sandbox Etapa 5 preservado.
+- Próximo gate: autorização específica do proprietário para atualizar Factory Runner RC41 → RC42 no Supervisor e executar build/testes ARM64 e homologação da API de jobs.
