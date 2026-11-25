@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M096)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M097)
 
-> **Estado de código e homologação — 25/11/2026 / M096:** RC52 (`0.1.0-rc.52`) instalada e `started` no Supervisor ARM64. RC53 em desenvolvimento acrescenta leitura read-only dos limites efetivos herdados de cgroup v2. Testes sintéticos locais do parser: 6/6 PASS; build ARM64 e medição real no Raspberry ainda pendentes.
+> **Estado de código e homologação — 25/11/2026 / M097:** RC53 (`0.1.0-rc.53`) instalada/started; RC54 em desenvolvimento acrescenta ensaios sintéticos de rootfs 0555, auditoria/fechamento de FDs herdados e inventário read-only de quota em /data. Testes novos ainda não executados. Gate `safe_for_untrusted_code=false` mantido.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -11,6 +11,13 @@
 > O restante deste documento preserva o contrato técnico M006.
 
 Controle: Issue #2 do Orquestrador; fonte ativa em mmcromero/factory-runner:desenvolvimento.
+
+## Regra do proprietário — sem backup da RC anterior no HA (25/11/2026)
+
+Durante o ciclo experimental do Factory Runner, **não criar snapshot/backup da instalação RC anterior no Home Assistant antes de instalar/atualizar a próxima RC**. As RCs anteriores são testes incompletos e não são destino de rollback útil. A rastreabilidade e a recuperação do código são asseguradas por commits/branches Git, pacote publicado, manifesto de proveniência, hashes e registros da instalação/homologação.
+
+Escopo restrito ao add-on Factory Runner e às atualizações normais de RC previamente autorizadas. Não apagar backups existentes; não alterar a política de backups gerais do HA ou de outros serviços; preservar opções e dados persistentes do add-on. Se uma mudança passar a envolver migração destrutiva de dados, exclusão ou impacto fora do ciclo normal de RC, tratar esse risco específico separadamente. A atualização de RC normal segue sem snapshot da versão anterior.
+
 
 ## M055 — autorização contínua de publicação de RC do Factory Runner (24/11/2026)
 

@@ -81,6 +81,59 @@ class IsolationBackendProbeTests(unittest.TestCase):
         self.assertFalse(probe.path_is_absent("/synthetic", stat_fn=denied))
         self.assertTrue(probe.path_is_absent("/synthetic", stat_fn=missing))
 
+    def test_probe_root_has_root_owned_non_writable_workspace(self):
+        import os, tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            root = probe.prepare_probe_root(Path(temp) / "root")
+            work = root / "workspace"
+            self.assertEqual(work.stat().st_mode & 0o7777, 0o555)
+            if os.geteuid() == 0:
+                self.assertEqual(work.stat().st_uid, 0)
+
+    def test_fd_audit_closes_unapproved_descriptors_in_child(self):
+        import json, os
+        read_fd, write_fd = os.pipe()
+        pid = os.fork()
+        if pid == 0:
+            os.close(read_fd)
+            result = probe.audit_and_close_unapproved_fds([write_fd])
+            os.write(write_fd, json.dumps(result).encode("utf-8"))
+            os._exit(0)
+        os.close(write_fd)
+        chunks = []
+        while True:
+            part = os.read(read_fd, 4096)
+            if not part:
+                break
+            chunks.append(part)
+        os.close(read_fd)
+        _, status = os.waitpid(pid, 0)
+        self.assertTrue(os.WIFEXITED(status))
+        result = json.loads(b"".join(chunks).decode("utf-8"))
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["unexpected_remaining"], 0)
+        self.assertEqual(result["allowed_missing"], 0)
+
+    def test_rootfs_write_probe_reports_permission_denial(self):
+        import os, tempfile
+        if os.geteuid() != 0:
+            self.skipTest("requires root-owned synthetic rootfs and UID drop")
+        import pwd
+        account = pwd.getpwnam("executor")
+        with tempfile.TemporaryDirectory() as temp:
+            os.chmod(temp, 0o755)
+            root = probe.prepare_probe_root(Path(temp) / "root")
+            pid = os.fork()
+            if pid == 0:
+                os.setgroups([])
+                os.setgid(account.pw_gid)
+                os.setuid(account.pw_uid)
+                result = probe.rootfs_write_probe(str(root / "workspace" / ".write-probe"))
+                os._exit(0 if result["status"] == "denied" else 1)
+            _, status = os.waitpid(pid, 0)
+            self.assertTrue(os.WIFEXITED(status))
+            self.assertEqual(os.WEXITSTATUS(status), 0)
+
     def test_probe_root_tmp_is_writable_sticky_directory(self):
         import tempfile
         with tempfile.TemporaryDirectory() as temp:

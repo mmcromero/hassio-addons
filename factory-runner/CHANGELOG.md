@@ -1,3 +1,12 @@
+# 0.1.0-rc.54 — M097: auditoria de rootfs, FDs e sinais de quota
+
+- Fixture de rootfs separa scratch gravável da área de trabalho root-owned 0555.
+- Filho executor tenta escrita sintética na área de trabalho após drop de UID/GID.
+- Auditoria de FDs fecha descritores herdados não autorizados e mantém apenas pipe de relatório e scratch FD explicitamente permitido; destinos não são registrados.
+- Inventário passivo de mountinfo/statvfs inclui /data e sinaliza opções de quota sem declarar enforcement.
+- Testes sintéticos novos para imutabilidade da área, fechamento de descritores e negação de escrita.
+- Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 # 0.1.0-rc.53 — M096: leitura dos limites cgroup herdados
 
 - Probe read-only percorre a hierarquia cgroup v2 visível e calcula os menores limites finitos herdados de CPU, memória e PIDs.

@@ -71,7 +71,7 @@ def memory_mounts():
             left, right = line.split(" - ", 1)
             fields, fs = left.split(), right.split()
             mountpoint = _unescape_mount_field(fields[4])
-            if mountpoint not in ("/tmp", "/dev/shm"):
+            if mountpoint not in ("/tmp", "/dev/shm", "/data"):
                 continue
             values = {}
             try:
@@ -82,10 +82,13 @@ def memory_mounts():
                 pass
             options = set(fields[5].split(","))
             super_options = set(fs[2].split(",")) if len(fs) > 2 else set()
+            all_options = options | super_options
             result[mountpoint] = {
                 "filesystem": fs[0],
                 "read_only": "ro" in options or "ro" in super_options,
                 "tmpfs_size_option": next((x.split("=", 1)[1] for x in super_options if x.startswith("size=")), None),
+                "quota_mount_option_present": bool(all_options & {"usrquota", "grpquota", "prjquota", "pquota"}),
+                "hard_quota_proven": False,
                 **values,
             }
         except (ValueError, IndexError):
@@ -172,10 +175,75 @@ def effective_capabilities_via_capget():
 
 
 def prepare_probe_root(root):
+    """Build a synthetic root with writable scratch and immutable work area."""
     root = Path(root)
     (root / "tmp").mkdir(parents=True, exist_ok=True)
     os.chmod(root / "tmp", 0o1777)
+    work = root / "workspace"
+    work.mkdir(parents=True, exist_ok=True)
+    os.chmod(work, 0o555)
+    if os.geteuid() == 0:
+        os.chown(work, 0, 0)
     return root
+
+
+def audit_and_close_unapproved_fds(allowed_fds):
+    """Keep only explicit control/scratch FDs; never disclose their targets."""
+    allowed = {int(fd) for fd in allowed_fds if int(fd) >= 0}
+    try:
+        before = sorted(int(name) for name in os.listdir("/proc/self/fd")
+                        if name.isdigit())
+    except OSError as exc:
+        return {"status": "unavailable", "errno": exc.errno,
+                "before_count": None, "closed_count": 0,
+                "remaining_count": None, "unexpected_remaining": None}
+    unexpected = [fd for fd in before if fd not in allowed]
+    close_errors = 0
+    for fd in unexpected:
+        try:
+            os.close(fd)
+        except OSError as exc:
+            if exc.errno != errno.EBADF:
+                close_errors += 1
+    try:
+        after = sorted(int(name) for name in os.listdir("/proc/self/fd")
+                       if name.isdigit())
+    except OSError as exc:
+        return {"status": "post_close_unavailable", "errno": exc.errno,
+                "before_count": len(before), "closed_count": len(unexpected),
+                "remaining_count": None, "unexpected_remaining": None}
+    unexpected_after = [fd for fd in after if fd not in allowed]
+    allowed_missing = [fd for fd in allowed if fd not in after]
+    ok = not close_errors and not unexpected_after and not allowed_missing
+    return {
+        "status": "ok" if ok else "failed",
+        "before_count": len(before),
+        "closed_count": len(unexpected),
+        "remaining_count": len(after),
+        "unexpected_remaining": len(unexpected_after),
+        "allowed_missing": len(allowed_missing),
+        "close_errors": close_errors,
+    }
+
+
+def rootfs_write_probe(path="/workspace/.runner-write-probe"):
+    """Try one synthetic write in a root-owned, non-writable work directory."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
+    try:
+        fd = os.open(path, flags, 0o600)
+    except OSError as exc:
+        if exc.errno in (errno.EACCES, errno.EPERM, errno.EROFS):
+            return {"status": "denied", "errno": exc.errno}
+        if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+            return {"status": "absent", "errno": exc.errno}
+        return {"status": "other_error", "errno": exc.errno}
+    else:
+        os.close(fd)
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        return {"status": "writable", "errno": None}
 
 
 def _append_error(report, stage, exc):
@@ -203,9 +271,16 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         "rlimit_fsize_enforced": False, "rlimit_fsize_bytes": None,
         "seccomp_loaded": False, "seccomp_denials": {},
         "descendants_inherit_filter": False, "errors": [],
+        "fd_audit": None, "rootfs_workspace_owner_uid": None,
+        "rootfs_workspace_mode": None, "rootfs_write_status": "not_tested",
+        "rootfs_write_denied": False,
     }
-    stage = "chroot"
+    stage = "fd_audit"
     try:
+        report["fd_audit"] = audit_and_close_unapproved_fds(
+            [write_fd] + ([scratch_fd] if scratch_fd >= 0 else [])
+        )
+        stage = "chroot"
         os.chroot(root)
         os.chdir("/")
         report["chroot_entered"] = True
@@ -217,6 +292,17 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         stage = "drop_uid"
         os.setuid(uid)
         report["uid_dropped"] = os.geteuid() == uid and os.getegid() == gid
+
+        stage = "rootfs_workspace_permissions"
+        try:
+            workspace_stat = os.stat("/workspace")
+            report["rootfs_workspace_owner_uid"] = workspace_stat.st_uid
+            report["rootfs_workspace_mode"] = oct(workspace_stat.st_mode & 0o7777)
+            write_result = rootfs_write_probe()
+            report["rootfs_write_status"] = write_result["status"]
+            report["rootfs_write_denied"] = write_result["status"] == "denied"
+        except OSError as exc:
+            _append_error(report, stage, exc)
 
         stage = "outside_path_visibility"
         report["outside_path_status"] = path_access_status(outside_file)
@@ -358,6 +444,7 @@ def run_probe():
     report = {
         "mode": "capability_probe_only", "root": os.geteuid() == 0,
         "root_capabilities": root_capabilities(), "memory_mounts": memory_mounts(),
+        "storage_quota_proven": False,
         "executor_account": False, "chroot_seccomp": None,
         "safe_for_untrusted_code": SAFE_FOR_UNTRUSTED_CODE,
     }
