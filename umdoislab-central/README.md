@@ -34,13 +34,13 @@ O Dockerfile copia os módulos Python presentes em [`SOURCE_PROVENANCE.json`](SO
 
 Os túneis MCP do ChatGPT são infraestrutura compartilhada do Raspberry Pi, não componentes instalados dentro desta Central:
 
-- O túnel HA-MCP permite ao conector ChatGPT consultar o Home Assistant em modo somente leitura.
+- O túnel HA-MCP permite ao agente consultar o Home Assistant e executar operações de escrita no escopo de um projeto/add-on incluído em missão autorizada pelo proprietário; a capacidade efetiva deve ser verificada na sessão.
 - O túnel n8n MCP permite ao conector ChatGPT acessar as ferramentas explicitamente habilitadas no MCP HTTP do n8n.
 - Ambos são duas entradas da mesma integração OpenAI Tunnel for HA-MCP, executadas no Home Assistant. O túnel n8n já foi migrado do CMD Windows para o Raspberry, preservando o Tunnel ID original.
 
 **Não confundir esses túneis com o webhook Evolution → n8n, o transporte da Central ou o Gateway de atendimento.** A falha de um túnel MCP não prova falha no atendimento WhatsApp. Não modificar webhook ativo, Evolution, Gateway, worker, credenciais comerciais ou banco da Central para recuperar o túnel.
 
-Antes de qualquer intervenção, consultar o [manual operacional central dos túneis](../docs/HA-MCP-ACESSO-SOMENTE-LEITURA.md) e o [inventário do Raspberry](../docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não reinstalar a integração, não criar novos Tunnel IDs e não registrar segredos no Git. O acesso HA-MCP é somente leitura; as permissões do MCP n8n devem ser verificadas separadamente.
+Antes de qualquer intervenção, consultar o [manual operacional central dos túneis](../docs/HA-MCP-ACESSO-SOMENTE-LEITURA.md) e o [inventário do Raspberry](../docs/HOME-ASSISTANT-RASPBERRY-INVENTARIO-CENTRAL.md). Não reinstalar a integração, não criar novos Tunnel IDs e não registrar segredos no Git. O acesso HA-MCP tem leitura e escrita habilitadas pelo proprietário desde 25/11/2026, limitadas ao escopo autorizado da missão. Isso não concede permissão para alterar a Central, Evolution, Gateway, workers ou workflows n8n por consequência. As permissões do MCP n8n devem ser verificadas separadamente.
 
 ## Segurança e configuração
 
