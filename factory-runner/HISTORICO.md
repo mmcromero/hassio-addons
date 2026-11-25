@@ -165,3 +165,18 @@ Próxima ação objetiva e responsável:
 - Avisaqui e Artesão continuam bloqueados pelas políticas específicas; nenhum código/teste desses projetos foi executado. Bubblewrap segue falhando no mount namespace e Landlock indisponível; Etapa 5 permanece obrigatória.
 - Supervisor registrou aviso no encerramento da imagem antiga RC44: não tratou SIGTERM e saiu com código 143. Não impediu a atualização; RC45 iniciou normalmente. Reavaliar shutdown gracioso em manutenção futura.
 - Estado: RC45 instalada e homologada para o escopo restrito de orquestração read-only e regressões automatizadas da Etapa 4; não libera Publisher nem publicação/execução de produtos.
+
+
+## 25/11/2026 — M107: diagnóstico RC63 e correção da fixture para RC64
+
+- **Ambiente:** Home Assistant OS / Raspberry Pi 4, add-on Factory Runner slug `45c28620_fabrica_software`.
+- **Baseline confirmada após falha:** RC60 (`0.1.0-rc.60`) permanece `started`; catálogo reconhece RC63 e `update_available=true`. A chamada de atualização RC63 retornou HTTP 500; leitura posterior do estado e logs do Supervisor confirmou que o build falhou e RC60 não foi substituída.
+- **Evidência:** Dockerfile RUN `python3 /app/tests/run_archive_stream_diagnostics.py` terminou exit code 77. Índice 27: `test_valid_archive_extracts_allowlisted_files_and_hashes`. Traceback `AttributeError: 'tuple' object has no attribute 'tobuf'`, em `tests/test_factory_runner_archive_stream.py:19`, durante `tar.addfile`.
+- **Causa:** `dir_member("pkg")` já retorna `(TarInfo, None)`; o teste envolvia esse par em `(dir_member("pkg"), None)`, produzindo tupla aninhada. O defeito é da fixture, não do módulo `archive_stream.py`.
+- **Correção:** branch `promote/rc64-m107-fix-archive-fixture`, baseada no HEAD RC M106 `0e9bf85aceeeb4e8be34e233ee227f127f1ad27d`. A linha foi corrigida para `dir_member("pkg")`; versão `0.1.0-rc.64`; changelog, README, continuidade e manual de release atualizados.
+- **Commits:** teste `b96e72170b307261b46a236dee7e6a92931cb64a`; versão `6fbbbf1f71fd41b3ab124380fdca5de260a6c34d`; changelog `f7313bb9a320d2830f7d25e7a8c87761b78ce589`; continuidade `bf644e7028bc4cb9b7e46a5514b158d5cb014914`; Etapa 5 `3e5854873092633782918858fdbadd6ce450db50`; pipeline `345dfa8ff7df8b8887c386e0a27da9e33eff755a`.
+- **Diff:** 7 arquivos; 1 linha de fixture alterada; nenhum módulo de runtime, Dockerfile, configuração de permissões, mounts, capabilities, AppArmor, rede ou credenciais alterado.
+- **Testes:** o teste individual RC63 falhou conforme evidência acima. A correção RC64 ainda NÃO foi executada; diagnóstico individual e suíte completa aguardam build ARM64 no Supervisor.
+- **Publicação/instalação:** RC64 ainda não publicada no catálogo nem instalada. Nenhum backup da RC60 criado, conforme regra do proprietário; opções/dados persistentes preservados.
+- **Segurança:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+- **Próxima ação:** revisão final, PR da branch para `release-candidate`, publicação isolada em `hassio-addons:main/factory-runner/` com proveniência/hash, refresh do catálogo e atualização RC64 pela autorização vigente. Confirmar build/testes/startup no Supervisor; não repetir RC63.
