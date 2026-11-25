@@ -3,7 +3,8 @@
 - Corrige o bloco try externo de `_worker_loop`, que estava sem except/finally e impedia o build ARM64 durante `py_compile`.
 - Falhas ao reivindicar o próximo job agora interrompem o worker em estado fail-closed.
 - Adiciona regressão para confirmar a parada segura quando o claim da fila falha.
-- RC43 não foi instalada; RC41 permanece a versão ativa. Build e suíte completa serão executados novamente no Supervisor após a publicação da RC44.
+- Supervisor/Home Assistant ARM64: build RC44 PASS; etapa Dockerfile concluiu `bash -n`, `py_compile`, suíte `test_factory_runner_*.py`, testes não-root de workspace sync e E2E probe. App RC44 instalada e `started`.
+- Probe autenticado real da API de jobs PASS para Avisaqui e Artesão: POST/idempotência, polling até estado terminal, GET do job/plano, digest do recibo, filtros e auditoria. Jobs PARCIAL conforme esperado (68 e 54 testes selecionados, nenhum executado; `tests_execution_performed=false`; `authorization_verified=false`). Publisher DORMANT; nenhum código de projeto executado.
 
 # 0.1.0-rc.43 — correção de estado visível após retry
 

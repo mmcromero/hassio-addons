@@ -1,19 +1,17 @@
-> **ESTADO VIGENTE — 25/11/2026**
+> **ESTADO VIGENTE — 25/11/2026 / M082**
 >
-> - **Roadmap aprovado:** [ROADMAP-CONCLUSAO-001](../docs/ROADMAP-CONCLUSAO-001.md), seis etapas; isolamento de código não confiável é a última etapa de construção e continua obrigatório antes de executar código de projetos.
-> - **Fonte ativa:** mmcromero/factory-runner:desenvolvimento; correção M079 em preparação para RC43. Última candidata publicada: RC42.
-> - **Baseline instalada:** RC41 (0.1.0-rc.41), Supervisor started.
-> - **Candidata publicada:** RC42 (0.1.0-rc.42) em hassio-addons:main/factory-runner/; proveniência de 114 arquivos. Supervisor já reconhece RC42 como atualização disponível; RC41 continua instalada.
-> - **Validação da distribuição:** workflow de catálogo PASS na verificação de manifests, registro, scripts e arquivos sensíveis. O build-factory-runner-arm64 foi SKIPPED por ser acionado somente por workflow_dispatch; suíte Dockerfile e probe ARM64 da RC42 ainda pendentes.
+> - **Roadmap:** seis etapas; isolamento de código não confiável permanece obrigatório na Etapa 5, antes de executar código de projetos.
+> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`; RC44 (`0.1.0-rc.44`) integrada. Fonte de desenvolvimento preservada.
+> - **Catálogo:** RC44 publicada em `mmcromero/hassio-addons:main/factory-runner/`; 114 arquivos comparados, zero divergências; somente seis caminhos da pasta Factory Runner alterados no pacote/proveniência.
+> - **Supervisor:** RC44 instalada e `started` em ARM64; build concluído; sem atualização pendente. Backup pré-update RC41: `4e6ea0d9`.
 > - **Etapa 1:** API/segurança, persistência/idempotência e configuração/bootstrap concluídas para o modo restrito.
-> - **Etapa 2:** FR-EXEC-001 validada na RC41 em ARM64; API probe PASS, planos dos dois workspaces persistidos e vinculados a recibos. Avisaqui: 68 testes selecionados; Artesão: 54; nenhum executado; planos PARTIAL por gate de sandbox e políticas próprias.
-> - **Etapa 3:** RC42 publicada; homologação ARM64 e probe real pendentes. Correção M079 para limpar etapas antigas após retry está em desenvolvimento como RC43; teste ainda não executado.
-> - **Publisher:** DORMANT; publicação de produtos permanece desativada. Não ativar nesta etapa.
-> - **Isolamento:** Bubblewrap continua bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed. Execução de código de projeto continua reservada à Etapa 5.
-> - **Distribuição:** publicar somente a pasta factory-runner/; não alterar outros add-ons nem arquivos compartilhados.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M079; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Etapa 2:** FR-EXEC-001 validada em RC41; planos read-only persistidos para os dois workspaces.
+> - **Etapa 3:** homologação RC44 PASS: Dockerfile, sintaxe, compilação Python, suíte automatizada e probe real autenticado da API de jobs. Dois jobs terminaram PARCIAL como esperado; 68/54 testes selecionados, nenhum executado; digest/recibo, polling, idempotência, filtros e auditoria conferidos.
+> - **Publisher:** DORMANT; publicação de produtos desativada. Nenhum código de Avisaqui/Artesão executado.
+> - **Isolamento:** Bubblewrap ainda bloqueado no mount namespace e Landlock indisponível; execução arbitrária permanece fail-closed e reservada à Etapa 5.
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M082; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
-> O histórico abaixo foi preservado. Referências antigas a RC20, RC19 e RCs anteriores são registros históricos, não o estado operacional atual.
+> O histórico abaixo foi preservado. Referências antigas a RCs anteriores são registros históricos, não o estado operacional atual.
 
 
 ---
