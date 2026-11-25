@@ -14,7 +14,6 @@ ingress_entry: /
 panel_admin: true
 panel_icon: mdi:test-tube
 panel_title: "Design System Lab"
-watchdog: false
 options: {}
 schema:
   github_read_token: password?
