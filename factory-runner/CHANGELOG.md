@@ -1,3 +1,11 @@
+# 0.1.0-rc.57 — M100: validar metadados do rootfs antes do chroot
+
+- O UID root registra owner UID e modo de /workspace na fixture sintética antes do chroot/drop de UID, sem depender de stat dentro do ambiente seccomp restrito.
+- Após drop de UID/GID, continua a tentativa real de escrita em /workspace; o resultado deve ser denied.
+- RC56 build ARM64 concluído e instalado/started; suíte do Dockerfile passou. Probe real: fd_audit.status=ok, sem descritores inesperados. A leitura de metadados de /workspace pós-drop retornou PermissionError; a tentativa de escrita ficou não testada. RC57 move somente a leitura de metadados para antes do chroot.
+- Inventário real /data: ext4, 471816998912 bytes total, 360597803008 disponíveis; nenhuma opção de quota reconhecida; hard_quota_proven=false.
+- Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 # 0.1.0-rc.56 — M099: snapshot de FDs somente com descritores vivos
 
 - Corrige o snapshot: após enumerar /proc/self/fd, valida cada número com fstat e descarta EBADF, removendo o FD transitório já fechado pela própria listagem.

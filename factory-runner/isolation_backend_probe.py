@@ -298,6 +298,14 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         report["fd_audit"] = audit_and_close_unapproved_fds(
             [write_fd] + ([scratch_fd] if scratch_fd >= 0 else [])
         )
+        stage = "rootfs_workspace_precheck"
+        try:
+            workspace_stat = os.stat(Path(root) / "workspace")
+            report["rootfs_workspace_owner_uid"] = workspace_stat.st_uid
+            report["rootfs_workspace_mode"] = oct(workspace_stat.st_mode & 0o7777)
+        except OSError as exc:
+            _append_error(report, stage, exc)
+
         stage = "chroot"
         os.chroot(root)
         os.chdir("/")
@@ -311,16 +319,10 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         os.setuid(uid)
         report["uid_dropped"] = os.geteuid() == uid and os.getegid() == gid
 
-        stage = "rootfs_workspace_permissions"
-        try:
-            workspace_stat = os.stat("/workspace")
-            report["rootfs_workspace_owner_uid"] = workspace_stat.st_uid
-            report["rootfs_workspace_mode"] = oct(workspace_stat.st_mode & 0o7777)
-            write_result = rootfs_write_probe()
-            report["rootfs_write_status"] = write_result["status"]
-            report["rootfs_write_denied"] = write_result["status"] == "denied"
-        except OSError as exc:
-            _append_error(report, stage, exc)
+        stage = "rootfs_workspace_write_probe"
+        write_result = rootfs_write_probe()
+        report["rootfs_write_status"] = write_result["status"]
+        report["rootfs_write_denied"] = write_result["status"] == "denied"
 
         stage = "outside_path_visibility"
         report["outside_path_status"] = path_access_status(outside_file)

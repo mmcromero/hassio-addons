@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M099)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M100)
 
-> **Estado de código e homologação — 25/11/2026 / M099:** RC53 (`0.1.0-rc.53`) continua instalada/started. RC54 e RC55 falharam na suíte ARM64 somente em `test_fd_audit_closes_unapproved_descriptors_in_child`; RC56 valida cada FD enumerado com fstat e descarta EBADF. Gate `safe_for_untrusted_code=false` mantido.
+> **Estado de código e homologação — 25/11/2026 / M100:** RC56 (`0.1.0-rc.56`) instalada/started após build ARM64 e suíte Dockerfile concluídos. Probe real: fd_audit.status=ok e unexpected_remaining=0; leitura de metadados de /workspace após drop retornou PermissionError. RC57 move a leitura de owner/mode para antes do chroot; a escrita de prova permanece após drop. Gate `safe_for_untrusted_code=false` mantido.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >

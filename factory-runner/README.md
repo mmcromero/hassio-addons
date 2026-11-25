@@ -1,11 +1,12 @@
-> **ESTADO VIGENTE — 25/11/2026 / M099**
+> **ESTADO VIGENTE — 25/11/2026 / M100**
 >
-> - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação; Etapas 5/6 não homologadas.
-> - **Baseline HA:** RC53 (`0.1.0-rc.53`) continua instalada e `started`; RC54 e RC55 não foram instaladas porque o build ARM64 falhou no teste de auditoria FD.
-> - **RC54/55:** build chegou à suíte integral; falha única `test_fd_audit_closes_unapproved_descriptors_in_child`; teste rootfs passou.
-> - **RC56:** snapshot de `/proc/self/fd` agora confirma cada FD com `fstat` e descarta somente `EBADF`; nova regressão valida que os descritores listados continuam abertos.
+> - **Baseline HA:** RC56 (`0.1.0-rc.56`) instalada e `started`; build ARM64 e suíte Dockerfile concluídos.
+> - **M099 / FD:** probe real retorna `fd_audit.status=ok`, `unexpected_remaining=0`; nenhum código de projeto foi executado.
+> - **M100 / RC57:** metadados de `/workspace` serão lidos antes do chroot/drop UID; após o drop, a tentativa de escrita continua sendo executada para confirmar negação.
+> - **Rootfs RC56:** metadados pós-drop retornaram `PermissionError`, então `rootfs_write_status=not_tested`; não considerar esse teste aprovado.
+> - **Armazenamento:** `/data` ext4, cerca de 471,8 GB totais e 360,6 GB disponíveis; nenhuma opção de quota identificada; `hard_quota_proven=false`.
 > - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado; sandbox_export fail-closed.
-> - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar commits, proveniência, hashes, opções e dados persistentes.
+> - **Operação:** não criar backup da RC anterior em atualizações normais de RC.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
