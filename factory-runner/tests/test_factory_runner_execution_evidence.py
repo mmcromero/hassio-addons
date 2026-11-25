@@ -42,6 +42,12 @@ class ExecutionEvidenceTests(unittest.TestCase):
         self.assertIsNone(evidence._validation_error(record),
                           msg=evidence._validation_error(record))
 
+    def test_record_is_valid_jsonl_with_real_newline(self):
+        record = evidence.record_evidence(self.ledger, **self.values)
+        raw = self.ledger.read_bytes()
+        self.assertEqual(raw, evidence.canonical(record) + bytes([10]))
+        self.assertEqual(evidence.load_evidence(self.ledger), [record])
+
     def test_exact_binding_is_reusable(self):
         item = evidence.record_evidence(self.ledger, **self.values)
         found = evidence.reusable_evidence(
