@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.62",
+  "version": "0.1.0-rc.63",
   "repository": "mmcromero/factory-runner",
-  "commit": "88f168e5ec8183a0f919361792b8fde2a63c28cd",
-  "catalog_sha": "1d1a6273d44f4326f9b883b00183ce96beb1ae66",
-  "previous_source": "1a61dff8669e3df1184d6791c27742960751d750",
-  "reviewed_source": "88f168e5ec8183a0f919361792b8fde2a63c28cd",
+  "commit": "0e9bf85aceeeb4e8be34e233ee227f127f1ad27d",
+  "catalog_sha": "213e5a8ef09e6b87fc417fb4bb37df612c85153f",
+  "previous_source": "88f168e5ec8183a0f919361792b8fde2a63c28cd",
+  "reviewed_source": "0e9bf85aceeeb4e8be34e233ee227f127f1ad27d",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC62_M105_SEGMENTED_VALIDATION",
-  "tests": "PENDING_SUPERVISOR_ARM64_BUILD; RC61_FAILED_MONOLITHIC_VALIDATION_RUN_EXIT_1_WITHOUT_SUBCOMMAND_OUTPUT; RC62_SPLITS_BASH_PYCOMPILE_ARCHIVE_TESTS_FULL_SUITE_WORKSPACE_SYNC_E2E",
-  "review_status": "RC62_DIAGNOSTIC_CANDIDATE_NOT_HOMOLOGATED",
+  "candidate_distribution": "FACTORY_RUNNER_RC63_M106_PER_TEST_ARCHIVE_DIAGNOSTICS",
+  "tests": "PENDING_SUPERVISOR_ARM64_BUILD; RC62_ARCHIVE_STREAM_SUITE_EXIT_1; RC63_RUNS_EACH_ARCHIVE_TEST_INDIVIDUALLY_WITH_EXIT_CODE_INDEX",
+  "review_status": "RC63_DIAGNOSTIC_CANDIDATE_NOT_HOMOLOGATED",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "a895028eb4ad19f3135263f2e3791cd4fa5220d5",
-      "size": 61633,
+      "git_blob_sha": "dc1292f82a754c2f640642a820483196362a49c1",
+      "size": 62590,
       "mode": "100644"
     },
     {
@@ -79,8 +79,8 @@
     {
       "path": "factory-runner/Dockerfile",
       "source_path": "factory-runner-add-on/Dockerfile",
-      "git_blob_sha": "b30bbe3126b91aefb76849bcca1da747dd83e78a",
-      "size": 7061,
+      "git_blob_sha": "084b1ce10abf13e12b233fae722a1a13f31da4c4",
+      "size": 7141,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "31c5fe0019a80dbf25fdfc296aff3833a97c99da",
-      "size": 7041,
+      "git_blob_sha": "842403fef49992505126af813d0c1c566150279d",
+      "size": 6590,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "52e354e0476c32dda34ebebaf3cb27ce034b57d9",
-      "size": 30546,
+      "git_blob_sha": "9d2cb07080e7a95e24e5828858d2d933e6a77806",
+      "size": 31119,
       "mode": "100644"
     },
     {
@@ -219,7 +219,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "3c02e297c2859a77defd175747962eeaf9791517",
+      "git_blob_sha": "3bb94c923685335995111bfe7066c58411c025c2",
       "size": 1037,
       "mode": "100644"
     },
@@ -543,6 +543,13 @@
       "source_path": "factory-runner-add-on/tests/probe_sandbox.py",
       "git_blob_sha": "8bcac4fb49e9a59a5cf99fd81ff62ba4a39d21e2",
       "size": 7554,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/run_archive_stream_diagnostics.py",
+      "source_path": "factory-runner-add-on/tests/run_archive_stream_diagnostics.py",
+      "git_blob_sha": "13ee7054ead0d5194bdfa5d017f852a2cf637024",
+      "size": 1433,
       "mode": "100644"
     },
     {
@@ -876,14 +883,15 @@
     }
   ],
   "validation": {
-    "source_file_count": 123,
-    "package_commit": "1d1a6273d44f4326f9b883b00183ce96beb1ae66",
+    "source_file_count": 124,
+    "package_commit": "213e5a8ef09e6b87fc417fb4bb37df612c85153f",
     "package_paths_changed": [
       "factory-runner/CHANGELOG.md",
       "factory-runner/Dockerfile",
       "factory-runner/README.md",
       "factory-runner/RELEASE-PIPELINE.md",
-      "factory-runner/config.yaml"
+      "factory-runner/config.yaml",
+      "factory-runner/tests/run_archive_stream_diagnostics.py"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
@@ -893,6 +901,8 @@
     "installed_baseline": "0.1.0-rc.60",
     "owner_backup_policy": "NO_PREVIOUS_RC_BACKUP_FOR_NORMAL_FACTORY_RUNNER_RC_UPDATES",
     "rc61_build_result": "TWO_SUPERVISOR_ARM64_BUILDS_EXITED_1_IN_MONOLITHIC_DOCKERFILE_VALIDATION_RUN; SUBCOMMAND_NOT_EXPOSED",
-    "rc62_validation_plan": "SPLIT_DOCKERFILE_RUNS_FOR_BASH_SYNTAX_PYCOMPILE_ARCHIVE_STREAM_TESTS_FULL_SUITE_WORKSPACE_SYNC_AND_E2E; NO_TESTS_REMOVED"
+    "rc62_validation_plan": "SPLIT_DOCKERFILE_RUNS_FOR_BASH_SYNTAX_PYCOMPILE_ARCHIVE_STREAM_TESTS_FULL_SUITE_WORKSPACE_SYNC_AND_E2E; NO_TESTS_REMOVED",
+    "rc62_build_result": "SUPERVISOR_ARM64_BUILD_ISOLATED_FAILURE_TO_TEST_FACTORY_RUNNER_ARCHIVE_STREAM_PY_EXIT_1",
+    "rc63_validation_plan": "RUN_EACH_ARCHIVE_STREAM_TEST_METHOD_INDIVIDUALLY; EXIT_CODES_51_PLUS_INDEX; THEN_FULL_TEST_SUITE; NO_TESTS_REMOVED"
   }
 }
