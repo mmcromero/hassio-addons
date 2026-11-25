@@ -1,3 +1,14 @@
+# 0.1.0-rc.42 — Etapa 3: orquestração persistente (candidata não publicada)
+
+- Adiciona fila persistente de trabalhos, worker único, estados explícitos, idempotência, timeout, retry limitado, cancelamento e recuperação após reinício.
+- Endurece a persistência inicial com gravação atômica do pedido e limpeza de staging incompleto.
+- Garante precedência do cancelamento diante de finalização, bloqueio ou reagendamento concorrente.
+- Vincula o plano persistido ao contrato, projeto e SHA do trabalho; compara os digests e contagens do plano com a resposta do worker.
+- Diferencia etapas de teste não executadas, evidência reutilizada e testes não requeridos.
+- Adiciona regressões de persistência atômica, cancelamento concorrente, auditoria e integridade do plano.
+- O worker executa somente o planejador FR-EXEC-001 read-only. Nenhum código/teste de Avisaqui ou Artesão é executado. Publisher permanece DORMANT.
+- Testes unitários, build Docker/ARM64 e probe real ainda NÃO executados nesta candidata. RC41 continua instalada até homologação específica da RC42.
+
 # 0.1.0-rc.41 — correção do delimitador JSONL
 
 - Grava LF real após cada registro de evidência, em vez de uma sequência literal de escape.

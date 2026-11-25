@@ -111,3 +111,30 @@ Próxima ação objetiva e responsável:
 - Workflow de validação do catálogo: PASS. Supervisor atualizou o app existente para RC28, executou o build ARM64 e iniciou a versão com sucesso. Proveniência atualizada no commit `617828b45410e55c58530f8194295789b22faaec`.
 - Opções, identidade, origem, token de escrita vazio, porta sem mapeamento e gate de publicação foram preservados.
 - Cadastro real não repetido ainda: falta o proprietário submeter formulário novo pelo Ingress; RC28 deverá identificar a condição de eventual recusa sem registrar valores sensíveis.
+
+
+## M075 — Etapa 3 iniciada: primeira implementação do orquestrador persistente (24/11/2026)
+
+### Baseline e estado
+- RC41 (0.1.0-rc.41) permanece instalada e started no Home Assistant. Não foi iniciada atualização, publicação de candidata nova ou execução de código dos produtos.
+- Branch de trabalho: desenvolvimento; baseline M074 preservada. O código desta etapa ainda não está homologado.
+
+### Implementação inicial
+- Novo execution_orchestrator.py: fila persistente com worker único, estados/transições explícitos, idempotência por execution_id + digest, retry limitado, cancelamento, timeout, recuperação após reinício, histórico append-only e armazenamento privado 0700/0600 com flock/fsync.
+- Novo execution_plan_worker.py: subprocesso fixo para o planejador confiável FR-EXEC-001, com allowlist de ambiente, sem tokens/credenciais, sem shell e sem execução de código de projeto.
+- API autenticada adicionada: POST/GET /api/jobs, GET /api/jobs/{id}, POST cancel e retry. Consulta de plano continua em /api/executions/{id}.
+- Probe de inicialização ampliado para submeter e acompanhar jobs nos dois workspaces, validar plano/recibo, filtros, idempotência e auditoria. Testes unitários e de API foram adicionados ao Dockerfile.
+- Especificação: [ETAPA-3-ORQUESTRACAO-001](ETAPA-3-ORQUESTRACAO-001.md).
+
+### Fronteiras preservadas
+- O worker executa somente análise/planejamento read-only. Testes de produto permanecem NOT_EXECUTED; Bubblewrap/Landlock e execução de código não confiável continuam reservados à Etapa 5.
+- Publisher DORMANT; prepare/package/homologate/publish/deploy/update/promote permanecem bloqueados; políticas, opções, credenciais, outros add-ons e serviços preservados.
+- Build ARM64, suíte de testes e probe real da nova API ainda não foram executados. Não declarar PASS nesta fase.
+
+### Roteamento de branch
+- Três atualizações foram temporariamente direcionadas a main por desvio do conector. Detectado antes de PR/merge/release; os três arquivos foram removidos de main por commits corretivos e aplicados a desenvolvimento por commit Git Data com SHA-base explícito. Estado final dos arquivos de main conferido; histórico preservado, sem force-push. Nenhum pacote, instalação ou outro add-on foi alterado.
+
+### Próximo gate
+1. concluir revisão estática e regressões;
+2. preparar e publicar a próxima RC somente em hassio-addons:main/factory-runner/, conforme M055;
+3. solicitar autorização específica antes de atualizar o HA e executar a homologação ARM64/operacional.

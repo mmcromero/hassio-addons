@@ -79,7 +79,7 @@ def _post_readonly(requester, path, token, payload, timeout=3):
 
 def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
               execution_contract_factory=None):
-    """Exercise only authenticated reads and read-only preflight endpoints."""
+    """Exercise authenticated reads and the persistent, read-only job queue."""
     _expect(isinstance(token, str) and len(token) >= 32, "auth_token_unavailable")
 
     status, _ = requester("GET", "/api/status", "")
@@ -90,7 +90,8 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
     _expect(data.get("status") == "read_only_preflight"
             and data.get("publication") == "disabled"
             and data.get("autonomous_changes") == "disabled"
-            and data.get("controlled_worker") == "read_only_only",
+            and data.get("controlled_worker") == "read_only_only"
+            and data.get("orchestration") == "persistent_single_worker_read_only",
             "runtime_status_contract_mismatch")
 
     status, data = requester("GET", "/api/projects", token)
@@ -122,8 +123,12 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
             and event["time"] < boot_started_at
         )
 
-    operation_ids = []
+    completed_operation_ids = []
+    requested_operation_ids = []
     results = []
+    terminal_states = ("CONCLUIDA", "PARCIAL", "IMPEDIDA", "CANCELADA")
+    from execution_contract import digest as contract_digest
+
     for project, source_sha in snapshots:
         _expect(project in project_ids, "workspace_project_not_approved")
         _expect(isinstance(source_sha, str) and SOURCE_SHA.fullmatch(source_sha),
@@ -146,73 +151,134 @@ def run_probe(token, snapshots, requester=request_json, boot_started_at=None,
         _expect(isinstance(operation_id, str)
                 and OPERATION_ID.fullmatch(operation_id),
                 "preflight_operation_id_invalid")
-        operation_ids.append(operation_id)
+        completed_operation_ids.append(operation_id)
 
         status, response = _post_readonly(requester, "/api/release-plan", token, payload)
         _expect(status == 200 and isinstance(response.get("result"), dict),
                 "live_release_plan_failed")
-        plan = response["result"]
-        _expect(plan.get("published") is False
-                and plan.get("publication") == "disabled_pending_independent_authorization",
+        release = response["result"]
+        _expect(release.get("published") is False
+                and release.get("publication") == "disabled_pending_independent_authorization",
                 "release_plan_publication_not_disabled")
         operation_id = response.get("operation_id")
         _expect(isinstance(operation_id, str)
                 and OPERATION_ID.fullmatch(operation_id),
                 "release_plan_operation_id_invalid")
-        operation_ids.append(operation_id)
+        completed_operation_ids.append(operation_id)
 
         execution_summary = None
         if execution_contract_factory is not None:
             contract = execution_contract_factory(project, source_sha)
+            execution_id = contract.get("execution_id")
             status, response = _post_readonly(
-                requester, "/api/execution-plan", token, contract, timeout=20)
-            _expect(status == 200 and isinstance(response.get("plan"), dict),
-                    "live_execution_plan_failed")
-            execution_plan = response["plan"]
-            _expect(execution_plan.get("format") == "factory-execution-plan-v1"
-                    and execution_plan.get("project") == project
-                    and execution_plan.get("source", {}).get("sha") == source_sha
-                    and execution_plan.get("tests", {}).get("execution_performed") is False
-                    and execution_plan.get("operations", {}).get("authorization_verified") is False
-                    and execution_plan.get("status") in ("PLANNED", "PARTIAL"),
-                    "execution_plan_contract_mismatch")
+                requester, "/api/jobs", token, contract, timeout=20)
+            _expect(status in (200, 202) and isinstance(response.get("job"), dict),
+                    "live_job_submission_failed")
             operation_id = response.get("operation_id")
             _expect(isinstance(operation_id, str)
                     and OPERATION_ID.fullmatch(operation_id),
-                    "execution_plan_operation_id_invalid")
-            operation_ids.append(operation_id)
+                    "job_submission_operation_id_invalid")
+            requested_operation_ids.append(operation_id)
+
+            job = response["job"]
+            _expect(job.get("execution_id") == execution_id
+                    and job.get("project") == project
+                    and job.get("source_sha") == source_sha,
+                    "job_identity_binding_mismatch")
+            deadline = time.monotonic() + 125
+            while job.get("status") not in terminal_states and time.monotonic() < deadline:
+                status, current = requester(
+                    "GET", "/api/jobs/" + execution_id, token, timeout=5)
+                _expect(status == 200 and isinstance(current.get("job"), dict),
+                        "job_status_query_failed")
+                job = current["job"]
+                if job.get("status") not in terminal_states:
+                    time.sleep(0.25)
+            _expect(job.get("status") in ("CONCLUIDA", "PARCIAL"),
+                    "job_did_not_complete_read_only")
+
+            result = job.get("result")
+            _expect(isinstance(result, dict)
+                    and result.get("tests_execution_performed") is False
+                    and result.get("authorization_verified") is False
+                    and result.get("plan_status") in ("PLANNED", "PARTIAL")
+                    and all(type(result.get(key)) is int and result[key] >= 0
+                            for key in ("selected_count", "reused_count", "omitted_count"))
+                    and isinstance(result.get("receipt_digest"), str)
+                    and re.fullmatch(r"[0-9a-f]{64}", result["receipt_digest"])
+                    and isinstance(result.get("plan_digest"), str)
+                    and re.fullmatch(r"[0-9a-f]{64}", result["plan_digest"]),
+                    "job_result_contract_mismatch")
+
             status, stored = requester(
-                "GET", "/api/executions/" + contract["execution_id"], token)
-            _expect(status == 200 and isinstance(stored.get("plan"), dict)
-                    and stored["plan"].get("receipt", {}).get("digest")
-                    == execution_plan.get("receipt", {}).get("digest"),
-                    "execution_plan_persistence_failed")
+                "GET", "/api/executions/" + execution_id, token)
+            _expect(status == 200 and isinstance(stored.get("plan"), dict),
+                    "job_plan_query_failed")
+            plan = stored["plan"]
+            _expect(contract_digest(plan) == result["plan_digest"]
+                    and plan.get("receipt", {}).get("digest") == result["receipt_digest"]
+                    and plan.get("tests", {}).get("execution_performed") is False
+                    and plan.get("operations", {}).get("authorization_verified") is False,
+                    "job_plan_persistence_or_receipt_mismatch")
+
+            status, listed = requester(
+                "GET", "/api/jobs?project=" + project + "&source_sha=" + source_sha,
+                token)
+            _expect(status == 200 and isinstance(listed.get("jobs"), list)
+                    and any(item.get("execution_id") == execution_id
+                            for item in listed["jobs"]),
+                    "job_list_filter_failed")
+
+            prior_attempts = job.get("attempts")
+            status, duplicate = _post_readonly(
+                requester, "/api/jobs", token, contract, timeout=20)
+            _expect(status == 200 and duplicate.get("idempotent") is True
+                    and duplicate.get("job", {}).get("execution_id") == execution_id
+                    and duplicate.get("job", {}).get("attempts") == prior_attempts,
+                    "job_submission_not_idempotent")
+            duplicate_operation = duplicate.get("operation_id")
+            _expect(isinstance(duplicate_operation, str)
+                    and OPERATION_ID.fullmatch(duplicate_operation),
+                    "job_idempotency_operation_id_invalid")
+            completed_operation_ids.append(duplicate_operation)
+            completed_operation_ids.append(execution_id)
+
+            event_codes = {item.get("code") for item in job.get("events", [])
+                           if isinstance(item, dict)}
+            _expect("job_finished" in event_codes, "job_state_history_incomplete")
             execution_summary = {
-                "status": execution_plan["status"],
-                "selected": execution_plan["tests"]["selected_count"],
-                "reused": execution_plan["tests"]["reused_count"],
-                "omitted": execution_plan["tests"]["omitted_count"],
+                "job_status": job["status"],
+                "plan_status": result["plan_status"],
+                "selected": result["selected_count"],
+                "reused": result["reused_count"],
+                "omitted": result["omitted_count"],
+                "attempts": job.get("attempts"),
+                "recoveries": job.get("recovery_count"),
             }
         results.append((project, preflight["eligible_for_preparation"], len(errors),
-                        plan.get("preparation"), execution_summary))
+                        release.get("preparation"), execution_summary))
 
     status, audit = requester("GET", "/api/operations", token)
     _expect(status == 200 and audit.get("source") == "sanitized_audit"
             and isinstance(audit.get("operations"), list),
-            "sanitized_audit_endpoint_failed")
+            "audit_endpoint_failed")
     events = {item.get("operation_id"): item for item in audit["operations"]
               if isinstance(item, dict)}
-    for operation_id in operation_ids:
+    for operation_id in completed_operation_ids:
         event = events.get(operation_id)
         _expect(event is not None and event.get("status") == "completed_read_only",
                 "read_only_operation_not_audited")
+    for operation_id in requested_operation_ids:
+        event = events.get(operation_id)
+        _expect(event is not None and event.get("status") in ("requested", "completed_read_only"),
+                "job_request_not_audited")
     serialized = json.dumps(audit, sort_keys=True)
     _expect(token not in serialized and "source_sha" not in serialized,
             "audit_exposed_sensitive_data")
     return {
         "projects": len(project_ids),
         "preflight_checks": len(snapshots),
-        "audited_read_only_operations": len(operation_ids),
+        "audited_read_only_operations": len(completed_operation_ids) + len(requested_operation_ids),
         "publication": "disabled",
         "prior_boot_audit_events": prior_boot_audit_events,
         "results": results,
@@ -309,7 +375,7 @@ def main():
     if len(token) < 32:
         print("[API-PROBE] BLOCKED: auth_token_unavailable", flush=True)
         return 1
-    print("[API-PROBE] START: authenticated loopback; read/preflight only", flush=True)
+    print("[API-PROBE] START: authenticated loopback; persistent read-only planning; no project code", flush=True)
 
     # The server starts independently. Do not make its startup depend on this probe.
     ready = False
@@ -329,7 +395,7 @@ def main():
         return 1
 
     expect_workspaces = os.environ.get("RUNNER_API_PROBE_EXPECT_WORKSPACES") == "true"
-    deadline = time.monotonic() + (90 if expect_workspaces else 10)
+    deadline = time.monotonic() + (360 if expect_workspaces else 10)
     result = None
     last_error = "workspace_sync_in_progress"
     while time.monotonic() < deadline:
@@ -376,7 +442,7 @@ def main():
               + " eligible=" + str(eligible).lower()
               + " policy_errors=" + str(errors)
               + " preparation=" + str(preparation)
-              + " execution_plan=" + str(execution_summary), flush=True)
+              + " job=" + str(execution_summary), flush=True)
     return 0
 
 

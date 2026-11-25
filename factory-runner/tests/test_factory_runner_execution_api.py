@@ -3,6 +3,7 @@ import http.client
 import json
 import sys
 import threading
+import tempfile
 import unittest
 import uuid
 from pathlib import Path
@@ -12,6 +13,7 @@ from http.server import ThreadingHTTPServer
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import server
+from execution_orchestrator import OrchestrationError
 
 
 class ExecutionApiTests(unittest.TestCase):
@@ -66,6 +68,87 @@ class ExecutionApiTests(unittest.TestCase):
                 status, result = self._request("GET", "/api/executions/" + execution_id)
             self.assertEqual(status, 200)
             self.assertEqual(result["plan"], plan)
+
+
+    def test_jobs_submission_requires_authentication(self):
+        with patch.object(server, "authenticated", return_value=False):
+            status, body = self._request("POST", "/api/jobs", {"project": "sample"})
+        self.assertEqual(status, 401)
+        self.assertEqual(body["error"], "unauthorized")
+
+    def test_jobs_submission_is_authenticated_and_idempotent(self):
+        execution_id = str(uuid.uuid4())
+        job = {"execution_id": execution_id, "job_id": execution_id,
+               "status": "RECEBIDA", "project": "sample"}
+        class FakeOrchestrator:
+            def submit(self, contract, profile):
+                return job, False
+        profile = {"id": "sample"}
+        with tempfile.TemporaryDirectory() as directory:
+            profile_path = Path(directory) / "sample.json"
+            profile_path.write_text("{}", encoding="utf-8")
+            with patch.object(server, "authenticated", return_value=True), \
+                 patch.object(server, "ORCHESTRATOR", FakeOrchestrator()), \
+                 patch.object(server, "PROJECTS_DIR", Path(directory)), \
+                 patch.object(server, "load_profile", return_value=profile), \
+                 patch.object(server, "record") as audit:
+                status, body = self._request("POST", "/api/jobs", {
+                    "execution_id": execution_id, "project": "sample",
+                })
+            self.assertEqual(status, 202)
+            self.assertFalse(body["idempotent"])
+            self.assertEqual(body["job"]["execution_id"], execution_id)
+            self.assertEqual(audit.call_args_list[0].args[2], "requested")
+
+    def test_job_get_list_cancel_and_retry_routes(self):
+        execution_id = str(uuid.uuid4())
+        job = {"execution_id": execution_id, "status": "RECEBIDA"}
+        class FakeOrchestrator:
+            def get(self, job_id):
+                return job
+            def list(self, **kwargs):
+                return {"jobs": [job], "total": 1, "limit": 25,
+                        "offset": 0, "next_offset": None}
+            def cancel(self, job_id):
+                return {**job, "status": "CANCELADA"}
+            def retry(self, job_id):
+                return {**job, "status": "RECEBIDA"}
+        with patch.object(server, "authenticated", return_value=True), \
+             patch.object(server, "ORCHESTRATOR", FakeOrchestrator()), \
+             patch.object(server, "record"):
+            status, body = self._request("GET", "/api/jobs/" + execution_id)
+            self.assertEqual(status, 200)
+            self.assertEqual(body["job"], job)
+
+            status, body = self._request("GET", "/api/jobs?project=sample&limit=1")
+            self.assertEqual(status, 200)
+            self.assertEqual(body["total"], 1)
+
+            status, body = self._request("POST", "/api/jobs/" + execution_id + "/cancel", {})
+            self.assertEqual(status, 202)
+            self.assertEqual(body["job"]["status"], "CANCELADA")
+
+            status, body = self._request("POST", "/api/jobs/" + execution_id + "/retry", {})
+            self.assertEqual(status, 202)
+            self.assertEqual(body["job"]["status"], "RECEBIDA")
+
+    def test_job_routes_fail_closed_when_orchestrator_is_unavailable(self):
+        with patch.object(server, "authenticated", return_value=True), \
+             patch.object(server, "ORCHESTRATOR", None):
+            status, body = self._request("GET", "/api/jobs")
+        self.assertEqual(status, 503)
+        self.assertEqual(body["error"], "orchestration_unavailable")
+
+    def test_job_identifier_validation_is_not_reported_as_server_failure(self):
+        execution_id = "a" * 36
+        class FakeOrchestrator:
+            def get(self, job_id):
+                raise OrchestrationError("invalid_execution_id")
+        with patch.object(server, "authenticated", return_value=True), \
+             patch.object(server, "ORCHESTRATOR", FakeOrchestrator()):
+            status, body = self._request("GET", "/api/jobs/" + execution_id)
+        self.assertEqual(status, 400)
+        self.assertEqual(body["error"], "invalid_execution_id")
 
     def test_evidence_write_endpoint_is_not_exposed(self):
         status, body = self._request("POST", "/api/execution-evidence", {"result": "PASS"})

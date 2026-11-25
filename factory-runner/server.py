@@ -20,6 +20,7 @@ from publication_workflow import capabilities as publication_capabilities
 import stat
 from contextlib import contextmanager
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from rc_fastlane import PreflightError, evaluate, load_profile, prepare, git as trusted_git
 from sandbox_export import SandboxUnavailable
@@ -47,6 +48,7 @@ WORKSPACES_DIR = Path(os.environ.get("RUNNER_WORKSPACES_DIR", "/data/factory-run
 PREPARATIONS_DIR = Path(os.environ.get("RUNNER_PREPARATIONS_DIR", "/data/factory-runner/preparations"))
 EXECUTIONS_DIR = Path(os.environ.get("RUNNER_EXECUTIONS_DIR", "/data/factory-runner/executions"))
 AUDIT_PATH = Path(os.environ.get("RUNNER_AUDIT_PATH", "/data/factory-runner/audit.jsonl"))
+ORCHESTRATOR = None
 
 def authenticated(header):
     """Fail closed; never accept a missing, empty, or malformed bearer token."""
@@ -122,6 +124,7 @@ def recent_operations():
             "/api/release-plan", "/api/publication-preview",
             "/api/publication-propose", "/api/publish",
             "/api/publication-reconcile", "/api/execution-plan",
+            "/api/jobs", "/api/jobs/cancel", "/api/jobs/retry",
             "/api/worker/run:diagnose", "/api/worker/run:profile",
             "/api/worker/run:preflight"
         }
@@ -686,12 +689,52 @@ class Handler(http.server.BaseHTTPRequestHandler):
         return authenticated(self.headers.get("Authorization", ""))
 
     def do_GET(self):
-        execution_match = re.fullmatch(r"/api/executions/([0-9a-f-]{36})", self.path)
-        if (self.path not in ("/", "/api/status", "/api/projects", "/api/operations", "/api/publication-status")
-                and execution_match is None):
+        parsed = urlsplit(self.path)
+        path = parsed.path
+        execution_match = re.fullmatch(r"/api/executions/([0-9a-f-]{36})", path)
+        job_match = re.fullmatch(r"/api/jobs/([0-9a-f-]{36})", path)
+        jobs_collection = path == "/api/jobs"
+        if (path not in ("/", "/api/status", "/api/projects", "/api/operations", "/api/publication-status")
+                and execution_match is None and job_match is None and not jobs_collection):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
+        if jobs_collection:
+            if len(parsed.query) > 2048:
+                return self.respond(400, {"error": "invalid_job_query"})
+            if ORCHESTRATOR is None:
+                return self.respond(503, {"error": "orchestration_unavailable"})
+            try:
+                query = parse_qs(parsed.query, keep_blank_values=False, strict_parsing=False)
+                if any(len(values) != 1 for values in query.values()):
+                    raise ValueError("duplicate_query_parameter")
+                allowed = {"project", "source_sha", "status", "limit", "offset"}
+                if set(query) - allowed:
+                    raise ValueError("unknown_query_parameter")
+                limit = int(query["limit"][0]) if "limit" in query else 25
+                offset = int(query["offset"][0]) if "offset" in query else 0
+                result = ORCHESTRATOR.list(
+                    project=query.get("project", [None])[0],
+                    source_sha=query.get("source_sha", [None])[0],
+                    status=query.get("status", [None])[0],
+                    limit=limit, offset=offset)
+                return self.respond(200, result)
+            except (ValueError, TypeError):
+                return self.respond(400, {"error": "invalid_job_query"})
+            except Exception as exc:
+                code = getattr(exc, "code", "job_store_unavailable")
+                status = 400 if code.startswith("invalid_") else 503
+                return self.respond(status, {"error": code})
+        if job_match is not None:
+            if ORCHESTRATOR is None:
+                return self.respond(503, {"error": "orchestration_unavailable"})
+            try:
+                return self.respond(200, {"job": ORCHESTRATOR.get(job_match.group(1))})
+            except Exception as exc:
+                code = getattr(exc, "code", "job_store_unavailable")
+                status = 404 if code == "job_not_found" else (
+                    400 if code.startswith("invalid_") else 503)
+                return self.respond(status, {"error": code})
         if execution_match is not None:
             try:
                 from execution_planner import get_execution, PlannerError
@@ -699,15 +742,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.respond(200, {"plan": plan})
             except PlannerError:
                 return self.respond(404, {"error": "execution_not_found"})
-        if self.path == "/api/publication-status":
+        if path == "/api/publication-status":
             try:
                 return self.respond(200, publisher_request("status"))
             except (PublicationError, KeyError, OSError):
                 return self.respond(200, {**publication_capabilities(),
                                           "ipc": "unavailable", "publication": "disabled"})
-        if self.path == "/api/projects":
+        if path == "/api/projects":
             return self.respond(200, {"projects": list(listed_projects().values())})
-        if self.path == "/api/operations":
+        if path == "/api/operations":
             try:
                 return self.respond(200, {"operations": recent_operations(),
                                           "source": "sanitized_audit"})
@@ -719,17 +762,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
             "preflight": "available_with_preprovisioned_workspaces",
             "publication": "disabled",
             "autonomous_changes": "disabled",
-            "controlled_worker": "read_only_only"
+            "controlled_worker": "read_only_only",
+            "orchestration": "persistent_single_worker_read_only"
         })
 
     def do_POST(self):
+        parsed = urlsplit(self.path)
+        path = parsed.path
+        cancel_match = re.fullmatch(r"/api/jobs/([0-9a-f-]{36})/cancel", path)
+        retry_match = re.fullmatch(r"/api/jobs/([0-9a-f-]{36})/retry", path)
         publication_routes = {
             "/api/publication-preview": "preview",
             "/api/publication-propose": "propose",
             "/api/publish": "publish",
             "/api/publication-reconcile": "reconcile",
         }
-        if self.path not in OPERATIONS and self.path not in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan", "/api/worker/run", "/api/execution-plan") and self.path not in publication_routes:
+        if (path not in OPERATIONS
+                and path not in ("/api/preflight", "/api/prepare",
+                                 "/api/prepare-declarative", "/api/release-plan",
+                                 "/api/worker/run", "/api/execution-plan", "/api/jobs")
+                and path not in publication_routes
+                and cancel_match is None and retry_match is None):
             return self.respond(404, {"error": "not_found"})
         if not self.authorized():
             return self.respond(401, {"error": "unauthorized"})
@@ -737,7 +790,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if not 1 <= len(raw_length) <= 5 or not raw_length.isascii() or not raw_length.isdecimal():
             return self.respond(400, {"error": "invalid_length"})
         length = int(raw_length)
-        body_limit = MAX_EXECUTION_BODY if self.path == "/api/execution-plan" else MAX_BODY
+        body_limit = MAX_EXECUTION_BODY if path in ("/api/execution-plan", "/api/jobs") else MAX_BODY
         if not 0 < length <= body_limit:
             return self.respond(413, {"error": "invalid_size"})
         try:
@@ -746,7 +799,69 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.respond(400, {"error": "invalid_json"})
         if not isinstance(body, dict):
             return self.respond(400, {"error": "invalid_payload"})
-        if self.path == "/api/execution-plan":
+        if path == "/api/jobs":
+            if parsed.query:
+                return self.respond(400, {"error": "job_submission_query_not_allowed"})
+            if ORCHESTRATOR is None:
+                return self.respond(503, {"error": "orchestration_unavailable"})
+            project = body.get("project")
+            if not isinstance(project, str) or not PROJECT_ID.fullmatch(project):
+                return self.respond(400, {"error": "invalid_project"})
+            profile_path = PROJECTS_DIR / (project + ".json")
+            if profile_path.is_symlink() or not profile_path.is_file():
+                return self.respond(400, {"error": "project_profile_unavailable"})
+            operation_id = str(uuid.uuid4())
+            try:
+                record(path, None, "requested", operation_id)
+                profile = load_profile(profile_path)
+                job, idempotent = ORCHESTRATOR.submit(body, profile)
+                if idempotent and job.get("status") in ("CONCLUIDA", "PARCIAL"):
+                    record(path, None, "completed_read_only", operation_id)
+                elif idempotent and job.get("status") in ("IMPEDIDA", "CANCELADA"):
+                    record(path, None, "blocked_worker", operation_id)
+                return self.respond(200 if idempotent else 202, {
+                    "operation_id": operation_id, "idempotent": idempotent, "job": job})
+            except Exception as exc:
+                code = getattr(exc, "code", "job_submission_failed")
+                try:
+                    record(path, None, "blocked_policy", operation_id)
+                except RuntimeError:
+                    return self.respond(503, {"error": "audit_unavailable"})
+                status = 409 if code == "execution_id_conflict" else (
+                    503 if code in ("execution_store_unavailable",
+                                    "job_request_persist_failed",
+                                    "job_event_persist_failed") else 400)
+                return self.respond(status, {"error": code, "operation_id": operation_id})
+
+        if cancel_match is not None or retry_match is not None:
+            if parsed.query:
+                return self.respond(400, {"error": "job_action_query_not_allowed"})
+            if ORCHESTRATOR is None:
+                return self.respond(503, {"error": "orchestration_unavailable"})
+            if body:
+                return self.respond(400, {"error": "invalid_job_action_payload"})
+            action = "cancel" if cancel_match is not None else "retry"
+            execution_id = (cancel_match or retry_match).group(1)
+            operation_id = str(uuid.uuid4())
+            route = "/api/jobs/" + action
+            try:
+                record(route, None, "requested", operation_id)
+                result = (ORCHESTRATOR.cancel(execution_id) if action == "cancel"
+                          else ORCHESTRATOR.retry(execution_id))
+                return self.respond(202, {
+                    "operation_id": operation_id, "job": result})
+            except Exception as exc:
+                code = getattr(exc, "code", "job_action_failed")
+                try:
+                    record(route, None, "blocked_policy", operation_id)
+                except RuntimeError:
+                    return self.respond(503, {"error": "audit_unavailable"})
+                status = 404 if code == "job_not_found" else (
+                    400 if code.startswith("invalid_") else (
+                        409 if code == "job_not_retryable" else 503))
+                return self.respond(status, {"error": code, "operation_id": operation_id})
+
+        if path == "/api/execution-plan":
             if not LOCK.acquire(blocking=False):
                 return self.respond(409, {"error": "busy"})
             operation_id = str(uuid.uuid4())
@@ -797,8 +912,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             finally:
                 LOCK.release()
 
-        if self.path in publication_routes:
-            action = publication_routes[self.path]
+        if path in publication_routes:
+            action = publication_routes[path]
             expected = {
                 "preview": {"project", "issue", "receipt_digest"},
                 "propose": {"project", "issue", "receipt_digest"},
@@ -850,7 +965,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             except (OSError, KeyError):
                 return self.respond(503, {"error": "publisher_unavailable", "operation_id": operation_id})
 
-        if self.path == "/api/worker/run":
+        if path == "/api/worker/run":
             task = body.get("task")
             project = body.get("project")
             source_sha = body.get("expected_source_sha")
@@ -886,7 +1001,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             finally:
                 LOCK.release()
 
-        if self.path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan"):
+        if path in ("/api/preflight", "/api/prepare", "/api/prepare-declarative", "/api/release-plan"):
             if set(body) != {"project", "expected_source_sha"}:
                 return self.respond(400, {"error": "invalid_payload"})
             project = body["project"]
@@ -898,7 +1013,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.respond(409, {"error": "busy"})
             operation_id = str(uuid.uuid4())
             try:
-                action = self.path
+                action = path
                 record(action, None, "requested", operation_id)
                 try:
                     if action == "/api/preflight":
@@ -956,8 +1071,26 @@ if __name__ == "__main__":
     server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
     server.daemon_threads = True
     launch_workspace_sync()
+    from execution_orchestrator import ExecutionOrchestrator
+    ORCHESTRATOR = ExecutionOrchestrator(
+        EXECUTIONS_DIR, LOCK,
+        audit_callback=record,
+        projects_dir=PROJECTS_DIR,
+        workspaces_dir=WORKSPACES_DIR,
+        catalog_dir=Path(os.environ.get("RUNNER_TEST_CATALOGS_DIR", "/app/test_catalogs")),
+    )
+    ORCHESTRATOR.start()
+    print("[ORCHESTRATOR] READY: persistent queue; single worker; project code execution disabled", flush=True)
     print("[API] READY: loopback-only; authenticated; worker read-only; publication disabled", flush=True)
+
+    def request_shutdown(_signum, _frame):
+        threading.Thread(target=server.shutdown, name="api-shutdown", daemon=True).start()
+
+    signal.signal(signal.SIGTERM, request_shutdown)
+    signal.signal(signal.SIGINT, request_shutdown)
     try:
         server.serve_forever()
-    except KeyboardInterrupt:
+    finally:
+        if ORCHESTRATOR is not None:
+            ORCHESTRATOR.stop()
         server.server_close()
