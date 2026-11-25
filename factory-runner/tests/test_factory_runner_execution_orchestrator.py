@@ -231,10 +231,24 @@ class ExecutionOrchestratorTests(unittest.TestCase):
         self.orchestrator.submit(contract, PROFILE)
         self._mutate(contract["execution_id"], "test_worker_failure",
                      status="IMPEDIDA", error_code="execution_worker_failed",
-                     ended_at=orchestration._now())
+                     ended_at=orchestration._now(),
+                     steps=[
+                         {"name": "contract_validation", "status": "PASS",
+                          "code": "contract_validated"},
+                         {"name": "workspace_resolution", "status": "PASS",
+                          "code": "managed_workspace_verified"},
+                         {"name": "impact_analysis", "status": "FAIL",
+                          "code": "execution_worker_failed"},
+                     ],
+                     result={"plan_status": "PARTIAL"})
         retried = self.orchestrator.retry(contract["execution_id"])
         self.assertEqual(retried["status"], "RECEBIDA")
         self.assertEqual(retried["retry_count"], 1)
+        self.assertIsNone(retried["result"])
+        self.assertEqual(retried["steps"], [{
+            "name": "contract_validation", "status": "PASS",
+            "code": "contract_validated",
+        }])
         with self.assertRaisesRegex(orchestration.OrchestrationError,
                                     "job_not_retryable"):
             self.orchestrator.retry(contract["execution_id"])
