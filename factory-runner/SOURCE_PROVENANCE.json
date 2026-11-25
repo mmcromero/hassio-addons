@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.41",
+  "version": "0.1.0-rc.42",
   "repository": "mmcromero/factory-runner",
-  "commit": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
-  "catalog_sha": "d164431b1e211e64455e3cd1cf44f6598587e3a0",
-  "previous_source": "ab6724aa6266a1ff056a9d87205bf1b46ae29826",
-  "reviewed_source": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
-  "publication": "OWNER_AUTHORIZED_RC41_CANDIDATE_DISTRIBUTION",
-  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_AND_CONTINUOUS_INSTALL_UPDATE_AUTHORIZATION_20261124",
-  "candidate_distribution": "FACTORY_RUNNER_RC41_JSONL_FIX",
-  "tests": "7_DIRECTED_LEDGER_TESTS_PASS_HASH_VERIFIED_LINUX_ARM64_FULL_SUITE_PENDING",
-  "review_status": "RC41_PUBLISHED_WAITING_SUPERVISOR_BUILD",
+  "commit": "38e2a7567da41d52e2c34d70c580ef21e2670fc0",
+  "catalog_sha": "467295c67d1721a1ccff902f2ccd567c1e22f498",
+  "previous_source": "4a4d4cc3bbc1d88d2a505cc8725773d24ee5a5af",
+  "reviewed_source": "38e2a7567da41d52e2c34d70c580ef21e2670fc0",
+  "publication": "OWNER_AUTHORIZED_RC42_CANDIDATE_DISTRIBUTION_M055",
+  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_RC_PUBLICATION_M055_ONLY; NO_RC42_INSTALLATION_AUTHORIZATION",
+  "candidate_distribution": "FACTORY_RUNNER_RC42_STAGE3_ORCHESTRATION",
+  "tests": "NOT_RUN_PENDING_SUPERVISOR_BUILD_DOCKERFILE_SUITE_AND_ARM64_PROBE",
+  "review_status": "RC42_PUBLISHED_WAITING_SUPERVISOR_BUILD",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,14 +86,14 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "4a3354b1915aa054ee08ffb4b255341a79be7f5a",
-      "size": 43676,
+      "git_blob_sha": "05439667392d2b5749cb5578436445c9319872f9",
+      "size": 44775,
       "mode": "100644"
     },
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "d0c123b3e5dea2016eb0c15c409a4399682de118",
+      "git_blob_sha": "e91f76cd0808f1771d9c6fcfd88eaf9c8fdafe3c",
       "size": 1037,
       "mode": "100644"
     },
@@ -149,8 +149,8 @@
     {
       "path": "factory-runner/Dockerfile",
       "source_path": "factory-runner-add-on/Dockerfile",
-      "git_blob_sha": "27eaf586c220b593860c4a4caac6b43ce671312e",
-      "size": 5777,
+      "git_blob_sha": "6185b3f63d7799a7734af1c3a340651f39689dc5",
+      "size": 6033,
       "mode": "100644"
     },
     {
@@ -172,6 +172,20 @@
       "source_path": "factory-runner-add-on/execution_evidence.py",
       "git_blob_sha": "f6e938e270519ae5ba0a3a7525501dd1fa9d692f",
       "size": 7503,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/execution_orchestrator.py",
+      "source_path": "factory-runner-add-on/execution_orchestrator.py",
+      "git_blob_sha": "0f156411a54a717ce29be695d8ec989000e43bc1",
+      "size": 50004,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/execution_plan_worker.py",
+      "source_path": "factory-runner-add-on/execution_plan_worker.py",
+      "git_blob_sha": "a8dd21cf4c4f366414ac2942e691deec60269cdf",
+      "size": 4565,
       "mode": "100644"
     },
     {
@@ -212,8 +226,8 @@
     {
       "path": "factory-runner/HISTORICO.md",
       "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "d33e8673f68c2230adf35cd585f50b5bdcf7ffa3",
-      "size": 18646,
+      "git_blob_sha": "567858b744dee95a083f976e8c04a86eff376d8a",
+      "size": 21217,
       "mode": "100644"
     },
     {
@@ -401,8 +415,8 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "2ec97e8b9e532d192611097ff0900b66d6e75c23",
-      "size": 7659,
+      "git_blob_sha": "1637329e5b2332e0368701db0eeda4783a1d6853",
+      "size": 7523,
       "mode": "100644"
     },
     {
@@ -422,8 +436,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "e3771d49cf29f6cde5ee04f683da81c861cbd2b8",
-      "size": 27463,
+      "git_blob_sha": "a9dca3c14bac32586b30b4efea8a28fc0891f033",
+      "size": 27431,
       "mode": "100644"
     },
     {
@@ -436,8 +450,8 @@
     {
       "path": "factory-runner/runtime_api_probe.py",
       "source_path": "factory-runner-add-on/runtime_api_probe.py",
-      "git_blob_sha": "eb3530ad03683943df0106254e8c05f0344edf18",
-      "size": 16709,
+      "git_blob_sha": "b5a1a4b5223d44d17b0e84fcefd584230e62bb24",
+      "size": 20290,
       "mode": "100644"
     },
     {
@@ -464,8 +478,8 @@
     {
       "path": "factory-runner/server.py",
       "source_path": "factory-runner-add-on/server.py",
-      "git_blob_sha": "1de101b8e1838a3a02d09ba482bda603f999f9de",
-      "size": 49408,
+      "git_blob_sha": "8fa3bfe77fa33be58f8b6b8e9abdbac554eccadb",
+      "size": 56637,
       "mode": "100644"
     },
     {
@@ -576,8 +590,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_execution_api.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_api.py",
-      "git_blob_sha": "e119fb64cdfda7e15142180a3a5f2fc9ab00dc67",
-      "size": 3565,
+      "git_blob_sha": "139412accc665e288b2ffe8e44727590c69e9792",
+      "size": 7750,
       "mode": "100644"
     },
     {
@@ -592,6 +606,13 @@
       "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_evidence.py",
       "git_blob_sha": "4f46636cd5cf63a505ec3636520e7d04a1f4b6b0",
       "size": 3806,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/test_factory_runner_execution_orchestrator.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_execution_orchestrator.py",
+      "git_blob_sha": "06afc1c87396181577b065e8b85baa9e63176a5a",
+      "size": 18841,
       "mode": "100644"
     },
     {
@@ -723,8 +744,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_runtime_api_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_runtime_api_probe.py",
-      "git_blob_sha": "ff315786cd7c018cc2ce587b2d41f77d6135985c",
-      "size": 8386,
+      "git_blob_sha": "f09efe128a46affa4ce8600da54f3d54978a9ef2",
+      "size": 13009,
       "mode": "100644"
     },
     {
@@ -794,21 +815,19 @@
   "supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.39",
-    "build": "FAILED",
-    "test_count": 409,
-    "errors": 2,
-    "failures": 2,
-    "skipped": 28,
-    "installation": "NOT_INSTALLED",
-    "installed_version": "0.1.0-rc.37",
-    "runtime_state": "RC37 started",
-    "failure_summary": "Evidence ledger record validation/reuse and corrupt-ledger fixture; runtime probe count mismatch no longer failed in this build",
-    "publisher": "DORMANT"
+    "version": "0.1.0-rc.41",
+    "build": "PASS_DOCKERFILE_BUILD_ARM64_EXIT_0",
+    "dockerfile_tests": "PASS_EXIT_0_TEST_STAGES; EXACT_TEST_COUNT_NOT_CAPTURED",
+    "runtime_api_probe": "PASS_READ_ONLY_TWO_WORKSPACES_AND_PLAN_PERSISTENCE",
+    "installation": "PASS_INSTALLED_STARTED",
+    "runtime_state": "RC41 started",
+    "publisher": "DORMANT",
+    "product_code_execution": "NOT_EXECUTED",
+    "notes": "M074: build concluído com exit 0 em bash -n, py_compile, suíte test_factory_runner_*.py, testes workspace sync não-root e E2E probe não-root. A janela de logs não expôs a contagem exata. API probe PASS; dois planos persistidos. RC41 é a baseline instalada, não a RC42."
   },
   "branch": "release-candidate",
-  "provenance_note": "M073: RC41 corrige delimitador LF do ledger. Sete testes dirigidos PASS com blobs idênticos à fonte. RC40 não instalada na leitura de 23:11 BRT; resultado detalhado do build indisponível. Validação integral ARM64 pendente. Publisher e execução de código de projeto permanecem bloqueados.",
-  "status": "RC41_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
+  "provenance_note": "M076/M077: RC42 inclui a primeira implementação da Etapa 3 (fila persistente, worker read-only, API de jobs, recuperação, cancelamento, timeout e retry) e correções de persistência atômica, precedência de cancelamento e vínculo dos digests do plano. PR #22 e PR #23 incorporadas em release-candidate; fonte 38e2a756. Publicação restrita a factory-runner/ sob M055. Nenhum teste/build ARM64 da RC42 foi executado; não declarar PASS. RC41 permanece instalada/started; Publisher DORMANT; nenhum código de produto executado; isolamento de código não confiável permanece na Etapa 5.",
+  "status": "RC42_PUBLISHED_BUILD_PENDING_SUPERVISOR_VALIDATION",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -824,10 +843,13 @@
   "candidate_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
-    "version": "0.1.0-rc.41",
+    "version": "0.1.0-rc.42",
     "build": "PENDING",
     "dockerfile_tests": "PENDING",
-    "execution_plan_probe": "PENDING",
-    "installation": "NOT_STARTED"
+    "runtime_api_probe": "PENDING",
+    "installation": "NOT_STARTED_NO_INSTALL_AUTHORIZATION",
+    "runtime_state": "RC41 remains installed and started",
+    "publisher": "DORMANT",
+    "product_code_execution": "NOT_EXECUTED"
   }
 }
