@@ -3,15 +3,15 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.67",
   "repository": "mmcromero/factory-runner",
-  "commit": "f519fcd30dfbf89bae00b3f3b467fc367ef21b62",
-  "catalog_sha": "fd13140c1ad656bf9a483127b3c8d62d9218fac9",
-  "previous_source": "24b1c7822f8e06462a00b3f3b467fc367ef21b62",
-  "reviewed_source": "f519fcd30dfbf89bae00b3f3b467fc367ef21b62",
+  "commit": "a36ee883d6b0471b49c4eaa13e1dfc688be5de59",
+  "catalog_sha": "c99ebeb90d180fde6325a84f1493a8afa0d90277",
+  "previous_source": "f519fcd30dfbf89bae00b3f3b467fc367ef21b62",
+  "reviewed_source": "a36ee883d6b0471b49c4eaa13e1dfc688be5de59",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
-  "candidate_distribution": "FACTORY_RUNNER_RC67_M112_USERNS_IMPORT_FIX_AND_HA_MANIFEST_CORRECTIONS",
-  "tests": "PENDING_SUPERVISOR_ARM64_BUILD; DOCKERFILE_VALIDATION; USERNS_PROBE; ISOLATED_IMPORT_REGRESSION; HA_MANIFEST_CONTRACT; PROJECT_CODE_NOT_EXECUTED",
-  "review_status": "RC67_PACKAGE_PUBLISHED_PENDING_SUPERVISOR_ARM64_BUILD_AND_STARTUP_USERNS_PROBE; NOT_A_PROJECT_EXECUTION_SANDBOX",
+  "candidate_distribution": "FACTORY_RUNNER_RC67_M113_VALIDATED_PARTIAL_USERNS_PROBE",
+  "tests": "SUPERVISOR_ARM64_BUILD_PASS; DOCKERFILE_VALIDATION_PASS; USERNS_PROBE_PARTIAL; ISOLATED_IMPORT_REGRESSION_PASS; HA_MANIFEST_CONTRACT_PASS; PROJECT_CODE_NOT_EXECUTED",
+  "review_status": "RC67_ARM64_BUILD_AND_DOCKERFILE_VALIDATION_PASS; USERNS_PROBE_PARTIAL_MOUNT_PROPAGATION_EACCES; NOT_A_PROJECT_EXECUTION_SANDBOX",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -86,8 +86,8 @@
     {
       "path": "factory-runner/HISTORICO.md",
       "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "66346b3e04f893bbb7a8677987c177248182c68d",
-      "size": 33021,
+      "git_blob_sha": "36190b4484875693932a72c8d63680f50b37d0fe",
+      "size": 35320,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "f59155eaeb17165d085124946a567df899903ed6",
-      "size": 5980,
+      "git_blob_sha": "dc1aa437fdf89f91e4031783294a54cfb36d4204",
+      "size": 6061,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "85a11964ecf417645db70f70383a1cca2e205e69",
-      "size": 34677,
+      "git_blob_sha": "55cfe56f4c904e1132ab9216552dd2c97a452a5d",
+      "size": 34378,
       "mode": "100644"
     },
     {
@@ -912,15 +912,11 @@
   ],
   "validation": {
     "source_file_count": 128,
-    "package_commit": "fd13140c1ad656bf9a483127b3c8d62d9218fac9",
+    "package_commit": "c99ebeb90d180fde6325a84f1493a8afa0d90277",
     "package_paths_changed": [
-      "factory-runner/CHANGELOG.md",
       "factory-runner/HISTORICO.md",
       "factory-runner/README.md",
-      "factory-runner/RELEASE-PIPELINE.md",
-      "factory-runner/config.yaml",
-      "factory-runner/tests/test_factory_runner_userns_probe.py",
-      "factory-runner/userns_probe.py"
+      "factory-runner/RELEASE-PIPELINE.md"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
@@ -1051,14 +1047,15 @@
     },
     "rc66_backup_policy": "No previous RC backup; preserve options and persistent data",
     "rc67_source_commit": "f519fcd30dfbf89bae00b3f3b467fc367ef21b62",
-    "rc67_validation_status": "PENDING_SUPERVISOR_ARM64_BUILD_AND_STARTUP_USERNS_PROBE",
+    "rc67_validation_status": "SUPERVISOR_ARM64_BUILD_PASS; DOCKERFILE_VALIDATION_PASS; USERNS_PROBE_PARTIAL_MOUNT_PROPAGATION_EACCES; NOT_HOMOLOGATED_FOR_UNTRUSTED_PROJECT_EXECUTION",
     "rc67_validation_plan": "DOCKERFILE_BASH_SYNTAX; PY_COMPILE; FULL_TEST_FACTORY_RUNNER_SUITE; ISOLATED_IMPORT_REGRESSION; USERNS_STARTUP_PROBE; VERIFY_INGRESS_SINGLE_TRAILING_SLASH; NO_PROJECT_CODE_EXECUTION",
     "rc67_security_gate": {
       "safe_for_untrusted_code": false,
       "publisher": "DORMANT",
       "sandbox_export": "FAIL_CLOSED",
       "aggregate_cpu_memory_quotas": "NOT_PROVEN",
-      "userns_namespace_and_tmpfs": "PENDING_REAL_RASPBERRY_PROBE",
+      "mount_namespace_private_propagation": "BLOCKED_EACCES",
+      "tmpfs_per_job_quota": "NOT_TESTED",
       "project_code_executed": false
     },
     "rc67_manifest": {
@@ -1067,6 +1064,56 @@
       "ingress_entry": "OMITTED_FOR_ROOT_INGRESS"
     },
     "rc67_backup_policy": "No previous RC backup; preserve options and persistent data",
-    "rc67_options_policy": "Preserve all existing HA options and persistent data unchanged"
+    "rc67_options_policy": "Existing HA options and persistent data preserved unchanged",
+    "rc67_docs_commit": "a36ee883d6b0471b49c4eaa13e1dfc688be5de59",
+    "rc67_build": {
+      "architecture": "aarch64",
+      "started_at": "2026-11-25T19:49:27.752-03:00",
+      "completed_at": "2026-11-25T19:52:54.466-03:00",
+      "status": "PASS"
+    },
+    "rc67_install": {
+      "version": "0.1.0-rc.67",
+      "state": "started",
+      "update_available": false,
+      "backup_of_previous_rc": false
+    },
+    "rc67_startup_probe": {
+      "status": "partial",
+      "mode": "user_namespace_capability_probe",
+      "user_namespace_created": true,
+      "uid_map_written": true,
+      "gid_map_written": true,
+      "mount_namespace_created": true,
+      "mount_propagation_private": false,
+      "mount_error": "EACCES",
+      "tmpfs_mounted": false,
+      "tmpfs_quota_enforced": false,
+      "net_namespace_created": true,
+      "pid_namespace_created": true,
+      "pid_namespace_init_verified": true,
+      "parent_capabilities_unchanged": true,
+      "parent_sys_admin_before": false,
+      "parent_sys_admin_after": false,
+      "parent_mount_leaked": false,
+      "timed_out": false,
+      "project_code_executed": false,
+      "safe_for_untrusted_code": false
+    },
+    "rc67_ingress": {
+      "name": "Fábrica de Ideias - Factory Runner",
+      "root_ingress_entry_omitted": true,
+      "single_trailing_slash_verified": true
+    },
+    "rc67_options_preserved": {
+      "workspace_auto_prepare": false,
+      "workspace_sync_enabled": true,
+      "owner_ingress_enabled": true,
+      "runner_auth_token": "set",
+      "github_read_token": "set",
+      "github_publish_token": "empty",
+      "owner_password": "empty",
+      "owner_password_confirm": "empty"
+    }
   }
 }
