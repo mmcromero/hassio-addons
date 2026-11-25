@@ -1,5 +1,9 @@
 # Changelog — Design System Lab
 
+## 0.1.0-test.3 — 25/11/2026
+- Padroniza o nome exibido na loja e no painel com o prefixo oficial “Fábrica de Softwares”.
+
+
 ## 0.1.0-test.2 — 25/11/2026
 - Remove o token GitHub do ambiente antes de executar npm ci, builds e testes do código baixado.
 

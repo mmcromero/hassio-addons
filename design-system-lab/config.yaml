@@ -1,5 +1,5 @@
-name: "Design System — Laboratório de Homologação"
-version: "0.1.0-test.2"
+name: "Fábrica de Softwares - Design System Lab"
+version: "0.1.0-test.3"
 slug: design_system_lab
 description: "Executor ARM64 temporário para build, testes automatizados e Demo do Design System"
 url: "https://github.com/mmcromero/design-system"
@@ -13,7 +13,7 @@ ingress_port: 8099
 ingress_entry: /
 panel_admin: true
 panel_icon: mdi:test-tube
-panel_title: "Design System Lab"
+panel_title: "Fábrica de Softwares - Design System Lab"
 options: {}
 schema:
   github_read_token: password?
