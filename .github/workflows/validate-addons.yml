@@ -40,6 +40,10 @@ jobs:
               cfg = yaml.safe_load((addon/'config.yaml').read_text())
               for key in ('name','version','slug','arch'):
                   assert cfg.get(key), f'{addon}: campo {key} ausente'
+              expected_prefix = 'Fábrica de Ideias - '
+              assert cfg['name'].startswith(expected_prefix), f'{addon}: name deve começar com {expected_prefix!r}'
+              if 'panel_title' in cfg:
+                  assert isinstance(cfg['panel_title'], str) and cfg['panel_title'].startswith(expected_prefix), f'{addon}: panel_title deve começar com {expected_prefix!r}'
               assert cfg['slug'] not in seen, f'slug duplicado: {cfg["slug"]}'
               seen.add(cfg['slug'])
               assert (addon/'Dockerfile').is_file() or cfg.get('image'), f'{addon}: falta Dockerfile ou image'
