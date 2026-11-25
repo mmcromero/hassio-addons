@@ -58,7 +58,7 @@ class ArchiveStreamTests(unittest.TestCase):
 
     def test_valid_archive_extracts_allowlisted_files_and_hashes(self):
         data = archive([
-            (dir_member("pkg"), None),
+            dir_member("pkg"),
             file_member("pkg/a.txt", b"alpha"),
             file_member("pkg/bin.sh", b"#!/bin/sh\necho safe\n", 0o777),
         ])
