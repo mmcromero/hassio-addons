@@ -1,11 +1,10 @@
-> **ESTADO VIGENTE — 25/11/2026 / M100**
+> **ESTADO VIGENTE — 25/11/2026 / M101**
 >
-> - **Baseline HA:** RC56 (`0.1.0-rc.56`) instalada e `started`; build ARM64 e suíte Dockerfile concluídos.
-> - **M099 / FD:** probe real retorna `fd_audit.status=ok`, `unexpected_remaining=0`; nenhum código de projeto foi executado.
-> - **M100 / RC57:** metadados de `/workspace` serão lidos antes do chroot/drop UID; após o drop, a tentativa de escrita continua sendo executada para confirmar negação.
-> - **Rootfs RC56:** metadados pós-drop retornaram `PermissionError`, então `rootfs_write_status=not_tested`; não considerar esse teste aprovado.
-> - **Armazenamento:** `/data` ext4, cerca de 471,8 GB totais e 360,6 GB disponíveis; nenhuma opção de quota identificada; `hard_quota_proven=false`.
-> - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; nenhum código de projeto executado; sandbox_export fail-closed.
+> - **Baseline HA:** RC57 (`0.1.0-rc.57`) instalada e `started`; FD audit e escrita negada fora da workspace confirmados.
+> - **RC58:** fixture rootfs criada dentro de `/dev/shm` (tmpfs); raiz e `/readonly` root-owned 0555; `/workspace` e `/tmp` executor-owned 0700.
+> - **Ensaio:** após drop UID/GID, escrita deve ser permitida em `/workspace` e negada em `/readonly` e na raiz.
+> - **Armazenamento:** `/dev/shm` é um teto rígido de tmpfs do contêiner (~4,09 GB medidos). Isso estabelece um limite superior do contêiner, não uma quota dedicada por job; `per_job_quota_proven=false`.
+> - **Segurança:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 > - **Operação:** não criar backup da RC anterior em atualizações normais de RC.
 > - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >

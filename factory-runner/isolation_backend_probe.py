@@ -174,17 +174,46 @@ def effective_capabilities_via_capget():
     return {"status": "ok", "mask": f"{mask:016x}", "zero": mask == 0}
 
 
-def prepare_probe_root(root):
-    """Build a synthetic root with writable scratch and immutable work area."""
+def prepare_probe_root(root, executor_uid, executor_gid):
+    """Build a root-owned read-only root with one designated writable workspace."""
     root = Path(root)
-    (root / "tmp").mkdir(parents=True, exist_ok=True)
-    os.chmod(root / "tmp", 0o1777)
+    root.mkdir(parents=True, exist_ok=True)
+    scratch = root / "tmp"
+    scratch.mkdir(mode=0o700, exist_ok=True)
     work = root / "workspace"
-    work.mkdir(parents=True, exist_ok=True)
-    os.chmod(work, 0o555)
+    work.mkdir(mode=0o700, exist_ok=True)
+    readonly = root / "readonly"
+    readonly.mkdir(mode=0o555, exist_ok=True)
     if os.geteuid() == 0:
-        os.chown(work, 0, 0)
+        os.chown(root, 0, 0)
+        os.chown(scratch, executor_uid, executor_gid)
+        os.chown(work, executor_uid, executor_gid)
+        os.chown(readonly, 0, 0)
+    os.chmod(scratch, 0o700)
+    os.chmod(work, 0o700)
+    os.chmod(readonly, 0o555)
+    os.chmod(root, 0o555)
     return root
+
+
+def tmpfs_storage_ceiling(mounts):
+    """Report the hard container tmpfs ceiling without claiming per-job quota."""
+    info = mounts.get("/dev/shm") if isinstance(mounts, dict) else None
+    if (not isinstance(info, dict) or info.get("filesystem") != "tmpfs"
+            or type(info.get("total_bytes")) is not int
+            or info["total_bytes"] <= 0):
+        return {"status": "unavailable", "hard_container_ceiling_proven": False,
+                "per_job_quota_proven": False}
+    return {
+        "status": "available",
+        "mount": "/dev/shm",
+        "filesystem": "tmpfs",
+        "hard_container_ceiling_proven": True,
+        "container_upper_bound_bytes": info["total_bytes"],
+        "available_bytes_at_probe": info.get("available_bytes"),
+        "per_job_quota_proven": False,
+        "actual_job_execution_storage": "not_homologated",
+    }
 
 
 def _snapshot_open_fds():
@@ -244,8 +273,8 @@ def audit_and_close_unapproved_fds(allowed_fds):
     }
 
 
-def rootfs_write_probe(path="/workspace/.runner-write-probe"):
-    """Try one synthetic write in a root-owned, non-writable work directory."""
+def rootfs_write_probe(path="/readonly/.runner-write-probe"):
+    """Attempt one synthetic file creation and remove it immediately on success."""
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
     try:
         fd = os.open(path, flags, 0o600)
@@ -289,20 +318,33 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         "rlimit_fsize_enforced": False, "rlimit_fsize_bytes": None,
         "seccomp_loaded": False, "seccomp_denials": {},
         "descendants_inherit_filter": False, "errors": [],
-        "fd_audit": None, "rootfs_workspace_owner_uid": None,
-        "rootfs_workspace_mode": None, "rootfs_write_status": "not_tested",
-        "rootfs_write_denied": False,
+        "fd_audit": None,
+        "rootfs_owner_uid": None, "rootfs_mode": None,
+        "rootfs_workspace_owner_uid": None, "rootfs_workspace_mode": None,
+        "rootfs_workspace_write_status": "not_tested",
+        "rootfs_workspace_write_allowed": False,
+        "rootfs_readonly_owner_uid": None, "rootfs_readonly_mode": None,
+        "rootfs_readonly_write_status": "not_tested",
+        "rootfs_readonly_write_denied": False,
+        "rootfs_root_write_status": "not_tested",
+        "rootfs_root_write_denied": False,
     }
     stage = "fd_audit"
     try:
         report["fd_audit"] = audit_and_close_unapproved_fds(
             [write_fd] + ([scratch_fd] if scratch_fd >= 0 else [])
         )
-        stage = "rootfs_workspace_precheck"
+        stage = "rootfs_layout_precheck"
         try:
+            root_stat = os.stat(root)
             workspace_stat = os.stat(Path(root) / "workspace")
+            readonly_stat = os.stat(Path(root) / "readonly")
+            report["rootfs_owner_uid"] = root_stat.st_uid
+            report["rootfs_mode"] = oct(root_stat.st_mode & 0o7777)
             report["rootfs_workspace_owner_uid"] = workspace_stat.st_uid
             report["rootfs_workspace_mode"] = oct(workspace_stat.st_mode & 0o7777)
+            report["rootfs_readonly_owner_uid"] = readonly_stat.st_uid
+            report["rootfs_readonly_mode"] = oct(readonly_stat.st_mode & 0o7777)
         except OSError as exc:
             _append_error(report, stage, exc)
 
@@ -320,9 +362,15 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
         report["uid_dropped"] = os.geteuid() == uid and os.getegid() == gid
 
         stage = "rootfs_workspace_write_probe"
-        write_result = rootfs_write_probe()
-        report["rootfs_write_status"] = write_result["status"]
-        report["rootfs_write_denied"] = write_result["status"] == "denied"
+        workspace_write = rootfs_write_probe("/workspace/.runner-write-probe")
+        readonly_write = rootfs_write_probe("/readonly/.runner-write-probe")
+        root_write = rootfs_write_probe("/.runner-write-probe")
+        report["rootfs_workspace_write_status"] = workspace_write["status"]
+        report["rootfs_workspace_write_allowed"] = workspace_write["status"] == "writable"
+        report["rootfs_readonly_write_status"] = readonly_write["status"]
+        report["rootfs_readonly_write_denied"] = readonly_write["status"] == "denied"
+        report["rootfs_root_write_status"] = root_write["status"]
+        report["rootfs_root_write_denied"] = root_write["status"] == "denied"
 
         stage = "outside_path_visibility"
         report["outside_path_status"] = path_access_status(outside_file)
@@ -461,9 +509,12 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
 
 
 def run_probe():
+    mounts = memory_mounts()
+    storage = tmpfs_storage_ceiling(mounts)
     report = {
         "mode": "capability_probe_only", "root": os.geteuid() == 0,
-        "root_capabilities": root_capabilities(), "memory_mounts": memory_mounts(),
+        "root_capabilities": root_capabilities(), "memory_mounts": mounts,
+        "rootfs_storage": storage,
         "storage_quota_proven": False,
         "executor_account": False, "chroot_seccomp": None,
         "safe_for_untrusted_code": SAFE_FOR_UNTRUSTED_CODE,
@@ -474,14 +525,18 @@ def run_probe():
         print("[ISOLATION-BACKEND] " + json.dumps(report, sort_keys=True), flush=True)
         return report
     report["executor_account"] = True
+    if not storage.get("hard_container_ceiling_proven"):
+        report["chroot_seccomp"] = {"status": "blocked_bounded_tmpfs_unavailable"}
+        print("[ISOLATION-BACKEND] " + json.dumps(report, sort_keys=True), flush=True)
+        return report
     if os.geteuid() != 0 or not report["root_capabilities"]["sys_chroot"]:
         report["chroot_seccomp"] = {"status": "blocked_root_or_cap_sys_chroot"}
         print("[ISOLATION-BACKEND] " + json.dumps(report, sort_keys=True), flush=True)
         return report
     try:
-        with tempfile.TemporaryDirectory(prefix="fr-isolation-probe-") as temp:
+        with tempfile.TemporaryDirectory(prefix="fr-isolation-probe-", dir="/dev/shm") as temp:
             os.chmod(temp, 0o755)
-            root = prepare_probe_root(Path(temp) / "root")
+            root = prepare_probe_root(Path(temp) / "root", account.pw_uid, account.pw_gid)
             outside = Path(temp) / "outside-sentinel"
             outside.write_text("synthetic-only")
             os.chmod(outside, 0o644)

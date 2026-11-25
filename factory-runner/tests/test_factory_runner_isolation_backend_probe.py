@@ -81,14 +81,36 @@ class IsolationBackendProbeTests(unittest.TestCase):
         self.assertFalse(probe.path_is_absent("/synthetic", stat_fn=denied))
         self.assertTrue(probe.path_is_absent("/synthetic", stat_fn=missing))
 
-    def test_probe_root_has_root_owned_non_writable_workspace(self):
-        import os, tempfile
+    def test_probe_root_separates_writable_workspace_from_readonly_rootfs(self):
+        import os, pwd, tempfile
+        if os.geteuid() != 0:
+            self.skipTest("requires root to create executor-owned rootfs paths")
+        account = pwd.getpwnam("executor")
         with tempfile.TemporaryDirectory() as temp:
-            root = probe.prepare_probe_root(Path(temp) / "root")
-            work = root / "workspace"
-            self.assertEqual(work.stat().st_mode & 0o7777, 0o555)
-            if os.geteuid() == 0:
-                self.assertEqual(work.stat().st_uid, 0)
+            root = probe.prepare_probe_root(Path(temp) / "root",
+                                            account.pw_uid, account.pw_gid)
+            work, readonly, scratch = root / "workspace", root / "readonly", root / "tmp"
+            self.assertEqual(root.stat().st_uid, 0)
+            self.assertEqual(root.stat().st_mode & 0o7777, 0o555)
+            self.assertEqual(work.stat().st_uid, account.pw_uid)
+            self.assertEqual(work.stat().st_mode & 0o7777, 0o700)
+            self.assertEqual(readonly.stat().st_uid, 0)
+            self.assertEqual(readonly.stat().st_mode & 0o7777, 0o555)
+            self.assertEqual(scratch.stat().st_uid, account.pw_uid)
+            self.assertEqual(scratch.stat().st_mode & 0o7777, 0o700)
+
+    def test_tmpfs_storage_ceiling_is_a_container_bound_not_per_job_quota(self):
+        result = probe.tmpfs_storage_ceiling({
+            "/dev/shm": {"filesystem": "tmpfs", "total_bytes": 4096,
+                         "available_bytes": 2048}
+        })
+        self.assertTrue(result["hard_container_ceiling_proven"])
+        self.assertEqual(result["container_upper_bound_bytes"], 4096)
+        self.assertFalse(result["per_job_quota_proven"])
+        unavailable = probe.tmpfs_storage_ceiling({
+            "/dev/shm": {"filesystem": "ext4", "total_bytes": 4096}
+        })
+        self.assertFalse(unavailable["hard_container_ceiling_proven"])
 
     def test_fd_snapshot_contains_only_live_descriptors(self):
         import os
@@ -119,31 +141,55 @@ class IsolationBackendProbeTests(unittest.TestCase):
         self.assertEqual(result["unexpected_remaining"], 0)
         self.assertEqual(result["allowed_missing"], 0)
 
-    def test_rootfs_write_probe_reports_permission_denial(self):
-        import os, tempfile
+    def test_executor_can_write_only_to_designated_workspace(self):
+        import json, os, pwd, tempfile
         if os.geteuid() != 0:
-            self.skipTest("requires root-owned synthetic rootfs and UID drop")
-        import pwd
+            self.skipTest("requires root to drop to executor UID")
         account = pwd.getpwnam("executor")
         with tempfile.TemporaryDirectory() as temp:
             os.chmod(temp, 0o755)
-            root = probe.prepare_probe_root(Path(temp) / "root")
+            root = probe.prepare_probe_root(Path(temp) / "root",
+                                            account.pw_uid, account.pw_gid)
+            read_fd, write_fd = os.pipe()
             pid = os.fork()
             if pid == 0:
+                os.close(read_fd)
                 os.setgroups([])
                 os.setgid(account.pw_gid)
                 os.setuid(account.pw_uid)
-                result = probe.rootfs_write_probe(str(root / "workspace" / ".write-probe"))
-                os._exit(0 if result["status"] == "denied" else 1)
+                result = {
+                    "workspace": probe.rootfs_write_probe(str(root / "workspace" / ".write-probe")),
+                    "readonly": probe.rootfs_write_probe(str(root / "readonly" / ".write-probe")),
+                    "root": probe.rootfs_write_probe(str(root / ".write-probe")),
+                }
+                os.write(write_fd, json.dumps(result).encode("utf-8"))
+                os._exit(0)
+            os.close(write_fd)
+            chunks = []
+            while True:
+                data = os.read(read_fd, 4096)
+                if not data:
+                    break
+                chunks.append(data)
+            os.close(read_fd)
             _, status = os.waitpid(pid, 0)
             self.assertTrue(os.WIFEXITED(status))
             self.assertEqual(os.WEXITSTATUS(status), 0)
+            result = json.loads(b"".join(chunks).decode("utf-8"))
+            self.assertEqual(result["workspace"]["status"], "writable", result)
+            self.assertEqual(result["readonly"]["status"], "denied", result)
+            self.assertEqual(result["root"]["status"], "denied", result)
 
-    def test_probe_root_tmp_is_writable_sticky_directory(self):
-        import tempfile
+    def test_probe_root_tmp_is_executor_owned_private_directory(self):
+        import os, pwd, tempfile
+        if os.geteuid() != 0:
+            self.skipTest("requires root-owned synthetic rootfs")
+        account = pwd.getpwnam("executor")
         with tempfile.TemporaryDirectory() as temp:
-            root = probe.prepare_probe_root(Path(temp) / "root")
-            self.assertEqual((root / "tmp").stat().st_mode & 0o7777, 0o1777)
+            root = probe.prepare_probe_root(Path(temp) / "root",
+                                            account.pw_uid, account.pw_gid)
+            self.assertEqual((root / "tmp").stat().st_uid, account.pw_uid)
+            self.assertEqual((root / "tmp").stat().st_mode & 0o7777, 0o700)
 
     def test_outside_sentinel_parent_is_traversable_for_negative_control(self):
         import os, tempfile

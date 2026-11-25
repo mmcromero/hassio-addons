@@ -1,3 +1,11 @@
+# 0.1.0-rc.58 — M101: rootfs de job em tmpfs limitado
+
+- A fixture de isolamento passa a ser criada dentro de /dev/shm, que o probe identificou como tmpfs com teto rígido de capacidade no contêiner.
+- O rootfs sintético fica root-owned e read-only; /workspace e /tmp são privados e pertencem ao UID executor; /readonly é root-owned 0555.
+- Após o drop de UID/GID, o probe comprova escrita permitida somente em /workspace e negação em /readonly e na raiz do rootfs.
+- Relatório separa hard container tmpfs ceiling de per-job quota: o primeiro pode ser demonstrado; quota dedicada por job continua false.
+- Nenhum código de projeto executado; sandbox_export continua fail-closed; safe_for_untrusted_code=false; Publisher DORMANT.
+
 # 0.1.0-rc.57 — M100: validar metadados do rootfs antes do chroot
 
 - O UID root registra owner UID e modo de /workspace na fixture sintética antes do chroot/drop de UID, sem depender de stat dentro do ambiente seccomp restrito.
