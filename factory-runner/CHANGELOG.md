@@ -1,3 +1,10 @@
+# 0.1.0-rc.45 — integração do Publisher e revogação (M084)
+
+- Conecta a revogação de grants ao Approval IPC e à interface do proprietário no HA Ingress.
+- A revogação exige sessão HA verificada, CSRF de uso único, Origin validada, senha do proprietário e confirmação `REVOGAR`.
+- A autoridade rejeita nonce inválido, grant inexistente, revogação duplicada e revogação após reserva; eventos ficam associados à proposta.
+- Acrescenta regressões de interface/Ingress, IPC/ACL, estado do grant, revogação/reserva e roteamento HTTP Runner→Publisher.
+- **Validação pendente:** testes novos ainda não executados; Publisher permanece DORMANT/desativado; sem publicação ou execução de código de projetos.
 # 0.1.0-rc.44 — corrige sintaxe e falha fechada do worker
 
 - Corrige o bloco try externo de `_worker_loop`, que estava sem except/finally e impedia o build ARM64 durante `py_compile`.
