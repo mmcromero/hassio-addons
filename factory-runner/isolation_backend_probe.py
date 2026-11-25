@@ -102,6 +102,75 @@ def path_is_absent(path, stat_fn=os.stat):
     return False
 
 
+def path_access_status(path, directory=False, open_fn=os.open, read_fn=os.read,
+                       listdir_fn=os.listdir, close_fn=os.close):
+    """Return access state only; never return or log file contents."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    if directory:
+        flags |= getattr(os, "O_DIRECTORY", 0)
+    try:
+        fd = open_fn(path, flags)
+    except FileNotFoundError:
+        return "absent"
+    except PermissionError:
+        return "permission_denied"
+    except OSError as exc:
+        if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+            return "absent"
+        if exc.errno in (errno.EACCES, errno.EPERM):
+            return "permission_denied"
+        return f"other_error_errno_{exc.errno}"
+    try:
+        try:
+            if directory:
+                listdir_fn(fd)
+            else:
+                read_fn(fd, 1)
+        except PermissionError:
+            return "permission_denied"
+        except OSError as exc:
+            if exc.errno in (errno.EACCES, errno.EPERM):
+                return "permission_denied"
+            if exc.errno in (errno.ENOENT, errno.ENOTDIR):
+                return "absent"
+            return f"other_error_errno_{exc.errno}"
+        return "readable"
+    finally:
+        close_fn(fd)
+
+
+def effective_capabilities_mask(low, high):
+    return (int(high) << 32) | int(low)
+
+
+class _CapHeader(ctypes.Structure):
+    _fields_ = [("version", ctypes.c_uint32), ("pid", ctypes.c_int32)]
+
+
+class _CapData(ctypes.Structure):
+    _fields_ = [("effective", ctypes.c_uint32), ("permitted", ctypes.c_uint32),
+                ("inheritable", ctypes.c_uint32)]
+
+
+def effective_capabilities_via_capget():
+    """Read effective capability mask without depending on procfs visibility."""
+    machine = os.uname().machine.lower()
+    syscall_number = {"aarch64": 90, "x86_64": 125}.get(machine)
+    if syscall_number is None:
+        return {"status": "unsupported_arch"}
+    header = _CapHeader(0x20080522, 0)
+    data = (_CapData * 2)()
+    libc = ctypes.CDLL(None, use_errno=True)
+    libc.syscall.restype = ctypes.c_long
+    ctypes.set_errno(0)
+    result = libc.syscall(ctypes.c_long(syscall_number), ctypes.byref(header),
+                          ctypes.byref(data))
+    if result != 0:
+        return {"status": "error", "errno": ctypes.get_errno()}
+    mask = effective_capabilities_mask(data[0].effective, data[1].effective)
+    return {"status": "ok", "mask": f"{mask:016x}", "zero": mask == 0}
+
+
 def prepare_probe_root(root):
     root = Path(root)
     (root / "tmp").mkdir(parents=True, exist_ok=True)
@@ -114,13 +183,19 @@ def _append_error(report, stage, exc):
     report["errors"].append(f"{stage}:{type(exc).__name__}:errno={number}")
 
 
-def _child_report(write_fd, root, outside_file, uid, gid):
+def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_setup_error):
     report = {
         "chroot_entered": False, "uid_dropped": False,
         "outside_path_hidden": False, "outside_path_permission_denied": False,
-        "procfs_absent": False, "ha_options_hidden": False,
+        "outside_path_status": "not_tested",
+        "procfs_absent": False, "procfs_status": "not_tested",
+        "procfs_directory_status": "not_tested",
+        "procfs_pid1_cmdline_status": "not_tested",
+        "procfs_pid1_environ_status": "not_tested",
+        "ha_options_hidden": False, "ha_options_status": "not_tested",
         "effective_capabilities_after_drop_zero": None,
         "effective_capabilities_after_drop": None,
+        "effective_capabilities_source": "capget",
         "second_chroot_denied": False, "no_new_privs": False,
         "no_new_privs_errno": None,
         "rlimit_nproc_enforced": False, "rlimit_nproc_limit": None,
@@ -144,31 +219,33 @@ def _child_report(write_fd, root, outside_file, uid, gid):
         report["uid_dropped"] = os.geteuid() == uid and os.getegid() == gid
 
         stage = "outside_path_visibility"
-        try:
-            Path(outside_file).read_bytes()
-        except FileNotFoundError:
-            report["outside_path_hidden"] = True
-        except PermissionError:
-            report["outside_path_permission_denied"] = True
-        except OSError as exc:
-            if exc.errno in (errno.ENOENT, errno.ENOTDIR):
-                report["outside_path_hidden"] = True
-            else:
-                _append_error(report, stage, exc)
+        report["outside_path_status"] = path_access_status(outside_file)
+        report["outside_path_hidden"] = report["outside_path_status"] == "absent"
+        report["outside_path_permission_denied"] = report["outside_path_status"] == "permission_denied"
 
         stage = "procfs_visibility"
-        report["procfs_absent"] = path_is_absent("/proc/self/status")
-        fields = _status_fields()
-        if "CapEff" in fields:
-            try:
-                effective_after_drop = int(fields["CapEff"], 16)
-                report["effective_capabilities_after_drop"] = fields["CapEff"]
-                report["effective_capabilities_after_drop_zero"] = effective_after_drop == 0
-            except ValueError:
-                report["effective_capabilities_after_drop_zero"] = False
+        report["procfs_status"] = path_access_status("/proc/self/status")
+        report["procfs_directory_status"] = path_access_status("/proc", directory=True)
+        report["procfs_pid1_cmdline_status"] = path_access_status("/proc/1/cmdline")
+        report["procfs_pid1_environ_status"] = path_access_status("/proc/1/environ")
+        report["procfs_absent"] = report["procfs_status"] == "absent"
+
+        stage = "capabilities_after_drop"
+        capabilities = effective_capabilities_via_capget()
+        if capabilities.get("status") == "ok":
+            report["effective_capabilities_after_drop"] = capabilities["mask"]
+            report["effective_capabilities_after_drop_zero"] = capabilities["zero"]
+        else:
+            report["effective_capabilities_source"] = capabilities.get("status")
+            report["errors"].append(
+                f"capget:errno={capabilities.get('errno')}"
+                if capabilities.get("status") == "error"
+                else "capget:unsupported_arch"
+            )
 
         stage = "ha_options_visibility"
-        report["ha_options_hidden"] = path_is_absent("/data/options.json")
+        report["ha_options_status"] = path_access_status("/data/options.json")
+        report["ha_options_hidden"] = report["ha_options_status"] == "absent"
 
         stage = "second_chroot_capability_check"
         try:
@@ -241,16 +318,18 @@ def _child_report(write_fd, root, outside_file, uid, gid):
             resource.setrlimit(resource.RLIMIT_FSIZE, (limit, limit))
             report["rlimit_fsize_bytes"] = limit
             signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
-            try:
-                with open("/tmp/size-limit-probe", "wb") as stream:
-                    if limit:
-                        stream.write(b"x" * int(limit))
+            if scratch_fd < 0:
+                report["errors"].append(scratch_setup_error or "rlimit_fsize:scratch_fd_unavailable")
+            else:
+                os.lseek(scratch_fd, 0, os.SEEK_SET)
+                first_write = os.write(scratch_fd, b"x" * int(limit)) if limit else 0
+                if first_write != int(limit):
+                    report["errors"].append("rlimit_fsize:short_initial_write")
+                else:
                     try:
-                        stream.write(b"x")
+                        os.write(scratch_fd, b"x")
                     except OSError as exc:
                         report["rlimit_fsize_enforced"] = exc.errno == errno.EFBIG
-            except OSError as exc:
-                _append_error(report, stage + "_write", exc)
         except OSError as exc:
             _append_error(report, stage, exc)
 
@@ -299,12 +378,22 @@ def run_probe():
             outside = Path(temp) / "outside-sentinel"
             outside.write_text("synthetic-only")
             os.chmod(outside, 0o644)
+            scratch_fd, scratch_setup_error = -1, None
+            try:
+                scratch_fd = os.open(root / "tmp" / "size-limit-probe",
+                                     os.O_CREAT | os.O_EXCL | os.O_RDWR | getattr(os, "O_CLOEXEC", 0),
+                                     0o600)
+            except OSError as exc:
+                scratch_setup_error = f"scratch_setup:{type(exc).__name__}:errno={exc.errno}"
             read_fd, write_fd = os.pipe()
             pid = os.fork()
             if pid == 0:
                 os.close(read_fd)
-                _child_report(write_fd, str(root), str(outside), account.pw_uid, account.pw_gid)
+                _child_report(write_fd, str(root), str(outside), account.pw_uid,
+                              account.pw_gid, scratch_fd, scratch_setup_error)
             os.close(write_fd)
+            if scratch_fd >= 0:
+                os.close(scratch_fd)
             chunks = []
             while True:
                 data = os.read(read_fd, 4096)

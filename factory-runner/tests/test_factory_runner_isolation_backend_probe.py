@@ -1,5 +1,6 @@
 """Synthetic contract tests for the chroot/seccomp feasibility probe."""
 import unittest
+import errno
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -42,6 +43,32 @@ class IsolationBackendProbeTests(unittest.TestCase):
         for name in ("capset", "setuid", "setgroups", "bpf", "perf_event_open",
                      "userfaultfd", "io_uring_setup", "keyctl", "init_module", "reboot"):
             self.assertIn(name, policy.DENIED_SYSCALLS)
+
+    def test_path_access_status_distinguishes_absent_denied_and_readable(self):
+        def missing(_path, _flags):
+            raise FileNotFoundError(errno.ENOENT, "missing")
+        def denied(_path, _flags):
+            raise PermissionError(errno.EACCES, "denied")
+        self.assertEqual(probe.path_access_status("/synthetic", open_fn=missing), "absent")
+        self.assertEqual(probe.path_access_status("/synthetic", open_fn=denied), "permission_denied")
+        self.assertEqual(
+            probe.path_access_status("/synthetic", open_fn=lambda _p, _f: 7,
+                                     read_fn=lambda _fd, _n: b"x", close_fn=lambda _fd: None),
+            "readable",
+        )
+
+    def test_path_access_status_checks_directory_listing_without_returning_entries(self):
+        self.assertEqual(
+            probe.path_access_status("/synthetic", directory=True,
+                                     open_fn=lambda _p, _f: 8,
+                                     listdir_fn=lambda _fd: ["pid"],
+                                     close_fn=lambda _fd: None),
+            "readable",
+        )
+
+    def test_effective_capability_mask_combines_kernel_words(self):
+        self.assertEqual(probe.effective_capabilities_mask(0, 0), 0)
+        self.assertEqual(probe.effective_capabilities_mask(1, 2), (2 << 32) | 1)
 
     def test_probe_is_explicitly_diagnostic_not_a_sandbox(self):
         self.assertFalse(probe.SAFE_FOR_UNTRUSTED_CODE)

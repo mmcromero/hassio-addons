@@ -1,3 +1,15 @@
+# 0.1.0-rc.52 — Etapa 5B: acesso explícito, capget e RLIMIT_FSIZE por FD (M094)
+
+- O probe diferencia absent, permission_denied, readable e outros erros para /proc, PID 1, /data/options.json e sentinel externo; não registra conteúdo.
+- Verifica CapEff após drop via capget, sem depender de /proc.
+- Testa RLIMIT_FSIZE com descritor scratch pré-aberto antes do chroot, limitando o teste a 1.024 bytes.
+- Mantém execução exclusivamente sintética e SAFE_FOR_UNTRUSTED_CODE=false; build/diagnóstico ARM64 pendentes.
+
+## M093 — homologação real parcial RC51 (25/11/2026)
+
+- Build ARM64 e instalação RC51 concluídos; bootstrap e API/E2E read-only PASS.
+- Probe real confirmou primitives parciais; isolamento não homologado. Ver `docs/CONTINUIDADE-ATIVA.md` M093 para evidências e próximos testes.
+
 # 0.1.0-rc.51 — Etapa 5B: diagnóstico completo da corrida de criação M092
 
 - Unifica a verificação de metadados para diretórios persistentes preexistentes e para a janela de concorrência `mkdir`/`FileExistsError`.

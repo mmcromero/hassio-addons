@@ -1,12 +1,12 @@
-> **ESTADO VIGENTE — 25/11/2026 / M092**
+> **ESTADO VIGENTE — 25/11/2026 / M094**
 >
-> - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação. Etapa 5/6 não homologadas.
-> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC51 preparada para diagnóstico da ramificação concorrente do bootstrap. `release-candidate` permanece RC50 até integração.
-> - **Catálogo/HA:** RC50 (`0.1.0-rc.50`) instalada no Supervisor; estado `error`. Backup add-on-only pré-RC50 `da6fcd4e`, sem falhas.
-> - **Causa:** RC50 ainda emite mensagem genérica na janela `mkdir/FileExistsError`; não há evidência suficiente para identificar o diretório ou metadado divergente. RC51 acrescenta diagnóstico seguro sem reparar.
-> - **Probe:** chroot/seccomp/RLIMIT ainda sem prova positiva válida; não executar código de projeto.
-> - **Proteções:** protected=true, privileged=[], full_access=false, AppArmor default. Publisher DORMANT; Avisaqui/Artesão não executados nem alterados.
-> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M092; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
+> - **Roadmap:** Etapas 1–4 preservadas; Etapa 5B em investigação; Etapas 5/6 não homologadas.
+> - **Fonte ativa:** `mmcromero/factory-runner:desenvolvimento`; RC52 em preparação para estados explícitos de acesso, capget e RLIMIT_FSIZE por FD. `release-candidate` permanece RC51.
+> - **Catálogo/HA:** RC51 (`0.1.0-rc.51`) publicada, instalada e `started`; build ARM64 concluído. Backup pré-RC51 `b9a76b5b` (RC50), sem falhas. RC52 ainda não publicada.
+> - **Bootstrap/API:** `OWNER-BOOTSTRAP READY`; API-PROBE PASS (2 projetos, 8 operações read-only); E2E sintético e preparação declarativa PASS. Nenhum código de projeto executado.
+> - **Isolamento:** chroot, UID drop, no_new_privs, seccomp, herança do filtro, RLIMIT_NPROC e RLIMIT_AS confirmados no probe real. RC52 aprimora a medição desses pontos; build/diagnóstico ainda pendentes.
+> - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; protected=true, privileged=[], full_access=false, AppArmor default. Avisaqui/Artesão permanecem bloqueados.
+> - **Continuidade:** [docs/CONTINUIDADE-ATIVA.md](../docs/CONTINUIDADE-ATIVA.md), seção M094; [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
 
