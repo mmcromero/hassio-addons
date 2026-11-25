@@ -1,5 +1,5 @@
 name: "Fábrica de Ideias - Design System Lab"
-version: "0.1.0-test.5"
+version: "0.1.0-test.6"
 slug: design_system_lab
 description: "Executor ARM64 temporário para build, testes automatizados e Demo do Design System"
 url: "https://github.com/mmcromero/design-system"
@@ -10,7 +10,6 @@ boot: manual
 stage: experimental
 ingress: true
 ingress_port: 8099
-ingress_entry: /
 panel_admin: true
 panel_icon: mdi:test-tube
 panel_title: "Fábrica de Ideias - Design System Lab"
