@@ -3,14 +3,14 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.60",
   "repository": "mmcromero/factory-runner",
-  "commit": "acf76952185ee6c786623dd50af976d9364c9009",
-  "catalog_sha": "36483aa41ee14ba795d4b153108c6fd63b7155bd",
-  "previous_source": "5784f2289bd3866392ce0adb6841601f0ab8738f",
-  "reviewed_source": "acf76952185ee6c786623dd50af976d9364c9009",
+  "commit": "f56b701beed3b7dad8cb02474a396ba58149e21e",
+  "catalog_sha": "bbc7902e165a88a8ba2ee294797d4adf7c41b691",
+  "previous_source": "acf76952185ee6c786623dd50af976d9364c9009",
+  "reviewed_source": "f56b701beed3b7dad8cb02474a396ba58149e21e",
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
   "candidate_distribution": "FACTORY_RUNNER_RC60_M103_RLIMIT_CPU_AND_LIVE_STDOUT_OVERFLOW",
-  "tests": "SUPERVISOR_ARM64_BUILD_PENDING; RLIMIT_CPU_PRIMITIVE_AND_BOUNDED_STREAM_SAFE_OVERFLOW_TESTS_IN_DOCKERFILE; NO_PROJECT_CODE_EXECUTION",
+  "tests": "SUPERVISOR_ARM64_BUILD_PASS; DOCKERFILE_UNIT_SUITE_PASS; LIVE_RLIMIT_CPU_PRIMITIVE_PASS; LIVE_BOUNDED_STREAM_SAFE_PASS; LIVE_OVERFLOW_SIGKILL_PASS; TMPFS_CLEANUP_RESTORED; NO_PROJECT_CODE_EXECUTION",
   "review_status": "RC60_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
   "files": [
     {
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "2342c1c4a72b01629c0cf13c86851219e037e92f",
-      "size": 59473,
+      "git_blob_sha": "f84618180450ff48840df40f8688d56c34867829",
+      "size": 59579,
       "mode": "100644"
     },
     {
@@ -149,15 +149,15 @@
     {
       "path": "factory-runner/README.md",
       "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "7203819989116c11dd7f3d02ef8d299901b36def",
-      "size": 6844,
+      "git_blob_sha": "e40660fe6ae49e78b5dc1115c49c44776a0e376a",
+      "size": 6983,
       "mode": "100644"
     },
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "5aedc84f7e73ff770ffd79980b769f02b479f327",
-      "size": 28795,
+      "git_blob_sha": "2643db3d959139d5464b8e61e2fdf7bf51b5889a",
+      "size": 29358,
       "mode": "100644"
     },
     {
@@ -863,24 +863,29 @@
   ],
   "validation": {
     "source_file_count": 121,
-    "package_commit": "36483aa41ee14ba795d4b153108c6fd63b7155bd",
+    "package_commit": "bbc7902e165a88a8ba2ee294797d4adf7c41b691",
     "package_paths_changed": [
       "factory-runner/CHANGELOG.md",
       "factory-runner/README.md",
-      "factory-runner/RELEASE-PIPELINE.md",
-      "factory-runner/bounded_stream_probe.py",
-      "factory-runner/config.yaml",
-      "factory-runner/isolation_backend_probe.py",
-      "factory-runner/run.sh",
-      "factory-runner/tests/test_factory_runner_bounded_stream_probe.py",
-      "factory-runner/tests/test_factory_runner_isolation_backend_probe.py"
+      "factory-runner/RELEASE-PIPELINE.md"
     ],
     "extra_catalog_files_preserved": [
       "factory-runner/RC4-VALIDACAO.md",
       "factory-runner/SOURCE_PROVENANCE.json"
     ],
     "no_paths_outside_factory_runner": true,
-    "prior_candidate": "RC59 installed/started; safe bounded-stream probe PASS on Raspberry; no project code executed",
+    "installed_version": "0.1.0-rc.60",
+    "supervisor_build": "ARM64_BUILD_DONE_2026-11-25T15:37:32-03:00",
+    "supervisor_update": "SUCCESS_2026-11-25T15:37:35-03:00",
+    "live_markers": {
+      "rlimit_cpu_primitive_enforced": true,
+      "bounded_stream_safe_status": "pass",
+      "overflow_status": "blocked_output_limit",
+      "overflow_stdout_bytes": 129,
+      "overflow_child_signal": 9,
+      "overflow_child_killed_for_output_limit": true,
+      "tmpfs_cleanup_restored": true
+    },
     "owner_backup_policy": "NO_PREVIOUS_RC_BACKUP_FOR_NORMAL_FACTORY_RUNNER_RC_UPDATES"
   }
 }
