@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M105 — RC60 instalada; RC62 diagnóstico em preparação)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M106 — RC60 instalada; RC63 diagnóstico em preparação)
 
-> **Estado de código e homologação — 25/11/2026 / M105:** RC60 (0.1.0-rc.60) permanece instalada/started. RC61 publicada (123/123 blobs) mas duas tentativas de build ARM64 falharam no RUN monolítico de validação (exit code 1), sem identificação do subcomando. RC62 separa sintaxe, py_compile, archive_stream, suíte completa, workspace-sync e E2E em etapas BuildKit distintas, sem remover testes nem alterar runtime. RC62 só será instalada se todos os gates passarem. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+> **Estado de código e homologação — 25/11/2026 / M106:** RC60 (0.1.0-rc.60) permanece instalada/started. RC61 falhou no RUN monolítico de validação; RC62 isolou o estágio e identificou a suíte archive_stream como a que falha. RC63 executa cada método dessa suíte isoladamente e mapeia a primeira falha a um exit code 51..(50+n), sem remover testes; a suíte completa continua obrigatória. RC63 só será instalada se todos os gates passarem. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -303,3 +303,8 @@ RC61 adiciona `archive_stream.py` como componente confiável de validação/extr
 ## M105 — diagnóstico segmentado do build ARM64
 
 A candidata RC62 altera apenas o Dockerfile da etapa de validação para separar shell syntax, py_compile, a suíte archive_stream (também executada na suíte completa), todos os testes Factory Runner, workspace-sync não-root e E2E não-root em RUNs distintos. O objetivo é identificar o subgate que falhou na RC61. A suíte integral permanece obrigatória; nenhuma falha é ignorada e nenhum teste é removido. Nenhuma alteração de runtime, opção, permissão, mount, AppArmor, capability ou rede. Não instalar RC62 se qualquer gate falhar.
+
+
+## M106 — diagnóstico por método da suíte archive_stream
+
+A RC62 confirmou que o estágio que falha é test_factory_runner_archive_stream.py. Como o Supervisor não expôs a saída detalhada do unittest, a RC63 adiciona um runner de diagnóstico que executa cada método isoladamente, em ordem alfabética, e devolve exit code 51..(50+n) para identificar o primeiro método que falha; 90 representa erro de import/setup e 91 ausência de testes. A suíte completa permanece obrigatória depois desse diagnóstico. Nenhum teste é ignorado, runtime não muda e o Publisher continua DORMANT.

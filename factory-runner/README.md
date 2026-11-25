@@ -1,12 +1,9 @@
-> **ESTADO VIGENTE — 25/11/2026 / M105**
+> **ESTADO VIGENTE — 25/11/2026 / M106**
 >
-> - **Baseline HA:** RC60 (0.1.0-rc.60) continua instalada/started; RC61 publicada mas duas tentativas de build ARM64 falharam no RUN monolítico de validação.
-> - **RC62:** candidata de diagnóstico segmenta bash -n, py_compile, testes archive_stream, suíte completa, workspace-sync e E2E em etapas separadas; não altera runtime nem remove testes.
-> - **Objetivo do lote:** descobrir a etapa exata que falhou na RC61. Instalar RC62 somente se todo o build e todos os testes passarem.
-> - **M103:** build ARM64 e suíte Dockerfile PASS; RLIMIT_CPU primitivo PASS; bounded-stream safe PASS; overflow live PASS (129 bytes, SIGKILL, tmpfs restaurado).
-> - **M104 / RC61:** validador de tar stream com allowlist exata, budgets e extração atômica; ainda não homologado no Raspberry e não conectado a sandbox_export.
-> - **Distribuição RC61:** 123/123 hashes de origem correspondentes; somente factory-runner/ alterado; RC4-VALIDACAO.md e SOURCE_PROVENANCE.json preservados.
-> - **Limitações:** cgroup v2 read-only/sem delegação; quota por job não comprovada; runtime genérico ainda não homologado.
+> - **Baseline HA:** RC60 (0.1.0-rc.60) continua instalada/started; RC61 falhou no RUN monolítico; RC62 isolou a suíte archive_stream e confirmou que a falha está nela, mas o Supervisor não mostrou o método.
+> - **RC63:** adiciona runner que executa cada método archive_stream isoladamente e codifica o primeiro método com falha no exit code 51..(50+n). 90=erro de import/setup; 91=nenhum teste encontrado.
+> - **Cobertura:** nenhum teste é removido; depois do diagnóstico individual, a suíte completa continua obrigatória.
+> - **Runtime:** nenhuma alteração de runtime, permissões, opções, mounts, capabilities, AppArmor, rede ou credenciais.
 > - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Nenhum código de projeto executado.
 > - **Operação:** atualizações normais sem backup da RC anterior; preservar Git, proveniência, hashes e opções persistentes.
 > - **Continuidade:** Issue #2 do Orquestrador.

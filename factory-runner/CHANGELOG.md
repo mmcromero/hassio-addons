@@ -1,3 +1,13 @@
+# 0.1.0-rc.63 — M106: identificar regressão individual do archive stream
+
+- RC62 isolou a suíte archive_stream e confirmou falha nessa suíte; a saída de unittest ainda não foi disponibilizada pelo Supervisor.
+- Adiciona runner diagnóstico que executa cada método da classe ArchiveStreamTests isoladamente e retorna código 51..(50+n) para identificar o primeiro método que falhar, em ordem alfabética.
+- 90 identifica erro de import/setup; 91 identifica ausência de testes. Nenhum teste é ignorado ou removido.
+- A suíte integral continua obrigatória depois do diagnóstico individual.
+- Alteração somente na etapa de validação; runtime, opções, permissões, mounts, capabilities, AppArmor, rede e credenciais permanecem inalterados.
+- RC63 só deve ser instalada se o runner diagnóstico e todas as suítes passarem.
+- safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed; nenhum código de projeto executado.
+
 # 0.1.0-rc.62 — M105: diagnóstico segmentado do build ARM64
 
 - Não altera runtime, permissões, opções, mounts, capabilities, AppArmor, rede ou comportamento de execução.
