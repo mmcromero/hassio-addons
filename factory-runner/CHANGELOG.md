@@ -1,3 +1,9 @@
+# 0.1.0-rc.41 — correção do delimitador JSONL
+
+- Grava LF real após cada registro de evidência, em vez de uma sequência literal de escape.
+- Nova regressão verifica os bytes e a leitura do registro.
+- Sete testes dirigidos do ledger passaram em laboratório com blobs conferidos; validação ARM64 completa pendente.
+
 # 0.1.0-rc.40 — diagnóstico do ledger e fixture de evidência
 
 - Acrescenta diagnóstico não sensível do campo que invalida um registro de evidência, sem incluir valores no log.
