@@ -10,8 +10,8 @@
   "publication": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_M055",
   "authorization": "OWNER_AUTHORIZED_STAGE5_CONTINUATION_2026-11-25_M055",
   "candidate_distribution": "FACTORY_RUNNER_RC52_STAGE5B_PATH_CAPGET_RLIMIT_DIAGNOSTIC",
-  "tests": "PENDING_SUPERVISOR_ARM64_DOCKERFILE_VALIDATION",
-  "review_status": "RC52_CANDIDATE_NOT_HOMOLOGATED",
+  "tests": "DOCKERFILE_VALIDATION_CHAIN_PASSED_BY_SUCCESSFUL_ARM64_BUILD; TEST_COUNT_NOT_CAPTURED",
+  "review_status": "RC52_DIAGNOSTIC_ONLY_NO_SANDBOX_APPROVAL",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -899,8 +899,8 @@
     "product_code_execution": "NOT_EXECUTED"
   },
   "branch": "release-candidate",
-  "provenance_note": "M094: diagnostic-only path visibility/capget/RLIMIT_FSIZE probe. No project code execution. Sandbox not implemented or homologated; RC51 remains installed.",
-  "status": "RC52_PUBLISHED_NOT_INSTALLED_STAGE5B_DIAGNOSTIC_PENDING",
+  "provenance_note": "M095: RC52 ARM64 build and install succeeded. Probe confirms chroot, UID/GID drop, zero effective capabilities via capget, no_new_privs, seccomp/descendant inheritance, selected syscall denials, RLIMIT_NPROC, RLIMIT_AS and RLIMIT_FSIZE. /proc, /data/options.json and external sentinel return permission_denied; not absent. No aggregate CPU/memory/disk quotas; /dev/shm tmpfs 4,091,707,392 bytes with no size= option. safe_for_untrusted_code=false. No project code execution.",
+  "status": "RC52_INSTALLED_STARTED_DIAGNOSTIC_PARTIAL_NOT_HOMOLOGATED",
   "previous_supervisor_validation": {
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
@@ -917,16 +917,56 @@
     "target": "Home Assistant Supervisor",
     "architecture": "aarch64",
     "version": "0.1.0-rc.52",
-    "build": "PENDING",
-    "dockerfile_tests": "PENDING",
-    "installation": "NOT_INSTALLED",
-    "installed_version": "0.1.0-rc.51",
-    "backup_id": null,
-    "chroot_seccomp": "PENDING_REAL_PROBE",
-    "path_visibility": "PENDING_REAL_PROBE",
-    "capget": "PENDING_REAL_PROBE",
-    "rlimit_fsize": "PENDING_REAL_PROBE",
+    "build": "PASS_2026-11-25T13:04:02.801-03:00_to_13:07:16.627-03:00_duration_193.826s",
+    "dockerfile_tests": "BUILD_VALIDATION_CHAIN_PASS_TEST_COUNT_NOT_CAPTURED",
+    "installation": "INSTALLED_STARTED",
+    "installed_version": "0.1.0-rc.52",
+    "backup_id": "52be48a6",
+    "chroot": true,
+    "uid_gid_drop": true,
+    "effective_capabilities_after_drop": "0000000000000000",
+    "no_new_privs": true,
+    "seccomp": true,
+    "descendants_inherit_filter": true,
+    "seccomp_denials": [
+      "socket",
+      "socketpair",
+      "shmget",
+      "kill",
+      "setsid",
+      "setpgid",
+      "getppid"
+    ],
+    "rlimit_nproc": {
+      "limit": 4,
+      "enforced": true
+    },
+    "rlimit_as": {
+      "bytes": 268435456,
+      "enforced": true
+    },
+    "rlimit_fsize": {
+      "bytes": 1024,
+      "enforced": true
+    },
+    "path_access": {
+      "proc_self_status": "permission_denied",
+      "proc_directory": "permission_denied",
+      "proc_pid1_cmdline": "permission_denied",
+      "proc_pid1_environ": "permission_denied",
+      "ha_options_json": "permission_denied",
+      "outside_sentinel": "permission_denied"
+    },
+    "memory_mounts": {
+      "dev_shm": {
+        "filesystem": "tmpfs",
+        "total_bytes": 4091707392,
+        "tmpfs_size_option": null
+      }
+    },
+    "aggregate_cpu_memory_disk_quotas": "NOT_PROVEN",
     "isolation": "NOT_HOMOLOGATED",
+    "safe_for_untrusted_code": false,
     "publisher": "DORMANT",
     "product_code_execution": "NOT_EXECUTED"
   },
