@@ -1,3 +1,12 @@
+# 0.1.0-rc.60 — M103: comprovar CPU e overflow do canal stdout
+
+- Adiciona ensaio sintético de RLIMIT_CPU em processo filho descartável, com limite soft=1 s/hard=2 s, deadline externo de 4 s e limpeza em caso de timeout.
+- Mantém RC59 bounded-stream probe e acrescenta execução real do cenário `overflow 128` no startup: o processo confiável deve ler exatamente 129 bytes, encerrar o filho e registrar `blocked_output_limit`.
+- O cenário seguro continua executado separadamente e deve registrar `status=pass`; no cenário seguro `output_limit_enforced=false` é esperado.
+- Testes ARM64 de build devem confirmar `rlimit_cpu_primitive_enforced=true`, overflow limitado e recuperação da capacidade do tmpfs.
+- Nenhum código de projeto é executado; nenhuma capability, AppArmor, mount, opção do Supervisor, rede, Docker ou credencial é alterada.
+- Isso prova primitivas sintéticas por processo/canal, não orçamento agregado de job nem sandbox homologado. `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+
 # 0.1.0-rc.59 — M102: prova de saída limitada sem filesystem gravável
 
 - Adiciona bounded_stream_probe: payload sintético em chroot read-only, sem diretório gravável, com FDs auditados e stdout conectado a pipe.

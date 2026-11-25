@@ -112,6 +112,12 @@ class IsolationBackendProbeTests(unittest.TestCase):
         })
         self.assertFalse(unavailable["hard_container_ceiling_proven"])
 
+    def test_rlimit_cpu_primitive_is_enforced_in_disposable_child(self):
+        result = probe.probe_rlimit_cpu()
+        self.assertTrue(result["enforced"], result)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["limit_seconds"], 1)
+
     def test_fd_snapshot_contains_only_live_descriptors(self):
         import os
         for fd in probe._snapshot_open_fds():

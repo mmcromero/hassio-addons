@@ -48,7 +48,7 @@ result["fd_audit"] = fd_audit
 os.write(1, json.dumps(result, sort_keys=True).encode("utf-8"))
 '''
 
-OVERFLOW_PAYLOAD = 'os.write(1, b"x" * 2048)\n'
+OVERFLOW_PAYLOAD = 'while True:\n    os.write(1, b"x" * 2048)\n'
 
 
 def _child(root, read_fd, write_fd, stdin_fd, stderr_fd, uid, gid, seccomp_lib):
@@ -196,6 +196,8 @@ def run_probe(max_output_bytes=4096, timeout_seconds=8, payload_mode="safe"):
         report["output_limit_enforced"] = overflow
         report["timed_out"] = timed_out
         report["child_exit_code"] = os.WEXITSTATUS(status) if os.WIFEXITED(status) else None
+        report["child_signal"] = os.WTERMSIG(status) if os.WIFSIGNALED(status) else None
+        report["child_killed_for_output_limit"] = overflow and report["child_signal"] == signal.SIGKILL
         if overflow:
             report["status"] = "blocked_output_limit"
         elif timed_out:

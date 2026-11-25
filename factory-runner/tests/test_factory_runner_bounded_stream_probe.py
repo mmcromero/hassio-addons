@@ -41,6 +41,8 @@ class BoundedStreamProbeTests(unittest.TestCase):
         self.assertEqual(result["status"], "blocked_output_limit", result)
         self.assertTrue(result["output_limit_enforced"], result)
         self.assertEqual(result["stdout_bytes"], 129, result)
+        self.assertIsNone(result["child_exit_code"], result)
+        self.assertTrue(result["child_killed_for_output_limit"], result)
         self.assertTrue(result["tmpfs_cleanup_restored"], result)
         self.assertFalse(result["project_code_executed"])
 

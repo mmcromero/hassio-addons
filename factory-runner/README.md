@@ -1,13 +1,13 @@
-> **ESTADO VIGENTE — 25/11/2026 / M102**
+> **ESTADO VIGENTE — 25/11/2026 / M103**
 >
-> - **Baseline HA:** RC58 (`0.1.0-rc.58`) instalada/started; RC59 em validação.
-> - **M101:** rootfs em `/dev/shm`; workspace executor-owned 0700; root/readonly root-owned 0555; FD audit ok; nenhuma escrita fora da workspace.
-> - **Armazenamento:** `/dev/shm` tmpfs tem teto de contêiner de 4091707392 bytes; quota por job não é configurável pela schema atual do Supervisor. O Supervisor aceita `tmpfs` boolean e cria `/tmp` e `/dev/shm` sem opções de tamanho.
-> - **M102 / RC59:** protótipo de chroot read-only sem filesystem gravável; somente stdout pipe; seccomp nega open para escrita, mutações, sockets e criação de processos; parent impõe limite de bytes e encerra overflow.
-> - **Validação pendente:** build ARM64, testes safe-payload e overflow, probe real no Raspberry.
-> - **Segurança:** protótipo sintético apenas; nenhum código de projeto executado; `sandbox_export` fail-closed; `safe_for_untrusted_code=false`; Publisher DORMANT.
-> - **Operação:** não criar backup da RC anterior em atualizações normais de RC.
-> - **Continuidade:** Issue #2 do Orquestrador.
+> - **Baseline HA:** RC59 (`0.1.0-rc.59`) instalada/started; RC60 em desenvolvimento.
+> - **M102 / RC59:** build ARM64 concluído; probe sintético safe PASS; chroot read-only, UID drop, FD audit, seccomp e negação de escrita/rede/criação de processos. O caso overflow ainda não foi executado no startup real do Raspberry.
+> - **M103 / RC60:** adiciona ensaio RLIMIT_CPU em filho descartável e chama o cenário overflow do canal stdout no startup, com teto de 128 bytes e encerramento do filho ao ler o 129º byte.
+> - **Armazenamento:** `/dev/shm` teto contêiner de 4.091.707.392 bytes (~3,81 GiB); quota por job não comprovada. `/data` ext4 sem quota identificada.
+> - **Limitações:** cgroup v2 read-only/sem delegação; sem orçamento agregado independente por job; rootfs é fixture diagnóstica, não runtime completo. Nenhum código de projeto executado.
+> - **Segurança:** `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+> - **Operação:** não criar backup da RC anterior em atualizações normais de RC; preservar Git, proveniência, hashes, opções e dados persistentes.
+> - **Continuidade:** [Issue #2](https://github.com/mmcromero/orquestrador-projetos-base/issues/2).
 >
 > O histórico abaixo foi preservado; referências anteriores são registros históricos.
 ---

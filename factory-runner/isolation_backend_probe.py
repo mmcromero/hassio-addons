@@ -273,6 +273,53 @@ def audit_and_close_unapproved_fds(allowed_fds):
     }
 
 
+def probe_rlimit_cpu(limit_seconds=1, timeout_seconds=4):
+    """Prove RLIMIT_CPU in a disposable child; never run project code."""
+    if not hasattr(resource, "RLIMIT_CPU"):
+        return {"status": "unavailable", "enforced": False}
+    try:
+        _, inherited_hard = resource.getrlimit(resource.RLIMIT_CPU)
+    except (OSError, ValueError):
+        return {"status": "unavailable", "enforced": False}
+    hard_limit = limit_seconds + 1
+    if inherited_hard != resource.RLIM_INFINITY and inherited_hard < hard_limit:
+        return {"status": "inherited_limit_too_low", "enforced": False}
+    try:
+        pid = os.fork()
+    except OSError as exc:
+        return {"status": "fork_failed", "errno": exc.errno, "enforced": False}
+    if pid == 0:
+        try:
+            resource.setrlimit(resource.RLIMIT_CPU, (limit_seconds, hard_limit))
+        except (OSError, ValueError):
+            os._exit(125)
+        while True:
+            pass
+    deadline = time.monotonic() + timeout_seconds
+    status = None
+    while time.monotonic() < deadline:
+        try:
+            waited, status = os.waitpid(pid, os.WNOHANG)
+        except InterruptedError:
+            continue
+        if waited == pid:
+            enforced = (os.WIFSIGNALED(status)
+                        and os.WTERMSIG(status) == getattr(signal, "SIGXCPU", -1))
+            return {"status": "ok" if enforced else "not_enforced",
+                    "enforced": enforced, "limit_seconds": limit_seconds}
+        time.sleep(0.05)
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    try:
+        os.waitpid(pid, 0)
+    except ChildProcessError:
+        pass
+    return {"status": "probe_timeout", "enforced": False,
+            "limit_seconds": limit_seconds}
+
+
 def rootfs_write_probe(path="/readonly/.runner-write-probe"):
     """Attempt one synthetic file creation and remove it immediately on success."""
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_CLOEXEC", 0)
@@ -451,6 +498,14 @@ def _child_report(write_fd, root, outside_file, uid, gid, scratch_fd, scratch_se
             report["rlimit_nproc_enforced"] = denied and len(children) <= max(0, int(limit) - 1)
         except OSError as exc:
             _append_error(report, stage, exc)
+
+        stage = "rlimit_cpu_primitive"
+        cpu_probe = probe_rlimit_cpu()
+        report["rlimit_cpu_primitive_status"] = cpu_probe["status"]
+        report["rlimit_cpu_primitive_enforced"] = cpu_probe["enforced"]
+        report["rlimit_cpu_probe_seconds"] = cpu_probe.get("limit_seconds")
+        if not cpu_probe["enforced"]:
+            report["errors"].append("rlimit_cpu_primitive:" + cpu_probe["status"])
 
         stage = "rlimit_as"
         try:

@@ -1,6 +1,6 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M102 — RC58 instalada)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M103 — RC59 instalada)
 
-> **Estado de código e homologação — 25/11/2026 / M102:** RC58 (0.1.0-rc.58) publicada, instalada/started; build ARM64 e suíte Dockerfile PASS. Probe real: fd_audit ok; rootfs root-owned 0555; workspace UID104/mode0700 gravável; readonly/root negam escrita; /proc e /data/options.json ausentes. /dev/shm tmpfs com teto contêiner de 4091707392 bytes; per_job_quota_proven=false. safe_for_untrusted_code=false; Publisher DORMANT.
+> **Estado de código e homologação — 25/11/2026 / M103:** RC59 (0.1.0-rc.59) publicada, instalada/started; build ARM64 e suíte Dockerfile concluídos. Probe bounded-stream safe PASS: chroot read-only, UID drop, FD audit, seccomp, escrita/rede/criação de processos negadas; `project_code_executed=false`. O cenário overflow foi coberto no teste de build, mas ainda não foi executado no startup real. RC60 em desenvolvimento adiciona overflow live e prova RLIMIT_CPU. `/dev/shm` tem teto contêiner de 4.091.707.392 bytes; quota por job não comprovada. `safe_for_untrusted_code=false`; Publisher DORMANT.
 >
 > M095 confirmou primitives chroot/UID/capget/no_new_privs/seccomp/RLIMIT, mas não homologou rootfs de produção, fechamento de FDs nem quotas agregadas. Cgroup v2 é somente leitura e sem delegação; a medição dos limites ancestrais ainda será feita na RC53. Quota rígida de armazenamento continua sem evidência.
 >
@@ -283,3 +283,8 @@ RC34 (`0.1.0-rc.34`), commit `7e95296dd4c92aff36a1deb74d738e23716e845a`, adicion
 Supervisor confirmou RC34 `started`, build ARM64 concluído e atualização bem-sucedida. Log: `[API-PROBE] PASS: authenticated live loopback API; projects=2 preflight_checks=2 audited_read_only_operations=4 publication=disabled`. Avisaqui bloqueado por 3 códigos de política e Artesão por 7; ambos retornaram `blocked_by_project_policy`, sem alterar gates. Nenhuma rota prepare/publish/reconcile foi chamada. API permanece loopback-only, worker read-only, Publisher DORMANT.
 
 RC35 em desenvolvimento acrescenta medição de eventos de auditoria anteriores ao timestamp do boot atual para provar persistência após update/restart normal. Não comprova durabilidade contra queda abrupta; `record()` ainda não faz fsync explícito. Etapa 1 permanece aberta até RC35.
+
+
+## M103 — prova de CPU por processo e overflow live (25/11/2026)
+
+RC60 candidata mantém o protótipo stream-only da RC59 e acrescenta: (1) teste RLIMIT_CPU em filho sintético descartável, com soft=1 s/hard=2 s e timeout externo; (2) chamada de startup ao cenário `bounded_stream_probe.py overflow 128`, que deve registrar `status=blocked_output_limit`, `output_limit_enforced=true` e `stdout_bytes=129`, seguida de limpeza tmpfs. O cenário safe continua separado e `output_limit_enforced=false` é esperado nele. Não executa código de projeto. Esses ensaios não comprovam orçamento agregado de CPU/memória nem quota por job; cgroup v2 segue read-only/sem delegação, Publisher DORMANT e `sandbox_export` fail-closed.
