@@ -579,6 +579,13 @@ class ExecutionOrchestrator:
             state["ended_at"] = None
             state["error_code"] = None
             state["result"] = None
+            # A retry is a new attempt of the same immutable job. Keep only
+            # contract validation from the original submission; never expose
+            # stale PASS steps from the failed attempt as current progress.
+            state["steps"] = [{
+                "name": "contract_validation", "status": "PASS",
+                "code": "contract_validated",
+            }]
             self._append_snapshot(
                 directory, state, "job_retry_accepted", previous, state["status"])
             return _public_state(state, _read_events(directory))
