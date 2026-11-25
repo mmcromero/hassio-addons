@@ -1,6 +1,6 @@
 # P0 — Bootstrap universal GOV-ACT-001
 
-**Roteamento de esteiras — GOV-STD-001 v1.2 §0.2:** em pedidos de release/deploy/publicação/instalação, descubra a rota internamente pelo mapa central e manual específico; não peça ao PO branch/comando/workflow que possa ser descoberto nem declare impedimento por desconhecimento. Mantenha o contexto da rota na conversa e revalide apenas SHA, versão, destino, gatilhos e autorização nos deploys seguintes. Não presuma esteira universal.
+**Roteamento de esteiras — GOV-STD-001 v1.4 §0.2:** em pedidos de release/deploy/publicação/instalação, descubra a rota internamente pelo mapa central e manual específico; não peça ao PO branch/comando/workflow que possa ser descoberto nem declare impedimento por desconhecimento. Mantenha o contexto da rota na conversa e revalide apenas SHA, versão, destino, gatilhos e autorização nos deploys seguintes. Não presuma esteira universal.
 
 Leia a [fonte única central](https://github.com/mmcromero/governanca-master/blob/main/ATIVAR.md), a [GOV-STD-001 v1.2](https://github.com/mmcromero/fabricacao_e_orcamentos/blob/main/docs/operacao/GOV_STD_001.md) e o [mapa operacional de diretórios/esteiras](https://github.com/mmcromero/governanca-master/blob/main/docs/PORTFOLIO-ESTRUTURA-ESTEIRAS.md). Confirme versão/commit realmente acessados; falha de leitura = BLOQUEADO. /at e /atg são aliases conversacionais que exigem leitura real, não comandos nativos. AGENTS.md só orienta runtimes que o carregam; não sincroniza outros chats. Preserve as regras locais abaixo e não aplique a esteira de outro produto.
 
@@ -26,6 +26,10 @@ Antes de diagnosticar, configurar ou usar os túneis compartilhados, ler o [manu
 **Proibição de falso bloqueio:** ausência de QEMU, emulador, máquina ARM64 externa, Actions ou build ARM64 em CI **não é impedimento automático**. Para add-ons com Dockerfile sem `image` pré-compilada, o Supervisor **pode executar o build no dispositivo-alvo na instalação/atualização**; o teste real ocorre na fase apropriada de homologação. Mudança com binário nativo, imagem pré-compilada, falha demonstrada ou risco de segurança pode exigir teste adicional justificado. Nunca marcar teste não executado como PASS nem confundir publicação com instalação/homologação. Antes de NO-GO, identificar causa, fonte/revisão consultada, tentativa autorizada, alternativa GOV-BLK-002 e razão objetiva de não resolver. Sem isso, classificar como **DESVIO DE PROCEDIMENTO** e corrigir só a etapa afetada. Bloqueios reais de segurança, permissão e autorização permanecem.
 
 **Fiscalização:** Governança/Tech Lead exigem evidência em tarefa real e anotação na Issue existente; publicação desta instrução não comprova que chats externos a carregaram.
+
+## P0 — Nomenclatura obrigatória da loja
+
+Em todo `config.yaml` de add-on, `name` deve começar exatamente com `Fábrica de Ideias - `. Se `panel_title` existir, deve usar o mesmo prefixo. Conferir manifesto-fonte e pacote exportado antes de qualquer publicação. `Fábrica de Softwares` e outras variações são inválidas. Preservar slug, diretório e identificadores técnicos. Falha de nomenclatura reprova a validação; corrija a fonte e os exemplos relacionados, não apenas a cópia distribuída.
 
 ## Aplicação obrigatória
 
