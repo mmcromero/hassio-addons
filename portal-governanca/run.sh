@@ -16,7 +16,7 @@ unset SUPERVISOR_TOKEN HASSIO_TOKEN SUPERVISOR_API
 # Whitelist the Node process environment. Never inherit Supervisor credentials or
 # unrelated container variables into the Portal application process.
 exec su-exec portal:portal env -i \
-  PATH=/usr/bin:/bin \
+  PATH=/usr/local/bin:/usr/bin:/bin \
   NODE_ENV=production \
   PORTAL_MODE=ingress \
   PORTAL_HOST=0.0.0.0 \
