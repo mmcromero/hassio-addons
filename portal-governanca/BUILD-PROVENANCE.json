@@ -2,7 +2,7 @@
   "product": "Portal de Governança",
   "addon_version": "0.1.0-dev.5",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "c52870a5085bcc2a12a7de6fd4afd99839ca330d",
+  "source_commit": "68b399b7816b1f84b0026b8e83a5981274041c86",
   "design_system_repository": "https://github.com/mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -26,8 +26,8 @@
       "sha256": "9190be1e1e6c0105376928a596b3b835e1c3ddcf4ed24a0c2ecc82b55796867b"
     }
   ],
-  "generated_by": "source packager update; icon/logo synchronized from portal-governanca:addon/",
-  "distribution_note": "dev.5 adds the source-controlled Home Assistant icon/logo assets and includes them in the source packager; application runtime and compiled dist bundle are unchanged.",
+  "generated_by": "source packager updated; icon/logo synchronized from portal-governanca:addon/",
+  "distribution_note": "dev.5 adds source-controlled icon.png and logo.png and updates the source packager; application runtime and compiled dist bundle are unchanged.",
   "addon_assets": [
     {
       "path": "icon.png",
