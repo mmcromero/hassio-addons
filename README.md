@@ -49,14 +49,14 @@ A tabela abaixo é um snapshot de 22/11/2026, não um indicador ao vivo. Para a 
 
 | Diretório | Nome na loja | Versão | Arquitetura |
 |---|---|---|---|
-| `evolution-api/` | Fábrica de Softwares - Evolution API WhatsApp | 0.1.0 | aarch64 |
-| `pager-virtual/` | Fábrica de Softwares - Avisaqui | 0.1.20-rc.12 | aarch64, amd64 |
-| `umdoislab-central/` | Fábrica de Softwares - WhatsApp Umdoislab | 0.5.0-rc.3 | aarch64 |
-| `factory-runner/` | Fábrica de Softwares - Factory Runner | 0.1.0-rc.19 | aarch64, amd64 |
-| `instagram-central/` | Fábrica de Softwares - Central Instagram | 0.1.38 | aarch64 |
-| `editorial-mcp/` | Fábrica de Softwares - Central Editorial MCP | 0.1.4 | aarch64, amd64 |
-| `artesaos-piloto/` | Fábrica de Softwares - Artesão Digital | 0.2.0-dev.33 | aarch64 |
-| `design-system-lab/` | Fábrica de Softwares - Design System Lab (temporário) | 0.1.0-test.3 | aarch64 |
+| `evolution-api/` | Fábrica de Ideias - Evolution API WhatsApp | 0.1.0 | aarch64 |
+| `pager-virtual/` | Fábrica de Ideias - Avisaqui | 0.1.20-rc.12 | aarch64, amd64 |
+| `umdoislab-central/` | Fábrica de Ideias - WhatsApp Umdoislab | 0.5.0-rc.3 | aarch64 |
+| `factory-runner/` | Fábrica de Ideias - Factory Runner | 0.1.0-rc.19 | aarch64, amd64 |
+| `instagram-central/` | Fábrica de Ideias - Central Instagram | 0.1.38 | aarch64 |
+| `editorial-mcp/` | Fábrica de Ideias - Central Editorial MCP | 0.1.4 | aarch64, amd64 |
+| `artesaos-piloto/` | Fábrica de Ideias - Artesão Digital | 0.2.0-dev.33 | aarch64 |
+| `design-system-lab/` | Fábrica de Ideias - Design System Lab (temporário) | 0.1.0-test.3 | aarch64 |
 
 O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **oito** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
 
