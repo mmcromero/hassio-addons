@@ -4,7 +4,7 @@ Painel central de portfólio, evidências e homologações do ecossistema mmcrom
 
 ## Estado da candidata
 
-- Versão: `0.1.0-dev.5`
+- Versão: `0.1.0-dev.6`
 - Arquitetura: `aarch64` (Raspberry Pi 4)
 - Ingress: porta interna `8099`; sem portas publicadas no host.
 - Identidade: `Fábrica de Ideias - Portal de Governança`.
@@ -25,3 +25,7 @@ Abra o app pelo botão **Abrir interface** na página do app no Home Assistant. 
 ## Proveniência
 
 A fonte canônica é `mmcromero/portal-governanca`, branch `desenvolvimento`. O pacote deste catálogo é somente a distribuição autorizada; não é uma segunda fonte de código.
+
+## Ingress — resultado da correção
+
+A versão `0.1.0-dev.6` foi instalada no Home Assistant e o proprietário confirmou que a interface abriu pelo botão oficial **Abrir interface**. O manifesto omite `ingress_entry` para a entrada na raiz. O servidor aceita caminho com prefixo dinâmico preservado ou removido pelo proxy, sempre condicionado à validação do peer confiável e do cabeçalho `X-Ingress-Path`. A abertura inicial foi confirmada; a homologação detalhada de assets, APIs e navegação deve ser registrada após execução dos respectivos testes.

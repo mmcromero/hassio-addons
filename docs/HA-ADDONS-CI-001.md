@@ -144,3 +144,10 @@ O add-on `pager-virtual` não declara `image` em `config.yaml`, declara `arch: a
 
 **Decisão Avisaqui de 17/11/2026:** todo lote começa e termina na branch privada **`desenvolvimento`**, que é reutilizada permanentemente. Governança a congela por SHA somente após ordem do proprietário, promove **o conteúdo inteiro** para a RC privada permanente e exporta para a mesma branch pública RC cadastrada. A partir da conclusão da promoção, Governança libera `desenvolvimento` para o próximo pacote. **Nunca criar branches adicionais por pacote.** Verificar versão/proveniência e preservar outros add-ons e `main` pública. O congelamento é controle operacional; não afirmar que o GitHub impede pushes sem prova. Norma: https://github.com/mmcromero/pager-virtual/blob/main/docs/governanca/POLITICA-DE-PACOTES-E-BRANCHES.md .
 
+
+
+## Estado operacional posterior — 25/11/2026
+
+Este documento descreve propostas e estados de CI históricos de 16/11/2026. Não usar seus trechos antigos que pressupõem push, pull_request, required checks, QEMU/Actions ou CI como gates atuais. A fonte operacional vigente é `CONTRIBUTING.md` e o `AGENTS.md` da raiz.
+
+Por decisão do proprietário, os workflows do catálogo foram mantidos no Git, mas os gatilhos automáticos foram retirados. Os arquivos `validate-addons.yml`, `avisaqui-governance.yml` e `validar-umdoislab-central.yml` permanecem apenas com `workflow_dispatch`. Não iniciar execuções manuais de rotina nem reativar CI. A substituição pelo Factory Runner depende de conclusão e homologação próprias; não declarar que já está em produção.

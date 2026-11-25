@@ -49,17 +49,44 @@ Planeje primeiro para celular. Defina a tarefa principal, agrupe o conteúdo por
 Aplique ao trabalho com interfaces autorizado na demanda. Em firmware, bibliotecas, infraestrutura ou tarefas sem interface, registre os itens sem aplicação; não crie telas por consequência. Nos repositórios de distribuição, faça a evolução na fonte canônica do produto e siga a esteira vigente. Preserve identidade visual, regras de negócio, segurança e autorizações existentes. Esta referência não autoriza refatoração geral, publicação de pacote ou alteração de serviços. A cópia documental não se sincroniza automaticamente com outros repositórios ou chats.
 
 
-## P0 — Contrato universal de Ingress (25/11/2026)
+## P0 — Contrato completo de Home Assistant Ingress (25/11/2026)
 
-- Com `ingress: true`, a página inicial na raiz `/` é o padrão: **omita `ingress_entry`** do `config.yaml`.
-- Não declarar `ingress_entry: /` para a raiz. O Supervisor concatena o valor declarado ao URL-base `/api/hassio_ingress/<token>/`, produzindo `//` no final.
-- Só declarar `ingress_entry` para uma subrota real, usando o caminho da subrota.
-- Após instalar/atualizar, conferir `ingress_url` no Supervisor e testar a abertura pelo botão do HA, incluindo HTML, CSS, JS, API e navegação. `state: started` não comprova Ingress funcional.
-- Referência técnica e evidência comparativa: [CONTRIBUTING.md — Contrato de URL do Ingress](CONTRIBUTING.md#p0--contrato-de-url-do-home-assistant-ingress).
+Aplica-se a todo add-on com `ingress: true`. A configuração do manifesto e a compatibilidade do servidor são requisitos distintos e ambos devem ser atendidos.
+
+### Manifesto
+- Para entrada na raiz, manter `ingress: true` e `ingress_port: <porta-interna>` e **omitir completamente** `ingress_entry`.
+- Não declarar `ingress_entry: /`, string vazia, `./` ou substituto. O Supervisor concatena o valor configurado ao URL-base e `/` pode produzir barra duplicada (`//`).
+- Declarar `ingress_entry` somente para uma subrota real, com o caminho dessa subrota.
+- Após instalar/atualizar, ler `ingress_url` do Supervisor; para raiz, conferir que termina com uma única barra.
+
+### Contrato do servidor
+- O Supervisor usa prefixo dinâmico semelhante a `/api/hassio_ingress/<token>/`. Nunca fixar, fabricar ou persistir o token.
+- Ler `X-Ingress-Path` como base dinâmica da sessão e validar a origem do proxy confiável **antes** de aceitar caminhos relativos.
+- Implementações podem receber o caminho com o prefixo ainda presente ou já removido pelo proxy. O servidor deve tratar ambos sem perder o isolamento da sessão.
+- Remover somente o prefixo exato correspondente à sessão; rejeitar prefixo/token divergente, caminho malformado e conexões de peers não confiáveis.
+- Gerar URLs de assets, CSS, JavaScript, imagens, fontes, API, links internos e redirecionamentos de forma compatível com o prefixo atual. Evitar referências absolutas à raiz do domínio quando elas escaparem do Ingress.
+- Tratar barra final sem criar `//`, redirecionamento circular ou perda de sessão.
+
+### Homologação obrigatória
+- Abrir pelo botão oficial **Abrir interface** do Home Assistant; não usar URL/token copiado de sessão anterior como link permanente.
+- Conferir HTML, CSS, JS, imagens/fontes, navegação e redirecionamentos sob o prefixo dinâmico.
+- Conferir `/api/health` e as APIs funcionais do app (por exemplo `/api/v1/portfolio`) dentro do Ingress.
+- Confirmar respostas esperadas (200 ou status funcional documentado), ausência de 400/404/502 indevidos e ausência de loop.
+- Inspecionar requisições do navegador, logs do add-on e logs do Supervisor.
+- `state: started`, build concluído, teste direto à porta ou chamada de diagnóstico fora do proxy **não comprovam** Ingress funcional. Um 401 de token antigo e um 403 de acesso direto à porta também não substituem o teste pelo botão oficial.
+- Não remover allowlist de IP, validação do peer, cabeçalho de sessão ou outras proteções para fazer a página abrir.
+
+**Caso comprovado — Portal de Governança (25/11/2026):** o manifesto do Portal já omitia `ingress_entry`, mas o servidor precisava aceitar tanto o caminho ainda prefixado quanto o caminho relativo após o proxy remover o prefixo. A correção dev.6 preservou a validação do peer Supervisor e de `X-Ingress-Path`, e o proprietário confirmou a abertura pelo botão oficial do Home Assistant. A homologação complementar de assets, APIs e navegação deve ser registrada separadamente; não inferir aprovação completa apenas pela abertura inicial.
+
+**Referência comparativa:** Design System Lab `0.1.0-test.6`, cujo manifesto publicado omite `ingress_entry` para entrada na raiz.
 
 
 ## P0 — Acesso Ingress e painel lateral
 
-- Para abrir a interface, usar o botão **Abrir interface** na página do app ou a URL atual `/api/hassio_ingress/<token>/` fornecida pelo Supervisor. Não construir URLs `/app/<slug>`.
+- Para abrir a interface, usar o botão **Abrir interface** na página do app. A URL `/api/hassio_ingress/<token>/` é dinâmica; não construir URLs `/app/<slug>` nem reutilizar tokens de sessões anteriores.
 - `panel_icon` e `panel_title` configuram a identidade do atalho lateral; **Mostrar na barra lateral** é uma preferência separada do usuário. `ingress_panel: false` significa apenas que o atalho está desligado, não que o servidor falhou.
-- Para homologar, testar pelo Ingress real no navegador; chamadas diretas à porta interna podem receber `403 Ingress access only` porque o app aceita somente o proxy Supervisor em `172.30.32.2`.
+- Chamadas diretas à porta interna podem receber `403 Ingress access only`; isso não diagnostica a experiência real do Ingress. A homologação deve seguir o contrato completo acima.
+
+## P0 — Estado atual do GitHub Actions no catálogo (25/11/2026)
+
+Por decisão do proprietário, os workflows do catálogo foram preservados, mas os gatilhos automáticos de push e pull_request foram removidos. Os três workflows atuais usam somente `workflow_dispatch` (acionamento manual): `validate-addons.yml`, `avisaqui-governance.yml` e `validar-umdoislab-central.yml`. Não disparar manualmente nem reativar gatilhos como parte de publicação rotineira. O Factory Runner está em desenvolvimento e ainda não foi declarado substituto homologado; até decisão posterior, seguir o procedimento manual documentado e não depender de GitHub Actions. Esta regra não apaga YAML, scripts, logs ou histórico e não altera workflows de outros repositórios.

@@ -12,19 +12,36 @@ Exemplos: `Fábrica de Ideias - Portal de Governança`, `Fábrica de Ideias - De
 
 Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no artefato exportado. Qualquer ausência ou variação do prefixo reprova a validação. Não aceitar `Fábrica de Softwares` nem variações. A regra não altera `slug`, diretório, IDs técnicos ou origem do repositório; não renomear instalações existentes nem executar instalação/atualização por causa desta conferência.
 
-## P0 — Contrato de URL do Home Assistant Ingress
+## P0 — Contrato completo de Home Assistant Ingress (25/11/2026)
 
-**Regra obrigatória para todos os add-ons com `ingress: true`:**
+Aplica-se a todo add-on com `ingress: true`. A configuração do manifesto e a compatibilidade do servidor são requisitos distintos e ambos devem ser atendidos.
 
-1. Se a página inicial da aplicação estiver na raiz `/` (caso padrão), **omitir completamente a chave `ingress_entry`** do `config.yaml`. Não declarar `ingress_entry: /` nem `ingress_entry: ""`.
-2. Declarar `ingress_entry` somente quando a página inicial estiver em uma subrota real. Nesse caso, informar apenas o caminho da subrota, sem repetir o prefixo do token e sem barra final desnecessária.
-3. Conferir o valor efetivamente retornado pelo Supervisor em `ingress_url` depois da instalação/atualização. Para entrada na raiz, o URL deve terminar em uma única barra: `/api/hassio_ingress/<token>/`.
-4. Testar a interface pelo botão **Abrir interface** do Home Assistant; verificar página inicial, CSS, JavaScript, imagens, chamadas de API e navegação. Estado `started` e build concluído não comprovam Ingress funcional.
-5. Nunca aceitar apenas um teste direto à porta interna como homologação de Ingress. A autenticação e o roteamento reais passam pelo proxy do Supervisor.
+### Manifesto
+- Para entrada na raiz, manter `ingress: true` e `ingress_port: <porta-interna>` e **omitir completamente** `ingress_entry`.
+- Não declarar `ingress_entry: /`, string vazia, `./` ou substituto. O Supervisor concatena o valor configurado ao URL-base e `/` pode produzir barra duplicada (`//`).
+- Declarar `ingress_entry` somente para uma subrota real, com o caminho dessa subrota.
+- Após instalar/atualizar, ler `ingress_url` do Supervisor; para raiz, conferir que termina com uma única barra.
 
-**Causa técnica documentada (25/11/2026):** o Supervisor monta o URL como `/api/hassio_ingress/<token>/` e concatena o valor de `ingress_entry` quando a chave está presente. Assim, declarar explicitamente `ingress_entry: /` gera um URL terminado em `//`. No Raspberry Pi 4, os manifests do Design System Lab e Portal de Governança declaravam `/` e o Supervisor retornava URLs com `//`; o add-on WhatsApp Umdoislab, que omite a chave para a raiz, retornava URL com uma única barra. A comparação foi confirmada nos manifests e na API de estado dos três apps. O campo foi removido dos dois manifests afetados.
+### Contrato do servidor
+- O Supervisor usa prefixo dinâmico semelhante a `/api/hassio_ingress/<token>/`. Nunca fixar, fabricar ou persistir o token.
+- Ler `X-Ingress-Path` como base dinâmica da sessão e validar a origem do proxy confiável **antes** de aceitar caminhos relativos.
+- Implementações podem receber o caminho com o prefixo ainda presente ou já removido pelo proxy. O servidor deve tratar ambos sem perder o isolamento da sessão.
+- Remover somente o prefixo exato correspondente à sessão; rejeitar prefixo/token divergente, caminho malformado e conexões de peers não confiáveis.
+- Gerar URLs de assets, CSS, JavaScript, imagens, fontes, API, links internos e redirecionamentos de forma compatível com o prefixo atual. Evitar referências absolutas à raiz do domínio quando elas escaparem do Ingress.
+- Tratar barra final sem criar `//`, redirecionamento circular ou perda de sessão.
 
-Referências oficiais: [configuração de apps — Ingress](https://contributors.home-assistant.io/apps/reference/configuration/) e [guia oficial de Ingress](https://contributors.home-assistant.io/apps/guides/ingress/).
+### Homologação obrigatória
+- Abrir pelo botão oficial **Abrir interface** do Home Assistant; não usar URL/token copiado de sessão anterior como link permanente.
+- Conferir HTML, CSS, JS, imagens/fontes, navegação e redirecionamentos sob o prefixo dinâmico.
+- Conferir `/api/health` e as APIs funcionais do app (por exemplo `/api/v1/portfolio`) dentro do Ingress.
+- Confirmar respostas esperadas (200 ou status funcional documentado), ausência de 400/404/502 indevidos e ausência de loop.
+- Inspecionar requisições do navegador, logs do add-on e logs do Supervisor.
+- `state: started`, build concluído, teste direto à porta ou chamada de diagnóstico fora do proxy **não comprovam** Ingress funcional. Um 401 de token antigo e um 403 de acesso direto à porta também não substituem o teste pelo botão oficial.
+- Não remover allowlist de IP, validação do peer, cabeçalho de sessão ou outras proteções para fazer a página abrir.
+
+**Caso comprovado — Portal de Governança (25/11/2026):** o manifesto do Portal já omitia `ingress_entry`, mas o servidor precisava aceitar tanto o caminho ainda prefixado quanto o caminho relativo após o proxy remover o prefixo. A correção dev.6 preservou a validação do peer Supervisor e de `X-Ingress-Path`, e o proprietário confirmou a abertura pelo botão oficial do Home Assistant. A homologação complementar de assets, APIs e navegação deve ser registrada separadamente; não inferir aprovação completa apenas pela abertura inicial.
+
+**Referência comparativa:** Design System Lab `0.1.0-test.6`, cujo manifesto publicado omite `ingress_entry` para entrada na raiz.
 
 
 ## P0 — Assets de apresentação dos apps
@@ -84,3 +101,7 @@ Não versionar `options.json`, tokens, senhas, bancos, sessões, backups, mídia
 - A pasta do add-on deve conter o pacote completo exportado da fonte aprovada, sem misturar documentação privada, credenciais, bancos, opções ou dados de runtime.
 - Seguir `docs/operacao/AD_ESTEIRA_RAPIDA_001.md` no repositório de fonte para corte de versão, revisão de escopo, exportação e proveniência. Publicar somente `artesaos-piloto/` na `main` deste catálogo.
 - O Supervisor do Home Assistant executa o build local quando o add-on usa Dockerfile sem `image`; build ARM64 externo, Actions e Factory Runner não são pré-requisitos genéricos. Instalação e homologação no HA permanecem etapas distintas da publicação Git.
+
+## Estado atual da execução de validações do catálogo
+
+Por decisão do proprietário em 25/11/2026, os workflows deste repositório permanecem versionados e preservados, mas sem gatilhos automáticos de push ou pull_request. Atualmente os três arquivos em `.github/workflows/` aceitam somente `workflow_dispatch`. Não acionar manualmente como parte do fluxo normal de publicação, não restaurar automações e não tratar GitHub Actions como executor disponível. A validação proporcional deve ocorrer pelo executor autorizado e disponível (Factory Runner quando concluído e homologado; até lá, execução manual assistida e homologação no HA). Esta decisão não apaga workflows, scripts nem histórico e não se estende a outros repositórios.
