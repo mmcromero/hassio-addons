@@ -1,7 +1,7 @@
-> **ESTADO VIGENTE — 25/11/2026 / M082**
+> **ESTADO VIGENTE — 25/11/2026 / M084**
 >
 > - **Roadmap:** seis etapas; isolamento de código não confiável permanece obrigatório na Etapa 5, antes de executar código de projetos.
-> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`; RC44 (`0.1.0-rc.44`) integrada. Fonte de desenvolvimento preservada.
+> - **Fonte ativa:** `mmcromero/factory-runner:release-candidate`; RC45 (`0.1.0-rc.45`) em preparação na fonte; RC44 (`0.1.0-rc.44`) permanece instalada e homologada. Fonte de desenvolvimento preservada.
 > - **Catálogo:** RC44 publicada em `mmcromero/hassio-addons:main/factory-runner/`; 114 arquivos comparados, zero divergências; somente seis caminhos da pasta Factory Runner alterados no pacote/proveniência.
 > - **Supervisor:** RC44 instalada e `started` em ARM64; build concluído; sem atualização pendente. Backup pré-update RC41: `4e6ea0d9`.
 > - **Etapa 1:** API/segurança, persistência/idempotência e configuração/bootstrap concluídas para o modo restrito.
