@@ -1,4 +1,7 @@
-# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M106 — RC60 instalada; RC63 diagnóstico em preparação)
+# Esteira consolidada — Factory Runner (base M006, incrementos M018/M019; estado atual M107 — RC60 instalada; RC63 build falhou; RC64 correção de fixture preparada)
+
+> **Estado de código e homologação — 25/11/2026 / M107:** RC60 (0.1.0-rc.60) permanece instalada/started. O build ARM64 RC63 executou o runner individual e identificou a falha no método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`: fixture aninhou indevidamente o par retornado por `dir_member`, causando `AttributeError: 'tuple' object has no attribute 'tobuf'`. RC64 corrige somente a fixture e mantém a suíte completa obrigatória; promoção/publicação/build ARM64 ainda pendentes. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+
 
 > **Estado de código e homologação — 25/11/2026 / M106:** RC60 (0.1.0-rc.60) permanece instalada/started. RC61 falhou no RUN monolítico de validação; RC62 isolou o estágio e identificou a suíte archive_stream como a que falha. RC63 executa cada método dessa suíte isoladamente e mapeia a primeira falha a um exit code 51..(50+n), sem remover testes; a suíte completa continua obrigatória. RC63 só será instalada se todos os gates passarem. safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
@@ -308,3 +311,8 @@ A candidata RC62 altera apenas o Dockerfile da etapa de validação para separar
 ## M106 — diagnóstico por método da suíte archive_stream
 
 A RC62 confirmou que o estágio que falha é test_factory_runner_archive_stream.py. Como o Supervisor não expôs a saída detalhada do unittest, a RC63 adiciona um runner de diagnóstico que executa cada método isoladamente, em ordem alfabética, e devolve exit code 51..(50+n) para identificar o primeiro método que falha; 90 representa erro de import/setup e 91 ausência de testes. A suíte completa permanece obrigatória depois desse diagnóstico. Nenhum teste é ignorado, runtime não muda e o Publisher continua DORMANT.
+
+
+## M107 — diagnóstico e correção da fixture archive_stream
+
+O Supervisor ARM64 RC63 informou exit code 77 no runner individual, método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`. A função `dir_member("pkg")` já retorna o par `(TarInfo, None)`; a fixture embrulhava o retorno em outra tupla, fazendo `archive()` passar um objeto tuple para `tarfile.addfile`. RC64 altera somente essa linha de teste. O módulo de runtime `archive_stream.py` permanece inalterado. O build seguinte deve executar novamente o runner individual e a suíte completa; nenhuma cobertura foi removida.
