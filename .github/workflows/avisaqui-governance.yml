@@ -1,10 +1,7 @@
 name: Governança do pacote Avisaqui
+# PAUSADO: execução somente manual enquanto o catálogo não adotar CI.
+# Preservado para eventual reativação explícita; sem gatilho pull_request.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'pager-virtual/**'
-      - '.github/workflows/avisaqui-governance.yml'
   workflow_dispatch:
 permissions:
   contents: read
