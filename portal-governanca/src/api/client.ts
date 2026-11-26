@@ -55,3 +55,8 @@ export async function getN8nOverview(refresh=false):Promise<N8nOverview>{
  if(!response.ok)throw Object.assign(new Error(data.error?.message||"HTTP "+response.status),{code:data.error?.code,status:response.status});
  return data as N8nOverview;
 }
+
+export type PortalRecord={id:string;createdAt:string;type:"homologation"|"evidence"|"decision";title:string;summary:string;status:string|null;projectId:string|null;repository:string|null;sha:string|null;version:string|null;environment:string|null;responsible:string|null;origin:string;evidenceKind:string|null;sourceUrl:string|null;previousHash:string;hash:string};
+export type PortalLedger={records:PortalRecord[];total:number;integrity:string;lastHash:string};
+export function getPortalRecords():Promise<PortalLedger>{return apiRequest<PortalLedger>("api/v1/records");}
+export function appendPortalRecord(input:Partial<PortalRecord>):Promise<{record:PortalRecord}>{return apiRequest("api/v1/records",{method:"POST",body:JSON.stringify(input)});}

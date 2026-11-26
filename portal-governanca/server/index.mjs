@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 import {timingSafeEqual} from "node:crypto";
 import {createGitHubClient} from "./github.mjs";
 import {createN8nClient} from "./n8n.mjs";
+import {createLedger} from "./ledger.mjs";
 import {getIngressBasePath,isIngressPeer,isLoopbackPeer,stripIngressPath} from "./ingress.mjs";
 
 if(process.env.NODE_ENV==="development")await import("dotenv/config");
@@ -19,6 +20,7 @@ const haConfig=JSON.parse(await readFile(path.join(ROOT,"config/home-assistant-a
 const haMappings=new Map((haConfig.mappings||[]).map(item=>[item.slug,item]));
 const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:process.env.GITHUB_WRITE_TOKEN||""});
 const n8n=createN8nClient({baseUrl:process.env.N8N_BASE_URL||"",apiKey:process.env.N8N_API_KEY||""});
+const ledger=createLedger({filePath:process.env.PORTAL_LEDGER_PATH||"/data/portal-ledger.ndjson"});
 const haBridgeUrl=process.env.HA_BRIDGE_URL||"";
 let haCache=null;
 const HA_CACHE_MS=30_000;
@@ -117,19 +119,27 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&rawPath.endsWith("/api/v1/projects/register"))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!(pathname==="/api/v1/projects/register"&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
   try{const result=await github.registerProject(await readJson(req));json(res,201,result);}
   catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_REGISTRATION_FAILED",message:error.message}});}
   return;
+ }
+ if(pathname==="/api/v1/records"&&req.method==="GET"){
+  try{json(res,200,await ledger.list());}catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_UNAVAILABLE",message:error.message}});}return;
+ }
+ if(pathname==="/api/v1/records"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
+  try{const row=await ledger.append(await readJson(req));json(res,201,{record:row});}
+  catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_WRITE_FAILED",message:error.message}});}return;
  }
  if(pathname==="/api/v1/repositories"&&req.method==="GET"){
   try{json(res,200,await github.getRepositoryCatalog());}

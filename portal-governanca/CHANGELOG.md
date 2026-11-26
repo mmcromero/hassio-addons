@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.23 — 26/11/2026
+- Entrega o módulo de homologações, evidências e decisões com histórico append-only e integridade SHA-256.
+- Inclui API e interface do ledger; a suíte completa será executada no build ARM64 do Supervisor.
+
+
 ## 0.1.0-dev.22 — 26/11/2026
 - Corrige os testes arquiteturais após a inclusão dos quatro indicadores n8n.
 - Ajusta a localização do `run.sh` no pacote de distribuição, compatível com a raiz usada pelo Docker build.

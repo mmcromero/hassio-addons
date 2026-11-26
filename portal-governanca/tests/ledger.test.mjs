@@ -1,0 +1,10 @@
+import {describe,it,expect,beforeEach,afterEach} from "vitest";
+import {mkdtemp,readFile,writeFile,rm} from "node:fs/promises";import os from "node:os";import path from "node:path";import {createLedger} from "../server/ledger.mjs";
+describe("ledger append-only SHA-256",()=>{let dir,file,ledger;const valid={type:"homologation",status:"PASS",title:"Teste",summary:"Registro automatizado",sha:"abcdef1234567",environment:"CI",responsible:"QA"};beforeEach(async()=>{dir=await mkdtemp(path.join(os.tmpdir(),"portal-ledger-"));file=path.join(dir,"history.ndjson");ledger=createLedger({filePath:file});});afterEach(async()=>rm(dir,{recursive:true,force:true}));
+it("grava e verifica cadeia",async()=>{await ledger.append(valid);await ledger.append({...valid,title:"Segundo"});expect(await ledger.list()).toMatchObject({total:2,integrity:"valid"});});
+it("rejeita tipo, status e SHA inválidos",async()=>{await expect(ledger.append({...valid,type:"x"})).rejects.toMatchObject({code:"INVALID_TYPE"});await expect(ledger.append({...valid,status:"x"})).rejects.toMatchObject({code:"INVALID_STATUS"});await expect(ledger.append({...valid,sha:"x"})).rejects.toMatchObject({code:"INVALID_SHA"});});
+it("rejeita URL de evidência fora de HTTPS",async()=>{await expect(ledger.append({...valid,type:"evidence",status:"",sourceUrl:"javascript:alert(1)"})).rejects.toMatchObject({code:"INVALID_SOURCE_URL"});});
+it("detecta adulteração e bloqueia gravação",async()=>{await ledger.append(valid);const raw=await readFile(file,"utf8");await writeFile(file,raw.replace("Registro automatizado","Adulterado"));await expect(ledger.append(valid)).rejects.toMatchObject({code:"LEDGER_INTEGRITY_FAILED"});});
+it("detecta linha truncada",async()=>{await writeFile(file,'{"broken":');await expect(ledger.list()).rejects.toMatchObject({code:"LEDGER_TORN_WRITE"});});
+it("serializa gravações concorrentes",async()=>{await Promise.all(Array.from({length:20},(_,i)=>ledger.append({...valid,title:"Item "+i})));expect((await ledger.list()).total).toBe(20);});
+});

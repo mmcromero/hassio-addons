@@ -1,7 +1,7 @@
 import '@mmcromero/ds-tokens/css';
 import '@mmcromero/ds-components/styles.css';
 import '@mmcromero/ds-components';
-import {getPortfolio,getRepositoryCatalog,registerProject,getSupervisorInventory,getN8nOverview,type PortfolioSnapshot,type RepoSnapshot,type Project,type RepositoryCatalog,type SupervisorInventory,type N8nOverview} from './api/client';
+import {getPortfolio,getRepositoryCatalog,registerProject,getSupervisorInventory,getN8nOverview,getPortalRecords,appendPortalRecord,type PortalLedger,type PortfolioSnapshot,type RepoSnapshot,type Project,type RepositoryCatalog,type SupervisorInventory,type N8nOverview} from './api/client';
 import './styles.css';
 
 type View='overview'|'projects'|'register'|'homologation'|'evidence'|'environments'|'decisions'|'automations';
@@ -10,7 +10,7 @@ const app=document.querySelector<HTMLDivElement>('#app');if(!app)throw new Error
 let view:View='overview',selected:Project|null=null,snapshot:PortfolioSnapshot|null=null,loading=false,lastError:string|null=null,lastErrorCode:string|null=null,lastChecked:string|null=null;
 let catalog:RepositoryCatalog|null=null,catalogLoading=false,catalogError:string|null=null,registering=false,registerMessage:string|null=null,registerError:string|null=null;
 let supervisorSnapshot:SupervisorInventory|null=null,supervisorLoading=false,supervisorError:string|null=null;
-let n8nSnapshot:N8nOverview|null=null,n8nLoading=false,n8nError:string|null=null;
+let n8nSnapshot:N8nOverview|null=null,n8nLoading=false,n8nError:string|null=null;\nlet ledgerSnapshot:PortalLedger|null=null,ledgerLoading=false,ledgerError:string|null=null,ledgerSaving=false,ledgerMessage:string|null=null;
 const projects=()=>snapshot?.projects??[];
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));
 const date=(v?:string|null)=>v?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v)):'Não informado';
@@ -118,6 +118,25 @@ async function loadN8n(force=false){
  finally{n8nLoading=false;render();}
 }
 
+async function loadRecords(){if(ledgerLoading)return;ledgerLoading=true;ledgerError=null;render();try{ledgerSnapshot=await getPortalRecords();}catch(e){ledgerError=e instanceof Error?e.message:"Falha ao consultar histórico";}finally{ledgerLoading=false;render();}}
+async function saveRecord(form:HTMLFormElement){
+ if(ledgerSaving)return;ledgerSaving=true;ledgerMessage=null;ledgerError=null;render();
+ const d=new FormData(form),type=String(d.get("type")||"");
+ try{await appendPortalRecord({type,title:String(d.get("title")||""),summary:String(d.get("summary")||""),status:String(d.get("status")||""),projectId:String(d.get("projectId")||""),repository:String(d.get("repository")||""),sha:String(d.get("sha")||""),version:String(d.get("version")||""),environment:String(d.get("environment")||""),responsible:String(d.get("responsible")||""),origin:"Portal",evidenceKind:String(d.get("evidenceKind")||"synthetic"),sourceUrl:String(d.get("sourceUrl")||"")});ledgerMessage="Registro acrescentado ao histórico com integridade SHA-256.";ledgerSnapshot=await getPortalRecords();}
+ catch(e){ledgerError=e instanceof Error?e.message:"Falha ao salvar registro";}
+ finally{ledgerSaving=false;render();}
+}
+function recordsPage(type:"homologation"|"evidence"|"decision"){
+ const title=type==="homologation"?"Homologações":type==="evidence"?"Evidências":"Decisões e histórico";
+ const records=(ledgerSnapshot?.records||[]).filter(r=>type==="decision"?r.type==="decision":r.type===type);
+ const statusOptions=["PASS","FAIL","NAO_EXECUTADO","NAO_VERIFICADO","BLOQUEADO","INDISPONIVEL"].map(x=>'<option value="'+x+'">'+x.replaceAll("_"," ")+'</option>').join("");
+ const form='<ds-card><form class="registration-form" data-ledger-form><input type="hidden" name="type" value="'+type+'"><label for="record-title">Título</label><input id="record-title" name="title" maxlength="160" required><label for="record-summary">Descrição / resultado</label><textarea id="record-summary" name="summary" rows="3" maxlength="2000" required></textarea>'+
+ (type==="homologation"?'<label for="record-status">Estado</label><select id="record-status" name="status" required>'+statusOptions+'</select>':'')+
+ (type==="evidence"?'<label for="record-kind">Tipo de evidência</label><select id="record-kind" name="evidenceKind"><option value="synthetic">Sintética / automatizada</option><option value="real">Real / operacional</option></select>':'')+
+ '<label for="record-project">ID do projeto (opcional)</label><input id="record-project" name="projectId" maxlength="64"><label for="record-repo">Repositório (opcional)</label><input id="record-repo" name="repository" maxlength="160"><label for="record-sha">SHA (opcional)</label><input id="record-sha" name="sha" maxlength="64" pattern="[a-fA-F0-9]{7,64}"><label for="record-version">Versão (opcional)</label><input id="record-version" name="version" maxlength="64"><label for="record-env">Ambiente</label><input id="record-env" name="environment" maxlength="80" placeholder="Ex.: Home Assistant ARM64, CI"><label for="record-owner">Responsável</label><input id="record-owner" name="responsible" maxlength="80"><label for="record-url">Link da fonte (opcional)</label><input id="record-url" name="sourceUrl" type="url" maxlength="500"><div class="registration-actions"><button class="primary-action" type="submit" '+(ledgerSaving?'disabled':'')+'>'+(ledgerSaving?'Registrando…':'Registrar no histórico')+'</button></div><small>Registros são somente acréscimo. Não há edição ou exclusão pela interface.</small></form></ds-card>';
+ const list=records.map(r=>'<article class="repo-card"><div class="repo-top"><div><strong>'+esc(r.title)+'</strong><small>'+date(r.createdAt)+' · '+esc(r.responsible||"Responsável não informado")+' · '+(r.evidenceKind==="real"?"Evidência real":r.evidenceKind==="synthetic"?"Evidência sintética":esc(r.type))+'</small></div><ds-badge variant="'+(r.status==="PASS"?"success":r.status==="FAIL"?"error":"neutral")+'">'+esc((r.status||r.type).replaceAll("_"," "))+'</ds-badge></div><p>'+esc(r.summary)+'</p><div class="repo-facts"><span>Projeto: <b>'+esc(r.projectId||"—")+'</b></span><span>Ambiente: <b>'+esc(r.environment||"—")+'</b></span><span>Versão: <b>'+esc(r.version||"—")+'</b></span><span>SHA: <b>'+esc(r.sha||"—")+'</b></span></div><small class="repo-detail">Hash: <code>'+esc(r.hash.slice(0,16))+'…</code> · Anterior: <code>'+esc(r.previousHash.slice(0,16))+'…</code></small>'+(r.sourceUrl?'<p><a href="'+esc(r.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Abrir fonte</a></p>':'')+'</article>').join("");
+ return '<section><div class="intro"><div><h2>'+title+'</h2><p>Registros persistentes em /data, com encadeamento SHA-256 e sem operações de edição/exclusão.</p></div><ds-badge variant="'+(ledgerSnapshot?.integrity==="valid"?"success":"warning")+'">'+(ledgerSnapshot?.integrity==="valid"?"Integridade verificada":"Aguardando verificação")+'</ds-badge></div>'+(ledgerError?'<ds-alert variant="warning" title="Histórico">'+esc(ledgerError)+'</ds-alert>':'')+(ledgerMessage?'<ds-alert variant="success" title="Registro salvo">'+esc(ledgerMessage)+'</ds-alert>':'')+form+'<div class="section-head"><div><h2>Registros</h2><p>'+records.length+' exibidos · '+(ledgerSnapshot?.total??0)+' no ledger · últimos 500 disponíveis</p></div><ds-button variant="secondary" size="sm" data-ledger-refresh>Atualizar</ds-button></div>'+(list?'<div class="repo-list">'+list+'</div>':'<ds-card><p>Nenhum registro deste tipo ainda.</p></ds-card>')+'</section>';
+}
 function body(){
  if(view==='overview')return overview();
  if(view==='projects'&&selected)return projectDetail(selected);
@@ -125,6 +144,9 @@ function body(){
  if(view==='register')return registrationPage();
  if(view==='environments')return environments();
  if(view==='automations')return automations();
+ if(view==='homologation')return recordsPage('homologation');
+ if(view==='evidence')return recordsPage('evidence');
+ if(view==='decisions')return recordsPage('decision');
  const pages:Record<string,[string,string,string]>={homologation:['Homologações','Critérios de aceite e evidências por produto, versão e ambiente.','O GitHub informa código, branches, PRs e workflows. Isso não comprova instalação nem homologação no Home Assistant ou execução real no n8n.'],evidence:['Evidências','Origem, horário, SHA/versão, ambiente e responsável.','A consulta GitHub fornece metadados e links. Logs de runtime e evidências operacionais serão integrados em etapa posterior, sem copiar payloads de mensagens.'],decisions:['Decisões e histórico','Registros imutáveis por acréscimo, com links às fontes canônicas.','As decisões continuam nas Issues e documentos de origem. O Portal começa por apresentá-las sem criar ou alterar registros.']};
  const [title,desc,text]=pages[view];
  return '<section><div class="intro"><div><h2>'+title+'</h2><p>'+desc+'</p></div><ds-badge variant="warning">Escopo Fase 1</ds-badge></div><ds-card title="'+title+'">'+text+'</ds-card></section>';
@@ -132,12 +154,14 @@ function body(){
 function render(){
  const status=lastError?(snapshot?'Atualização falhou · dados anteriores':lastErrorCode==='GITHUB_NOT_CONFIGURED'?'GitHub não configurado':'GitHub indisponível'):snapshot?'GitHub consultado':'GitHub não consultado';
  app!.innerHTML='<a class="skip" href="#main">Pular para o conteúdo</a><div class="shell"><aside class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>PORTFÓLIO · HOMOLOGAÇÃO</small></span></a><p class="nav-label">Acompanhamento</p><nav aria-label="Seções principais">'+nav.map(n=>'<button data-view="'+n.id+'" '+(view===n.id?'aria-current="page"':'')+'>'+n.label+'</button>').join('')+'</nav><div class="side-foot"><ds-badge variant="info">GitHub integrado</ds-badge><p>Escrita restrita ao cadastro</p></div></aside><div class="workspace"><header><div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>'+nav.find(n=>n.id===view)?.label+'</h1></div><div class="header-meta"><ds-badge variant="info">Design System 0.1.0 · desenvolvimento</ds-badge><small>'+esc(status)+' · '+(lastChecked?date(lastChecked):'sem consulta')+'</small><ds-button size="sm" variant="secondary" '+(loading?'disabled':'')+' data-refresh>'+(loading?'Consultando…':'Atualizar GitHub')+'</ds-button></div></header><main id="main" tabindex="-1">'+body()+'</main><footer>Portal de Governança · Portfólio e Ambientes <span>GitHub · leitura e cadastro restrito · Supervisor somente leitura · n8n na Fase 4</span></footer></div></div>';
- app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view as View;selected=null;registerMessage=null;registerError=null;render();document.querySelector<HTMLElement>('#main')?.focus();if(view==='register'&&!catalog&&!catalogLoading)void loadCatalog();if(view==='environments'&&!supervisorSnapshot&&!supervisorLoading&&!supervisorError)void loadSupervisor(false);if(view==='automations'&&!n8nSnapshot&&!n8nLoading&&!n8nError)void loadN8n(false);}));
+ app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view as View;selected=null;registerMessage=null;registerError=null;render();document.querySelector<HTMLElement>('#main')?.focus();if(view==='register'&&!catalog&&!catalogLoading)void loadCatalog();if(view==='environments'&&!supervisorSnapshot&&!supervisorLoading&&!supervisorError)void loadSupervisor(false);if(view==='automations'&&!n8nSnapshot&&!n8nLoading&&!n8nError)void loadN8n(false);if(['homologation','evidence','decisions'].includes(view)&&!ledgerSnapshot&&!ledgerLoading&&!ledgerError)void loadRecords();}));
  app!.querySelectorAll<HTMLElement>('[data-project]').forEach(b=>b.addEventListener('click',()=>{selected=projects().find(p=>p.id===b.dataset.project)||null;view='projects';render();document.querySelector<HTMLElement>('#main')?.focus()}));
  app!.querySelector<HTMLElement>('[data-back]')?.addEventListener('click',()=>{selected=null;render();document.querySelector<HTMLElement>('#main')?.focus()});
  app!.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click',()=>void refresh(true));
  app!.querySelector<HTMLElement>('[data-ha-refresh]')?.addEventListener('click',()=>void loadSupervisor(true));
  app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click',()=>void loadN8n(true));
+ app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click',()=>void loadRecords());
+ const ledgerForm=app!.querySelector<HTMLFormElement>('[data-ledger-form]');ledgerForm?.addEventListener('submit',event=>{event.preventDefault();void saveRecord(ledgerForm);});
  app!.querySelector<HTMLElement>('[data-catalog-refresh]')?.addEventListener('click',()=>{catalog=null;void loadCatalog();});
  const form=app!.querySelector<HTMLFormElement>('[data-register-form]');
  form?.addEventListener('submit',event=>{event.preventDefault();const data=new FormData(form!);void submitRegistration({repositoryFullName:String(data.get('repositoryFullName')||''),project:{id:String(data.get('id')||''),name:String(data.get('name')||''),domain:String(data.get('domain')||''),description:String(data.get('description')||'')}});});

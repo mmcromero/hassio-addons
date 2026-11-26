@@ -1,20 +1,20 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.22",
+  "addon_version": "0.1.0-dev.23",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "17ba1bab99d41893eb01d482ab1c4ae5c27d0184",
+  "source_commit": "c0f7fc60822d590799bc98208c86a85ca96b1835",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "distribution_method": "Direct export of approved add-on source files to hassio-addons/main/portal-governanca; Supervisor performs ARM64 build on the Raspberry Pi",
+  "distribution_method": "Direct export from mmcromero/portal-governanca:desenvolvimento; Supervisor performs the ARM64 build and runs npm ci, tests and Vite build on the Raspberry Pi",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "82e2c8b73380a84a295a70b3c5d6f02fa75cd6db"
+      "git_blob_sha": "3044b49c629d522feec411284737115d65ff0f3e"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "ce4252379ee67ba9b23ad73405b60e70537fdfeb"
+      "git_blob_sha": "770eb586857fe62d58be2a7010fb7fe4ebecfb6f"
     },
     {
       "path": "config/design-system.lock.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "3bb56eea5263439d1cdc19e770257e0e1b6632b9"
+      "git_blob_sha": "22058c58147266a2f2c4347e1ce4e0c521649feb"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "976cb74646ae6d4334268f5f0e543f6334592085"
+      "git_blob_sha": "44378876dc92275a05ba119e5dae747420f7d3b9"
     },
     {
       "path": "public/brand-icon.png",
@@ -58,7 +58,7 @@
     },
     {
       "path": "README.md",
-      "git_blob_sha": "575b58382def7de38bcfdd4a84337ed11a681291"
+      "git_blob_sha": "cb0aa89bc1c393f49efcd4fc337e6dbdc2d9b545"
     },
     {
       "path": "run.sh",
@@ -70,11 +70,15 @@
     },
     {
       "path": "server/index.mjs",
-      "git_blob_sha": "01f3dac2f607d343af881b981ff408e5e906f778"
+      "git_blob_sha": "a1758ef13361d38755a405856fe649b16fc32312"
     },
     {
       "path": "server/ingress.mjs",
       "git_blob_sha": "5d709144b9250ed6e8fa4dcef54f65262db3a569"
+    },
+    {
+      "path": "server/ledger.mjs",
+      "git_blob_sha": "56fb05bcca2adfa4f924e512a7502be91c20800c"
     },
     {
       "path": "server/n8n.mjs",
@@ -90,7 +94,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "git_blob_sha": "80b1005a00203a6670c350567c60afe2f44bc55f"
+      "git_blob_sha": "d9c78de5015ad8c669713543f364e34dcbe1e4bb"
     },
     {
       "path": "src/data/projects.ts",
@@ -98,7 +102,7 @@
     },
     {
       "path": "src/main.ts",
-      "git_blob_sha": "fc2e21eaccd7bbb1a74f45437ce7921a58f91f5b"
+      "git_blob_sha": "a79d7e49e8355e37add5a04476f05f366cf0c990"
     },
     {
       "path": "src/styles.css",
@@ -119,6 +123,10 @@
     {
       "path": "tests/layout.test.mjs",
       "git_blob_sha": "4974e6ec050ea565f961c3619d56cf36f559549c"
+    },
+    {
+      "path": "tests/ledger.test.mjs",
+      "git_blob_sha": "c3ad987fc469be89e0d3e04215464c8a161ff951"
     },
     {
       "path": "tests/n8n.test.mjs",
