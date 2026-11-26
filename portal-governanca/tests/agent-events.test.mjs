@@ -3,6 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createLedger } from "../server/ledger.mjs";
+import { filterUnrecordedAgentEvents } from "../server/agent-events.mjs";
 
 describe("Protocolo de Agentes — Backend Ledger", () => {
   let dir, file, ledger;
@@ -96,4 +97,27 @@ describe("Protocolo de Agentes — Backend Ledger", () => {
       code: "REQUIRED_FIELDS"
     });
   });
+});
+
+describe("Polling de agentes — idempotência antes do despacho",()=>{
+ let dir,file,ledger;
+ beforeEach(async()=>{
+  dir=await mkdtemp(path.join(os.tmpdir(),"portal-agent-filter-"));
+  file=path.join(dir,"history.ndjson");
+  ledger=createLedger({filePath:file});
+ });
+ afterEach(async()=>{await rm(dir,{recursive:true,force:true});});
+ const event=(id)=>({body:{comment:{body:"<!-- AGENT_PROTOCOL_EVENT -->\n\x60\x60\x60json\n"+JSON.stringify({event_id:id})+"\n\x60\x60\x60\n<!-- /AGENT_PROTOCOL_EVENT -->"}}});
+ it("remove eventos já registrados e mantém eventos novos",async()=>{
+  const id="05ce8adf-003b-494e-90b3-9ea20e799e97";
+  await ledger.append({type:"agent_event",title:"Evento de teste",summary:"Evento já persistido",eventId:id,eventType:"atualizacao",projectId:"portal-governanca",agentId:"agent",taskId:"task",origin:"AgentProtocol"});
+  const result=await filterUnrecordedAgentEvents([event(id),event("6f3bcfae-b089-4315-9155-75cad6ab147e")],ledger);
+  expect(result.alreadyRecorded).toBe(1);
+  expect(result.events).toHaveLength(1);
+ });
+ it("mantém comentários malformados para a validação do workflow rejeitar",async()=>{
+  const result=await filterUnrecordedAgentEvents([{body:{comment:{body:"sem bloco JSON válido"}}}],ledger);
+  expect(result.alreadyRecorded).toBe(0);
+  expect(result.events).toHaveLength(1);
+ });
 });
