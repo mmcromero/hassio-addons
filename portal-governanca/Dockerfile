@@ -7,7 +7,8 @@ RUN npm ci
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
 COPY tests ./tests
-COPY server ./server\nCOPY config ./config
+COPY server ./server
+COPY config ./config
 RUN npm run build:design-system && npm test && npm run build:portal
 
 FROM node:22-alpine AS runtime
