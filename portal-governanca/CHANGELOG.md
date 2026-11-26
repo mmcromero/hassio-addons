@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.22 — 26/11/2026
+- Corrige os testes arquiteturais após a inclusão dos quatro indicadores n8n.
+- Ajusta a localização do `run.sh` no pacote de distribuição, compatível com a raiz usada pelo Docker build.
+
+
 ## 0.1.0-dev.21 — 26/11/2026
 - Inicia a Fase 4 com conector n8n somente leitura para workflows e metadados de execuções.
 - Adiciona opções protegidas independentes para URL base e API key n8n; nenhuma credencial é enviada ao frontend.

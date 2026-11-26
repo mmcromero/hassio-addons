@@ -19,7 +19,7 @@ describe("build autossuficiente do add-on",()=>{
   const css=fs.readFileSync(path.join(root,"src/styles.css"),"utf8");
   expect(main).toContain('src="./brand-icon.png"');
   expect(main).not.toContain('<span class="mark">G</span>');
-  expect((main.match(/class="metric-content"/g)||[]).length).toBe(8);
+  expect((main.match(/class="metric-content"/g)||[]).length).toBe(12);
   expect(css).toContain(".metric-content{display:flex;flex-direction:column");
   expect(fs.existsSync(path.join(root,"public/brand-icon.png"))).toBe(true);
   const iconPath=fs.existsSync(path.join(root,"icon.png"))?path.join(root,"icon.png"):path.join(root,"addon/icon.png");
@@ -39,7 +39,8 @@ describe("build autossuficiente do add-on",()=>{
   expect(fs.existsSync(path.join(root,"server/supervisor-data.mjs"))).toBe(true);
  });
  it("inclui conector n8n no runtime e mantém a credencial fora do frontend",()=>{
-  const run=fs.readFileSync(path.join(root,"addon/run.sh"),"utf8");
+  const runPath=fs.existsSync(path.join(root,"run.sh"))?path.join(root,"run.sh"):path.join(root,"addon/run.sh");
+  const run=fs.readFileSync(runPath,"utf8");
   const server=fs.readFileSync(path.join(root,"server/index.mjs"),"utf8");
   expect(run).toContain("N8N_API_KEY");
   expect(run).toContain("N8N_BASE_URL");
