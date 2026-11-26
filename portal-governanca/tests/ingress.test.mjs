@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {getIngressBasePath,isIngressPeer,isLoopbackPeer,normalizePeerAddress,stripIngressPath} from "../server/ingress.mjs";
+import {getIngressBasePath,isIngressPeer,isLoopbackPeer,isN8nPeer,normalizePeerAddress,stripIngressPath} from "../server/ingress.mjs";
 describe("fronteira de confiança do Home Assistant Ingress",()=>{
  it("normaliza IPv4 mapeado em IPv6 e valida o peer real",()=>{
   expect(normalizePeerAddress("::ffff:172.30.32.2")).toBe("172.30.32.2");
@@ -35,4 +35,12 @@ describe("fronteira de confiança do Home Assistant Ingress",()=>{
   expect(stripIngressPath("/projects/avisaqui",base)).toBe("/projects/avisaqui");
   expect(stripIngressPath("api/health",base)).toBeNull();
  });
+ it("aceita somente o peer n8n explicitamente configurado",()=>{
+  expect(isN8nPeer("172.30.33.18","172.30.33.18")).toBe(true);
+  expect(isN8nPeer("::ffff:172.30.33.18","172.30.33.18")).toBe(true);
+  expect(isN8nPeer("172.30.33.19","172.30.33.18")).toBe(false);
+  expect(isN8nPeer("172.30.33.18","")).toBe(false);
+  expect(isN8nPeer("172.30.32.2","172.30.33.18")).toBe(false);
+ });
+
 });
