@@ -1,6 +1,8 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M160 / 26/11/2026:** RC68 (0.1.0-rc.68) permanece instalada/started no HA; RC69 (0.1.0-rc.69) está somente em desenvolvimento. Nenhuma RC69 foi publicada/instalada nesta retomada; nenhum perfil AppArmor foi carregado/ativado.
+**Estado vigente — M172 / 26/11/2026:** RC68 (0.1.0-rc.68) permanece instalada/started no HA; RC69 (0.1.0-rc.69) foi publicada no catálogo, mas o build ARM64 falhou em quatro testes do inventário cgroup. RC70 (0.1.0-rc.70) está em desenvolvimento com correções exclusivamente nas fixtures/expectativas dos testes; ainda não publicada nem instalada. Nenhum perfil AppArmor customizado foi carregado/ativado.
+
+**M172 — diagnóstico do primeiro build RC69:** o Supervisor concluiu o estágio C e chegou à suíte completa; quatro testes em `test_factory_runner_cgroup_inventory.py` falharam porque a fixture não preenchia `memory.swap.max` no cgroup atual e uma expectativa confundia presença com legibilidade. Correção RC70: preencher o valor `max` na fixture; manter `aggregate_controls_present` como presença e `monitor_controls_readable` como legibilidade separada. `delegation_candidate` continua exigindo ambos. Nenhum teste foi removido, nenhum gate foi relaxado e nenhum runtime de projeto foi executado.
 
 **Validação M122 preservada:** compilação cruzada estática AMD64 e ARM64 com Zig 0.13.0: PASS; ELF sem PT_INTERP/PT_DYNAMIC; 14/19 testes de lógica pura PASS, 5 BLOCKED no Windows. Isso não substitui build Docker nativo, suíte Linux nem runtime.
 

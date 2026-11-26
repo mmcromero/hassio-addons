@@ -1,3 +1,10 @@
+# 0.1.0-rc.70 — M172: corrigir fixture e semântica do preflight cgroup
+
+- Corrige a fixture de testes para preencher `memory.swap.max` no cgroup atual, como já fazia nos ancestrais; o parser passa a receber um valor válido e pode testar a hierarquia completa.
+- Corrige a expectativa de `aggregate_controls_present`: ela mede presença dos arquivos; legibilidade é medida separadamente por `monitor_controls_readable`. A falta de leitura continua bloqueando `delegation_candidate`.
+- Nenhum controle de segurança foi relaxado, nenhum teste foi removido e nenhuma lógica de runtime foi alterada neste ajuste.
+- RC69 teve build ARM64 iniciado no Supervisor, mas a suíte completa falhou em quatro testes de cgroup. RC70 aguarda novo build e validação no Raspberry Pi 4; nenhum código de projeto foi executado.
+
 # 0.1.0-rc.69 — M116: helper ELF dedicado para probe de namespaces
 
 - Adiciona helper nativo C compilado no estágio de validação e copiado para a imagem runtime em `/usr/local/libexec/fr-userns-probe`; o estágio runtime não recebe compilador.

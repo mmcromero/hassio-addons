@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.69",
+  "version": "0.1.0-rc.70",
   "repository": "mmcromero/factory-runner",
-  "commit": "f2b19e1d3c278541c11ac56c1046a0cda56a23b2",
-  "catalog_sha": "ea116d78565a5a98764a6a3f62df5da51e633095",
-  "previous_source": "f7deb5a7e321801de72cfb42f4c320c426071126",
-  "reviewed_source": "f2b19e1d3c278541c11ac56c1046a0cda56a23b2",
+  "commit": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
+  "catalog_sha": "681ee0efd18787c15c4810037e12137fb0db6af8",
+  "previous_source": "f2b19e1d3c278541c11ac56c1046a0cda56a23b2",
+  "reviewed_source": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
   "publication": "OWNER_AUTHORIZED_DIRECT_DISTRIBUTION_EXCEPTION_M172",
-  "authorization": "OWNER_AUTHORIZED_RC69_DIRECT_DISTRIBUTION_2026-11-26_M172",
-  "candidate_distribution": "FACTORY_RUNNER_RC69_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
-  "tests": "PENDING_SUPERVISOR_ARM64_BUILD_AND_DOCKERFILE_VALIDATION; NO_PROJECT_CODE_EXECUTED",
-  "review_status": "SOURCE_OVERLAY_EXACT_BLOBS; CATALOG_HISTORICAL_FILE_PRESERVED; BUILD_AND_RUNTIME_HOMOLOGATION_PENDING",
+  "authorization": "OWNER_AUTHORIZED_RC70_DIRECT_DISTRIBUTION_2026-11-26_M172",
+  "candidate_distribution": "FACTORY_RUNNER_RC70_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
+  "tests": "RC69_SUPERVISOR_ARM64_BUILD_FAILED_FOUR_CGROUP_INVENTORY_TESTS; RC70_CORRECTED_TEST_FIXTURE_AND_EXPECTATION; REBUILD_PENDING; NO_PROJECT_CODE_EXECUTED",
+  "review_status": "SOURCE_OVERLAY_EXACT_BLOBS; CATALOG_HISTORICAL_FILE_PRESERVED; RC69_BUILD_FAILURE_RECORDED; RC70_BUILD_PENDING",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "b4192ad343be54f648840c038950e89e4462a76f",
-      "size": 68531,
+      "git_blob_sha": "bfca2ebe6ab71c52160920c40d01da67c3e7a217",
+      "size": 69351,
       "mode": "100644"
     },
     {
@@ -156,8 +156,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "e1fe083c59c357c6d3faff37f1a0f57645930015",
-      "size": 36714,
+      "git_blob_sha": "fd3f97fedc32224286c53ceb8d21e5eab71549b5",
+      "size": 37491,
       "mode": "100644"
     },
     {
@@ -226,7 +226,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "4013a9cc7975fae38b4644288d1c8adf832ac684",
+      "git_blob_sha": "a04e6692cb991d3b0aa982b73f40eb2c4757857e",
       "size": 1015,
       "mode": "100644"
     },
@@ -639,8 +639,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_cgroup_inventory.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_cgroup_inventory.py",
-      "git_blob_sha": "2d1dd54025494e57c10d7e9fef978bd10e45ae21",
-      "size": 9563,
+      "git_blob_sha": "6a02f49cec2daeeca516ae9cc0b6bde0936a766f",
+      "size": 9848,
       "mode": "100644"
     },
     {
@@ -1206,11 +1206,24 @@
     "rc68_options_preserved": true,
     "rc69_source_commit": "f2b19e1d3c278541c11ac56c1046a0cda56a23b2",
     "rc69_publication_status": "PENDING_COMMIT_CREATION",
-    "rc69_build_result": "NOT_YET_EXECUTED",
-    "rc69_install_result": "NOT_YET_EXECUTED",
-    "rc69_options_policy": "PRESERVE_EXISTING_SUPERVISOR_OPTIONS_AND_PERSISTENT_DATA",
+    "rc69_build_result": "FAIL; SUPERVISOR_ARM64_DOCKERFILE_FULL_SUITE; FOUR_FAILURES_IN_TEST_FACTORY_RUNNER_CGROUP_INVENTORY",
+    "rc69_install_result": "NOT_INSTALLED; RC68_RETAINED_AND_STARTED",
+    "rc69_options_policy": "UNCHANGED",
     "rc69_backup_policy": "NO_PREVIOUS_RC_BACKUP_PER_OWNER_DECISION",
     "rc69_security_gate": {
+      "safe_for_untrusted_code": false,
+      "publisher": "DORMANT",
+      "sandbox_export": "FAIL_CLOSED",
+      "apparmor_custom_profile": "NOT_APPLIED",
+      "project_code_executed": false
+    },
+    "rc70_source_commit": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
+    "rc70_publication_status": "PENDING_COMMIT_CREATION",
+    "rc70_build_result": "PENDING_SUPERVISOR_ARM64_BUILD_AND_DOCKERFILE_VALIDATION",
+    "rc70_install_result": "NOT_YET_EXECUTED",
+    "rc70_options_policy": "PRESERVE_EXISTING_SUPERVISOR_OPTIONS_AND_PERSISTENT_DATA",
+    "rc70_backup_policy": "NO_PREVIOUS_RC_BACKUP_PER_OWNER_DECISION",
+    "rc70_security_gate": {
       "safe_for_untrusted_code": false,
       "publisher": "DORMANT",
       "sandbox_export": "FAIL_CLOSED",

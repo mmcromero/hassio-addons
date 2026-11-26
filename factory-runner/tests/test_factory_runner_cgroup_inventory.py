@@ -31,6 +31,8 @@ class CgroupInventoryTests(unittest.TestCase):
         (self.current / "cpu.max").write_text("max 100000")
         (self.current / "memory.max").write_text("max")
         (self.current / "pids.max").write_text("max")
+        # Every visible ancestor must expose parseable swap limits.
+        (self.current / "memory.swap.max").write_text("max")
         (self.current / "cgroup.controllers").write_text("cpu memory pids io")
         (self.current / "cgroup.type").write_text("domain")
         for name, value in (("cpu.max", "max 100000"),
@@ -130,7 +132,9 @@ class CgroupInventoryTests(unittest.TestCase):
         self.mount_info("rw")
         (self.current / "memory.swap.max").unlink()
         report = self.inspect()
-        self.assertFalse(report["aggregate_controls_present"])
+        # Presence and readability are separate diagnostics: the file exists,
+        # but the read permission check must still block delegation candidacy.
+        self.assertTrue(report["aggregate_controls_present"])
         self.assertFalse(report["delegation_candidate"])
         (self.current / "memory.swap.max").touch()
         (self.current / "cgroup.events").unlink()
