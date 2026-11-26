@@ -9,6 +9,7 @@ COPY src ./src
 COPY tests ./tests
 COPY server ./server
 COPY config ./config
+COPY Dockerfile run.sh ./
 RUN npm run build:design-system && npm test && npm run build:portal
 
 FROM node:22-alpine AS runtime
