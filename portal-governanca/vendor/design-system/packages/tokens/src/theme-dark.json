@@ -1,0 +1,76 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "dark",
+  "sys": {
+    "color": {
+      "surface": {
+        "canvas": { "$value": "{ref.color.neutral.950}", "$type": "color" },
+        "card": { "$value": "{ref.color.neutral.900}", "$type": "color" },
+        "elevated": { "$value": "{ref.color.neutral.800}", "$type": "color" },
+        "subtle": { "$value": "{ref.color.neutral.900}", "$type": "color" },
+        "inverse": { "$value": "{ref.color.neutral.50}", "$type": "color" }
+      },
+      "text": {
+        "primary": { "$value": "{ref.color.neutral.50}", "$type": "color" },
+        "secondary": { "$value": "{ref.color.neutral.300}", "$type": "color" },
+        "muted": { "$value": "{ref.color.neutral.400}", "$type": "color" },
+        "inverse": { "$value": "{ref.color.neutral.900}", "$type": "color" },
+        "on-action": { "$value": "#ffffff", "$type": "color" }
+      },
+      "border": {
+        "subtle": { "$value": "{ref.color.neutral.800}", "$type": "color" },
+        "default": { "$value": "{ref.color.neutral.700}", "$type": "color" },
+        "strong": { "$value": "{ref.color.neutral.500}", "$type": "color" }
+      },
+      "action": {
+        "primary": {
+          "default": { "$value": "{ref.color.blue.500}", "$type": "color" },
+          "hover": { "$value": "{ref.color.blue.400}", "$type": "color" },
+          "active": { "$value": "{ref.color.blue.600}", "$type": "color" },
+          "text": { "$value": "{ref.color.neutral.950}", "$type": "color" }
+        },
+        "secondary": {
+          "default": { "$value": "{ref.color.neutral.800}", "$type": "color" },
+          "hover": { "$value": "{ref.color.neutral.700}", "$type": "color" },
+          "active": { "$value": "{ref.color.neutral.600}", "$type": "color" },
+          "text": { "$value": "{ref.color.neutral.50}", "$type": "color" }
+        },
+        "destructive": {
+          "default": { "$value": "{ref.color.red.500}", "$type": "color" },
+          "hover": { "$value": "{ref.color.red.400}", "$type": "color" },
+          "active": { "$value": "{ref.color.red.600}", "$type": "color" },
+          "text": { "$value": "#ffffff", "$type": "color" }
+        },
+        "disabled": {
+          "bg": { "$value": "{ref.color.neutral.800}", "$type": "color" },
+          "text": { "$value": "{ref.color.neutral.600}", "$type": "color" }
+        }
+      },
+      "feedback": {
+        "info": {
+          "bg": { "$value": "rgba(30, 58, 138, 0.4)", "$type": "color" },
+          "border": { "$value": "{ref.color.blue.700}", "$type": "color" },
+          "text": { "$value": "{ref.color.blue.200}", "$type": "color" }
+        },
+        "success": {
+          "bg": { "$value": "rgba(20, 83, 45, 0.4)", "$type": "color" },
+          "border": { "$value": "{ref.color.green.700}", "$type": "color" },
+          "text": { "$value": "{ref.color.green.200}", "$type": "color" }
+        },
+        "warning": {
+          "bg": { "$value": "rgba(120, 53, 15, 0.4)", "$type": "color" },
+          "border": { "$value": "{ref.color.amber.700}", "$type": "color" },
+          "text": { "$value": "{ref.color.amber.200}", "$type": "color" }
+        },
+        "error": {
+          "bg": { "$value": "rgba(127, 29, 29, 0.4)", "$type": "color" },
+          "border": { "$value": "{ref.color.red.700}", "$type": "color" },
+          "text": { "$value": "{ref.color.red.200}", "$type": "color" }
+        }
+      },
+      "focus": {
+        "ring": { "$value": "{ref.color.blue.400}", "$type": "color" }
+      }
+    }
+  }
+}
