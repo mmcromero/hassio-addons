@@ -1,0 +1,32 @@
+{
+  "name": "@mmcromero/portal-governanca",
+  "version": "0.1.0-dev.3",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n API,WEB \"cross-env NODE_ENV=development node server/index.mjs\" \"vite --host 127.0.0.1\"",
+    "build": "npm run build:design-system && npm run build:portal",
+    "start": "node server/index.mjs",
+    "preview": "npm start",
+    "test": "vitest run",
+    "package:addon": "node scripts/package-addon.mjs",
+    "build:design-system": "npm run build --prefix vendor/design-system/packages/tokens && npm run build --prefix vendor/design-system/packages/components",
+    "build:portal": "tsc --noEmit && vite build"
+  },
+  "dependencies": {
+    "@mmcromero/ds-components": "file:vendor/design-system/packages/components",
+    "@mmcromero/ds-tokens": "file:vendor/design-system/packages/tokens",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.8",
+    "happy-dom": "^21.0.4"
+  }
+}
