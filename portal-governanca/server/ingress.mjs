@@ -27,6 +27,8 @@ export function stripIngressPath(pathname,basePath){
  // validate both the trusted proxy peer and X-Ingress-Path before using this.
  if(pathname===basePath||pathname===basePath+"/")return "/";
  if(pathname.startsWith(basePath+"/"))return pathname.slice(basePath.length)||"/";
+ // A different dynamic Ingress token is never an app-relative path.
+ if(pathname.startsWith(INGRESS_PREFIX))return null;
  // The session header is the authority for the dynamic base path. When the
  // trusted proxy has already stripped that prefix, retain the app-relative path.
  if(pathname.startsWith("/")&&!pathname.startsWith("//"))return pathname;
