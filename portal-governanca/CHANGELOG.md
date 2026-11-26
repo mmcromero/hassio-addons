@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.20 — 26/11/2026
+- Corrige a integração Supervisor: o papel `default` não autoriza `/v2/apps/status` (403 confirmado em produção).
+- Substitui a listagem global por consultas GET allowlisted `/addons/{slug}/info`, compatíveis com papel `default`, usando lista declarativa de slugs conhecidos.
+
+
 ## 0.1.0-dev.19 — 26/11/2026
 - Corrige a asserção da suíte de build: a tela contém quatro indicadores na visão geral e quatro no inventário Home Assistant.
 

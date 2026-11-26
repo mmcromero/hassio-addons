@@ -22,7 +22,10 @@ describe("fronteira de segurança do bridge Supervisor",()=>{
  });
  it("fixa o único endpoint upstream e não implementa proxy genérico",async()=>{
   const bridge=await readFile(new URL("server/supervisor-bridge.mjs",root),"utf8");
-  expect(bridge).toContain('const UPSTREAM="http://supervisor/v2/apps/status"');
+  expect(bridge).toContain('const UPSTREAM="http://supervisor"');
+  expect(bridge).toContain('"/addons/"+encodeURIComponent(slug)+"/info"');
+  expect(bridge).toContain("config.inventorySlugs");
+  expect(bridge).not.toContain("/v2/apps/status");
   expect(bridge).toContain('req.method!=="GET"');
   expect(bridge).toContain('pathname!=="/v1/inventory"');
   expect(bridge).toContain("127.0.0.1");

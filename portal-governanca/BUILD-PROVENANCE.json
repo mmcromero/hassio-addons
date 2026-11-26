@@ -1,20 +1,20 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.19",
+  "addon_version": "0.1.0-dev.20",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "c5de80c12cdc70eba872d9bd6c388561b2f6e5e2",
+  "source_commit": "bf84743e788b5eff977d599bf04b120e8f698b5a",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "distribution_method": "Direct source-file export via GitHub Git database API; Home Assistant Supervisor builds Dockerfile on target architecture",
+  "distribution_method": "Direct catalog publication; Home Assistant Supervisor builds ARM64 on the Raspberry Pi",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "9080d2704706360b1b8e0e80cc2ea7a05da8b76a"
+      "git_blob_sha": "47352ce9c5d18a79b446842bff8eb4ec3fff6bdf"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "562e889dbb3782ae44c4c232f833cb15188cc6df"
+      "git_blob_sha": "214c5a8e0fe6c383bb78e3d08cb957c497119239"
     },
     {
       "path": "config/design-system.lock.json",
@@ -22,7 +22,7 @@
     },
     {
       "path": "config/home-assistant-addons.json",
-      "git_blob_sha": "42d774cf6f683cc0f24b25341e9a59375062cd60"
+      "git_blob_sha": "73608a55ae95230197ee0041ce4058a0bcbbcedf"
     },
     {
       "path": "config/portfolio.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "757d65268066b10d918ce735a7785c286992e6cf"
+      "git_blob_sha": "812c925ffe0a4629b765b92319fdd19d9741d9cd"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "ef1a37a4db186e43fea89ab6a3ce79e8cbab505b"
+      "git_blob_sha": "4eda8e41cd118352d8584d0ac944a7bf0037c417"
     },
     {
       "path": "public/brand-icon.png",
@@ -78,11 +78,11 @@
     },
     {
       "path": "server/supervisor-bridge.mjs",
-      "git_blob_sha": "18fe863ef3cce6c0d8dfcbe1c4f349e2694ad0b6"
+      "git_blob_sha": "f072d1fb6a6519974138f99d44b63f62f2c2ed2f"
     },
     {
       "path": "server/supervisor-data.mjs",
-      "git_blob_sha": "b673af4dc38d377b149cc7c82eb7a0b10de5f1f2"
+      "git_blob_sha": "815ebab23ee84d3605d658d7ecd16f3f16a524ad"
     },
     {
       "path": "src/api/client.ts",
@@ -130,11 +130,11 @@
     },
     {
       "path": "tests/supervisor-security.test.mjs",
-      "git_blob_sha": "1204cf06a8bfdafe5fe7908cbea9c0a9ff9eb52a"
+      "git_blob_sha": "f07c6992e7232f3019f86c5eeccecff68d09e633"
     },
     {
       "path": "tests/supervisor.test.mjs",
-      "git_blob_sha": "f8770dbab83be0ae336ad82743902d00180ab629"
+      "git_blob_sha": "4e33bf010eee541260d2835a418b35c47380d18b"
     },
     {
       "path": "tsconfig.json",
