@@ -1,0 +1,25 @@
+{
+  "name": "@mmcromero/ds-components",
+  "version": "0.1.0",
+  "description": "Componentes acessíveis em Custom Elements nativos do Design System mmcromero",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./components.iife.js": "./dist/components.iife.js"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-css.mjs && esbuild src/index.ts --bundle --format=iife --outfile=dist/components.iife.js",
+    "test": "vitest run --environment happy-dom"
+  },
+  "dependencies": {
+    "@mmcromero/ds-tokens": "0.1.0",
+    "esbuild": "0.21.5"
+  }
+}
