@@ -6,7 +6,7 @@ import {timingSafeEqual} from "node:crypto";
 import {createGitHubClient} from "./github.mjs";
 import {createN8nClient} from "./n8n.mjs";
 import {createLedger} from "./ledger.mjs";
-import {getIngressBasePath,isIngressPeer,isLoopbackPeer,stripIngressPath} from "./ingress.mjs";
+import {getIngressBasePath,isIngressPeer,isLoopbackPeer,isN8nPeer,stripIngressPath} from "./ingress.mjs";
 
 if(process.env.NODE_ENV==="development")await import("dotenv/config");
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
@@ -22,6 +22,7 @@ const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:p
 const n8n=createN8nClient({baseUrl:process.env.N8N_BASE_URL||"",apiKey:process.env.N8N_API_KEY||""});
 const ledger=createLedger({filePath:process.env.PORTAL_LEDGER_PATH||"/data/portal-ledger.ndjson"});
 const haBridgeUrl=process.env.HA_BRIDGE_URL||"";
+const n8nInternalPeer=process.env.N8N_INTERNAL_PEER||"";
 let haCache=null;
 const HA_CACHE_MS=30_000;
 
@@ -111,8 +112,15 @@ const server=http.createServer(async(req,res)=>{
  catch{text(res,400,"Bad request");return;}
  const rawPath=requestUrl.pathname,peer=req.socket.remoteAddress||"";
  if(rawPath==="/healthz"&&isLoopbackPeer(peer)){text(res,200,"ok");return;}
- let pathname=rawPath;
- if(ingressMode){
+ const internalAgentEventRequest=rawPath==="/internal/agent-events"&&req.method==="POST"&&ingressMode&&isN8nPeer(peer,n8nInternalPeer);
+ if(rawPath==="/internal/agent-events"&&!internalAgentEventRequest){
+  if(req.method!=="POST"){json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido."}},{Allow:"POST"});return;}
+  json(res,403,{error:{code:"INTERNAL_PEER_NOT_ALLOWED",message:"Origem interna não autorizada."}});return;
+ }
+ let pathname=internalAgentEventRequest?"/api/v1/agent-events":rawPath;
+ if(internalAgentEventRequest){
+  // Dedicated internal route: only the exact configured n8n container peer is trusted.
+ }else if(ingressMode){
   if(!isIngressPeer(peer)){text(res,403,"Ingress access only");return;}
   const basePath=getIngressBasePath(req.headers["x-ingress-path"]);
   if(!basePath){text(res,403,"Valid Home Assistant Ingress session required");return;}
@@ -150,7 +158,7 @@ const server=http.createServer(async(req,res)=>{
   return;
  }
  if(pathname==="/api/v1/agent-events"&&req.method==="POST"){
-  if(!sameOrigin(req)&&!isLoopbackPeer(peer)&&!(ingressMode&&isIngressPeer(peer))){
+  if(!internalAgentEventRequest&&!sameOrigin(req)&&!isLoopbackPeer(peer)&&!(ingressMode&&isIngressPeer(peer))){
    json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;
   }
   let body;
