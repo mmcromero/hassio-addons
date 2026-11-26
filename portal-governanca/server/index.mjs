@@ -6,6 +6,7 @@ import {timingSafeEqual} from "node:crypto";
 import {createGitHubClient} from "./github.mjs";
 import {createN8nClient} from "./n8n.mjs";
 import {createLedger} from "./ledger.mjs";
+import {createRunnerBridge} from "./runner-bridge.mjs";
 import {filterUnrecordedAgentEvents} from "./agent-events.mjs";
 import {getIngressBasePath,isIngressPeer,isLoopbackPeer,isN8nPeer,stripIngressPath} from "./ingress.mjs";
 
@@ -22,10 +23,17 @@ const haMappings=new Map((haConfig.mappings||[]).map(item=>[item.slug,item]));
 const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:process.env.GITHUB_WRITE_TOKEN||""});
 const n8n=createN8nClient({baseUrl:process.env.N8N_BASE_URL||"",apiKey:process.env.N8N_API_KEY||""});
 const ledger=createLedger({filePath:process.env.PORTAL_LEDGER_PATH||"/data/portal-ledger.ndjson"});
+const runnerBridge=createRunnerBridge({token:process.env.FACTORY_RUNNER_DISPATCH_TOKEN||""});
+const RUNNER_PROJECTS={
+ avisaqui:{repository:"mmcromero/pager-virtual"},
+ artesao_digital:{repository:"mmcromero/fabricacao_e_orcamentos"}
+};
 const haBridgeUrl=process.env.HA_BRIDGE_URL||"";
 const n8nInternalPeer=process.env.N8N_INTERNAL_PEER||"";
 let haCache=null;
 const HA_CACHE_MS=30_000;
+const timelineCollectionCache=new Map();
+const TIMELINE_CACHE_MS=10*60_000;
 
 if(production&&!ingressMode&&(!process.env.GITHUB_TOKEN||!process.env.PORTAL_BASIC_USER||!process.env.PORTAL_BASIC_PASSWORD))
  throw new Error("Produção standalone exige GITHUB_TOKEN, PORTAL_BASIC_USER e PORTAL_BASIC_PASSWORD.");
@@ -54,6 +62,56 @@ async function readJson(req,maxBytes=12_000){
  const chunks=[];let size=0;
  for await(const chunk of req){size+=chunk.length;if(size>maxBytes)throw Object.assign(new Error("Corpo da solicitação excede o limite permitido."),{status:413,code:"REQUEST_TOO_LARGE"});chunks.push(chunk);}
  try{return JSON.parse(Buffer.concat(chunks).toString("utf8"));}catch{throw Object.assign(new Error("JSON inválido."),{status:400,code:"INVALID_JSON"});}
+}
+
+function runnerMissionStatus(status){
+ return ({RECEBIDA:"dispatched",PLANEJADA:"planning",EXECUTANDO:"planning",VALIDANDO:"planning",CONCLUIDA:"planned",PARCIAL:"partial",IMPEDIDA:"blocked",CANCELADA:"cancelled"})[status]||"planning";
+}
+function safeRunnerCode(error){
+ const code=error?.code;
+ return typeof code==="string"&&/^[a-z][a-z0-9_]{0,63}$/.test(code)?code:"runner_dispatch_failed";
+}
+
+function runnerPlanSummary(job){
+ const result=job?.result;
+ if(result===null||result===undefined)return {};
+ if(!result||typeof result!=="object"||Array.isArray(result)||result.tests_execution_performed!==false||result.authorization_verified!==false)throw Object.assign(new Error("Resultado do Runner não comprovou modo read-only."),{code:"runner_result_not_read_only"});
+ const planStatus=result.plan_status,selectedCount=result.selected_count,reusedCount=result.reused_count,omittedCount=result.omitted_count,planDigest=result.plan_digest,receiptDigest=result.receipt_digest;
+ if(!["PLANNED","PARTIAL","BLOCKED_SCOPE"].includes(planStatus)||![selectedCount,reusedCount,omittedCount].every(Number.isSafeInteger)||[selectedCount,reusedCount,omittedCount].some(n=>n<0)||! /^[0-9a-f]{64}$/.test(planDigest||"")||! /^[0-9a-f]{64}$/.test(receiptDigest||""))throw Object.assign(new Error("Resumo do plano do Runner inválido."),{code:"runner_plan_summary_invalid"});
+ return {planStatus,selectedCount,reusedCount,omittedCount,planDigest,receiptDigest,testsExecutionPerformed:false,authorizationVerified:false,nextRunnerAction:typeof result.next_action==="string"?result.next_action:null};
+}
+async function dispatchMission(mission){
+ try{
+  const result=await runnerBridge.submitMission({missionId:mission.id,projectId:mission.projectId,prompt:mission.prompt,createdAt:mission.createdAt});
+  const job=result?.job,executionId=job?.execution_id,runnerStatus=job?.status;
+  if(typeof executionId!=="string"||typeof runnerStatus!=="string")throw Object.assign(new Error("Resposta inválida do Runner."),{code:"runner_invalid_response"});
+  const missionStatus=runnerMissionStatus(runnerStatus);
+  const planSummary=runnerPlanSummary(job);
+  await ledger.appendMissionStatus({missionId:mission.id,missionStatus,executionId,runnerStatus,...planSummary});
+  return {...mission,missionStatus,executionId,runnerStatus,dispatchError:null,...planSummary};
+ }catch(error){
+  const code=safeRunnerCode(error);
+  await ledger.appendMissionStatus({missionId:mission.id,missionStatus:"dispatch_blocked",dispatchError:code});
+  return {...mission,missionStatus:"dispatch_blocked",executionId:null,runnerStatus:null,dispatchError:code};
+ }
+}
+async function refreshMissionStatuses(missions){
+ await Promise.all(missions.slice(0,5).map(async mission=>{
+  if(mission.executionId){
+   try{
+    const result=await runnerBridge.getJob(mission.executionId),job=result?.job;
+    if(!job||typeof job.status!=="string")return;
+    const missionStatus=runnerMissionStatus(job.status);
+    const planSummary=runnerPlanSummary(job);
+    const summaryChanged=Object.entries(planSummary).some(([key,value])=>mission[key]!==value);
+    if(missionStatus!==mission.missionStatus||job.status!==mission.runnerStatus||summaryChanged){
+     await ledger.appendMissionStatus({missionId:mission.id,missionStatus,executionId:mission.executionId,runnerStatus:job.status,...planSummary});
+    }
+   }catch{}
+  }else if(runnerBridge.configured&&["received","dispatch_blocked"].includes(mission.missionStatus)){
+   await dispatchMission(mission);
+  }
+ }));
 }
 function securityHeaders(extra={}){
  return {
@@ -131,13 +189,13 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")||rawPath.endsWith("/api/v1/timeline/collect")||rawPath.endsWith("/api/v1/timeline/end")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions")&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
@@ -145,33 +203,86 @@ const server=http.createServer(async(req,res)=>{
   catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_REGISTRATION_FAILED",message:error.message}});}
   return;
  }
+ if(pathname==="/api/v1/timeline"&&req.method==="GET"){
+  try{const projectId=requestUrl.searchParams.get("project")||"";if(typeof projectId!=="string"||!projectId.trim()||projectId.length>120||/[\\u0000-\\u001f]/.test(projectId)){json(res,400,{error:{code:"INVALID_PROJECT_ID",message:"Informe um ID de projeto válido."}});return;}json(res,200,{...await ledger.listTimelineEvents({projectId,limit:2000}),serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo"});}
+  catch(error){json(res,error.status||503,{error:{code:error.code||"TIMELINE_UNAVAILABLE",message:error.message}});}return;
+ }
+ if(pathname==="/api/v1/timeline/collect"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
+  try{
+   const projectId=requestUrl.searchParams.get("project")||"";
+   const force=requestUrl.searchParams.get("force")==="1";
+   const cached=timelineCollectionCache.get(projectId);
+   if(!force&&cached&&Date.now()-cached.cachedAt<TIMELINE_CACHE_MS){json(res,200,{...await ledger.listTimelineEvents({projectId,limit:2000}),serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo",collection:cached.collection});return;}
+   const portfolio=await github.getPortfolio(registry.projects||[],{force:false});
+   const project=portfolio.projects.find(p=>p.id===projectId);
+   if(!project){json(res,404,{error:{code:"PROJECT_NOT_FOUND",message:"Projeto não encontrado no portfólio atual."}});return;}
+   const existingTimeline=await ledger.listTimelineEvents({projectId,limit:2000}),sinceByRepo={};
+   for(const event of existingTimeline.events){if(event.category==="collection_cursor"&&event.repository&&(!sinceByRepo[event.repository]||Date.parse(event.occurredAt)>Date.parse(sinceByRepo[event.repository])))sinceByRepo[event.repository]=event.occurredAt;}
+   const collected=await github.getProjectHistory([project],{sinceByRepo});
+   let added=0;
+   for(const event of collected.events){
+    if(!await ledger.hasEvent(event.eventId))added++;
+    await ledger.append({type:"timeline_event",eventId:event.eventId,occurredAt:event.occurredAt,confidence:event.confidence,category:event.category,sourceName:event.sourceName,title:event.title,summary:event.summary,projectId:event.projectId,repository:event.repository,sha:event.sha||"",origin:"GitHubHistoryCollector",sourceUrl:event.sourceUrl||"",activeDays:event.activeDays});
+   }
+   const result=await ledger.listTimelineEvents({projectId,limit:2000});
+   const collection={checkedAt:collected.checkedAt,discovered:collected.events.length,added,projectCount:collected.projectCount};
+   timelineCollectionCache.set(projectId,{cachedAt:Date.now(),collection});
+   json(res,200,{...result,serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo",collection});
+  }catch(error){json(res,error.status||502,{error:{code:error.code||"TIMELINE_COLLECTION_FAILED",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/timeline/end"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
+  try{
+   const body=await readJson(req,2000),projectId=typeof body?.projectId==="string"?body.projectId:"";
+   if(typeof projectId!=="string"||!projectId.trim()||projectId.length>120||/[\u0000-\u001f]/.test(projectId)){json(res,400,{error:{code:"INVALID_PROJECT_ID",message:"Informe um ID de projeto válido."}});return;}
+   const portfolio=await github.getPortfolio(registry.projects||[],{force:false}),project=portfolio.projects.find(p=>p.id===projectId);
+   if(!project){json(res,404,{error:{code:"PROJECT_NOT_FOUND",message:"Projeto não encontrado no portfólio atual."}});return;}
+   const eventId="owner:project_end:"+projectId;
+   if(await ledger.hasEvent(eventId)){json(res,409,{error:{code:"PROJECT_ALREADY_ENDED",message:"O encerramento deste projeto já está registrado."}});return;}
+   await ledger.append({type:"timeline_event",eventId,occurredAt:new Date().toISOString(),confidence:"confirmed",category:"project_end",sourceName:"Decisão registrada no Portal",title:"Projeto encerrado",summary:"Encerramento declarado pelo proprietário no Portal de Governança.",projectId,origin:"OwnerTimelineAction"});
+   timelineCollectionCache.delete(projectId);
+   json(res,201,{...await ledger.listTimelineEvents({projectId,limit:2000}),serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo"});
+  }catch(error){json(res,error.status||503,{error:{code:error.code||"TIMELINE_END_FAILED",message:error.message}});}
+  return;
+ }
  if(pathname==="/api/v1/records"&&req.method==="GET"){
   try{json(res,200,await ledger.list());}catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_UNAVAILABLE",message:error.message}});}return;
  }
  if(pathname==="/api/v1/missions"&&req.method==="GET"){
-  try{json(res,200,await ledger.listMissions({limit:100}));}
-  catch(error){json(res,error.status||503,{error:{code:error.code||"MISSIONS_UNAVAILABLE",message:error.message}});}
+  try{
+   const current=await ledger.listMissions({limit:100});
+   await refreshMissionStatuses(current.missions);
+   json(res,200,await ledger.listMissions({limit:100}));
+  }catch(error){json(res,error.status||503,{error:{code:error.code||"MISSIONS_UNAVAILABLE",message:error.message}});}
   return;
  }
  if(pathname==="/api/v1/missions"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
   let body;
   try{body=await readJson(req,40_000);}catch(error){json(res,error.status||400,{error:{code:error.code||"INVALID_JSON",message:error.message}});return;}
-  if(!body||typeof body!=="object"||Array.isArray(body)||typeof body.prompt!=="string"){
-   json(res,400,{error:{code:"INVALID_MISSION_PAYLOAD",message:"Informe o prompt completo da missão."}});return;
+  if(!body||typeof body!=="object"||Array.isArray(body)||typeof body.prompt!=="string"||typeof body.projectId!=="string"||!RUNNER_PROJECTS[body.projectId]){
+   json(res,400,{error:{code:"INVALID_MISSION_PAYLOAD",message:"Informe o prompt completo e selecione um projeto compatível com o planejamento read-only."}});return;
+  }
+  const project=RUNNER_PROJECTS[body.projectId];
+  if(body.repository&&body.repository!==project.repository){
+   json(res,400,{error:{code:"PROJECT_REPOSITORY_MISMATCH",message:"O repositório não corresponde ao perfil aprovado do Runner."}});return;
   }
   try{
    const row=await ledger.append({
     type:"mission",
     title:"Missão recebida",
-    summary:"Prompt cadastrado no Portal. O despacho ainda aguarda integração operacional com um executor.",
+    summary:"Prompt integral preservado no Portal. O Runner recebe somente o primeiro trecho limitado a 900 caracteres e o digest SHA-256 para planejamento read-only.",
     prompt:body.prompt,
-    projectId:typeof body.projectId==="string"?body.projectId:"",
-    repository:typeof body.repository==="string"?body.repository:"",
+    projectId:body.projectId,
+    repository:project.repository,
     origin:"PortalMissionIntake"
    });
-   json(res,201,{mission:row});
-  }catch(error){json(res,error.status||503,{error:{code:error.code||"MISSION_SAVE_FAILED",message:error.message}});}
+   const mission=await dispatchMission(row);
+   const dispatch=mission.executionId?{status:"dispatched",executionId:mission.executionId,runnerStatus:mission.runnerStatus}:{status:"blocked",code:mission.dispatchError};
+   json(res,202,{mission,dispatch});
+  }catch(error){json(res,error.status||503,{error:{code:error.code||"MISSION_DISPATCH_FAILED",message:error.message}});}
   return;
  }
  if(pathname==="/api/v1/records"&&req.method==="POST"){

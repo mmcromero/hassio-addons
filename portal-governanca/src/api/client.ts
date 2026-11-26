@@ -56,7 +56,12 @@ export async function getN8nOverview(refresh=false):Promise<N8nOverview>{
  return data as N8nOverview;
 }
 
-export type PortalRecord={id:string;createdAt:string;type:"homologation"|"evidence"|"decision"|"agent_event";title:string;summary:string;status:string|null;projectId:string|null;repository:string|null;sha:string|null;version:string|null;environment:string|null;responsible:string|null;origin:string;evidenceKind:string|null;sourceUrl:string|null;previousHash:string;hash:string;eventId?:string|null;eventType?:string|null;agentId?:string|null;taskId?:string|null;deliverables?:string[];nextAction?:string|null};
+export type TimelineEvent={id:string;createdAt:string;eventId:string;occurredAt:string;confidence:"confirmed"|"estimated"|"unknown";category:string;sourceName:string;title:string;summary:string;projectId:string|null;repository:string|null;sha:string|null;sourceUrl:string|null;activeDays?:number|null;hash:string;previousHash:string};
+export type ProjectTimelineResponse={events:TimelineEvent[];total:number;integrity:string;lastHash:string;serverNow?:string;timeZone?:string;collection?:{checkedAt:string;discovered:number;added:number;projectCount:number}};
+export function getProjectTimeline(projectId:string):Promise<ProjectTimelineResponse>{return apiRequest<ProjectTimelineResponse>("api/v1/timeline?project="+encodeURIComponent(projectId));}
+export function collectProjectTimeline(projectId:string,force=false):Promise<ProjectTimelineResponse>{return apiRequest<ProjectTimelineResponse>("api/v1/timeline/collect?project="+encodeURIComponent(projectId)+(force?"&force=1":""),{method:"POST",body:"{}"});}
+export function endProjectTimeline(projectId:string):Promise<ProjectTimelineResponse>{return apiRequest<ProjectTimelineResponse>("api/v1/timeline/end",{method:"POST",body:JSON.stringify({projectId})});}
+export type PortalRecord={id:string;createdAt:string;type:"homologation"|"evidence"|"decision"|"agent_event"|"mission_status";title:string;summary:string;status:string|null;projectId:string|null;repository:string|null;sha:string|null;version:string|null;environment:string|null;responsible:string|null;origin:string;evidenceKind:string|null;sourceUrl:string|null;previousHash:string;hash:string;eventId?:string|null;eventType?:string|null;agentId?:string|null;taskId?:string|null;deliverables?:string[];nextAction?:string|null};
 export type PortalLedger={records:PortalRecord[];total:number;integrity:string;lastHash:string};
 export function getPortalRecords():Promise<PortalLedger>{return apiRequest<PortalLedger>("api/v1/records");}
 export function appendPortalRecord(input:Partial<PortalRecord>):Promise<{record:PortalRecord}>{return apiRequest("api/v1/records",{method:"POST",body:JSON.stringify(input)});}
@@ -75,9 +80,9 @@ export function getAgentEvents(params?:{project?:string;agent?:string;limit?:num
 export type SystemStatus={checkedAt:string;github:{configured:boolean;registrationConfigured:boolean;status:string};homeAssistant:{bridgeConfigured:boolean;status:string};n8n:{configured:boolean;status:string};agentProtocol:{status:string;totalEvents:number;lastEventAt:string|null}};
 export function getSystemStatus():Promise<SystemStatus>{return apiRequest<SystemStatus>("api/v1/system-status");}
 
-export type PortalMission={id:string;createdAt:string;title:string;summary:string;projectId:string|null;repository:string|null;prompt:string;missionStatus:"received"};
+export type PortalMission={id:string;createdAt:string;title:string;summary:string;projectId:string|null;repository:string|null;prompt:string;missionStatus:"received"|"dispatched"|"planning"|"planned"|"partial"|"blocked"|"cancelled"|"dispatch_blocked";executionId:string|null;runnerStatus:string|null;dispatchError:string|null;planStatus:"PLANNED"|"PARTIAL"|"BLOCKED_SCOPE"|null;selectedCount:number|null;reusedCount:number|null;omittedCount:number|null;planDigest:string|null;receiptDigest:string|null;testsExecutionPerformed:boolean|null;authorizationVerified:boolean|null;nextRunnerAction:string|null;dispatchUpdatedAt:string|null};
 export type MissionsResponse={missions:PortalMission[];total:number;lastUpdated:string|null};
 export function getMissions():Promise<MissionsResponse>{return apiRequest<MissionsResponse>("api/v1/missions");}
-export function createMission(input:{prompt:string;projectId?:string;repository?:string}):Promise<{mission:PortalMission}>{
- return apiRequest<{mission:PortalMission}>("api/v1/missions",{method:"POST",body:JSON.stringify(input)});
+export function createMission(input:{prompt:string;projectId:string;repository?:string}):Promise<{mission:PortalMission;dispatch:{status:"dispatched"|"blocked";executionId?:string;runnerStatus?:string;code?:string}}>{
+ return apiRequest<{mission:PortalMission;dispatch:{status:"dispatched"|"blocked";executionId?:string;runnerStatus?:string;code?:string}}>("api/v1/missions",{method:"POST",body:JSON.stringify(input)});
 }

@@ -33,6 +33,7 @@ RUN chmod 0755 /app/run.sh \
  && node --check /app/server/ingress.mjs \
  && node --check /app/server/supervisor-data.mjs \
  && node --check /app/server/supervisor-bridge.mjs \
+ && node --check /app/server/runner-bridge.mjs \
  && test -s /app/dist/index.html
 EXPOSE 8099
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

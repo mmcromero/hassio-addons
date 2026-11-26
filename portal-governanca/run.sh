@@ -10,6 +10,7 @@ GITHUB_WRITE_TOKEN="$(jq -r '.github_write_token // empty' "$OPTIONS_FILE")"
 N8N_BASE_URL="$(jq -r '.n8n_base_url // empty' "$OPTIONS_FILE")"
 N8N_API_KEY="$(jq -r '.n8n_api_key // empty' "$OPTIONS_FILE")"
 N8N_INTERNAL_PEER="$(jq -r '.n8n_internal_peer // empty' "$OPTIONS_FILE")"
+FACTORY_RUNNER_DISPATCH_TOKEN="$(jq -r '.factory_runner_dispatch_token // empty' "$OPTIONS_FILE")"
 # O ledger é persistente e append-only. Preparar o arquivo como root e transferir
 # somente sua propriedade ao usuário não-root do BFF, sem alterar seu conteúdo.
 LEDGER_PATH="/data/portal-ledger.ndjson"
@@ -50,4 +51,5 @@ exec su-exec portal:portal env -i \
   N8N_BASE_URL="$N8N_BASE_URL" \
   N8N_API_KEY="$N8N_API_KEY" \
   N8N_INTERNAL_PEER="$N8N_INTERNAL_PEER" \
+  FACTORY_RUNNER_DISPATCH_TOKEN="$FACTORY_RUNNER_DISPATCH_TOKEN" \
   node /app/server/index.mjs

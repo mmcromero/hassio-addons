@@ -158,6 +158,57 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   events.sort((a,b)=>String(a.body.comment.created_at).localeCompare(String(b.body.comment.created_at)));
   return{source:"GitHub REST API",checkedAt:current.toISOString(),since:candidate.toISOString(),repositoryCount:repositories.length,eventCount:events.length,events,warnings};
  }
+ async function getProjectHistory(projects,{sinceByRepo={}}={}){
+  if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
+  const output=[];
+  for(const project of projects||[]){
+   const activityDays=new Map();let activityIncomplete=false;
+   const localDay=value=>{const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Sao_Paulo",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date(value));const get=type=>parts.find(part=>part.type===type)?.value||"";return get("year")+"-"+get("month")+"-"+get("day");};
+   for(const reference of project.repositories||[]){
+    const fullName=reference.fullName,prefix="/repos/"+fullName,meta=(await request(prefix)).data;
+    const add=event=>output.push({...event,projectId:project.id,repository:fullName});
+    if(meta.created_at)add({eventId:"github:repository:"+fullName+":created",occurredAt:meta.created_at,category:"repository_created",confidence:"confirmed",title:"Repositório criado",summary:"O repositório "+fullName+" foi criado no GitHub. Esta data não é tratada automaticamente como início do projeto.",sourceName:"GitHub Repository",sourceUrl:meta.html_url});
+    const cursor=sinceByRepo[fullName]||"";
+    let page=1,hasNext=false,commits=[];
+    do{const result=await request(prefix+"/commits?"+(cursor?"since="+encodeURIComponent(cursor)+"&":"")+"per_page=100&page="+page);if(!Array.isArray(result.data))throw new GitHubApiError("Resposta inválida ao consultar commits de "+fullName+".",502,"GITHUB_INVALID_COMMIT_HISTORY");commits.push(...result.data);hasNext=result.link.includes('rel="next"');page++;}while(hasNext&&page<=11);
+    const truncated=hasNext,oldest=commits.at(-1);
+    if(truncated)activityIncomplete=true;
+    for(const commit of commits){
+     const date=commit.commit?.committer?.date||commit.commit?.author?.date;
+     if(!date||!Number.isFinite(Date.parse(date)))continue;
+     const day=localDay(date);
+     let bucket=activityDays.get(day);
+     if(!bucket){bucket={count:0,lastDate:"",url:"",sha:""};activityDays.set(day,bucket);}
+     bucket.count++;
+     if(!bucket.lastDate||Date.parse(date)>Date.parse(bucket.lastDate)){bucket.lastDate=date;bucket.url=commit.html_url||"";bucket.sha=commit.sha||"";}
+    }
+    if(!cursor&&oldest){const date=oldest.commit?.committer?.date||oldest.commit?.author?.date;if(date)add({eventId:"github:commit:"+oldest.sha,occurredAt:date,category:"project_start",confidence:truncated?"estimated":"confirmed",title:"Primeiro commit encontrado",summary:(oldest.commit?.message||"Commit inicial").split("\n")[0].slice(0,500)+(truncated?" — histórico anterior não totalmente percorrido.":" — histórico de commits percorrido até o início disponível."),sourceName:"GitHub Commit",sourceUrl:oldest.html_url,sha:oldest.sha});}
+    const newest=commits[0],newestDate=newest?.commit?.committer?.date||newest?.commit?.author?.date;
+    if(newest&&newestDate)add({eventId:"github:cursor:"+fullName+":"+newest.sha,occurredAt:newestDate,category:"collection_cursor",confidence:"confirmed",title:"Cursor de coleta",summary:"Controle técnico da coleta incremental; não é um marco visual.",sourceName:"GitHub Commit",sourceUrl:newest.html_url,sha:newest.sha});
+    const milestones=commits.filter(c=>/\b(launch|initial|first|release|milestone|architecture|bootstrap|mvp|v[0-9]+|lançamento|inicial|primeira|marco|arquitetura|fundação)\b/i.test((c.commit?.message||"").split("\n")[0])).slice(0,8);
+    for(const c of milestones){const date=c.commit?.committer?.date||c.commit?.author?.date;if(date)add({eventId:"github:commit:"+c.sha,occurredAt:date,category:"milestone",confidence:"confirmed",title:(c.commit?.message||"Marco de desenvolvimento").split("\n")[0].slice(0,160),summary:"Marco identificado pelo assunto do commit. O evento comprova alteração no código, não publicação ou homologação.",sourceName:"GitHub Commit",sourceUrl:c.html_url,sha:c.sha});}
+    const issues=await request(prefix+"/issues?state=all&sort=created&direction=asc&per_page=100");
+    const firstIssue=Array.isArray(issues.data)?issues.data.find(x=>!x.pull_request):null;
+    if(firstIssue)add({eventId:"github:issue:"+fullName+":"+firstIssue.number,occurredAt:firstIssue.created_at,category:"first_issue",confidence:"confirmed",title:"Primeira Issue encontrada",summary:firstIssue.title,sourceName:"GitHub Issue",sourceUrl:firstIssue.html_url});
+    const pulls=await request(prefix+"/pulls?state=all&sort=created&direction=asc&per_page=100");
+    const firstPull=Array.isArray(pulls.data)?pulls.data[0]:null;
+    if(firstPull)add({eventId:"github:pull:"+fullName+":"+firstPull.number,occurredAt:firstPull.created_at,category:"first_pull_request",confidence:"confirmed",title:"Primeiro Pull Request encontrado",summary:firstPull.title,sourceName:"GitHub Pull Request",sourceUrl:firstPull.html_url});
+    const releases=await request(prefix+"/releases?per_page=100");
+    let releaseRows=Array.isArray(releases.data)?releases.data:[],releaseConfidence="confirmed";
+    if(releases.link.includes('rel="next"')){
+     const lastLink=releases.link.match(/<([^>]+)>;\s*rel="last"/);
+     const lastPage=lastLink?new URL(lastLink[1]).searchParams.get("page"):null;
+     if(lastPage){const oldestPage=await request(prefix+"/releases?per_page=100&page="+encodeURIComponent(lastPage));if(Array.isArray(oldestPage.data))releaseRows=oldestPage.data;else releaseConfidence="estimated";}
+     else releaseConfidence="estimated";
+    }
+    const release=releaseRows.filter(x=>!x.draft).sort((a,b)=>Date.parse(a.published_at||a.created_at)-Date.parse(b.published_at||b.created_at))[0]||null;
+    if(release)add({eventId:"github:release:"+fullName+":"+release.id,occurredAt:release.published_at||release.created_at,category:"release",confidence:releaseConfidence,title:"Primeira release encontrada",summary:(release.name||release.tag_name||"Release")+" ("+release.tag_name+")",sourceName:"GitHub Release",sourceUrl:release.html_url});
+   }
+   for(const [day,bucket] of activityDays){output.push({eventId:"github:activity-day:"+project.id+":"+day,occurredAt:bucket.lastDate,category:"activity_day",confidence:"confirmed",title:"Atividade de desenvolvimento registrada",summary:"Atividade de desenvolvimento observada em "+day+".",sourceName:"GitHub Commits",sourceUrl:bucket.url||null,sha:bucket.sha||null,activeDays:1,projectId:project.id,repository:null});}
+   output.push({eventId:"github:activity-coverage:"+project.id+":"+(activityIncomplete?"partial":"baseline"),occurredAt:now().toISOString(),category:"activity_coverage",confidence:activityIncomplete?"estimated":"confirmed",title:"Cobertura do histórico de commits",summary:activityIncomplete?"A coleta inicial atingiu o limite de paginação; dias ativos anteriores podem estar ausentes.":"Histórico de commits percorrido até o início disponível.",sourceName:"GitHub History Collector",projectId:project.id,repository:null});
+  }
+  return {events:output,checkedAt:now().toISOString(),projectCount:(projects||[]).length};
+ }
  async function getPortfolio(_projects=[],{force=false}={}){
   if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
   if(!force&&cached&&Date.now()-cached.cachedAt<cacheMs)return{...cached.payload,cache:"HIT"};
@@ -166,5 +217,5 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   const payload={source:"GitHub REST API",mode:"live-read-only-auto-discovery",checkedAt:now().toISOString(),cache:"MISS",discovery:{file:MARKER,owner:OWNER,scannedRepositories:discovery.scannedRepositories,projectsFound:discovery.projects.length,warnings:discovery.warnings},projects:discovery.projects.map(p=>({...p,repositories:p.repositories.map(r=>({...r,snapshot:snapshots[r.fullName]||{fullName:r.fullName,status:"not_queried",errors:[]}}))}))};
   cached={cachedAt:Date.now(),payload};return payload;
  }
- return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject,getRecentAgentComments};
+ return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject,getRecentAgentComments,getProjectHistory};
 }

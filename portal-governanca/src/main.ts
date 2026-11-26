@@ -12,6 +12,10 @@ import {
   getAgentEvents,
   getMissions,
   createMission,
+  getProjectTimeline,
+  collectProjectTimeline,
+  endProjectTimeline,
+  type ProjectTimelineResponse,
   getSystemStatus,
   type PortalLedger,
   type PortfolioSnapshot,
@@ -95,6 +99,12 @@ let missionSubmitting = false;
 let missionDraft = "";
 let missionMessage: string | null = null;
 let missionError: string | null = null;
+
+let timelineSnapshot: ProjectTimelineResponse | null = null;
+let timelineProjectId: string | null = null;
+let timelineLoading = false;
+let timelineError: string | null = null;
+let timelineServerOffset = 0;
 
 let statusSnapshot: SystemStatus | null = null;
 let statusLoading = false;
@@ -245,6 +255,43 @@ function projectCard(p: Project) {
   );
 }
 
+function timelineDate(value:string):string{return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short",timeZone:"America/Sao_Paulo"}).format(new Date(value))+" BRT";}
+function elapsedLabel(start:string,end:string):string{
+ const ms=Math.max(0,Date.parse(end)-Date.parse(start));
+ const days=Math.floor(ms/86400000),years=Math.floor(days/365.2425),months=Math.floor((days-years*365.2425)/30.436875),remaining=Math.floor(days-years*365.2425-months*30.436875);
+ return [years?years+"a":null,months?months+"m":null,remaining+"d"].filter(Boolean).join(" ");
+}
+function projectTimelineMarkup(p:Project):string{
+ const data=timelineProjectId===p.id?timelineSnapshot:null,events=data?.events||[];
+ const visibleEvents=events.filter(e=>!["activity_day","collection_cursor","activity_coverage"].includes(e.category));
+ const startCandidates=visibleEvents.filter(e=>["project_start","first_issue","first_pull_request"].includes(e.category)).sort((a,b)=>Date.parse(a.occurredAt)-Date.parse(b.occurredAt));
+ const startEvent=startCandidates[0]||null;
+ const latest=visibleEvents.at(-1)||null;
+ const activeDays=events.filter(e=>e.category==="activity_day").reduce((sum,e)=>sum+(e.activeDays||0),0);
+ const activeDaysEstimated=events.some(e=>e.category==="activity_coverage"&&e.confidence==="estimated");
+ const ended=visibleEvents.find(e=>e.category==="project_end")||null;
+ const now=new Date(Date.now()+timelineServerOffset).toISOString(),counterEnd=ended?.occurredAt||now;
+ const existence=startEvent?elapsedLabel(startEvent.occurredAt,counterEnd):"Não calculável";
+ const lastActivity=events.filter(e=>e.category==="activity_day").at(-1)||visibleEvents.filter(e=>e.category!=="project_end").at(-1)||null;
+ const activeSpan=startEvent&&lastActivity?elapsedLabel(startEvent.occurredAt,lastActivity.occurredAt):"Não calculável";
+ const since=latest?elapsedLabel(latest.occurredAt,now):"Sem marcos";
+ const confidence=(value:string)=>value==="confirmed"?"Confirmado":value==="estimated"?"Estimado":"Desconhecido";
+ const confidenceVariant=(value:string)=>value==="confirmed"?"success":value==="estimated"?"warning":"neutral";
+ const rows=visibleEvents.slice().sort((a,b)=>Date.parse(b.occurredAt)-Date.parse(a.occurredAt)).map(e=>'<article class="timeline-event"><div class="timeline-date">'+timelineDate(e.occurredAt)+'</div><div class="timeline-content"><div class="timeline-event-head"><strong>'+esc(e.title)+'</strong><ds-badge variant="'+confidenceVariant(e.confidence)+'">'+confidence(e.confidence)+'</ds-badge></div><p>'+esc(e.summary)+'</p><small>'+esc(e.sourceName)+' · '+esc(e.repository||'')+(e.sha?' · SHA '+esc(e.sha.slice(0,7)):'')+'</small>'+(e.sourceUrl?'<p><a href="'+esc(e.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Abrir evidência</a></p>':'')+'</div></article>').join('');
+ return '<section class="timeline-section"><div class="section-head"><div><h2>Histórico do projeto</h2><p>Marcos históricos coletados de fontes GitHub e preservados no ledger imutável.</p></div><div class="header-meta"><ds-badge variant="'+(data?.integrity==="valid"?"success":"neutral")+'">'+(data?.integrity==="valid"?"Integridade verificada":"Aguardando coleta")+'</ds-badge><button class="primary-action" data-timeline-refresh '+(timelineLoading?'disabled':'')+'>'+(timelineLoading?'Coletando…':'Atualizar histórico')+'</button>'+(ended?'<ds-badge variant="neutral">Projeto encerrado</ds-badge>':'<button class="primary-action timeline-end-action" data-timeline-end '+(timelineLoading?'disabled':'')+'>Registrar encerramento</button>')+'</div></div>'+
+ (timelineError?'<ds-alert variant="warning" title="Histórico indisponível">'+esc(timelineError)+'</ds-alert>':'')+
+ '<div class="metrics timeline-metrics"><ds-card><div class="stat-content"><small>Início identificado</small><strong class="metric-date">'+(startEvent?timelineDate(startEvent.occurredAt):'Não confirmado')+'</strong><small>'+(startEvent?confidence(startEvent.confidence):'Sem evidência suficiente')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Tempo de existência</small><strong class="metric-word">'+existence+'</strong><small>'+(ended?'Congelado no encerramento':'Contador atualizado automaticamente')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Período com atividade registrada</small><strong class="metric-word">'+activeSpan+'</strong><small>Entre a primeira e a última evidência</small></div></ds-card><ds-card><div class="stat-content"><small>Dias com commits</small><strong class="metric-word">'+(activeDays?activeDays+' dias':'Não identificado')+'</strong><small>'+(activeDaysEstimated?'Cobertura parcial':'Dias distintos com atividade observada')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Desde o último marco</small><strong class="metric-word">'+since+'</strong><small>'+(latest?timelineDate(latest.occurredAt):'Nenhuma atividade registrada')+'</small></div></ds-card></div>'+
+ (visibleEvents.length?'<div class="timeline-list">'+rows+'</div>':'<ds-card><h3>Histórico ainda não coletado</h3><p>Atualize para investigar commits, Issues, Pull Requests, releases e datas de criação dos repositórios vinculados.</p></ds-card>')+
+ '<small class="repo-detail">'+(data?.total||0)+' eventos preservados · '+(data?.collection?'Última coleta: '+timelineDate(data.collection.checkedAt):'Coleta ainda não executada')+'</small></section>';
+}
+async function loadTimeline(projectId:string,force=false){
+ if(timelineLoading)return;
+ timelineLoading=true;timelineProjectId=projectId;timelineError=null;render();
+ try{timelineSnapshot=await collectProjectTimeline(projectId,force);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}
+ catch(e){timelineError=e instanceof Error?e.message:"Falha ao coletar histórico";try{timelineSnapshot=await getProjectTimeline(projectId);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}catch(readError){timelineError=readError instanceof Error?readError.message:timelineError;}}
+ finally{timelineLoading=false;render();}
+}
+
 function projectDetail(p: Project) {
   return (
     '<section><button class="back" data-back>← Voltar aos projetos</button><div class="intro"><div><p class="eyebrow">' +
@@ -253,7 +300,7 @@ function projectDetail(p: Project) {
     esc(p.name) +
     '</h2><p>' +
     esc(p.summary) +
-    '</p></div><ds-badge variant="info">Cadastro controlado</ds-badge></div><div class="repo-list">' +
+    '</p></div><ds-badge variant="info">Cadastro controlado</ds-badge></div>' + projectTimelineMarkup(p) + '<div class="repo-list">' +
     p.repositories.map(repoMarkup).join('') +
     '</div></section>'
   );
@@ -339,29 +386,59 @@ function overview() {
   );
 }
 
+
+function missionStatusInfo(status: string): { label: string; variant: string } {
+  const values: Record<string, { label: string; variant: string }> = {
+    received: { label: 'Recebida', variant: 'neutral' },
+    dispatched: { label: 'Enviada ao Runner', variant: 'info' },
+    planning: { label: 'Planejando', variant: 'warning' },
+    planned: { label: 'Plano gerado', variant: 'success' },
+    partial: { label: 'Plano pronto · testes pendentes', variant: 'warning' },
+    blocked: { label: 'Impedida', variant: 'error' },
+    cancelled: { label: 'Cancelada', variant: 'neutral' },
+    dispatch_blocked: { label: 'Despacho bloqueado', variant: 'error' }
+  };
+  return values[status] || { label: 'Não verificado', variant: 'neutral' };
+}
+
 function missionsPage() {
   const missions = missionsSnapshot?.missions ?? [];
-  const rows = missions.map(m => (
-    '<article class="repo-card"><div class="repo-top"><div><strong>' +
-    esc(m.title) +
-    '</strong><small>' + date(m.createdAt) + ' · ID <code>' + esc(m.id) + '</code></small></div>' +
-    '<ds-badge variant="warning">Recebida</ds-badge></div>' +
-    '<p>' + esc(m.summary) + '</p>' +
-    (m.repository ? '<p class="repo-detail">Repositório: <b>' + esc(m.repository) + '</b></p>' : '') +
-    '<details class="repo-details"><summary>Ver prompt cadastrado</summary><pre class="mission-prompt">' + esc(m.prompt) + '</pre></details>' +
-    '<p class="repo-detail"><b>Despacho:</b> ainda não iniciado. A conexão operacional com os executores está em integração.</p></article>'
-  )).join('');
+  const rows = missions.map(m => {
+    const status = missionStatusInfo(m.missionStatus || 'received');
+    const planDetail = m.planStatus
+      ? '<p class="repo-detail"><b>Plano:</b> ' + esc(m.planStatus) + ' · Selecionados: ' + esc(String(m.selectedCount ?? 0)) + ' · Reutilizados: ' + esc(String(m.reusedCount ?? 0)) + ' · Omitidos: ' + esc(String(m.omittedCount ?? 0)) + '</p>' +
+        '<p class="repo-detail">Testes executados: <b>não</b> · Autorização verificada: <b>não</b> · Próxima ação: ' + esc(m.nextRunnerAction || 'nenhuma') + '</p>' +
+        '<p class="repo-detail">Recibo SHA-256: <code>' + esc((m.receiptDigest || '').slice(0, 16)) + '…</code></p>'
+      : '';
+    const dispatchDetail = (m.executionId
+      ? '<p class="repo-detail"><b>Job Runner:</b> <code>' + esc(m.executionId) + '</code> · Estado: ' + esc(m.runnerStatus || 'Não verificado') + '</p>'
+      : m.dispatchError
+      ? '<p class="repo-detail"><b>Despacho bloqueado:</b> ' + esc(m.dispatchError) + '. O Portal tentará novamente quando a conexão estiver disponível.</p>'
+      : '<p class="repo-detail"><b>Despacho:</b> aguardando conexão com o Runner.</p>') + planDetail;
+    return (
+      '<article class="repo-card"><div class="repo-top"><div><strong>' +
+      esc(m.title) +
+      '</strong><small>' + date(m.createdAt) + ' · ID <code>' + esc(m.id) + '</code></small></div>' +
+      '<ds-badge variant="' + status.variant + '">' + esc(status.label) + '</ds-badge></div>' +
+      '<p>' + esc(m.summary) + '</p>' +
+      (m.repository ? '<p class="repo-detail">Projeto: <b>' + esc(m.projectId || '') + '</b> · Repositório: <b>' + esc(m.repository) + '</b></p>' : '') +
+      dispatchDetail +
+      '<details class="repo-details"><summary>Ver prompt cadastrado</summary><pre class="mission-prompt">' + esc(m.prompt) + '</pre></details></article>'
+    );
+  }).join('');
   return (
-    '<section><div class="intro"><div><h2>Cadastrar missão</h2><p>Cole o prompt de ativação completo. O Portal registra a solicitação e preserva o texto original.</p></div>' +
-    '<div class="header-meta"><ds-badge variant="warning">Despacho em integração</ds-badge><ds-button variant="secondary" size="sm" data-mission-refresh ' + (missionsLoading ? 'disabled' : '') + '>' + (missionsLoading ? 'Consultando…' : 'Atualizar') + '</ds-button></div></div>' +
+    '<section><div class="intro"><div><h2>Cadastrar missão</h2><p>O Portal preserva o prompt integral; o Runner recebe apenas o primeiro trecho (até 900 caracteres) e o hash para planejamento read-only. Nenhum código ou teste do projeto será executado.</p></div>' +
+    '<div class="header-meta"><ds-badge variant="info">Planejamento read-only</ds-badge><ds-button variant="secondary" size="sm" data-mission-refresh ' + (missionsLoading ? 'disabled' : '') + '>' + (missionsLoading ? 'Consultando…' : 'Atualizar') + '</ds-button></div></div>' +
     (missionsError ? '<ds-alert variant="warning" title="Falha ao consultar missões">' + esc(missionsError) + '</ds-alert>' : '') +
-    (missionMessage ? '<ds-alert variant="success" title="Missão recebida">' + esc(missionMessage) + '</ds-alert>' : '') +
+    (missionMessage ? '<ds-alert variant="' + (missionMessage.includes('despacho está bloqueado') ? 'warning' : 'success') + '" title="Missão registrada">' + esc(missionMessage) + '</ds-alert>' : '') +
     (missionError ? '<ds-alert variant="warning" title="Não foi possível cadastrar">' + esc(missionError) + '</ds-alert>' : '') +
     '<ds-card><form class="registration-form" data-mission-form>' +
+    '<label for="mission-project">Projeto compatível com o Runner HA</label>' +
+    '<select id="mission-project" name="projectId" required><option value="">Selecione o projeto</option><option value="avisaqui">Avisaqui — mmcromero/pager-virtual</option><option value="artesao_digital">Artesão Digital — mmcromero/fabricacao_e_orcamentos</option></select>' +
     '<label for="mission-prompt">Prompt de ativação</label>' +
     '<textarea id="mission-prompt" name="prompt" rows="12" maxlength="8000" minlength="30" required placeholder="Cole aqui o prompt completo gerado pelo agente.">' + esc(missionDraft) + '</textarea>' +
     '<small>Máximo de 8.000 caracteres. Não inclua senhas, tokens ou chaves de acesso.</small>' +
-    '<div class="registration-actions"><button type="submit" class="primary-action" ' + (missionSubmitting ? 'disabled' : '') + '>' + (missionSubmitting ? 'Registrando…' : 'Cadastrar missão') + '</button></div>' +
+    '<div class="registration-actions"><button type="submit" class="primary-action" ' + (missionSubmitting ? 'disabled' : '') + '>' + (missionSubmitting ? 'Enviando…' : 'Cadastrar e despachar') + '</button></div>' +
     '</form></ds-card>' +
     '<div class="section-head"><div><h2>Missões cadastradas</h2><p>' + (missionsSnapshot?.total ?? 0) + ' solicitações persistidas.</p></div></div>' +
     (rows ? '<div class="repo-list">' + rows + '</div>' : '<ds-card><p>Nenhuma missão cadastrada.</p></ds-card>') +
@@ -783,9 +860,17 @@ async function submitMission(form: HTMLFormElement) {
   missionsError = null;
   render();
   try {
-    const result = await createMission({ prompt: missionDraft });
+    const projectId = String(data.get('projectId') || '');
+    const repository = projectId === 'avisaqui'
+      ? 'mmcromero/pager-virtual'
+      : projectId === 'artesao_digital'
+      ? 'mmcromero/fabricacao_e_orcamentos'
+      : '';
+    const result = await createMission({ prompt: missionDraft, projectId, repository });
     missionDraft = "";
-    missionMessage = 'Missão ' + result.mission.id.slice(0, 8) + ' recebida. O despacho ainda não foi iniciado.';
+    missionMessage = result.dispatch.status === 'dispatched'
+      ? 'Missão ' + result.mission.id.slice(0, 8) + ' enviada ao Runner para planejamento read-only. Job ' + (result.dispatch.executionId || '').slice(0, 8) + '.'
+      : 'Missão ' + result.mission.id.slice(0, 8) + ' registrada, mas o despacho está bloqueado: ' + (result.dispatch.code || 'runner_dispatch_failed') + '.';
   } catch (e) {
     missionError = e instanceof Error ? e.message : 'Falha ao cadastrar missão';
   } finally {
@@ -1024,6 +1109,7 @@ function render() {
       view = 'projects';
       render();
       document.querySelector<HTMLElement>('#main')?.focus();
+      if(selected)void loadTimeline(selected.id);
     })
   );
 
@@ -1037,6 +1123,14 @@ function render() {
   app!.querySelector<HTMLElement>('[data-ha-refresh]')?.addEventListener('click', () => void loadSupervisor(true));
   app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
   app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
+  app!.querySelector<HTMLElement>('[data-timeline-refresh]')?.addEventListener('click', () => { if(selected)void loadTimeline(selected.id,true); });
+  app!.querySelector<HTMLElement>('[data-timeline-end]')?.addEventListener('click', async () => {
+    if(!selected||!window.confirm('Registrar o encerramento deste projeto? O evento será permanente no histórico e congelará o contador de existência.'))return;
+    timelineLoading=true;timelineError=null;render();
+    try{timelineSnapshot=await endProjectTimeline(selected.id);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}
+    catch(error){timelineError=error instanceof Error?error.message:'Não foi possível registrar o encerramento.';}
+    finally{timelineLoading=false;render();}
+  });
   app!.querySelector<HTMLElement>('[data-agent-refresh]')?.addEventListener('click', () => void loadAgentEvents());
   app!.querySelector<HTMLElement>('[data-mission-refresh]')?.addEventListener('click', () => void loadMissions());
 
@@ -1101,3 +1195,6 @@ void loadAgentEvents();
 setInterval(() => {
   if (!agentLoading) void loadAgentEvents();
 }, 60_000);
+
+// Atualiza os contadores temporais sem nova consulta enquanto o detalhe está aberto.
+setInterval(() => { if(view==='projects'&&selected&&timelineSnapshot&&timelineProjectId===selected.id&&!timelineLoading)render(); },60_000);

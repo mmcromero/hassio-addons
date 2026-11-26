@@ -71,11 +71,40 @@ describe("build autossuficiente do add-on",()=>{
   expect(ledger).toContain('type==="mission"');
   expect(ledger).toContain("SECRET_PATTERN_REJECTED");
   expect(main).toContain("data-mission-form");
-  expect(main).toContain("Despacho em integração");
+  expect(main).toContain("Planejamento read-only");
+  expect(main).toContain("Cadastrar e despachar");
+  expect(server).toContain("createRunnerBridge");
+  expect(server).toContain("dispatchMission(row)");
+  expect(server).toContain("refreshMissionStatuses");
   expect(main).toContain("missionDraft = String(data.get('prompt') || '')");
   expect(main).toContain("esc(missionDraft)");
   expect(main).toContain("if (missionMessage)");
   expect(client).toContain("api/v1/missions");
+ });
+
+ it("integra a timeline ao ledger, à coleta GitHub e ao detalhe do projeto",()=>{
+  const ledger=fs.readFileSync(path.join(root,"server/ledger.mjs"),"utf8");
+  const github=fs.readFileSync(path.join(root,"server/github.mjs"),"utf8");
+  const server=fs.readFileSync(path.join(root,"server/index.mjs"),"utf8");
+  const main=fs.readFileSync(path.join(root,"src/main.ts"),"utf8");
+  const client=fs.readFileSync(path.join(root,"src/api/client.ts"),"utf8");
+  expect(ledger).toContain('"timeline_event"');
+  expect(ledger).toContain("listTimelineEvents");
+  expect(ledger).toContain('r.eventId===record.eventId');
+  expect(github).toContain("getProjectHistory");
+  expect(github).toContain("activity_day");
+  expect(server).toContain("sinceByRepo");
+  expect(ledger).toContain("activeDays");
+  expect(github).toContain("category:\"project_start\"");
+  expect(server).toContain("/api/v1/timeline/collect");
+  expect(server).toContain("TIMELINE_CACHE_MS");
+  expect(server).toContain("/api/v1/timeline/end");
+  expect(main).toContain("data-timeline-end");
+  expect(main).toContain("projectTimelineMarkup(p)");
+  expect(main).toContain("America/Sao_Paulo");
+  expect(main).toContain("Atualiza os contadores temporais sem nova consulta");
+  expect(main).toContain("setInterval");
+  expect(client).toContain("collectProjectTimeline");
  });
 
 });
