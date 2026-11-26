@@ -78,3 +78,45 @@ describe("cadastro controlado de marcadores",()=>{
   await expect(client.registerProject({repositoryFullName:"other/demo",project:{id:"demo",name:"Demo",domain:"Produto",description:"Projeto demo"}})).rejects.toMatchObject({code:"GITHUB_INVALID_REGISTRATION",status:400});
  });
 });
+
+describe("GitHub issue-comment polling for Agent Protocol",()=>{
+ it("retorna somente comentários marcados de Issues autorizadas",async()=>{
+  const repo="mmcromero/portal-governanca";
+  const marker={schema_version:1,project:{id:"portal-governanca",name:"Portal",domain:"platform",description:"Portal"}};
+  const comment={id:77,body:"<!-- AGENT_PROTOCOL_EVENT --> payload",author_association:"OWNER",created_at:"2026-11-26T10:00:00Z",updated_at:"2026-11-26T10:00:00Z",issue_url:"https://api.github.com/repos/"+repo+"/issues/9",html_url:"https://github.com/"+repo+"/issues/9#issuecomment-77",user:{login:"mmcromero"}};
+  const fetchImpl=vi.fn(async(input)=>{
+   const u=new URL(String(input));
+   if(u.pathname==="/user/repos")return response([{full_name:repo,owner:{login:"mmcromero"},default_branch:"main"}]);
+   if(u.pathname==="/repos/"+repo+"/contents/.portal-governanca.json")return response({type:"file",content:Buffer.from(JSON.stringify(marker)).toString("base64")});
+   if(u.pathname==="/repos/"+repo+"/issues/comments")return response([comment]);
+   if(u.pathname==="/repos/"+repo+"/issues/9")return response({number:9,title:"Teste",html_url:"https://github.com/"+repo+"/issues/9"});
+   return response({message:"Not Found"},404);
+  });
+  const result=await createGitHubClient({token:"read-token",fetchImpl,now:()=>new Date("2026-11-26T10:05:00Z")}).getRecentAgentComments({since:"2026-11-26T09:55:00Z"});
+  expect(result.eventCount).toBe(1);
+  expect(result.events[0].headers["x-github-event"]).toBe("issue_comment");
+  expect(result.events[0].body.comment.id).toBe(77);
+  expect(result.events[0].body.issue.number).toBe(9);
+ });
+ it("ignora comentário editado e comentário de Pull Request",async()=>{
+  const repo="mmcromero/portal-governanca";
+  const marker={schema_version:1,project:{id:"portal-governanca",name:"Portal",domain:"platform",description:"Portal"}};
+  const base={body:"<!-- AGENT_PROTOCOL_EVENT --> payload",author_association:"OWNER",created_at:"2026-11-26T10:00:00Z",issue_url:"https://api.github.com/repos/"+repo+"/issues/9",user:{login:"mmcromero"}};
+  const fetchImpl=vi.fn(async(input)=>{
+   const u=new URL(String(input));
+   if(u.pathname==="/user/repos")return response([{full_name:repo,owner:{login:"mmcromero"},default_branch:"main"}]);
+   if(u.pathname==="/repos/"+repo+"/contents/.portal-governanca.json")return response({type:"file",content:Buffer.from(JSON.stringify(marker)).toString("base64")});
+   if(u.pathname==="/repos/"+repo+"/issues/comments")return response([{...base,id:1,updated_at:"2026-11-26T10:01:00Z"},{...base,id:2,updated_at:"2026-11-26T10:00:00Z",issue_url:"https://api.github.com/repos/"+repo+"/issues/10"}]);
+   if(u.pathname==="/repos/"+repo+"/issues/10")return response({number:10,pull_request:{url:"https://api.github.com/repos/"+repo+"/pulls/10"}});
+   return response({message:"Not Found"},404);
+  });
+  const result=await createGitHubClient({token:"read-token",fetchImpl,now:()=>new Date("2026-11-26T10:05:00Z")}).getRecentAgentComments({since:"2026-11-26T09:55:00Z"});
+  expect(result.eventCount).toBe(0);
+ });
+ it("rejeita janela de polling acima de 24 horas",async()=>{
+  const fetchImpl=vi.fn();
+  const client=createGitHubClient({token:"read-token",fetchImpl,now:()=>new Date("2026-11-26T10:05:00Z")});
+  await expect(client.getRecentAgentComments({since:"2026-11-24T00:00:00Z"})).rejects.toMatchObject({code:"GITHUB_INVALID_AGENT_EVENT_WINDOW",status:400});
+  expect(fetchImpl).not.toHaveBeenCalled();
+ });
+});
