@@ -106,6 +106,49 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   const run=runs.data?.workflow_runs?.[0],release=asArray(releases.data).find(x=>!x.draft&&!x.prerelease),commit=asArray(commits.data)[0];
   return{fullName,status:errors.length?"partial":"ok",htmlUrl:metadata.html_url,isPrivate:metadata.private,defaultBranch:metadata.default_branch,description:metadata.description||"",pushedAt:metadata.pushed_at,updatedAt:metadata.updated_at,branches:asArray(branches.data).map(x=>({name:x.name,sha:x.commit?.sha||null})),branchesTruncated:asArray(branches.data).length===100,latestCommit:commit?{sha:commit.sha,message:(commit.commit?.message||"").split("\n")[0],date:commit.commit?.committer?.date||commit.commit?.author?.date||null,url:commit.html_url}:null,openIssues,openIssuesTruncated:asArray(issues.data).length===100,openPulls,openPullsTruncated:asArray(pulls.data).length===100,latestRelease:release?{tag:release.tag_name,name:release.name,publishedAt:release.published_at,draft:release.draft,prerelease:release.prerelease,url:release.html_url}:null,workflowRunState:runs.error?"unavailable":run?"available":"empty",releaseState:releases.error?"unavailable":release?"available":"empty",latestWorkflowRun:run?{id:run.id,name:run.name,event:run.event,status:run.status,conclusion:run.conclusion,createdAt:run.created_at,updatedAt:run.updated_at,headSha:run.head_sha,headBranch:run.head_branch,url:run.html_url}:null,errors};
  }
+
+ async function getRecentAgentComments({since,perPage=100,maxPages=5}={}){
+  if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
+  const current=now(),candidate=since?new Date(since):new Date(current.getTime()-6*60*60*1000);
+  if(!Number.isFinite(candidate.getTime())||candidate>new Date(current.getTime()+60_000)||candidate<new Date(current.getTime()-24*60*60*1000))
+   throw new GitHubApiError("Janela de consulta de eventos inválida; use um timestamp recente (máximo 24 horas).",400,"GITHUB_INVALID_AGENT_EVENT_WINDOW");
+  const pageSize=Math.min(Math.max(1,Number(perPage)||100),100),pageLimit=Math.min(Math.max(1,Number(maxPages)||5),5);
+  const discovery=await discoverProjects(),repositories=[...new Set(discovery.projects.flatMap(p=>p.repositories.map(r=>r.fullName)))].sort();
+  const events=[],warnings=[];
+  for(const fullName of repositories){
+   let page=1,hasNext=false;
+   do{
+    const path="/repos/"+fullName+"/issues/comments?since="+encodeURIComponent(candidate.toISOString())+"&per_page="+pageSize+"&sort=created&direction=asc&page="+page;
+    const result=await request(path);
+    if(!Array.isArray(result.data))throw new GitHubApiError("Resposta inválida ao listar comentários de "+fullName+".",502,"GITHUB_INVALID_ISSUE_COMMENTS");
+    hasNext=result.link.includes('rel="next"');
+    for(const comment of result.data){
+     const body=typeof comment.body==="string"?comment.body:"";
+     if(!body.includes("<!-- AGENT_PROTOCOL_EVENT -->"))continue;
+     if(!["OWNER","MEMBER","COLLABORATOR"].includes(comment.author_association))continue;
+     const created=Date.parse(comment.created_at||""),updated=Date.parse(comment.updated_at||"");
+     if(!Number.isFinite(created)||!Number.isFinite(updated)||Math.abs(updated-created)>5000)continue;
+     const issueNumber=Number(String(comment.issue_url||"").match(/\/issues\/(\d+)$/)?.[1]);
+     if(!Number.isInteger(issueNumber)||issueNumber<1)continue;
+     const issue=(await request("/repos/"+fullName+"/issues/"+issueNumber)).data;
+     if(issue?.pull_request)continue;
+     events.push({
+      headers:{"x-github-event":"issue_comment","x-github-delivery":"poll-"+String(comment.id)},
+      body:{
+       action:"created",
+       repository:{full_name:fullName,owner:{login:OWNER}},
+       issue:{number:issue.number,title:issue.title,html_url:issue.html_url},
+       comment:{id:comment.id,body,author_association:comment.author_association,user:{login:comment.user?.login||""},created_at:comment.created_at,html_url:comment.html_url}
+      }
+     });
+    }
+    page++;
+   }while(hasNext&&page<=pageLimit);
+   if(hasNext)warnings.push({repository:fullName,code:"GITHUB_AGENT_EVENT_PAGE_LIMIT",message:"Mais comentários recentes que o limite de páginas; a próxima consulta continuará na janela sobreposta."});
+  }
+  events.sort((a,b)=>String(a.body.comment.created_at).localeCompare(String(b.body.comment.created_at)));
+  return{source:"GitHub REST API",checkedAt:current.toISOString(),since:candidate.toISOString(),repositoryCount:repositories.length,eventCount:events.length,events,warnings};
+ }
  async function getPortfolio(_projects=[],{force=false}={}){
   if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
   if(!force&&cached&&Date.now()-cached.cachedAt<cacheMs)return{...cached.payload,cache:"HIT"};
@@ -114,5 +157,5 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   const payload={source:"GitHub REST API",mode:"live-read-only-auto-discovery",checkedAt:now().toISOString(),cache:"MISS",discovery:{file:MARKER,owner:OWNER,scannedRepositories:discovery.scannedRepositories,projectsFound:discovery.projects.length,warnings:discovery.warnings},projects:discovery.projects.map(p=>({...p,repositories:p.repositories.map(r=>({...r,snapshot:snapshots[r.fullName]||{fullName:r.fullName,status:"not_queried",errors:[]}}))}))};
   cached={cachedAt:Date.now(),payload};return payload;
  }
- return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject};
+ return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject,getRecentAgentComments};
 }
