@@ -1,5 +1,9 @@
 # Changelog — Portal de Governança (add-on)
 
+## 0.1.0-dev.9 — 25/11/2026
+
+- Corrige a separação das instruções COPY no Dockerfile multi-stage; mantém build npm e testes no Supervisor.
+
 ## 0.1.0-dev.8 — 25/11/2026\n\n- Remove a dependência de checkout irmão do Design System; inclui snapshot somente leitura no SHA fixado.\n- Move compilação do Design System, testes do Portal e build Vite para estágio multi-stage do Dockerfile executado pelo Supervisor.\n- O pacote de distribuição leva fontes, lockfile e proveniência; a imagem runtime recebe somente o frontend compilado e backend.\n- Mantém testes, validações de segurança, identidade e Ingress.\n\n## 0.1.0-dev.7 — 25/11/2026
 
 **Estado:** candidata na branch `desenvolvimento`; build/test/package e instalação HA ainda não comprovados.
