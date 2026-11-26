@@ -1,5 +1,9 @@
 # Changelog — Portal de Governança (add-on)
 
+## 0.1.0-dev.10 — 25/11/2026
+
+- Corrige testes com quebras de linha válidas e rejeita explicitamente prefixos de Ingress com token de sessão divergente.
+
 ## 0.1.0-dev.9 — 25/11/2026
 
 - Corrige a separação das instruções COPY no Dockerfile multi-stage; mantém build npm e testes no Supervisor.
