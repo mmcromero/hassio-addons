@@ -3,10 +3,10 @@
   "scope": "factory-runner/",
   "version": "0.1.0-rc.71",
   "repository": "mmcromero/factory-runner",
-  "commit": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+  "commit": "cf038ba1ef706f25873201db04628234769f7932",
   "catalog_sha": "59b809e3f1d8c19dcce8e9666d39dcf146fb7829",
-  "previous_source": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
-  "reviewed_source": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+  "previous_source": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+  "reviewed_source": "cf038ba1ef706f25873201db04628234769f7932",
   "publication": "OWNER_AUTHORIZED_DIRECT_DISTRIBUTION_EXCEPTION_M172",
   "authorization": "OWNER_AUTHORIZED_RC71_DIRECT_DISTRIBUTION_2026-11-26_M172",
   "candidate_distribution": "FACTORY_RUNNER_RC71_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "d747d876cc09e92829cd3e7f2d958bf37f601ed8",
-      "size": 70070,
+      "git_blob_sha": "c3d923f97a342013fb01d79cdbce6680ffec3344",
+      "size": 70722,
       "mode": "100644"
     },
     {
@@ -156,8 +156,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "11619e38defd1ad963ab5b14fd8c859e7d69c5cd",
-      "size": 38011,
+      "git_blob_sha": "bf81ec0960baddc4e6a9d8b69698b6b0e009193d",
+      "size": 39755,
       "mode": "100644"
     },
     {
@@ -947,7 +947,7 @@
   ],
   "validation": {
     "source_file_count": 133,
-    "package_commit": "PENDING_COMMIT_SHA_RECORDED_IN_ISSUE_2",
+    "package_commit": "788cf7e003bb064dee69edc05ea0fd67660466ff",
     "package_paths_changed": [
       "factory-runner/"
     ],
@@ -1232,16 +1232,39 @@
     },
     "rc71_source_commit": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
     "rc71_publication_status": "PENDING_COMMIT_CREATION",
-    "rc71_build_result": "PENDING_SUPERVISOR_ARM64_BUILD_AND_DOCKERFILE_VALIDATION",
-    "rc71_install_result": "NOT_YET_EXECUTED",
+    "rc71_build_result": "PASS; SUPERVISOR_ARM64; DOCKERFILE_FULL_VALIDATION; 579_TESTS_IN_172.129_SECONDS; IMAGE_BUILD_DONE_2026-11-26T05:16:16-03:00",
+    "rc71_install_result": "PASS; 0.1.0-rc.71; STARTED; UPDATE_AVAILABLE_FALSE; APP_UPDATED_2026-11-26T05:16:21-03:00",
     "rc71_options_policy": "PRESERVE_EXISTING_SUPERVISOR_OPTIONS_AND_PERSISTENT_DATA",
-    "rc71_backup_policy": "NO_PREVIOUS_RC_BACKUP_PER_OWNER_DECISION",
+    "rc71_backup_policy": "NO_PREVIOUS_RC_BACKUP_CREATED_PER_OWNER_DECISION",
     "rc71_security_gate": {
       "safe_for_untrusted_code": false,
       "publisher": "DORMANT",
       "sandbox_export": "FAIL_CLOSED",
       "apparmor_custom_profile": "NOT_APPLIED",
       "project_code_executed": false
-    }
-  }
+    },
+    "rc71_docs_commit": "cf038ba1ef706f25873201db04628234769f7932",
+    "rc71_publication_commit": "788cf7e003bb064dee69edc05ea0fd67660466ff",
+    "rc71_documentation_publication": "PENDING_COMMIT_CREATION",
+    "rc71_options_preserved": {
+      "runner_auth_token": "set",
+      "github_read_token": "set",
+      "github_publish_token": "empty",
+      "workspace_auto_prepare": false,
+      "workspace_sync_enabled": true,
+      "owner_ingress_enabled": true,
+      "owner_password": "empty",
+      "owner_password_confirm": "empty"
+    },
+    "rc71_startup_probe": {
+      "api_probe": "PASS; authenticated loopback; publication disabled",
+      "userns_probe": "PARTIAL; helper_exit_code=0; scratch_cleanup_ok=true; parent_capabilities_unchanged=true; mount_namespace=EACCES; mount_propagation_private=false; tmpfs_mounted=false; observed_apparmor=docker-default (enforce)",
+      "bubblewrap": "BLOCKED; Failed to make / slave: Permission denied",
+      "cgroup": "mount_read_only=true; delegation_candidate=false; enforcement_verified=false",
+      "project_code_executed": false
+    },
+    "rc71_homologation_status": "BUILD_AND_INSTALL_PASS; ETAPA_5B_NOT_HOMOLOGATED; APPARMOR_3_1_7_ENFORCE_GATE_PENDING"
+  },
+  "runtime_source_commit": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+  "documentation_update": "M174_BUILD_AND_INSTALL_EVIDENCE_ONLY; NO_RUNTIME_CODE_CHANGE_AFTER_RC71_BUILD"
 }

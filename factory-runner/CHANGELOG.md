@@ -1,3 +1,10 @@
+# 0.1.0-rc.71 — M174: build ARM64 e instalação aprovados; Etapa 5B ainda bloqueada
+
+- Supervisor construiu a imagem ARM64 e concluiu a suíte Dockerfile com 579 testes; app instalado e iniciado como 0.1.0-rc.71.
+- Opções do Supervisor preservadas; RC68 substituída sem snapshot conforme decisão do proprietário.
+- API loopback autenticada PASS; Publisher DORMANT, publicação desabilitada e nenhum código de projeto executado.
+- Isolamento ainda NÃO HOMOLOGADO: userns probe parcial (mount_namespace EACCES; perfil observado docker-default), Bubblewrap bloqueado e cgroup v2 RO sem delegação. Nenhum perfil AppArmor customizado ativado.
+
 # 0.1.0-rc.71 — M173: alinhar expectativas dos testes cgroup
 
 - Corrige duas expectativas que haviam ficado invertidas no teste de presença/legibilidade: arquivo ausente deve tornar aggregate_controls_present=false; arquivo presente, porém ilegível, mantém presença verdadeira e monitor_controls_readable=false.
