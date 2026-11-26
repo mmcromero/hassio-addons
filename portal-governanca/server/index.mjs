@@ -113,13 +113,16 @@ const server=http.createServer(async(req,res)=>{
  const rawPath=requestUrl.pathname,peer=req.socket.remoteAddress||"";
  if(rawPath==="/healthz"&&isLoopbackPeer(peer)){text(res,200,"ok");return;}
  const internalAgentEventRequest=rawPath==="/internal/agent-events"&&req.method==="POST"&&ingressMode&&isN8nPeer(peer,n8nInternalPeer);
- if(rawPath==="/internal/agent-events"&&!internalAgentEventRequest){
-  if(req.method!=="POST"){json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido."}},{Allow:"POST"});return;}
-  json(res,403,{error:{code:"INTERNAL_PEER_NOT_ALLOWED",message:"Origem interna não autorizada."}});return;
+ const internalAgentCommentsRequest=rawPath==="/internal/agent-comments"&&req.method==="GET"&&ingressMode&&isN8nPeer(peer,n8nInternalPeer);
+ const internalAgentRequest=internalAgentEventRequest||internalAgentCommentsRequest;
+ if(rawPath==="/internal/agent-events"||rawPath==="/internal/agent-comments"){
+  const allowedMethod=rawPath==="/internal/agent-events"?"POST":"GET";
+  if(req.method!==allowedMethod){json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido."}},{Allow:allowedMethod});return;}
+  if(!internalAgentRequest){json(res,403,{error:{code:"INTERNAL_PEER_NOT_ALLOWED",message:"Origem interna não autorizada."}});return;}
  }
- let pathname=internalAgentEventRequest?"/api/v1/agent-events":rawPath;
- if(internalAgentEventRequest){
-  // Dedicated internal route: only the exact configured n8n container peer is trusted.
+ let pathname=internalAgentEventRequest?"/api/v1/agent-events":internalAgentCommentsRequest?"/api/v1/internal-agent-comments":rawPath;
+ if(internalAgentRequest){
+  // Dedicated internal routes: only the exact configured n8n container peer is trusted.
  }else if(ingressMode){
   if(!isIngressPeer(peer)){text(res,403,"Ingress access only");return;}
   const basePath=getIngressBasePath(req.headers["x-ingress-path"]);
@@ -148,6 +151,12 @@ const server=http.createServer(async(req,res)=>{
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
   try{const row=await ledger.append(await readJson(req));json(res,201,{record:row});}
   catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_WRITE_FAILED",message:error.message}});}return;
+ }
+ if(pathname==="/api/v1/internal-agent-comments"&&req.method==="GET"){
+  const since=requestUrl.searchParams.get("since")||undefined;
+  try{json(res,200,await github.getRecentAgentComments({since}));}
+  catch(error){json(res,error.status||502,{error:{code:error.code||"GITHUB_AGENT_COMMENTS_FAILED",message:error.message}});}
+  return;
  }
  if(pathname==="/api/v1/agent-events"&&req.method==="GET"){
   const projectId=requestUrl.searchParams.get("project")||undefined;
