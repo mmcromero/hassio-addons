@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "mappings": [
+    {
+      "slug": "45c28620_artesaos_piloto",
+      "projectId": "artesao-digital",
+      "projectName": "Artesão Digital"
+    },
+    {
+      "slug": "45c28620_pager_virtual",
+      "projectId": "avisaqui",
+      "projectName": "Avisaqui"
+    },
+    {
+      "slug": "45c28620_fabrica_software",
+      "projectId": "factory-runner",
+      "projectName": "Factory Runner"
+    },
+    {
+      "slug": "45c28620_portal_governanca",
+      "projectId": "portal-governanca",
+      "projectName": "Portal de Governança"
+    }
+  ]
+}

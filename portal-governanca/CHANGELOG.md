@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.18 — 26/11/2026
+- Adiciona inventário read-only de apps Home Assistant pelo endpoint Supervisor v2 `/apps/status`, usando papel `default`.
+- Isola o token Supervisor em processo bridge local; o BFF principal permanece sem a credencial.
+- Inclui vínculo declarativo entre add-ons e projetos e exibe estado/versões na seção Ambientes.
+- Adiciona testes de normalização, allowlist e isolamento de credenciais.
+
+
 ## 0.1.0-dev.17 — 26/11/2026
 - Inclui `config.yaml` no contexto de build do Supervisor para que os testes de segurança validem o manifesto efetivamente distribuído.
 - Mantém a validação do manifesto, do entrypoint e das permissões sem retirar testes.
@@ -92,3 +99,4 @@
 - Move compilação do Design System, testes do Portal e build Vite para estágio multi-stage do Dockerfile executado pelo Supervisor.
 - O pacote de distribuição agora leva fontes, lockfile e proveniência; a imagem runtime recebe somente o frontend compilado e backend.
 - Não reduz testes nem remove validações de segurança; falhas de npm ci, testes ou build interrompem a construção da imagem.
+

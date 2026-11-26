@@ -30,6 +30,14 @@ describe("build autossuficiente do add-on",()=>{
   expect(gitBlobSha(logo)).toBe("7e500016222b0a5bf395be8ed17447edeb3e2af9");
   expect(brandIcon.equals(icon)).toBe(true);
  });
+ it("leva o mapeamento HA e o bridge para a imagem runtime",()=>{
+  const dockerPath=fs.existsSync(path.join(root,"Dockerfile"))?path.join(root,"Dockerfile"):path.join(root,"addon/Dockerfile");
+  const docker=fs.readFileSync(dockerPath,"utf8");
+  expect(docker).toContain("config/home-assistant-addons.json /app/config/home-assistant-addons.json");
+  expect(docker).toContain("COPY --chown=portal:portal server/ /app/server/");
+  expect(fs.existsSync(path.join(root,"server/supervisor-bridge.mjs"))).toBe(true);
+  expect(fs.existsSync(path.join(root,"server/supervisor-data.mjs"))).toBe(true);
+ });
  it("Dockerfile executa npm ci, testes e build antes da imagem runtime",()=>{
   const dockerPath=fs.existsSync(path.join(root,"Dockerfile"))?path.join(root,"Dockerfile"):path.join(root,"addon/Dockerfile");
   const docker=fs.readFileSync(dockerPath,"utf8");

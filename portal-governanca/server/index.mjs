@@ -7,7 +7,6 @@ import {createGitHubClient} from "./github.mjs";
 import {getIngressBasePath,isIngressPeer,isLoopbackPeer,stripIngressPath} from "./ingress.mjs";
 
 if(process.env.NODE_ENV==="development")await import("dotenv/config");
-
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const DIST=path.join(ROOT,"dist");
 const ingressMode=process.env.PORTAL_MODE==="ingress";
@@ -15,7 +14,12 @@ const production=process.env.NODE_ENV!=="development";
 const PORT=Number(process.env.PORT||(ingressMode?8099:production?8080:4174));
 const HOST=process.env.PORTAL_HOST||(ingressMode?"0.0.0.0":"127.0.0.1");
 const registry=JSON.parse(await readFile(path.join(ROOT,"config/portfolio.json"),"utf8"));
+const haConfig=JSON.parse(await readFile(path.join(ROOT,"config/home-assistant-addons.json"),"utf8"));
+const haMappings=new Map((haConfig.mappings||[]).map(item=>[item.slug,item]));
 const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:process.env.GITHUB_WRITE_TOKEN||""});
+const haBridgeUrl=process.env.HA_BRIDGE_URL||"";
+let haCache=null;
+const HA_CACHE_MS=30_000;
 
 if(production&&!ingressMode&&(!process.env.GITHUB_TOKEN||!process.env.PORTAL_BASIC_USER||!process.env.PORTAL_BASIC_PASSWORD))
  throw new Error("Produção standalone exige GITHUB_TOKEN, PORTAL_BASIC_USER e PORTAL_BASIC_PASSWORD.");
@@ -61,6 +65,22 @@ function text(res,status,body,headers={}){
  res.writeHead(status,securityHeaders({"Content-Type":"text/plain; charset=utf-8","Cache-Control":"no-store",...headers}));
  res.end(body);
 }
+async function getHomeAssistantApps(force=false){
+ if(!haBridgeUrl)throw Object.assign(new Error("Integração Home Assistant não configurada."),{status:503,code:"SUPERVISOR_NOT_CONFIGURED"});
+ if(!force&&haCache&&Date.now()-haCache.cachedAt<HA_CACHE_MS)return {...haCache.data,cache:"HIT"};
+ let response;
+ try{response=await fetch(new URL("/v1/inventory",haBridgeUrl),{headers:{Accept:"application/json"},signal:AbortSignal.timeout(12000)});}
+ catch{throw Object.assign(new Error("Não foi possível consultar o bridge local do Supervisor."),{status:503,code:"SUPERVISOR_BRIDGE_UNAVAILABLE"});}
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok)throw Object.assign(new Error(payload.error?.code==="SUPERVISOR_TOKEN_UNAVAILABLE"?"Token de leitura do Supervisor indisponível.":"Supervisor indisponível para consulta."),{status:503,code:payload.error?.code||"SUPERVISOR_UNAVAILABLE"});
+ const apps=(payload.apps||[]).map(app=>{
+  const mapping=haMappings.get(app.slug);
+  return {...app,projectId:mapping?.projectId||null,projectName:mapping?.projectName||null};
+ });
+ const data={source:payload.source||"Home Assistant Supervisor",checkedAt:payload.checkedAt||new Date().toISOString(),total:apps.length,updatesAvailable:apps.filter(app=>app.updateAvailable===true).length,apps,cache:"MISS"};
+ haCache={cachedAt:Date.now(),data};
+ return data;
+}
 async function serveStatic(res,pathname){
  let requested;
  try{requested=decodeURIComponent(pathname);}catch{text(res,400,"Bad request");return;}
@@ -81,17 +101,12 @@ async function serveStatic(res,pathname){
   res.end(body);
  }catch{text(res,503,"Portal ainda não compilado. Execute npm run build.");}
 }
-
 const server=http.createServer(async(req,res)=>{
  let requestUrl;
  try{requestUrl=new URL(req.url||"/","http://localhost");}
  catch{text(res,400,"Bad request");return;}
- const rawPath=requestUrl.pathname;
- const peer=req.socket.remoteAddress||"";
-
- // Docker health checks are local-only and reveal no configuration or credentials.
+ const rawPath=requestUrl.pathname,peer=req.socket.remoteAddress||"";
  if(rawPath==="/healthz"&&isLoopbackPeer(peer)){text(res,200,"ok");return;}
-
  let pathname=rawPath;
  if(ingressMode){
   if(!isIngressPeer(peer)){text(res,403,"Ingress access only");return;}
@@ -105,7 +120,6 @@ const server=http.createServer(async(req,res)=>{
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
-
  if(pathname.startsWith("/api/")&&req.method!=="GET"&&!(pathname==="/api/v1/projects/register"&&req.method==="POST")){
   json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"?"GET, POST":"GET"});return;
  }
@@ -120,8 +134,13 @@ const server=http.createServer(async(req,res)=>{
   catch(error){json(res,error.status||502,{error:{code:error.code||"REPOSITORY_CATALOG_UNAVAILABLE",message:error.message}});}
   return;
  }
+ if(pathname==="/api/v1/home-assistant/apps"&&req.method==="GET"){
+  try{json(res,200,await getHomeAssistantApps(requestUrl.searchParams.get("refresh")==="1"));}
+  catch(error){json(res,error.status||503,{error:{code:error.code||"SUPERVISOR_UNAVAILABLE",message:error.message},source:"Home Assistant Supervisor",checkedAt:new Date().toISOString()});}
+  return;
+ }
  if(pathname==="/api/health"){
-  json(res,200,{status:"ok",checkedAt:new Date().toISOString(),github:{configured:Boolean(process.env.GITHUB_TOKEN),access:"read-only",registrationConfigured:Boolean(process.env.GITHUB_WRITE_TOKEN)},mode:ingressMode?"home-assistant-ingress":production?"production":"development"});return;
+  json(res,200,{status:"ok",checkedAt:new Date().toISOString(),github:{configured:Boolean(process.env.GITHUB_TOKEN),access:"read-only",registrationConfigured:Boolean(process.env.GITHUB_WRITE_TOKEN)},homeAssistant:{bridgeConfigured:Boolean(haBridgeUrl),access:"read-only-default-role"},mode:ingressMode?"home-assistant-ingress":production?"production":"development"});return;
  }
  if(pathname==="/api/v1/portfolio"){
   try{json(res,200,await github.getPortfolio(registry.projects,{force:requestUrl.searchParams.get("refresh")==="1"}));}
@@ -132,5 +151,4 @@ const server=http.createServer(async(req,res)=>{
  if(req.method!=="GET"&&req.method!=="HEAD"){text(res,405,"Method not allowed",{Allow:"GET, HEAD"});return;}
  await serveStatic(res,pathname);
 });
-
 server.listen(PORT,HOST,()=>process.stdout.write("Portal ouvindo em "+HOST+":"+PORT+" ("+(ingressMode?"Home Assistant Ingress":production?"produção":"desenvolvimento")+")\n"));
