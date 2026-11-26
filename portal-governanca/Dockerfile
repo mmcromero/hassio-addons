@@ -11,6 +11,7 @@ COPY tests ./tests
 COPY server ./server
 COPY config ./config
 COPY Dockerfile run.sh ./
+COPY config.yaml ./
 COPY icon.png logo.png ./
 RUN npm run build:design-system && npm test && npm run build:portal
 

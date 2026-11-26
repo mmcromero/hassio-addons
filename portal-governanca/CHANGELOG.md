@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.17 — 26/11/2026
+- Inclui `config.yaml` no contexto de build do Supervisor para que os testes de segurança validem o manifesto efetivamente distribuído.
+- Mantém a validação do manifesto, do entrypoint e das permissões sem retirar testes.
+
+
 ## 0.1.0-dev.16 — 26/11/2026
 - Corrige os testes de segurança do cadastro para localizar os arquivos de configuração e entrypoint tanto no checkout-fonte quanto no pacote distribuído.
 - Mantém a suíte executada no build real do Supervisor, sem retirar os testes de segurança.
