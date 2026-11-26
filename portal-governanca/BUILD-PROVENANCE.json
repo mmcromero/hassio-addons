@@ -44,8 +44,16 @@
       "git_blob_sha": "4cbc0d6b822558308ba654e3b0cdf1458fbe2b31"
     },
     {
+      "path": "icon.png",
+      "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a"
+    },
+    {
       "path": "index.html",
       "git_blob_sha": "e5bc9440db9e9991b33d2adbb907929eaf06ed9a"
+    },
+    {
+      "path": "logo.png",
+      "git_blob_sha": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
     },
     {
       "path": "package-lock.json",
