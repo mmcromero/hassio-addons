@@ -47,7 +47,7 @@ describe("coleta histórica GitHub",()=>{
  });
  it("usa o dia local de São Paulo e mantém início desconhecido quando não há evidência",async()=>{
   const fetchImpl=vi.fn(async url=>{
-   const u=new URL(url),repoName=u.pathname.split("/").slice(2).join("/");
+   const u=new URL(url),repoName=u.pathname.split("/").slice(2,4).join("/");
    if(u.pathname.endsWith("/commits"))return response(repoName==="mmcromero/projeto-a"?[{sha:"localday123",html_url:"https://github.com/mmcromero/projeto-a/commit/localday123",commit:{committer:{date:"2024-02-01T01:00:00Z"},message:"Initial"}}]:[]);
    if(u.pathname.endsWith("/issues")||u.pathname.endsWith("/pulls")||u.pathname.endsWith("/releases"))return response([]);
    if(u.pathname.startsWith("/repos/"))return response({created_at:"2024-01-01T00:00:00Z",html_url:"https://github.com/"+repoName});

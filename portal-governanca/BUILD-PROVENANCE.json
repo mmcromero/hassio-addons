@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.35",
+  "addon_version": "0.1.0-dev.36",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "04b44f4c156da19e3d7e769e5db8c06d612a60b0",
+  "source_commit": "6c4e329754835041a9b4be79a25b363e4870b5e3",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -16,31 +16,11 @@
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "63b5c75f8d7f615f491eb4efbf91e947d282b656852fe80795b41569d5004831"
-    },
-    {
-      "path": "Dockerfile",
-      "sha256": "f703e5c278cb583b8a0144f644028a07a03bce3b25a317cb31e4dcd4799599be"
-    },
-    {
-      "path": "README.md",
-      "sha256": "041cb4a3bec39d487d677e5b1cd1ef8bd014aed6e42638ad1df98658c415f167"
+      "sha256": "5dec51985dbc291b1ae19b49e11cd7cc76b1da8625fc6edcf221f17f21d0c9e6"
     },
     {
       "path": "config.yaml",
-      "sha256": "4dc974c37c78e3d683f2bdb8012538263a56b0bdbbf3da44dd58e4f83e790cb2"
-    },
-    {
-      "path": "icon.png",
-      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
-    },
-    {
-      "path": "logo.png",
-      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9"
-    },
-    {
-      "path": "run.sh",
-      "sha256": "c02097da7f2b397d4e0396deb45d3c0ba74aae4ed064889dd20cffb8208eeb6c"
+      "sha256": "3c9b300b8183b8725868e25f7dfa7f5990844f8e2d76e1224ac8bd3260335684"
     },
     {
       "path": "config/design-system.lock.json",
@@ -55,8 +35,20 @@
       "sha256": "7cfa85db1328b69ae5e5e3f053b74261013ae9d4d1f4c6ec2f47b295191c8249"
     },
     {
+      "path": "Dockerfile",
+      "sha256": "f703e5c278cb583b8a0144f644028a07a03bce3b25a317cb31e4dcd4799599be"
+    },
+    {
+      "path": "icon.png",
+      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
+    },
+    {
       "path": "index.html",
       "sha256": "7ef0755099b884ff6421493e02e220438305014c55a6695b340db764ce15d718"
+    },
+    {
+      "path": "logo.png",
+      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9"
     },
     {
       "path": "package-lock.json",
@@ -69,6 +61,14 @@
     {
       "path": "public/brand-icon.png",
       "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
+    },
+    {
+      "path": "README.md",
+      "sha256": "02f91022236b10a492104a3e6835b8373b21b37b74682f3a80461d05b8484289"
+    },
+    {
+      "path": "run.sh",
+      "sha256": "c02097da7f2b397d4e0396deb45d3c0ba74aae4ed064889dd20cffb8208eeb6c"
     },
     {
       "path": "server/agent-events.mjs",
@@ -132,7 +132,7 @@
     },
     {
       "path": "tests/github-timeline.test.mjs",
-      "sha256": "16a8ff704d5a4181b5b780155c98f3c692040a508478c4cbd2f2c3f7c3eb2f75"
+      "sha256": "623904358599606bb3df8fd99cf334b546619786e46fc4c7eafd9f4486bead41"
     },
     {
       "path": "tests/github.test.mjs",
@@ -185,10 +185,6 @@
     {
       "path": "tsconfig.json",
       "sha256": "ae2cbe1493ccac1e22d9f9f1d8905005e018f87a14ed06d0b40a976f10a49cae"
-    },
-    {
-      "path": "vendor/design-system/PROVENANCE.json",
-      "sha256": "fcacbd0418329b0cc7e9f77b60d3ac8a59f48011a8f68327df03cae06d55e177"
     },
     {
       "path": "vendor/design-system/packages/components/package.json",
@@ -265,6 +261,10 @@
     {
       "path": "vendor/design-system/packages/tokens/src/theme-governance.json",
       "sha256": "9b534199be60a22318909286594646e9a9e3138b550ea1c2a76c63075393c6ad"
+    },
+    {
+      "path": "vendor/design-system/PROVENANCE.json",
+      "sha256": "fcacbd0418329b0cc7e9f77b60d3ac8a59f48011a8f68327df03cae06d55e177"
     },
     {
       "path": "vite.config.ts",

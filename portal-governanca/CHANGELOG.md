@@ -1,12 +1,16 @@
 # Changelog
 
+## 0.1.0-dev.36 — 26/11/2026
+- Corrige o fixture do teste multi-projeto para extrair owner/repository sem incluir o sufixo do endpoint.
+- Mantém a implementação da timeline e toda a cobertura de segurança; repetir o build/testes no Supervisor ARM64 antes de homologar.
+
 ## 0.1.0-dev.35 — 26/11/2026
 - Implementa histórico cronológico por projeto com coleta GitHub incremental, persistência append-only e deduplicação no ledger existente.
 - Registra criação de repositório, primeiro commit, primeira Issue/PR, primeira release e marcos significativos com links e confiança explícita.
 - Agrega dias ativos por data local de São Paulo, sem exibir cada commit; preserva cursor por repositório e sinaliza histórico parcial.
 - Exibe início, existência, período com atividade, dias ativos e tempo desde o último marco; contador atualiza automaticamente a cada minuto.
 - Permite registrar encerramento explícito e congelar o contador; não infere encerramento por inatividade.
-- Adiciona testes para evidências, paginação, atualização incremental, início desconhecido, múltiplos projetos, BRT, deduplicação e encerramento. Resultado dos testes/build será registrado após a execução no Supervisor.
+- Adiciona testes para evidências, paginação, atualização incremental, início desconhecido, múltiplos projetos, BRT, deduplicação e encerramento. A primeira construção no Supervisor executou 82 testes: 81 passaram e 1 falhou por erro no fixture de caminho do cenário multi-projeto; a correção está na dev.36.
 
 ## 0.1.0-dev.33 — 26/11/2026
 - Adiciona seção Missões para cadastrar e consultar prompts de ativação.
