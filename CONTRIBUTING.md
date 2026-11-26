@@ -12,6 +12,15 @@ Exemplos: `Fábrica de Ideias - Portal de Governança`, `Fábrica de Ideias - De
 
 Antes de empacotar/publicar, conferir os dois campos tanto na fonte quanto no artefato exportado. Qualquer ausência ou variação do prefixo reprova a validação. Não aceitar `Fábrica de Softwares` nem variações. A regra não altera `slug`, diretório, IDs técnicos ou origem do repositório; não renomear instalações existentes nem executar instalação/atualização por causa desta conferência.
 
+
+### P0 — Assets oficiais de identidade visual
+
+Todo add-on distribuído neste catálogo deve preservar os dois assets oficiais compartilhados:
+- `icon.png`: blob Git obrigatório `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`.
+- `logo.png`: blob Git obrigatório `7e500016222b0a5bf395be8ed17447edeb3e2af9`.
+
+Os arquivos devem estar na raiz da pasta do add-on publicado. Não criar iniciais, logotipos alternativos, versões redesenhadas ou cópias visualmente semelhantes. A validação deve comparar o Git blob SHA dos dois arquivos na fonte e no pacote exportado com os valores acima; conferir apenas nome, extensão ou existência não basta. Quando a interface web do add-on também exibir a marca, usar o asset oficial do catálogo, respeitando o caminho/base dinâmica do Ingress. Esta regra complementa o prefixo obrigatório de `name` e `panel_title`; não altera slug, diretório ou IDs técnicos.
+
 ## P0 — Contrato completo de Home Assistant Ingress (25/11/2026)
 
 Aplica-se a todo add-on com `ingress: true`. A configuração do manifesto e a compatibilidade do servidor são requisitos distintos e ambos devem ser atendidos.
