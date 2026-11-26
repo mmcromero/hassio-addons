@@ -1,7 +1,10 @@
 import {readFile} from "node:fs/promises";
 import {describe,expect,it} from "vitest";
 
-const root=new URL("../",import.meta.url);\nlet entrypoint;\ntry{entrypoint=await readFile(new URL("addon/run.sh",root),"utf8");}\ncatch{entrypoint=await readFile(new URL("run.sh",root),"utf8");}
+const root=new URL("../",import.meta.url);
+let entrypoint;
+try{entrypoint=await readFile(new URL("addon/run.sh",root),"utf8");}
+catch{entrypoint=await readFile(new URL("run.sh",root),"utf8");}
 
 describe("isolamento do ambiente do processo Portal",()=>{
  it("remove tokens Supervisor injetados pelo Home Assistant",()=>{
