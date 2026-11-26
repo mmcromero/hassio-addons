@@ -220,21 +220,21 @@
       "git_blob_sha": "f09a308a78b0379e35f1af8245548f74e2981002"
     }
   ],
-  "status": "Candidate dev.17 published to catalog main; awaiting Supervisor ARM64 build and update.",
+  "status": "Published and installed: dev.17. Supervisor aarch64 Docker build completed; chained npm ci, Design System build, Portal tests and TypeScript/Vite build completed successfully; app started. Browser Ingress visual/API homologation remains pending.",
   "build_evidence": {
     "supervisor_app_slug": "45c28620_portal_governanca",
-    "installed_version": "0.1.0-dev.14",
+    "installed_version": "0.1.0-dev.17",
     "candidate_version": "0.1.0-dev.17",
     "architecture": "aarch64",
     "previous_candidate_dev15": "BUILD FAILED: two security tests referenced addon paths absent from the package; fixed in dev.16 with source/package path resolution.",
     "previous_candidate_dev16": "BUILD FAILED: test context did not copy config.yaml; fixed in dev.17 by adding COPY config.yaml ./ to Dockerfile.",
-    "npm_ci": "PENDING Supervisor build",
-    "design_system_build": "PENDING Supervisor build",
-    "portal_tests": "PENDING Supervisor build",
-    "typescript_vite": "PENDING Supervisor build",
-    "supervisor_image_build": "PENDING",
-    "app_state": "currently started on dev.14",
-    "update_available": "PENDING store refresh",
-    "browser_ingress_homologation": "PENDING official Ingress UI validation"
+    "npm_ci": "PASS — Docker build stage completed",
+    "design_system_build": "PASS — chained Docker build completed",
+    "portal_tests": "PASS — npm test completed; exact pass count not separately emitted in the captured Supervisor log",
+    "typescript_vite": "PASS — npm run build:portal completed",
+    "supervisor_image_build": "PASS — Supervisor logged Build 45c28620/aarch64-addon-portal_governanca:0.1.0-dev.17 done at 00:18:59 -03:00",
+    "app_state": "started — Supervisor started Docker app at 00:19:12 -03:00",
+    "update_available": false,
+    "browser_ingress_homologation": "PENDING — direct app API proxy was rejected by the Ingress-only peer allowlist; no security relaxation performed. Browser validation through the official Open interface remains pending."
   }
 }
