@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.26 — 26/11/2026
+- Corrige a tipagem do tipo de registro enviado pela interface; a compilação TypeScript volta a validar o formulário do ledger.
+- Mantém a suíte com 45 testes aprovados no build ARM64.
+
+
 ## 0.1.0-dev.25 — 26/11/2026
 - Corrige quebra literal `\\n` na declaração do ledger em `src/main.ts`, que interrompia o TypeScript.
 - Mantém os 45 testes da suíte e permite prosseguir ao build Vite.

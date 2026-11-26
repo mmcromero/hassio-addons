@@ -122,7 +122,7 @@ async function loadN8n(force=false){
 async function loadRecords(){if(ledgerLoading)return;ledgerLoading=true;ledgerError=null;render();try{ledgerSnapshot=await getPortalRecords();}catch(e){ledgerError=e instanceof Error?e.message:"Falha ao consultar histórico";}finally{ledgerLoading=false;render();}}
 async function saveRecord(form:HTMLFormElement){
  if(ledgerSaving)return;ledgerSaving=true;ledgerMessage=null;ledgerError=null;render();
- const d=new FormData(form),type=String(d.get("type")||"");
+ const d=new FormData(form),type=String(d.get("type")||"") as "homologation"|"evidence"|"decision";
  try{await appendPortalRecord({type,title:String(d.get("title")||""),summary:String(d.get("summary")||""),status:String(d.get("status")||""),projectId:String(d.get("projectId")||""),repository:String(d.get("repository")||""),sha:String(d.get("sha")||""),version:String(d.get("version")||""),environment:String(d.get("environment")||""),responsible:String(d.get("responsible")||""),origin:"Portal",evidenceKind:String(d.get("evidenceKind")||"synthetic"),sourceUrl:String(d.get("sourceUrl")||"")});ledgerMessage="Registro acrescentado ao histórico com integridade SHA-256.";ledgerSnapshot=await getPortalRecords();}
  catch(e){ledgerError=e instanceof Error?e.message:"Falha ao salvar registro";}
  finally{ledgerSaving=false;render();}
