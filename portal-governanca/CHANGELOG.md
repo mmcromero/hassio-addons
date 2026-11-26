@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-dev.14 — 26/11/2026
+- Mantém o cabeçalho das seções alinhado ao topo entre navegações e posiciona o rodapé no fim da área útil em páginas curtas, sem centralização vertical do workspace.
+
+
 ## 0.1.0-dev.13 — 26/11/2026
 - Corrige a identidade visual do Portal usando o ícone oficial compartilhado pelo catálogo; substitui o marcador textual provisório.
 - Reorganiza os quatro indicadores da visão geral em blocos verticais com espaçamento e hierarquia tipográfica próprios.
