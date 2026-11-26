@@ -1,4 +1,10 @@
-# Changelog — Portal de Governança (add-on)
+# Changelog
+
+## 0.1.0-dev.13 — 26/11/2026
+- Corrige a identidade visual do Portal usando o ícone oficial compartilhado pelo catálogo; substitui o marcador textual provisório.
+- Reorganiza os quatro indicadores da visão geral em blocos verticais com espaçamento e hierarquia tipográfica próprios.
+- Inclui os assets públicos da interface no pacote e no estágio de build do Supervisor.
+- Corrige a quebra de linha literal acidental no empacotador que impedia sua execução.
 
 ## 0.1.0-dev.12 — 25/11/2026
 

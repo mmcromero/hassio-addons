@@ -6,6 +6,7 @@ COPY vendor/design-system ./vendor/design-system
 RUN npm ci
 COPY index.html tsconfig.json vite.config.ts ./
 COPY src ./src
+COPY public ./public
 COPY tests ./tests
 COPY server ./server
 COPY config ./config
