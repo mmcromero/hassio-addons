@@ -12,7 +12,8 @@ if [ ! -r "$OPTIONS_FILE" ]; then
     exit 1
 fi
 RUNNER_AUTH_TOKEN="$(jq -r '.runner_auth_token // empty' "$OPTIONS_FILE")"
-export RUNNER_AUTH_TOKEN
+RUNNER_PORTAL_DISPATCH_TOKEN="$(jq -r '.portal_dispatch_token // empty' "$OPTIONS_FILE")"
+export RUNNER_AUTH_TOKEN RUNNER_PORTAL_DISPATCH_TOKEN
 
 if [ "${#RUNNER_AUTH_TOKEN}" -lt 32 ]; then
     echo "[ERROR] Token do runner ausente ou curto; início recusado" >&2

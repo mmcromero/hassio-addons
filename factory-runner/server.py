@@ -1068,8 +1068,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     if len(os.environ.get("RUNNER_AUTH_TOKEN", "")) < 32:
         raise SystemExit("RUNNER_AUTH_TOKEN required; refusing to start")
-    server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
-    server.daemon_threads = True
+    api_server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
+    api_server.daemon_threads = True
     launch_workspace_sync()
     from execution_orchestrator import ExecutionOrchestrator
     ORCHESTRATOR = ExecutionOrchestrator(
@@ -1083,14 +1083,52 @@ if __name__ == "__main__":
     print("[ORCHESTRATOR] READY: persistent queue; single worker; project code execution disabled", flush=True)
     print("[API] READY: loopback-only; authenticated; worker read-only; publication disabled", flush=True)
 
+    dispatch_server = None
+    dispatch_token = os.environ.get("RUNNER_PORTAL_DISPATCH_TOKEN", "")
+    if len(dispatch_token) >= 32:
+        from portal_dispatch import PortalDispatchHTTPServer, PortalDispatchService
+        service = PortalDispatchService(
+            token=dispatch_token,
+            orchestrator=ORCHESTRATOR,
+            projects_dir=PROJECTS_DIR,
+            workspaces_dir=WORKSPACES_DIR,
+            audit_callback=record,
+        )
+        try:
+            dispatch_server = PortalDispatchHTTPServer(
+                ("0.0.0.0", int(os.environ.get("RUNNER_PORTAL_DISPATCH_PORT", "9877"))),
+                service,
+            )
+            dispatch_thread = threading.Thread(
+                target=dispatch_server.serve_forever,
+                name="portal-dispatch",
+                daemon=True,
+            )
+            dispatch_thread.start()
+            print("[PORTAL-DISPATCH] READY: authenticated internal API; plan-only", flush=True)
+        except OSError:
+            dispatch_server = None
+            print("[PORTAL-DISPATCH] BLOCKED: internal listener unavailable; main API remains restricted", flush=True)
+    else:
+        print("[PORTAL-DISPATCH] DORMANT: dedicated token not configured", flush=True)
+
     def request_shutdown(_signum, _frame):
-        threading.Thread(target=server.shutdown, name="api-shutdown", daemon=True).start()
+        threading.Thread(target=api_server.shutdown, name="api-shutdown", daemon=True).start()
+        if dispatch_server is not None:
+            threading.Thread(
+                target=dispatch_server.shutdown,
+                name="portal-dispatch-shutdown",
+                daemon=True,
+            ).start()
 
     signal.signal(signal.SIGTERM, request_shutdown)
     signal.signal(signal.SIGINT, request_shutdown)
     try:
-        server.serve_forever()
+        api_server.serve_forever()
     finally:
+        if dispatch_server is not None:
+            dispatch_server.shutdown()
+            dispatch_server.server_close()
         if ORCHESTRATOR is not None:
             ORCHESTRATOR.stop()
-        server.server_close()
+        api_server.server_close()

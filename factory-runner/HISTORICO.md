@@ -293,3 +293,47 @@ Preparar a proposta somente em docs/APPARMOR-MOUNT-PROFILE-001.md na branch perm
 - Allowlist de ambiente em `userns_probe.py` permanece a proteção primária contra herança de segredos; `Cx` não é filtro universal de variáveis.
 - Parser local 4.1.0 aceitou o corpo do candidato com `--preprocess` e `--skip-kernel-load` (exit 0) somente após remover `abstractions/base` do arquivo temporário. Com as abstractions Debian 13, houve falha por declarações ABI 4.0 incompatíveis com ABI 3.0. Nenhum perfil carregado. Parser HA 3.1.7 e execução sob enforce não foram testados. M120 Antigravity não tinha AppArmor CLI/kernel no host Windows.
 - Nenhuma ativação, publicação ou instalação. RC68 permanece instalada; RC69 não homologada; execução de código não confiável permanece bloqueada.
+
+
+## 26/11/2026 — M121: integração restrita Portal → Factory Runner (planejamento read-only)
+
+- Nova autorização do proprietário para reaproveitamento limitado do Runner encerrado; não reabre o executor genérico.
+- Branch: desenvolvimento. Commit: 40e8631c4b95491fa1c7be34f5b43ce9af3bf848.
+- Arquivos: portal_dispatch.py, tests/test_factory_runner_portal_dispatch.py, server.py, run.sh, config.yaml, Dockerfile e docs/ENCERRAMENTO-FACTORY-RUNNER-001.md.
+- Endpoint separado: 0.0.0.0:9877, sem publicação no host; token independente portal_dispatch_token; API principal 127.0.0.1:9876 preservada.
+- Contrato gerado pelo Runner a partir de perfil e workspace aprovados; somente requested_operations=["plan"], sem autorização, sem destinos, rede none e SHA atual do workspace. Idempotência por UUIDv5 da missão.
+- Teste dirigido local do módulo novo: py_compile PASS; 4/4 testes HTTP/serviço PASS com perfil/workspace simulados. Não equivale à suíte integral nem ao Dockerfile.
+- Não executados: suíte completa do Runner, build ARM64, instalação/atualização HA, configuração do token, chamada entre add-ons ou despacho real. Nenhum código/teste de projeto executado.
+- Estado instalado permanece RC71; Publisher DORMANT; safe_for_untrusted_code=false.
+- Próximo gate: revisão do diff e build/suíte do Dockerfile em executor autorizado. Só depois avaliar publicação isolada, configuração do segredo dedicado e teste real de planejamento read-only.
+
+
+## 26/11/2026 — M122: endurecimento da ponte Portal (allowlist e fail-closed)
+
+- Branch desenvolvimento; commit 5b0ff4732cbede3febe0e2567716ad17e37c9203.
+- A allowlist do endpoint é fixa: avisaqui e artesao_digital; projetos fora dela são recusados antes de carregar perfil.
+- Validação explícita das raízes de perfil/workspace, diretórios source e distribution; rejeição de symlink.
+- Requisições POST exigem Content-Type application/json, exatamente um Content-Length e exatamente um cabeçalho de token; transferência chunked recusada.
+- Falha ao abrir a porta interna não derruba a API principal; o adaptador fica BLOCKED e o Runner permanece no modo restrito.
+- Testes dirigidos atualizados: py_compile PASS; 5/5 testes HTTP/serviço PASS em ambiente local com stubs de perfil/workspace.
+- Ainda não executados: suíte completa, Dockerfile/build ARM64, publicação/instalação, token de serviço e despacho real.
+- Nenhum código de projeto executado; Publisher DORMANT; safe_for_untrusted_code=false.
+
+
+## 26/11/2026 — M123: idempotência estável e vínculo do job
+
+- Branch desenvolvimento; código atualizado no commit d70dd28cf9654e79b2d4a95ad9454ae19f070fd0.
+- Portal envia o timestamp original da missão; Runner valida e normaliza UTC. Com UUIDv5 determinístico e SHA de workspace estável, reenvios produzem o mesmo contrato e execution_id.
+- O adaptador verifica que o job retornado pelo orquestrador tem exatamente o execution_id calculado para a missão; divergência é recusada.
+- Testes dirigidos: py_compile PASS; 6/6 testes HTTP/serviço PASS com stubs de perfil/workspace.
+- Não executados: suíte completa, Dockerfile/build ARM64, instalação, configuração do segredo e despacho real.
+- Nenhum código de projeto executado; Publisher DORMANT; safe_for_untrusted_code=false.
+
+
+## 26/11/2026 — RC72: ponte autenticada read-only Portal → Runner
+
+- Fonte: `mmcromero/factory-runner:desenvolvimento`; manifesto `0.1.0-rc.72`.
+- Escopo: listener interno em 9877, token dedicado `portal_dispatch_token`, endpoints POST /v1/jobs e GET /v1/jobs/{id}; operação limitada a planejamento FR-EXEC-001.
+- O Portal conserva o prompt integral no ledger e encaminha somente trecho limitado + digest. Nenhum código, script, teste, build, publicação ou deploy de projeto é executado.
+- A porta não é publicada no host; publisher e sandbox permanecem bloqueados.
+- Estado no registro: candidata de integração; build ARM64 e suíte completa ainda dependem da instalação/atualização no Supervisor. Não declarar publicação, instalação ou homologação até evidência real.

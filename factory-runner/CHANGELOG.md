@@ -1,3 +1,12 @@
+# 0.1.0-rc.72 — M175: integração autenticada read-only Portal → Runner
+
+- Adiciona listener interno autenticado na porta 9877, habilitado somente com `portal_dispatch_token` dedicado.
+- Expõe somente `POST /v1/jobs` e `GET /v1/jobs/{id}`; o contrato aceita exclusivamente planejamento FR-EXEC-001 (`requested_operations=["plan"]`).
+- O Portal envia trecho limitado do prompt e digest; o texto integral permanece no ledger do Portal.
+- Não executa código, scripts, testes, builds, publicação ou deploy de projetos. Não altera o Publisher nem libera o sandbox.
+- A porta 9877 não é publicada no host (`ports: 9877/tcp: null`).
+- Build ARM64, suíte completa e homologação integrada desta RC ainda pendentes; nenhum código de projeto executado.
+
 # 0.1.0-rc.71 — M174: build ARM64 e instalação aprovados; Etapa 5B ainda bloqueada
 
 - Supervisor construiu a imagem ARM64 e concluiu a suíte Dockerfile com 579 testes; app instalado e iniciado como 0.1.0-rc.71.

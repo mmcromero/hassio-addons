@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.71",
+  "version": "0.1.0-rc.72",
   "repository": "mmcromero/factory-runner",
-  "commit": "cf038ba1ef706f25873201db04628234769f7932",
-  "catalog_sha": "59b809e3f1d8c19dcce8e9666d39dcf146fb7829",
-  "previous_source": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
-  "reviewed_source": "cf038ba1ef706f25873201db04628234769f7932",
-  "publication": "OWNER_AUTHORIZED_DIRECT_DISTRIBUTION_EXCEPTION_M172",
-  "authorization": "OWNER_AUTHORIZED_RC71_DIRECT_DISTRIBUTION_2026-11-26_M172",
-  "candidate_distribution": "FACTORY_RUNNER_RC71_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
-  "tests": "RC69_BUILD_FAILED_FOUR_CGROUP_TESTS; RC70_BUILD_FAILED_TWO_INVERTED_CGROUP_TEST_ASSERTIONS; RC71_CORRECTED_EXPECTATIONS; SUPERVISOR_ARM64_REBUILD_PENDING; NO_PROJECT_CODE_EXECUTED",
-  "review_status": "SOURCE_OVERLAY_EXACT_BLOBS; CATALOG_HISTORICAL_FILE_PRESERVED; RC69_AND_RC70_FAILURES_RECORDED; RC71_BUILD_PENDING",
+  "commit": "6e0cff0379434fcefe20db229baa94f544346569",
+  "catalog_sha": "90947533ebebd43248af93bc7bbe15b457df8c46",
+  "previous_source": "cf038ba1ef706f25873201db04628234769f7932",
+  "reviewed_source": "6e0cff0379434fcefe20db229baa94f544346569",
+  "publication": "OWNER_AUTHORIZED_RC72_DIRECT_DISTRIBUTION",
+  "authorization": "OWNER_AUTHORIZED_CONTINUOUS_FACTORY_RUNNER_RC_PUBLICATION_M055",
+  "candidate_distribution": "FACTORY_RUNNER_RC72_PORTAL_READ_ONLY_DISPATCH",
+  "tests": "SUPERVISOR_ARM64_BUILD_AND_FULL_TEST_SUITE_PENDING; PORTAL_DISPATCH_PLAN_ONLY; NO_PROJECT_CODE_EXECUTED",
+  "review_status": "SOURCE_FILES_EXPORTED_AS_EXACT_GIT_BLOBS; HISTORICAL_CATALOG_FILES_PRESERVED; SUPERVISOR_BUILD_PENDING",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -25,139 +25,6 @@
       "source_path": "factory-runner-add-on/.env.example",
       "git_blob_sha": "5825e3b19d3219c176af62ba9cbaa3af29f0ad1a",
       "size": 316,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/ARTESAO-ADAPTER-001.md",
-      "source_path": "factory-runner-add-on/ARTESAO-ADAPTER-001.md",
-      "git_blob_sha": "603182d056a4040ff0ce869c7137cb48736a8fd8",
-      "size": 9411,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/ARTESAO-BUILDER-002.md",
-      "source_path": "factory-runner-add-on/ARTESAO-BUILDER-002.md",
-      "git_blob_sha": "073438dec650f47f05f149577f9bd3da3eba1faf",
-      "size": 9134,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/CHANGELOG.md",
-      "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "c3d923f97a342013fb01d79cdbce6680ffec3344",
-      "size": 70722,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/CONTINUIDADE.md",
-      "source_path": "factory-runner-add-on/CONTINUIDADE.md",
-      "git_blob_sha": "e51fb8d586ee3b8d2bedc83b75307c055924dce7",
-      "size": 15560,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/CONTROLLED-WORKER.md",
-      "source_path": "factory-runner-add-on/CONTROLLED-WORKER.md",
-      "git_blob_sha": "9118e38bfe609bebe95dd90fce46dafce56f4d6d",
-      "size": 5714,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/DECLARATIVE-IMPLEMENTACAO-001.md",
-      "source_path": "factory-runner-add-on/DECLARATIVE-IMPLEMENTACAO-001.md",
-      "git_blob_sha": "1baeb3abd4de7873250b884e82eb36be769a1c57",
-      "size": 6916,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/DOCS.md",
-      "source_path": "factory-runner-add-on/DOCS.md",
-      "git_blob_sha": "3ebdb7e61bbbcd082691cd49a3d02cfef16f43b5",
-      "size": 5228,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/Dockerfile",
-      "source_path": "factory-runner-add-on/Dockerfile",
-      "git_blob_sha": "bbf9bf79d96b3de0329e998d7f6a781be13a8051",
-      "size": 8170,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/HISTORICO.md",
-      "source_path": "factory-runner-add-on/HISTORICO.md",
-      "git_blob_sha": "b12abe92fd0841e88fd26bd9fb9d4bd45e8f4fe9",
-      "size": 43715,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/LANDLOCK-ESTUDO-001.md",
-      "source_path": "factory-runner-add-on/LANDLOCK-ESTUDO-001.md",
-      "git_blob_sha": "f8f583f011d426158f7ef17a2ececece9edc749d",
-      "size": 12234,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/M006-RPI-PIPELINE.md",
-      "source_path": "factory-runner-add-on/M006-RPI-PIPELINE.md",
-      "git_blob_sha": "cfa0ede3c93bf80b7b10152a625a13c716001f1d",
-      "size": 11774,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/OPERACAO-ESTEIRA.md",
-      "source_path": "factory-runner-add-on/OPERACAO-ESTEIRA.md",
-      "git_blob_sha": "55a2ac3e32f0e769d02763eebbdfc93412f3e69f",
-      "size": 18469,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RC5-VALIDACAO.md",
-      "source_path": "factory-runner-add-on/RC5-VALIDACAO.md",
-      "git_blob_sha": "94cd38c50f895dbbba929687fc7df80729fdc25f",
-      "size": 5654,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RC6-VALIDACAO.md",
-      "source_path": "factory-runner-add-on/RC6-VALIDACAO.md",
-      "git_blob_sha": "9bfe76e9ce575c9d0b539f7a5849445bdbd5f92c",
-      "size": 4960,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RC7-VALIDACAO.md",
-      "source_path": "factory-runner-add-on/RC7-VALIDACAO.md",
-      "git_blob_sha": "9c13ab8c93ff6aab7957c653891d4623b45abc2c",
-      "size": 5400,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RC8-VALIDACAO.md",
-      "source_path": "factory-runner-add-on/RC8-VALIDACAO.md",
-      "git_blob_sha": "ef52398a2bed82bd6d327176df7953108e5a1781",
-      "size": 5093,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RC9-VALIDACAO.md",
-      "source_path": "factory-runner-add-on/RC9-VALIDACAO.md",
-      "git_blob_sha": "d7e07b353f0fbd6a588a16c0b3a63eb652146238",
-      "size": 4836,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/README.md",
-      "source_path": "factory-runner-add-on/README.md",
-      "git_blob_sha": "47a016cc68e6a507be6ab124a0da8658292c0d07",
-      "size": 6564,
-      "mode": "100644"
-    },
-    {
-      "path": "factory-runner/RELEASE-PIPELINE.md",
-      "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "bf81ec0960baddc4e6a9d8b69698b6b0e009193d",
-      "size": 39755,
       "mode": "100644"
     },
     {
@@ -175,17 +42,17 @@
       "mode": "100644"
     },
     {
-      "path": "factory-runner/archive_stream.py",
-      "source_path": "factory-runner-add-on/archive_stream.py",
-      "git_blob_sha": "5f71f03316085efae27e2ad1caf00e7f2d60c44c",
-      "size": 13413,
-      "mode": "100644"
-    },
-    {
       "path": "factory-runner/archive_stream_probe.py",
       "source_path": "factory-runner-add-on/archive_stream_probe.py",
       "git_blob_sha": "ee3c341081a98e5af8507018e1e250d626496f6f",
       "size": 16557,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/archive_stream.py",
+      "source_path": "factory-runner-add-on/archive_stream.py",
+      "git_blob_sha": "5f71f03316085efae27e2ad1caf00e7f2d60c44c",
+      "size": 13413,
       "mode": "100644"
     },
     {
@@ -210,6 +77,20 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/ARTESAO-ADAPTER-001.md",
+      "source_path": "factory-runner-add-on/ARTESAO-ADAPTER-001.md",
+      "git_blob_sha": "603182d056a4040ff0ce869c7137cb48736a8fd8",
+      "size": 9411,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/ARTESAO-BUILDER-002.md",
+      "source_path": "factory-runner-add-on/ARTESAO-BUILDER-002.md",
+      "git_blob_sha": "073438dec650f47f05f149577f9bd3da3eba1faf",
+      "size": 9134,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/autonomous_dev.py",
       "source_path": "factory-runner-add-on/autonomous_dev.py",
       "git_blob_sha": "3632bac92bc99a6aa314df89b1faabe645390519",
@@ -224,10 +105,24 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/CHANGELOG.md",
+      "source_path": "factory-runner-add-on/CHANGELOG.md",
+      "git_blob_sha": "ae45b1865e15c9cf98fb480a98d95866871b8c6e",
+      "size": 71482,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "223283cbfa9ac6bcaf27a332c6538c937d33e3bd",
-      "size": 1015,
+      "git_blob_sha": "2ff8719305024ee27a3528627191221bb29d49dd",
+      "size": 1203,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/CONTINUIDADE.md",
+      "source_path": "factory-runner-add-on/CONTINUIDADE.md",
+      "git_blob_sha": "e51fb8d586ee3b8d2bedc83b75307c055924dce7",
+      "size": 15560,
       "mode": "100644"
     },
     {
@@ -235,6 +130,13 @@
       "source_path": "factory-runner-add-on/controlled_worker.py",
       "git_blob_sha": "5560726b5ce800da538e5793c6a326813ff79f99",
       "size": 5140,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/CONTROLLED-WORKER.md",
+      "source_path": "factory-runner-add-on/CONTROLLED-WORKER.md",
+      "git_blob_sha": "9118e38bfe609bebe95dd90fce46dafce56f4d6d",
+      "size": 5714,
       "mode": "100644"
     },
     {
@@ -256,6 +158,27 @@
       "source_path": "factory-runner-add-on/declarative_workspace_probe.py",
       "git_blob_sha": "969a2d4c05ac9ae70a9c14868e851b62a7edde70",
       "size": 6974,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/DECLARATIVE-IMPLEMENTACAO-001.md",
+      "source_path": "factory-runner-add-on/DECLARATIVE-IMPLEMENTACAO-001.md",
+      "git_blob_sha": "1baeb3abd4de7873250b884e82eb36be769a1c57",
+      "size": 6916,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/Dockerfile",
+      "source_path": "factory-runner-add-on/Dockerfile",
+      "git_blob_sha": "4f01079af1aa2d1807578dd69c16d583df9b4458",
+      "size": 8237,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/DOCS.md",
+      "source_path": "factory-runner-add-on/DOCS.md",
+      "git_blob_sha": "3ebdb7e61bbbcd082691cd49a3d02cfef16f43b5",
+      "size": 5228,
       "mode": "100644"
     },
     {
@@ -343,6 +266,13 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/HISTORICO.md",
+      "source_path": "factory-runner-add-on/HISTORICO.md",
+      "git_blob_sha": "583282f8202891c3782d2dca4a8510f47afbc201",
+      "size": 47822,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/icon.png",
       "source_path": "factory-runner-add-on/icon.png",
       "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a",
@@ -364,6 +294,13 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/LANDLOCK-ESTUDO-001.md",
+      "source_path": "factory-runner-add-on/LANDLOCK-ESTUDO-001.md",
+      "git_blob_sha": "f8f583f011d426158f7ef17a2ececece9edc749d",
+      "size": 12234,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/local_publisher.py",
       "source_path": "factory-runner-add-on/local_publisher.py",
       "git_blob_sha": "c81cf90b3d65d5cc6c4c5e2cb3096bf666510713",
@@ -375,6 +312,20 @@
       "source_path": "factory-runner-add-on/logo.png",
       "git_blob_sha": "7e500016222b0a5bf395be8ed17447edeb3e2af9",
       "size": 194750,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/M006-RPI-PIPELINE.md",
+      "source_path": "factory-runner-add-on/M006-RPI-PIPELINE.md",
+      "git_blob_sha": "cfa0ede3c93bf80b7b10152a625a13c716001f1d",
+      "size": 11774,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/OPERACAO-ESTEIRA.md",
+      "source_path": "factory-runner-add-on/OPERACAO-ESTEIRA.md",
+      "git_blob_sha": "55a2ac3e32f0e769d02763eebbdfc93412f3e69f",
+      "size": 18469,
       "mode": "100644"
     },
     {
@@ -413,10 +364,10 @@
       "mode": "100644"
     },
     {
-      "path": "factory-runner/projects/README.md",
-      "source_path": "factory-runner-add-on/projects/README.md",
-      "git_blob_sha": "d78af901a0f79866aa9835a5703cdd434cae2d4f",
-      "size": 5879,
+      "path": "factory-runner/portal_dispatch.py",
+      "source_path": "factory-runner-add-on/portal_dispatch.py",
+      "git_blob_sha": "cb7511269dd0ddec9f6610cc899de6714b36dbb4",
+      "size": 11103,
       "mode": "100644"
     },
     {
@@ -431,6 +382,13 @@
       "source_path": "factory-runner-add-on/projects/avisaqui.json",
       "git_blob_sha": "f3291118ba6e5564b46bf52ce76bc844f6484cff",
       "size": 3555,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/projects/README.md",
+      "source_path": "factory-runner-add-on/projects/README.md",
+      "git_blob_sha": "d78af901a0f79866aa9835a5703cdd434cae2d4f",
+      "size": 5879,
       "mode": "100644"
     },
     {
@@ -476,6 +434,48 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/RC5-VALIDACAO.md",
+      "source_path": "factory-runner-add-on/RC5-VALIDACAO.md",
+      "git_blob_sha": "94cd38c50f895dbbba929687fc7df80729fdc25f",
+      "size": 5654,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/RC6-VALIDACAO.md",
+      "source_path": "factory-runner-add-on/RC6-VALIDACAO.md",
+      "git_blob_sha": "9bfe76e9ce575c9d0b539f7a5849445bdbd5f92c",
+      "size": 4960,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/RC7-VALIDACAO.md",
+      "source_path": "factory-runner-add-on/RC7-VALIDACAO.md",
+      "git_blob_sha": "9c13ab8c93ff6aab7957c653891d4623b45abc2c",
+      "size": 5400,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/RC8-VALIDACAO.md",
+      "source_path": "factory-runner-add-on/RC8-VALIDACAO.md",
+      "git_blob_sha": "ef52398a2bed82bd6d327176df7953108e5a1781",
+      "size": 5093,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/RC9-VALIDACAO.md",
+      "source_path": "factory-runner-add-on/RC9-VALIDACAO.md",
+      "git_blob_sha": "d7e07b353f0fbd6a588a16c0b3a63eb652146238",
+      "size": 4836,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/README.md",
+      "source_path": "factory-runner-add-on/README.md",
+      "git_blob_sha": "47a016cc68e6a507be6ab124a0da8658292c0d07",
+      "size": 6564,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/release_console.py",
       "source_path": "factory-runner-add-on/release_console.py",
       "git_blob_sha": "b95ba697043130686d7a0282f1d02a089b889a8c",
@@ -490,10 +490,17 @@
       "mode": "100644"
     },
     {
+      "path": "factory-runner/RELEASE-PIPELINE.md",
+      "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
+      "git_blob_sha": "bf81ec0960baddc4e6a9d8b69698b6b0e009193d",
+      "size": 39755,
+      "mode": "100644"
+    },
+    {
       "path": "factory-runner/run.sh",
       "source_path": "factory-runner-add-on/run.sh",
-      "git_blob_sha": "0985e85c99554f605c7cd4060c7ec0a52150346d",
-      "size": 10607,
+      "git_blob_sha": "f67fc19b2ec5e487459be27eabe9c68bba25d2cf",
+      "size": 10726,
       "mode": "100644"
     },
     {
@@ -534,8 +541,8 @@
     {
       "path": "factory-runner/server.py",
       "source_path": "factory-runner-add-on/server.py",
-      "git_blob_sha": "8fa3bfe77fa33be58f8b6b8e9abdbac554eccadb",
-      "size": 56637,
+      "git_blob_sha": "49abedb1006958a25db76f91deaaba96d7de47be",
+      "size": 58246,
       "mode": "100644"
     },
     {
@@ -595,17 +602,17 @@
       "mode": "100644"
     },
     {
-      "path": "factory-runner/tests/test_factory_runner_archive_stream.py",
-      "source_path": "factory-runner-add-on/tests/test_factory_runner_archive_stream.py",
-      "git_blob_sha": "e6a3611cabb436944ba1f012b2b0355de107fe2e",
-      "size": 10901,
-      "mode": "100644"
-    },
-    {
       "path": "factory-runner/tests/test_factory_runner_archive_stream_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_archive_stream_probe.py",
       "git_blob_sha": "94e11b3b695783f0857ac18f3e166d27c097ff95",
       "size": 2575,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/test_factory_runner_archive_stream.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_archive_stream.py",
+      "git_blob_sha": "e6a3611cabb436944ba1f012b2b0355de107fe2e",
+      "size": 10901,
       "mode": "100644"
     },
     {
@@ -651,13 +658,6 @@
       "mode": "100644"
     },
     {
-      "path": "factory-runner/tests/test_factory_runner_declarative.py",
-      "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative.py",
-      "git_blob_sha": "c62764cd3c49cf322af40bcf36b642b2a279260e",
-      "size": 9889,
-      "mode": "100644"
-    },
-    {
       "path": "factory-runner/tests/test_factory_runner_declarative_runtime_probe.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative_runtime_probe.py",
       "git_blob_sha": "82c11b926e39251b2c434722f645f7657efe5e72",
@@ -669,6 +669,13 @@
       "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative_workspace_probe.py",
       "git_blob_sha": "8f0147b6026694599c64df8f0e3d4d16969500f7",
       "size": 5074,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/test_factory_runner_declarative.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_declarative.py",
+      "git_blob_sha": "c62764cd3c49cf322af40bcf36b642b2a279260e",
+      "size": 9889,
       "mode": "100644"
     },
     {
@@ -816,6 +823,13 @@
       "source_path": "factory-runner-add-on/tests/test_factory_runner_owner_ui_enrollment.py",
       "git_blob_sha": "89cddf571abab37e8e60ef8e04f9f8ffe59c4ef7",
       "size": 5624,
+      "mode": "100644"
+    },
+    {
+      "path": "factory-runner/tests/test_factory_runner_portal_dispatch.py",
+      "source_path": "factory-runner-add-on/tests/test_factory_runner_portal_dispatch.py",
+      "git_blob_sha": "63d585e883c241a5a12b461898292df74f73632c",
+      "size": 7227,
       "mode": "100644"
     },
     {
