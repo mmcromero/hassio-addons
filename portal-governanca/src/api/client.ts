@@ -56,7 +56,22 @@ export async function getN8nOverview(refresh=false):Promise<N8nOverview>{
  return data as N8nOverview;
 }
 
-export type PortalRecord={id:string;createdAt:string;type:"homologation"|"evidence"|"decision";title:string;summary:string;status:string|null;projectId:string|null;repository:string|null;sha:string|null;version:string|null;environment:string|null;responsible:string|null;origin:string;evidenceKind:string|null;sourceUrl:string|null;previousHash:string;hash:string};
+export type PortalRecord={id:string;createdAt:string;type:"homologation"|"evidence"|"decision"|"agent_event";title:string;summary:string;status:string|null;projectId:string|null;repository:string|null;sha:string|null;version:string|null;environment:string|null;responsible:string|null;origin:string;evidenceKind:string|null;sourceUrl:string|null;previousHash:string;hash:string;eventId?:string|null;eventType?:string|null;agentId?:string|null;taskId?:string|null;deliverables?:string[];nextAction?:string|null};
 export type PortalLedger={records:PortalRecord[];total:number;integrity:string;lastHash:string};
 export function getPortalRecords():Promise<PortalLedger>{return apiRequest<PortalLedger>("api/v1/records");}
 export function appendPortalRecord(input:Partial<PortalRecord>):Promise<{record:PortalRecord}>{return apiRequest("api/v1/records",{method:"POST",body:JSON.stringify(input)});}
+
+export type AgentEvent={id:string;createdAt:string;type:"agent_event";title:string;summary:string;projectId:string|null;eventId:string;eventType:"inicio"|"atualizacao"|"conclusao"|"impedimento"|"bastao";agentId:string;taskId:string;deliverables:string[];nextAction:string|null;responsible:string;origin:string;hash:string;previousHash:string};
+export type AgentEventsResponse={events:AgentEvent[];total:number;lastUpdated:string|null};
+export function getAgentEvents(params?:{project?:string;agent?:string;limit?:number}):Promise<AgentEventsResponse>{
+ const search=new URLSearchParams();
+ if(params?.project)search.set("project",params.project);
+ if(params?.agent)search.set("agent",params.agent);
+ if(params?.limit)search.set("limit",String(params.limit));
+ const qs=search.toString();
+ return apiRequest<AgentEventsResponse>("api/v1/agent-events"+(qs?"?"+qs:""));
+}
+
+export type SystemStatus={checkedAt:string;github:{configured:boolean;registrationConfigured:boolean;status:string};homeAssistant:{bridgeConfigured:boolean;status:string};n8n:{configured:boolean;status:string};agentProtocol:{status:string;totalEvents:number;lastEventAt:string|null}};
+export function getSystemStatus():Promise<SystemStatus>{return apiRequest<SystemStatus>("api/v1/system-status");}
+

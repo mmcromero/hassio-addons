@@ -9,7 +9,7 @@
   "files": [
     {
       "path": "packages/components/package.json",
-      "git_blob_sha": "2ed27f2f7953f682aec4eec1d1dc3ec74e0bec00"
+      "git_blob_sha": "7918ee8edb95a74fdf66c8a7c7a586c2a55e2571"
     },
     {
       "path": "packages/components/tsconfig.json",

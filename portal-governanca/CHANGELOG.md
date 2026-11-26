@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.27 — 26/11/2026
+- Implementa a Fase 6B: Protocolo de Comunicação de Agentes e Portal como Centro de Comando.
+- Corrige compatibilidade de abertura cross-platform do ledger NDJSON (`O_CREAT` / `O_APPEND` / `O_WRONLY`).
+- Adiciona rotas backend `/api/v1/agent-events` (POST com idempotência via UUID e GET filtrado) e `/api/v1/system-status`.
+- Adiciona nova seção "Centro de comando" e painel "Estado das Integrações" na interface web.
+- Suíte expandida para 50 testes automatizados, todos aprovados.
+
 ## 0.1.0-dev.26 — 26/11/2026
 - Corrige a tipagem do tipo de registro enviado pela interface; a compilação TypeScript volta a validar o formulário do ledger.
 - Mantém a suíte com 45 testes aprovados no build ARM64.

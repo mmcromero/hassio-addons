@@ -119,13 +119,13 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records")&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
@@ -140,6 +140,84 @@ const server=http.createServer(async(req,res)=>{
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
   try{const row=await ledger.append(await readJson(req));json(res,201,{record:row});}
   catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_WRITE_FAILED",message:error.message}});}return;
+ }
+ if(pathname==="/api/v1/agent-events"&&req.method==="GET"){
+  const projectId=requestUrl.searchParams.get("project")||undefined;
+  const agentId=requestUrl.searchParams.get("agent")||undefined;
+  const limit=Math.min(Math.max(1,Number(requestUrl.searchParams.get("limit")||50)),500);
+  try{json(res,200,await ledger.listEvents({projectId,agentId,limit}));}
+  catch(error){json(res,error.status||503,{error:{code:error.code||"AGENT_EVENTS_UNAVAILABLE",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/agent-events"&&req.method==="POST"){
+  if(!sameOrigin(req)&&!isLoopbackPeer(peer)&&!(ingressMode&&isIngressPeer(peer))){
+   json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;
+  }
+  let body;
+  try{body=await readJson(req);}catch(error){json(res,error.status||400,{error:{code:error.code||"INVALID_JSON",message:error.message}});return;}
+  if(!body||typeof body!=="object"||Array.isArray(body)){
+   json(res,400,{error:{code:"INVALID_PAYLOAD",message:"Payload inválido."}});return;
+  }
+  if(body.protocol_version!=="1.0"){
+   json(res,400,{error:{code:"INVALID_PROTOCOL_VERSION",message:"protocol_version deve ser '1.0'."}});return;
+  }
+  const eventId=typeof body.event_id==="string"?body.event_id.trim():"";
+  if(!eventId||!/^[a-f0-9\-]{8,64}$/i.test(eventId)){
+   json(res,400,{error:{code:"INVALID_EVENT_ID",message:"event_id deve ser um identificador válido (UUID)."}});return;
+  }
+  const validTypes=new Set(["inicio","atualizacao","conclusao","impedimento","bastao"]);
+  const eventType=typeof body.event_type==="string"?body.event_type.trim():"";
+  if(!validTypes.has(eventType)){
+   json(res,400,{error:{code:"INVALID_EVENT_TYPE",message:"event_type deve ser: inicio, atualizacao, conclusao, impedimento ou bastao."}});return;
+  }
+  const projectId=typeof body.project_id==="string"?body.project_id.trim():"";
+  const agentId=typeof body.agent_id==="string"?body.agent_id.trim():"";
+  const taskId=typeof body.task_id==="string"?body.task_id.trim():"";
+  const summary=typeof body.summary==="string"?body.summary.trim():"";
+  if(!projectId||!agentId||!taskId||!summary){
+   json(res,400,{error:{code:"REQUIRED_FIELDS",message:"project_id, agent_id, task_id e summary são obrigatórios."}});return;
+  }
+  if(await ledger.hasEvent(eventId)){
+   json(res,409,{error:{code:"DUPLICATE_EVENT",message:"Evento com event_id já registrado anteriormente."}});return;
+  }
+  try{
+   const title="["+eventType.toUpperCase()+"] "+projectId+" · "+taskId;
+   const deliverables=Array.isArray(body.deliverables)?body.deliverables.map(x=>String(x).slice(0,200)):[];
+   const nextAction=typeof body.next_action==="string"?body.next_action.trim():"";
+   const row=await ledger.append({
+    type:"agent_event",
+    title,
+    summary,
+    projectId,
+    eventId,
+    eventType,
+    agentId,
+    taskId,
+    deliverables,
+    nextAction,
+    responsible:agentId,
+    origin:"AgentProtocol"
+   });
+   json(res,201,{success:true,event:row});
+  }catch(error){
+   json(res,error.status||503,{error:{code:error.code||"AGENT_EVENT_SAVE_FAILED",message:error.message}});
+  }
+  return;
+ }
+ if(pathname==="/api/v1/system-status"&&req.method==="GET"){
+  try{
+   const agentStats=await ledger.listEvents({limit:1});
+   json(res,200,{
+    checkedAt:new Date().toISOString(),
+    github:{configured:Boolean(process.env.GITHUB_TOKEN),registrationConfigured:Boolean(process.env.GITHUB_WRITE_TOKEN),status:process.env.GITHUB_TOKEN?"connected":"not_configured"},
+    homeAssistant:{bridgeConfigured:Boolean(haBridgeUrl),status:haBridgeUrl?"connected":"not_configured"},
+    n8n:{configured:n8n.configured,status:n8n.configured?"connected":"not_configured"},
+    agentProtocol:{status:"active",totalEvents:agentStats.total,lastEventAt:agentStats.lastUpdated}
+   });
+  }catch(error){
+   json(res,500,{error:{code:"SYSTEM_STATUS_FAILED",message:error.message}});
+  }
+  return;
  }
  if(pathname==="/api/v1/repositories"&&req.method==="GET"){
   try{json(res,200,await github.getRepositoryCatalog());}

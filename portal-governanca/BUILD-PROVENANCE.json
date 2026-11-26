@@ -1,244 +1,351 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.26",
+  "addon_version": "0.1.0-dev.27",
   "source_repository": "mmcromero/portal-governanca",
-  "source_branch": "desenvolvimento",
-  "source_commit": "c05da98f6d1f21c6df2513999992c1874d5b5e03",
+  "source_commit": "8bc550db274a721f4eea8b6c2d9719aad9214a26",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "distribution_method": "Direct export from mmcromero/portal-governanca:desenvolvimento; Supervisor performs the ARM64 build and runs npm ci, tests and Vite build on the Raspberry Pi",
+  "design_system_packages": {
+    "@mmcromero/ds-tokens": "0.1.0",
+    "@mmcromero/ds-components": "0.1.0"
+  },
+  "design_system_snapshot": "vendor/design-system",
+  "npm_lockfile_version": 3,
+  "npm_lockfile_sha256": "8cb0b883d47d593d4402683e9796e4f2cc0722e42e79951f9c80553bdb8babb4",
+  "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "9253826cd32c5e33548157a18130b172a67721d0"
+      "sha256": "28582f86c6c812e9d476c6599c34ce3c05257638e0726b1be3ffeae604765ce9"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "e802dab52f6719ef0a91ecf365d6bf3da1106c46"
+      "sha256": "92b4c036355bbb8d505801beddc6ed9d5945b7931ca9fbab08db5eec2fb2e765"
     },
     {
       "path": "config/design-system.lock.json",
-      "git_blob_sha": "77466d1816734a00db08e0565d59d24d0df8279e"
+      "sha256": "bdcbf3d75224140ec1f249a47f98ba6e8a4ada01b946c43b296cf67fb82a5ddb"
     },
     {
       "path": "config/home-assistant-addons.json",
-      "git_blob_sha": "73608a55ae95230197ee0041ce4058a0bcbbcedf"
+      "sha256": "4fe7fe638aa1bc82f4f1075d92ea508c375bad84146a976b839e724af5ed0e56"
     },
     {
       "path": "config/portfolio.json",
-      "git_blob_sha": "a721363f7077d6c343c2df5c10ecc824e2720629"
+      "sha256": "7cfa85db1328b69ae5e5e3f053b74261013ae9d4d1f4c6ec2f47b295191c8249"
     },
     {
       "path": "Dockerfile",
-      "git_blob_sha": "132bae9376b3eac85262cc697106d90b04cd7503"
+      "sha256": "d4892cbdccc444511d1cb2d4cfa597f56e8bbca81bf5ec25bcd9bd2cc120ae3f"
     },
     {
       "path": "icon.png",
-      "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a"
+      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
     },
     {
       "path": "index.html",
-      "git_blob_sha": "e5bc9440db9e9991b33d2adbb907929eaf06ed9a"
+      "sha256": "7ef0755099b884ff6421493e02e220438305014c55a6695b340db764ce15d718"
     },
     {
       "path": "logo.png",
-      "git_blob_sha": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
+      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9"
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "2aa70df4f2c4ea3f78fe7a15834dbf93d54ec676"
+      "sha256": "8cb0b883d47d593d4402683e9796e4f2cc0722e42e79951f9c80553bdb8babb4"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "d2b64b479948fcbf349d031dd000611fcee8b700"
+      "sha256": "3af06be58d4c3e18a7201c88dd0a3579c6c897d31667d6139506fcb9b695782c"
     },
     {
       "path": "public/brand-icon.png",
-      "git_blob_sha": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a"
+      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
     },
     {
       "path": "README.md",
-      "git_blob_sha": "dea9ea6cdcc48fc94e5946196bc53c81fa17f3ab"
+      "sha256": "c01bcf872304f44a88dcdc044f9b1e18d3b48e8d445e52dd3a73c108a94327b0"
     },
     {
       "path": "run.sh",
-      "git_blob_sha": "2895a206de64813b4ccbf4b0d5daff0ee15879bc"
+      "sha256": "64e65b684a1de1effd410a942166fda173a1726dac63c1e8b419057e0c150d13"
     },
     {
       "path": "server/github.mjs",
-      "git_blob_sha": "d01d602e2ee34d522366ae59f3488a183193e022"
+      "sha256": "20002ed59ead0426a760124ab3c545f9e3e7823e5ecd3976e536fec95b1c932a"
     },
     {
       "path": "server/index.mjs",
-      "git_blob_sha": "a1758ef13361d38755a405856fe649b16fc32312"
+      "sha256": "c1953ef93a8e19c3235822660941dd967f14f372b1ab1cdcc00466e636cc13fb"
     },
     {
       "path": "server/ingress.mjs",
-      "git_blob_sha": "5d709144b9250ed6e8fa4dcef54f65262db3a569"
+      "sha256": "8b07d75ee23ee180606a7ec3ca297cc13da5c748cf5ddf11f11e1cae56b665d3"
     },
     {
       "path": "server/ledger.mjs",
-      "git_blob_sha": "f559d2a6972b64a1d63a8826816ced2aef93b8c8"
+      "sha256": "e7c6d444a213f59dfeea47aab11361a7a56de359572cb1d4846613a5768cc1ef"
     },
     {
       "path": "server/n8n.mjs",
-      "git_blob_sha": "dadbfc112ffe17809262dcd427d2a8b32c72b33a"
+      "sha256": "777a8e0da9e8e763f9470812965872dd0fd25bd21740eb9ab17d510cbd2420eb"
     },
     {
       "path": "server/supervisor-bridge.mjs",
-      "git_blob_sha": "f072d1fb6a6519974138f99d44b63f62f2c2ed2f"
+      "sha256": "f37606c1b3078a8728c1cd854e25bde0f66ec79418950e09e803ab451bdea4ed"
     },
     {
       "path": "server/supervisor-data.mjs",
-      "git_blob_sha": "815ebab23ee84d3605d658d7ecd16f3f16a524ad"
+      "sha256": "29642f450979c3a7287e824c087ab95d024b15090fb178378fe5e6d55c5d6b14"
     },
     {
       "path": "src/api/client.ts",
-      "git_blob_sha": "d9c78de5015ad8c669713543f364e34dcbe1e4bb"
+      "sha256": "d41ddc8850a3298f462432901d7adbe46a40232aeec19a8accf0c861ccbd6c70"
     },
     {
       "path": "src/data/projects.ts",
-      "git_blob_sha": "0c7d04a7483e1bbabfe0837b5dcaca6da3f39a58"
+      "sha256": "ba1b017c2d18cfaaba7a836f26baac7b0604402378892991d322079ad5526312"
     },
     {
       "path": "src/main.ts",
-      "git_blob_sha": "ba9df031e61daeed19859e908d50aa5c651716d0"
+      "sha256": "3e36b95186ece4dd3bc64c49608a8895b6d7603a1333258bfcd3e7eeb86de3cf"
     },
     {
       "path": "src/styles.css",
-      "git_blob_sha": "972ed39ef3770e61f7460264a3a3286354b7db8c"
+      "sha256": "5d0c462de07672aecae528512ca5496ac18e964b831a7c543e760e4983ca17ad"
+    },
+    {
+      "path": "tests/agent-events.test.mjs",
+      "sha256": "86d76cd50e34c8931dd528f29b7d9760d2533f5e26241dc7439291e5fe761c9a"
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "git_blob_sha": "c234ed796050aafa3c94e6baea2d090e65b5b038"
+      "sha256": "25210215121675630598b8c598e7d38f143d93969980499de68c4e2b9ad04e2a"
     },
     {
       "path": "tests/github.test.mjs",
-      "git_blob_sha": "e20ad64348a537d792a144188f0062f132a9d71b"
+      "sha256": "584a1243d65bb0111fb5f75bab8a2ca55e599b736b7924b0eb7274bd45ff6a66"
     },
     {
       "path": "tests/ingress.test.mjs",
-      "git_blob_sha": "9ab1d253ea8d203a5ac586ac36bdf55d8746e171"
+      "sha256": "5d5cd31aaab6cdc28aad63f3bcb26281f145fdc991b1ca8dbee1e33c7df76661"
     },
     {
       "path": "tests/layout.test.mjs",
-      "git_blob_sha": "4974e6ec050ea565f961c3619d56cf36f559549c"
+      "sha256": "27e6225e0860da11bd7496a95b717c3823dacab4c6eea61732fedf39d05f946d"
     },
     {
       "path": "tests/ledger.test.mjs",
-      "git_blob_sha": "c3ad987fc469be89e0d3e04215464c8a161ff951"
+      "sha256": "659439a8a5459c4119a45f801c99295b77deb39dc6d4f13ca6eb9c3f77a85613"
     },
     {
       "path": "tests/n8n.test.mjs",
-      "git_blob_sha": "7a87478b9218986be063d4f0e8eaf56926f60ede"
+      "sha256": "c7d8e158e35d4d5a705706ceca6766dd1685bc31fb7c0d91cd112b9f551d07fd"
     },
     {
       "path": "tests/portfolio.test.ts",
-      "git_blob_sha": "1cc80b7c4b1506a434bd5fc68005cb5f331731bc"
+      "sha256": "ba2cb1f5399b5fab75dbfa9fcedc9bd482596c14573ada40e61ba64fc7a0b975"
     },
     {
       "path": "tests/register-security.test.mjs",
-      "git_blob_sha": "9066b7ec33116fabea20c2e3e79d42bcb5b59940"
+      "sha256": "497117e4d2b3d758a2cce5b6f734cb71f68c5ccb6dfe0e6264d8bd4e6e65ef35"
     },
     {
       "path": "tests/run-sh-env.test.mjs",
-      "git_blob_sha": "4db94a9633032474a0a9a718cb3c93360f8c81a7"
+      "sha256": "dbf1290309660acb47612286e2141536064e03b9d3159591a3fa4042f2bdca0b"
     },
     {
       "path": "tests/supervisor-security.test.mjs",
-      "git_blob_sha": "f07c6992e7232f3019f86c5eeccecff68d09e633"
+      "sha256": "92ed9b5f4a218263a8b4abe718302bdf8c3d133e36ba51e2028a480851b8d164"
     },
     {
       "path": "tests/supervisor.test.mjs",
-      "git_blob_sha": "4e33bf010eee541260d2835a418b35c47380d18b"
+      "sha256": "145e6153d3c5fa35fb53444485874d8edec60d24dd35fa42a52a8cfff86b4bc5"
     },
     {
       "path": "tsconfig.json",
-      "git_blob_sha": "de7d3566919d2a48afeb9cada619df22f3a9458c"
+      "sha256": "ae2cbe1493ccac1e22d9f9f1d8905005e018f87a14ed06d0b40a976f10a49cae"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components.iife.js",
+      "sha256": "b2e16606d3c581fbd316a1cfe4e3bf58770b081cd83dfd19c9ccae2ee712afda"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-alert.d.ts",
+      "sha256": "a73484d04366b890c0d5f0876b70c578a5073921e82f7e8c7ddf45b1b022aa94"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-alert.js",
+      "sha256": "b05858ba0a51db199c2bd63c03b0ef204a1204fd0194c5e33cfddc0b3ae4c099"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-badge.d.ts",
+      "sha256": "9ea5c64d6db84be38b7fc8b3fc54ce5b261e5beaad0ad30403a7ee677b1c6ff8"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-badge.js",
+      "sha256": "b93a09666654b5238cdaecf818681ca3cf215b999aa1960b22e7350799d40ba7"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-button.d.ts",
+      "sha256": "27a8edb6b76c09ffe9b14708ba488a6b9900d79b52efe0ef7d6c895d756a857a"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-button.js",
+      "sha256": "cac14e63ed9596bf05f89351f07ff186769dbf403e166b0772497c0d60932193"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-card.d.ts",
+      "sha256": "f6bda26d727d83cd2df3b45f3b14fe9bd71c8a7e53835799ac0ac4158c30e939"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-card.js",
+      "sha256": "93de658dd1cdbef7d4926790c1db008e5ded8d0080a2d17c606dfe5705896bd7"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.d.ts",
+      "sha256": "faaeb95c2ca356ff87f13094197265b14fd3553afd48794e90aed15c07246048"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.js",
+      "sha256": "cd8846d19dfedac753cab346002e2fa6a15bf4bfe56c82a96266712245777b58"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-input.d.ts",
+      "sha256": "ea5af429aa990e3ce97767327c86eafe66fff60e282deaa695cc44e888dbbe88"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/components/ds-input.js",
+      "sha256": "ee46b04c02967bc161816e303ca740f8a1bb7046fc90c8e82f54de03038b98d5"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/index.d.ts",
+      "sha256": "f8d07aeae921017cb5cec723bede944f37c0118a8f7d46a8ce22fbfa36631d96"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/index.js",
+      "sha256": "9ef1011a5d46cb8ff5239418fed6ded64030eeeb359dc63d6eed2748ff813a06"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/styles.css",
+      "sha256": "91918e1259d12978e8b72d3e0b7a0b40ba8850165606d33189617b106c764b38"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/utils/base-element.d.ts",
+      "sha256": "2bc11288753ed17de111eb6ebef27be1337c068e432f9d08174393cb0750d99e"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/utils/base-element.js",
+      "sha256": "d0da211152e6543c8642d60aa9882dec2c78bcadcbb048f5593a9abe52e8b4ff"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/utils/light-slot.d.ts",
+      "sha256": "579b20fc9fc9beea27e16c65986eaefaf315b4e0c9173597083b2b90dbfe53b0"
+    },
+    {
+      "path": "vendor/design-system/packages/components/dist/utils/light-slot.js",
+      "sha256": "dc868e935f37084d61a766024b31ed47565efac6f171564993d2a38c2a056d13"
     },
     {
       "path": "vendor/design-system/packages/components/package.json",
-      "git_blob_sha": "7918ee8edb95a74fdf66c8a7c7a586c2a55e2571"
+      "sha256": "3bb9240a652cbfbc3323b7494e6c5b48bbf0fbe37bd769acc84d8af29bc23f85"
     },
     {
       "path": "vendor/design-system/packages/components/scripts/copy-css.mjs",
-      "git_blob_sha": "68977b7279569fcf1692675901a76f99d4b4dd6c"
+      "sha256": "494515259be01cefea5bdc1b6cd1d566870314421bfa8b20a2b44b81d5583be6"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-alert.ts",
-      "git_blob_sha": "4a67e401f4060ea24840d0fbae61b6466f9001df"
+      "sha256": "b57157cc4c017764ec078e7049cc0d93fd0ed185594871b3baca1c0bc65d83b4"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-badge.ts",
-      "git_blob_sha": "57ed1c3942bba036704a53de0982d8f29f848530"
+      "sha256": "8c353a340c7678e8995f807db270b96703b71e701257959e046f03d8be4b7669"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-button.ts",
-      "git_blob_sha": "c90e4a83da91c6a74403dee35196a3e80f88aa71"
+      "sha256": "b37917b7d92b55955a58d6894d1e4884bf79f780abf64f01b4d6048c55cef98b"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-card.ts",
-      "git_blob_sha": "2f7a4429c2814ec1af71031d9e4ff7ee1a9cf1af"
+      "sha256": "f5857836a0734b8a52ad29e4f073be525334d23d24e05dfab06ce3113de1131b"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-dialog.ts",
-      "git_blob_sha": "190e017a2e96c4d78a53607a163aae2a7f86e58a"
+      "sha256": "3d59c097db7099fee10a4504490bfbe6ebf2a8a2b09aa45c41e0ba3d93f24a2a"
     },
     {
       "path": "vendor/design-system/packages/components/src/components/ds-input.ts",
-      "git_blob_sha": "221279857fe15ef0f6c215dbe9d5aad49fef87ce"
+      "sha256": "139a1c44eb67120e74ba3986c7360c7aaf5d3292102ddfa04b8341f70401b6de"
     },
     {
       "path": "vendor/design-system/packages/components/src/index.ts",
-      "git_blob_sha": "21db0b72390a8bfa3c65f76ba0b99bdd1f60bbb8"
+      "sha256": "a8c6f24b3c91d705deebc117c823819650557ffdcc2ece30b1cf3ee3e376598f"
     },
     {
       "path": "vendor/design-system/packages/components/src/styles/components.css",
-      "git_blob_sha": "420d2fa6b12b9d3ef40841f4b59b5fc22e6a925a"
+      "sha256": "91918e1259d12978e8b72d3e0b7a0b40ba8850165606d33189617b106c764b38"
     },
     {
       "path": "vendor/design-system/packages/components/src/utils/base-element.ts",
-      "git_blob_sha": "c755727ad9bb8711725e9de33e8645cb73766d96"
+      "sha256": "4a11ebb807511e7f33d1b3c57fdb5c993224345a42fbafd9dca1a7e06c53ea1a"
     },
     {
       "path": "vendor/design-system/packages/components/src/utils/light-slot.ts",
-      "git_blob_sha": "9db4de263902543998bfb75f77233d1f82dc78d2"
+      "sha256": "6a3f08f1e2640ce29351ede399bae03c43d9fc08d9bac3b0f709e95b9f924571"
     },
     {
       "path": "vendor/design-system/packages/components/tsconfig.json",
-      "git_blob_sha": "d1a86abb82e773b702c50d61386ad5f8b8eb3450"
+      "sha256": "972f793b0e728d875ad80803f7c3a3818f64d3ccf829354196fa311d842c92e9"
+    },
+    {
+      "path": "vendor/design-system/packages/tokens/dist/index.d.ts",
+      "sha256": "35fd9cf830f540367aa26cbaa3d68e206402dfcdab4a1c87eb40c7b5703db77c"
+    },
+    {
+      "path": "vendor/design-system/packages/tokens/dist/index.js",
+      "sha256": "e46401d96b6fe6ec80c03617579664713c45cf587f05b2a522c87c9be0a2ab33"
+    },
+    {
+      "path": "vendor/design-system/packages/tokens/dist/tokens.css",
+      "sha256": "c6c36b17f8d390433c664d5a67d2c2b01a238bd71883e3cb33d098aa4abc0ec9"
+    },
+    {
+      "path": "vendor/design-system/packages/tokens/dist/tokens.json",
+      "sha256": "efdb5ee1826ffd8a156e3e4f97adf6aa26b4ccd6eb602c34310742113eb21e55"
     },
     {
       "path": "vendor/design-system/packages/tokens/package.json",
-      "git_blob_sha": "0b3d956c33da626c8ac69b70c58e76362e0377a5"
+      "sha256": "366de8c2db8537f6aaba72035171df2da522683bbee96f439c28e545d2dd9187"
     },
     {
       "path": "vendor/design-system/packages/tokens/scripts/build-tokens.mjs",
-      "git_blob_sha": "f474414ac04008da56e9874924afbdf170ee75f0"
+      "sha256": "c0cabef948cd105e38ba03dbfec9ba47d0d4e735a86254fb1f34a2748f92c2ae"
     },
     {
       "path": "vendor/design-system/packages/tokens/src/ref.json",
-      "git_blob_sha": "d6c4e0afe128af07c9a268985405959e60a86681"
+      "sha256": "e889453bff440406d0067eec11c851a7bc9b724591816c6720b587fe378752f5"
     },
     {
       "path": "vendor/design-system/packages/tokens/src/sys.json",
-      "git_blob_sha": "54de9e938373771419aac3f81c33e032aef52329"
+      "sha256": "6450a491ac84ec2c9b2fb3905b9ac576e01450976a6a340df78f2faf48ae6c09"
     },
     {
       "path": "vendor/design-system/packages/tokens/src/theme-dark.json",
-      "git_blob_sha": "0d847da501cdc4ac3030c4eb84d2618b25dd3228"
+      "sha256": "43cbf10660e8ec604f8c72b9391a0f621f22e5d8e0ad4495da670278f6f604af"
     },
     {
       "path": "vendor/design-system/packages/tokens/src/theme-governance.json",
-      "git_blob_sha": "058f0368de2693c07e49458281c3a6e8c4b2b6c4"
+      "sha256": "9b534199be60a22318909286594646e9a9e3138b550ea1c2a76c63075393c6ad"
     },
     {
       "path": "vendor/design-system/PROVENANCE.json",
-      "git_blob_sha": "0f544627ce9ba8153260058cfe32213c73d8de0f"
+      "sha256": "fcacbd0418329b0cc7e9f77b60d3ac8a59f48011a8f68327df03cae06d55e177"
     },
     {
       "path": "vite.config.ts",
-      "git_blob_sha": "f09a308a78b0379e35f1af8245548f74e2981002"
+      "sha256": "1923aeea3ccd6baa750902c78e0c81d6578a82c4c0d99af0a4b1e7404c6b5548"
     }
-  ]
+  ],
+  "generated_by": "npm run package:addon"
 }
