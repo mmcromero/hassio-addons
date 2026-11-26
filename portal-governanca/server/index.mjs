@@ -6,6 +6,7 @@ import {timingSafeEqual} from "node:crypto";
 import {createGitHubClient} from "./github.mjs";
 import {createN8nClient} from "./n8n.mjs";
 import {createLedger} from "./ledger.mjs";
+import {filterUnrecordedAgentEvents} from "./agent-events.mjs";
 import {getIngressBasePath,isIngressPeer,isLoopbackPeer,isN8nPeer,stripIngressPath} from "./ingress.mjs";
 
 if(process.env.NODE_ENV==="development")await import("dotenv/config");
@@ -154,8 +155,11 @@ const server=http.createServer(async(req,res)=>{
  }
  if(pathname==="/api/v1/internal-agent-comments"&&req.method==="GET"){
   const since=requestUrl.searchParams.get("since")||undefined;
-  try{json(res,200,await github.getRecentAgentComments({since}));}
-  catch(error){json(res,error.status||502,{error:{code:error.code||"GITHUB_AGENT_COMMENTS_FAILED",message:error.message}});}
+  try{
+   const result=await github.getRecentAgentComments({since});
+   const filtered=await filterUnrecordedAgentEvents(result.events,ledger);
+   json(res,200,{...result,events:filtered.events,eventCount:filtered.events.length,alreadyRecorded:filtered.alreadyRecorded});
+  }catch(error){json(res,error.status||502,{error:{code:error.code||"GITHUB_AGENT_COMMENTS_FAILED",message:error.message}});}
   return;
  }
  if(pathname==="/api/v1/agent-events"&&req.method==="GET"){
