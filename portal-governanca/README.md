@@ -15,4 +15,4 @@ Add-on independente para Home Assistant OS, acessado exclusivamente pelo Ingress
 
 ## Instalação e homologação
 
-Distribuição candidata 0.1.0-dev.13. O Supervisor constrói a imagem no Raspberry Pi 4 (aarch64), executando `npm ci`, testes automatizados e build do Design System/Portal durante a instalação ou atualização. Abra pelo botão **Abrir interface** na página do app no Home Assistant. O endereço de Ingress é dinâmico; não acesse por uma rota inventada como `/app/<slug>`. A instalação e a homologação visual/funcional desta candidata devem ser registradas separadamente.
+Versão instalada: `0.1.0-dev.13` no Home Assistant OS aarch64 (Raspberry Pi 4). O Supervisor concluiu o build ARM64; `npm ci`, compilação do Design System, suíte de testes (15/15) e TypeScript/Vite passaram. O app está `started` e sem atualização pendente. A homologação visual/funcional pelo botão **Abrir interface** permanece como verificação separada. O endereço de Ingress é dinâmico; não use rotas inventadas como `/app/<slug>`.
