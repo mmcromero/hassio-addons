@@ -25,6 +25,10 @@ import uuid
 
 import execution_contract
 import execution_planner
+try:
+    import executor_hardening as hardening
+except ImportError:
+    hardening = None
 
 FORMAT = "factory-job-v1"
 MAX_REQUEST_BYTES = 32 * 1024
@@ -374,6 +378,8 @@ class ExecutionOrchestrator:
         self._thread: threading.Thread | None = None
         self._process_lock = threading.Lock()
         self._active_process: subprocess.Popen | None = None
+        if hardening is not None:
+            hardening.set_child_subreaper()
 
     def _locked(self):
         return _store_lock(self.root)
@@ -595,6 +601,8 @@ class ExecutionOrchestrator:
     def start(self) -> None:
         if self._thread and self._thread.is_alive():
             return
+        if hardening is not None:
+            hardening.set_child_subreaper()
         self._recover()
         self._stop.clear()
         self._thread = threading.Thread(
@@ -658,6 +666,8 @@ class ExecutionOrchestrator:
 
     def _worker_loop(self) -> None:
         while not self._stop.is_set():
+            if hardening is not None:
+                hardening.reap_zombies()
             try:
                 execution_id = self._claim_next()
                 if execution_id is None:
@@ -992,8 +1002,21 @@ class ExecutionOrchestrator:
         except OrchestrationError:
             return True
 
-    @staticmethod
-    def _kill_process_group(process: subprocess.Popen) -> None:
+    @classmethod
+    def _get_executor_uid(cls) -> int | None:
+        if hardening is not None:
+            return hardening.get_executor_uid()
+        return None
+
+    @classmethod
+    def _kill_process_group(cls, process: subprocess.Popen) -> None:
+        if hardening is not None:
+            hardening.terminate_process_tree(
+                process,
+                target_uid=cls._get_executor_uid(),
+            )
+            return
+
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except ProcessLookupError:
@@ -1104,6 +1127,8 @@ class ExecutionOrchestrator:
         finally:
             if process.poll() is None:
                 self._kill_process_group(process)
+            if hardening is not None:
+                hardening.reap_zombies()
             with self._process_lock:
                 if self._active_process is process:
                     self._active_process = None

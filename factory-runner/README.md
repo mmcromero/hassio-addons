@@ -1,10 +1,11 @@
-> **ESTADO VIGENTE — 25/11/2026 / M114**
+> **ESTADO VIGENTE — 25/11/2026 / M116**
 >
-> - **HA:** RC68 (0.1.0-rc.68) instalada/started; build ARM64 e suíte Dockerfile PASS.
-> - **Userns:** CAP_SYS_ADMIN dentro do user namespace=true; Seccomp=0; AppArmor=docker-default (enforce); mount propagation privada retorna EACCES.
-> - **Causa:** AppArmor docker-default é a causa de alta confiança; o template oficial contém deny mount. Sem audit record específico.
-> - **Próximo:** proposta APPARMOR-MOUNT-PROFILE-001; nenhum apparmor.txt aplicado. Aguardar aprovação antes de qualquer alteração ativa.
-> - **Segurança:** safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+> - **HA:** RC68 (0.1.0-rc.68) continua instalada/started; RC69 (0.1.0-rc.69) está somente em desenvolvimento.
+> - **Implementação:** helper ELF dedicado compilado no Dockerfile; userns_probe.py executa somente o binário fixo, com ambiente limpo, FDs fechados e timeout por grupo.
+> - **Validação local:** compilação C estrita; 16/16 testes dirigidos (camada Python com shim local de `isolation_backend_probe`); probe real de namespaces/tmpfs PASS no laboratório, com NNP=1. O perfil observado foi `kernel`, sem AppArmor ativo.
+> - **AppArmor:** estrutura parent/child passou sintaxe no parser 4.1.0 com skip-kernel-load. Parser HA 3.1.7 é inferido; transição cx e permissões ainda não foram exercitadas no HA.
+> - **Próximo:** build Dockerfile/ARM64 e homologação controlada no HA; ativação do perfil customizado depende de autorização específica.
+> - **Segurança:** nenhum apparmor.txt criado/aplicado; nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 >
 
 # Factory Runner — fonte, operação e continuidade

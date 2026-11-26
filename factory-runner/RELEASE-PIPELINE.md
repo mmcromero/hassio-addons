@@ -1,12 +1,14 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M114 / 25/11/2026:** RC68 instalada/started; build ARM64 e suíte Dockerfile PASS. Probe userns confirma CAP_SYS_ADMIN dentro do user namespace, Seccomp=0 e AppArmor docker-default (enforce); MS_REC|MS_PRIVATE retorna EACCES.
+**Estado vigente — M160 / 26/11/2026:** RC68 (0.1.0-rc.68) permanece instalada/started no HA; RC69 (0.1.0-rc.69) está somente em desenvolvimento. Nenhuma RC69 foi publicada/instalada nesta retomada; nenhum perfil AppArmor foi carregado/ativado.
 
-**Diagnóstico:** AppArmor docker-default é a causa de alta confiança, pois o template oficial contém deny mount. Sem audit record host da negação específica. Home Assistant suporta apparmor.txt customizado mantendo AppArmor ativo.
+**Validação M122 preservada:** compilação cruzada estática AMD64 e ARM64 com Zig 0.13.0: PASS; ELF sem PT_INTERP/PT_DYNAMIC; 14/19 testes de lógica pura PASS, 5 BLOCKED no Windows. Isso não substitui build Docker nativo, suíte Linux nem runtime.
 
-**Proposta:** APPARMOR-MOUNT-PROFILE-001 documenta regras restritas para rprivate e tmpfs no scratch. Não há apparmor.txt no pacote ativo; não publicar/instalar perfil customizado sem aprovação explícita. Seccomp atual ainda não está conectado ao executor genérico.
+**Correções de fonte/documentação M117–M160:** campo security_cap_sys_admin_in_userns presente; helper estático; transição Cx; peer literal exato `45c28620_fabrica_software` (sem wildcard); child sem sinais internos; pai envia somente SIGKILL; rprivate/tmpfs fora do bloco efetivo, apenas fragmentos candidatos; AppArmor 3.1 não restringe MNT_DETACH, que fica fixo no helper confiável. Matriz positiva/negativa cobre sinais, capabilities, proc, scratch, mount, tmpfs, unmount e cleanup. O parser HA 3.1.7 e o comportamento sob enforce ainda não foram executados.
 
-**Gates:** nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
+**Quotas/runtime:** consulta somente leitura no HA confirmou cgroup v2 presente, mount RO, delegation_candidate=false, sem teto finito observado de CPU/memória, PIDs herdado 8781 e Bubblewrap bloqueado por `Failed to make / slave: Permission denied`. O probe de cgroup foi endurecido em M128–M150 para exigir cgroup domain, presença/W_OK/R_OK dos controles e read-back; testes novos M128–M153 ainda NÃO EXECUTADOS. Nenhuma quota agregada por job foi comprovada.
+
+**Gates:** build Dockerfile completo, suíte Linux e execução nativa do helper; parser/execução AppArmor 3.1.7 sob enforce com controles positivos/negativos; delegação cgroup gravável e quotas agregadas CPU/RAM/swap/PIDs; integração seccomp no executor genérico. M006/P0 mantém a validação restrita ao Raspberry Pi como add-on HA, sem host/VM/nuvem externa. Nenhum código de projeto executado; safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Publicação RC segue autorização contínua M055; atualização/instalação e ativação AppArmor são estados separados.
 
 ---
 
@@ -298,35 +300,34 @@ Supervisor registrou build ARM64 concluído às 15:37:32 e atualização bem-suc
 RC61 adiciona `archive_stream.py` como componente confiável de validação/extração de tar stream. O contrato exige allowlist exata, paths obrigatórios, budgets de archive/file/total/count/depth/time, rejeição de links/special files/PAX/sparse/traversal e staging atômico. O módulo não executa conteúdo e ainda não está conectado ao `sandbox_export`; o executor permanece fail-closed. Build ARM64 e suíte Dockerfile pendentes.
 
 
-## M105 — diagnóstico segmentado do build ARM64
+## M104 — resultado do primeiro build ARM64 RC61 (25/11/2026)
 
-A candidata RC62 altera apenas o Dockerfile da etapa de validação para separar shell syntax, py_compile, a suíte archive_stream (também executada na suíte completa), todos os testes Factory Runner, workspace-sync não-root e E2E não-root em RUNs distintos. O objetivo é identificar o subgate que falhou na RC61. A suíte integral permanece obrigatória; nenhuma falha é ignorada e nenhum teste é removido. Nenhuma alteração de runtime, opção, permissão, mount, AppArmor, capability ou rede. Não instalar RC62 se qualquer gate falhar.
-
-
-## M106 — diagnóstico por método da suíte archive_stream
-
-A RC62 confirmou que o estágio que falha é test_factory_runner_archive_stream.py. Como o Supervisor não expôs a saída detalhada do unittest, a RC63 adiciona um runner de diagnóstico que executa cada método isoladamente, em ordem alfabética, e devolve exit code 51..(50+n) para identificar o primeiro método que falha; 90 representa erro de import/setup e 91 ausência de testes. A suíte completa permanece obrigatória depois desse diagnóstico. Nenhum teste é ignorado, runtime não muda e o Publisher continua DORMANT.
-
-
-## M107 — diagnóstico e correção da fixture archive_stream
-
-O Supervisor ARM64 RC63 informou exit code 77 no runner individual, método 27 `test_valid_archive_extracts_allowlisted_files_and_hashes`. A função `dir_member("pkg")` já retorna o par `(TarInfo, None)`; a fixture embrulhava o retorno em outra tupla, fazendo `archive()` passar um objeto tuple para `tarfile.addfile`. RC64 altera somente essa linha de teste. O módulo de runtime `archive_stream.py` permanece inalterado. O build seguinte deve executar novamente o runner individual e a suíte completa; nenhuma cobertura foi removida.
+- RC61 (0.1.0-rc.61) está publicada em mmcromero/hassio-addons:main/factory-runner/. Proveniência aponta para factory-runner:release-candidate SHA 1a61dff8669e3df1184d6791c27742960751d750; comparação remota confirmou 123/123 blobs da origem correspondentes no catálogo; RC4-VALIDACAO.md e SOURCE_PROVENANCE.json preservados; nenhum caminho fora de factory-runner/ foi alterado.
+- Atualização no Supervisor foi tentada duas vezes (inícios de build às 16:05 e 16:10 BRT). Ambas terminaram com falha no estágio de validação do Dockerfile, comando composto de bash -n, py_compile e unittest discover, exit code 1. Supervisor reportou erro genérico ao construir a imagem; os logs disponíveis não expõem a saída do teste específico que falhou. Portanto, não classificar o validador nem a suíte como PASS ou FAIL individual até obter a saída detalhada.
+- O journal do host registra moby.buildkit Solve com exit code 1 e healthcheck da sessão BuildKit 'only one connection allowed'. O mesmo healthcheck também aparece após o build RC60 que concluiu com sucesso; isoladamente, ele não prova a causa da falha RC61.
+- Estado verificado após as tentativas: RC60 (0.1.0-rc.60) permanece started; version_latest=0.1.0-rc.61; update_available=true. protected=true, privileged=[], full_access=false, AppArmor default. Opções não foram alteradas. Nenhum backup da RC60 foi criado. Nenhum código de projeto foi executado.
+- Próximo passo: obter diagnóstico do erro do estágio de validação antes de qualquer nova atualização. Separar a execução de py_compile, suíte test_factory_runner_*.py, workspace_sync e E2E em etapas de build identificáveis, preservando o mesmo conjunto de testes e a política fail-closed; então corrigir somente a causa comprovada e repetir o build ARM64 no Supervisor.
+- Gate permanece: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed; quota por job, cgroup delegado e runtime genérico completo não comprovados.
 
 
-## M108 — prova sintética de integração do archive stream
+**Gate de promoção M116:** comparação de `release-candidate` (HEAD `f7deb5a7e321801de72cfb42f4c320c426071126`) com `desenvolvimento`: 237 commits exclusivos em desenvolvimento, 283 commits exclusivos na RC e merge-base `fec0fe9cf7951345cbefada12cc239c87b483a5b`; nenhum PR de promoção aberto. Não publicar RC69 enquanto a ancestralidade obrigatória não for reconciliada sem perda de histórico. Não usar merge geral às cegas, reset ou force-push.
 
-A candidata acrescenta `archive_stream_probe.py`, sem ligar o backend ao `sandbox_export`. Um child sintético executa em chroot mínimo e read-only, com ambiente vazio, UID/GID executor, FD audit, CapEff zero, no_new_privs, seccomp (sem escrita/rede/process creation), RLIMITs e stdout como único canal. O pai aplica leitura não bloqueante, deadline externo, limite de bytes, kill de grupo e validação do TAR com allowlist, hashes e staging atômico. Os cenários de traversal, overflow e timeout devem ser rejeitados; a limpeza precisa ser comprovada. Apenas payloads sintéticos; o exportador Artesão atual usa subprocessos e escrita em diretório e não é compatível diretamente com este contrato. Nenhuma execução de projeto ou liberação de Publisher.
+**Atualização M141 — 26/11/2026:** o probe de cgroup também calcula o teto herdado de swap em cada ancestral visível; `hierarchy_complete` agora exige CPU/RAM/swap/PIDs parseáveis em todos eles e o gate `delegation_candidate` depende dessa completude. A matriz AppArmor M121 foi corrigida: `rprivate` e `tmpfs` são fragmentos não aprovados fora do child profile efetivo; unmount é apenas regra candidata. Testes M141 foram adicionados, mas não executados. Nenhuma mudança no HA ou ativação de perfil.
 
+**Atualização M142 — 26/11/2026:** o cleanup do scratch no processo pai agora compara `lstat()` inicial/final (tipo, UID, modo 0700, device/inode), recusa caminho substituído ou mountpoint, usa `rmdir()` e confirma ausência. Testes de regressão adicionados, ainda NÃO EXECUTADOS por M006/P0. A matriz M121 agora documenta explicitamente controles positivos/negativos de cleanup e separa AppArmor de invariantes do helper/pai.
 
-## 25/11/2026 — M108: prova sintética integrada chroot → archive stream (RC65)
+**Atualização M144 — 26/11/2026:** suíte de cleanup ganhou regressões negativas para mountpoint ainda ativo e diretório não vazio; ambos devem permanecer sem remoção e bloquear o status disponível. Commit de teste `81a85d6aecaf6660cc48f38f15dbbbb049c6009b`. Não executado por M006/P0.
 
-- Baseline anterior: RC64 `0.1.0-rc.64` instalada/started. PR #55 integrado em `release-candidate`, merge `311db52c41915bab5e1e47dfe94fbeb32872afd0`.
-- RC65 `0.1.0-rc.65` publicada somente em `hassio-addons:main/factory-runner/`; pacote commit `402241eee350057dc1bc218e4bd57926b7dfe758`; proveniência commit `f54d0ce0af40b2b344fdfe988d78b7985d241cba`. 126/126 blobs da fonte conferidos; 2 arquivos exclusivos do catálogo preservados; nenhum caminho externo a `factory-runner/` alterado.
-- Supervisor ARM64: build iniciado 17:34:59.863 e concluído 17:38:33.321 BRT; atualização concluída e app iniciado 17:38:36.398. Estado final RC65 `started`, `update_available=false`.
-- Build Dockerfile concluiu toda a cadeia obrigatória: bash -n, py_compile, diagnóstico individual archive_stream, suíte integral `test_factory_runner_*.py`, workspace-sync não-root e E2E não-root. Contagem individual de testes não capturada.
-- `[ARCHIVE-STREAM-PROBE]` **PASS** no startup: TAR sintético válido extraído/validado (1 arquivo, 38 bytes, conteúdo e hash coincidentes); child comprovou chroot, UID/GID drop, CapEff zero, ambiente vazio, FD audit ok, no_new_privs, seccomp e negação de escrita/rede/process creation.
-- Traversal rejeitado como `unsafe_archive_path`, sem destino; overflow encerrou child por SIGKILL em 129 bytes; timeout externo encerrou child por SIGKILL; tmpfs cleanup restaurado em todos os cenários. `project_code_executed=false`.
-- Opções preservadas: workspace_auto_prepare=false, workspace_sync_enabled=true, Owner Ingress habilitado; runner/read tokens presentes; GitHub write token e senha de enrollment vazios. Nenhum backup da RC64 criado, conforme decisão do proprietário.
-- Nenhum código de projeto foi carregado/executado. O probe retorna `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
-- Pendências: quotas agregadas por job não comprovadas (cgroup v2 read-only/sem delegação; /dev/shm é compartilhado); Bubblewrap bloqueado por permissão de namespace/mount; Landlock indisponível; exportador Artesão atual (subprocessos e escrita em diretório) não compatível diretamente com stream. Nenhuma alteração no repositório consumidor.
-- Resultado M108: **prova sintética integrada homologada no Raspberry Pi; Etapa 5B/Etapa 5 ainda NÃO concluídas e execução de código não confiável continua bloqueada.**
+**Atualização M145 — 26/11/2026:** o helper C agora usa `lstat()` após unmount para confirmar o diretório real restaurado por device/inode, sem seguir symlink. Build e teste C pendentes por M006/P0. Commit `ee8a2f51ab5e0617fb12c8cb9e4b3f15d7ec465b`.
+
+**Atualização M146 — 26/11/2026:** cleanup verifica mountpoint antes da identidade do inode, para classificar corretamente `parent_mount_leaked=true` quando houver mount inesperado. Teste existente cobre o caso; não executado por M006/P0. Commit `c1b3b34019f1499e27404e5944c74f8fd3f2849c`.
+
+**Atualização M148 — 26/11/2026:** helper C lê `statvfs().f_flag` após montar tmpfs e exige `ST_NOSUID|ST_NODEV|ST_NOEXEC`; o classificador Python exige `tmpfs_flags_verified` e os testes cobrem flag ausente. Build C e testes NÃO EXECUTADOS por M006/P0. Nenhuma ativação AppArmor.
+
+**Atualização M150 — 26/11/2026:** corrigido falso negativo no preflight cgroup: `delegation_candidate` agora só é calculado depois de inventariar todos os ancestrais e preencher `hierarchy_complete`. Testes exigem hierarquia completa para candidato RW e bloqueiam ancestral sem `memory.swap.max`. Não executados por M006/P0.
+
+**Atualização M155 — 26/11/2026:** investigação na tag exata Supervisor 2026.11.0 confirmou que a configuração de apps não oferece subtree cgroup delegation/cgroupfs RW nem quotas CPU/RAM/PIDs por job. `device_cgroup_rules` cobre somente dispositivos; `privileged` ampliaria capabilities. A alternativa cgroup está BLOCKED nesta instalação protegida. `sandbox_export.py` permanece fail-closed; não usar SYS_ADMIN/full_access/Docker socket/host changes.
+
+**Atualização M157 — 26/11/2026:** revisão de quotas agregadas concluída: cgroup delegation bloqueada pela plataforma; RLIMIT+UID, seccomp sem processos, tmpfs e fila serial não são equivalentes para builds/testes genéricos. Não há executor equivalente suportado no escopo M006/P0. Execução genérica continua bloqueada por `_require_aggregate_isolation()`.
+
+**Atualização M160 — 26/11/2026:** regra de recepção SIGKILL do child usa agora o peer literal exato `45c28620_fabrica_software`, confirmado pelo slug do app no Supervisor 2026.11.0 e pelo `adjust_profile()` que reescreve apenas o nome do perfil pai. Wildcard removido; correspondência exata sob parser 3.1.7/enforce ainda pendente.

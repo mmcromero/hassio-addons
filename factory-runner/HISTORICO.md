@@ -167,34 +167,28 @@ Próxima ação objetiva e responsável:
 - Estado: RC45 instalada e homologada para o escopo restrito de orquestração read-only e regressões automatizadas da Etapa 4; não libera Publisher nem publicação/execução de produtos.
 
 
-## 25/11/2026 — M107: diagnóstico RC63 e correção da fixture para RC64
+## M108 — RC65 instalada e probe sintético PASS (25/11/2026)
 
-- **Ambiente:** Home Assistant OS / Raspberry Pi 4, add-on Factory Runner slug `45c28620_fabrica_software`.
-- **Baseline confirmada após falha:** RC60 (`0.1.0-rc.60`) permanece `started`; catálogo reconhece RC63 e `update_available=true`. A chamada de atualização RC63 retornou HTTP 500; leitura posterior do estado e logs do Supervisor confirmou que o build falhou e RC60 não foi substituída.
-- **Evidência:** Dockerfile RUN `python3 /app/tests/run_archive_stream_diagnostics.py` terminou exit code 77. Índice 27: `test_valid_archive_extracts_allowlisted_files_and_hashes`. Traceback `AttributeError: 'tuple' object has no attribute 'tobuf'`, em `tests/test_factory_runner_archive_stream.py:19`, durante `tar.addfile`.
-- **Causa:** `dir_member("pkg")` já retorna `(TarInfo, None)`; o teste envolvia esse par em `(dir_member("pkg"), None)`, produzindo tupla aninhada. O defeito é da fixture, não do módulo `archive_stream.py`.
-- **Correção:** branch `promote/rc64-m107-fix-archive-fixture`, baseada no HEAD RC M106 `0e9bf85aceeeb4e8be34e233ee227f127f1ad27d`. A linha foi corrigida para `dir_member("pkg")`; versão `0.1.0-rc.64`; changelog, README, continuidade e manual de release atualizados.
-- **Commits:** teste `b96e72170b307261b46a236dee7e6a92931cb64a`; versão `6fbbbf1f71fd41b3ab124380fdca5de260a6c34d`; changelog `f7313bb9a320d2830f7d25e7a8c87761b78ce589`; continuidade `bf644e7028bc4cb9b7e46a5514b158d5cb014914`; Etapa 5 `3e5854873092633782918858fdbadd6ce450db50`; pipeline `345dfa8ff7df8b8887c386e0a27da9e33eff755a`.
-- **Diff:** 7 arquivos; 1 linha de fixture alterada; nenhum módulo de runtime, Dockerfile, configuração de permissões, mounts, capabilities, AppArmor, rede ou credenciais alterado.
-- **Testes:** o teste individual RC63 falhou conforme evidência acima. A correção RC64 ainda NÃO foi executada; diagnóstico individual e suíte completa aguardam build ARM64 no Supervisor.
-- **Publicação/instalação:** RC64 ainda não publicada no catálogo nem instalada. Nenhum backup da RC60 criado, conforme regra do proprietário; opções/dados persistentes preservados.
-- **Segurança:** nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
-- **Próxima ação:** revisão final, PR da branch para `release-candidate`, publicação isolada em `hassio-addons:main/factory-runner/` com proveniência/hash, refresh do catálogo e atualização RC64 pela autorização vigente. Confirmar build/testes/startup no Supervisor; não repetir RC63.
+- RC65 (0.1.0-rc.65) instalada/started no Raspberry Pi 4; build ARM64 e cadeia Dockerfile concluídos; update_available=false.
+- Probe sintético integrado chroot → stdout limitado → archive_stream PASS: TAR válido, traversal rejeitado, overflow e timeout encerrados por SIGKILL, cleanup restaurado. Nenhum código de projeto executado.
+- Segurança: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 
 
-## 25/11/2026 — M108: prova sintética integrada chroot → archive stream (RC65)
+## M109 — revalidação de recursos no Supervisor (25/11/2026)
 
-- Baseline anterior: RC64 `0.1.0-rc.64` instalada/started. PR #55 integrado em `release-candidate`, merge `311db52c41915bab5e1e47dfe94fbeb32872afd0`.
-- RC65 `0.1.0-rc.65` publicada somente em `hassio-addons:main/factory-runner/`; pacote commit `402241eee350057dc1bc218e4bd57926b7dfe758`; proveniência commit `f54d0ce0af40b2b344fdfe988d78b7985d241cba`. 126/126 blobs da fonte conferidos; 2 arquivos exclusivos do catálogo preservados; nenhum caminho externo a `factory-runner/` alterado.
-- Supervisor ARM64: build iniciado 17:34:59.863 e concluído 17:38:33.321 BRT; atualização concluída e app iniciado 17:38:36.398. Estado final RC65 `started`, `update_available=false`.
-- Build Dockerfile concluiu toda a cadeia obrigatória: bash -n, py_compile, diagnóstico individual archive_stream, suíte integral `test_factory_runner_*.py`, workspace-sync não-root e E2E não-root. Contagem individual de testes não capturada.
-- `[ARCHIVE-STREAM-PROBE]` **PASS** no startup: TAR sintético válido extraído/validado (1 arquivo, 38 bytes, conteúdo e hash coincidentes); child comprovou chroot, UID/GID drop, CapEff zero, ambiente vazio, FD audit ok, no_new_privs, seccomp e negação de escrita/rede/process creation.
-- Traversal rejeitado como `unsafe_archive_path`, sem destino; overflow encerrou child por SIGKILL em 129 bytes; timeout externo encerrou child por SIGKILL; tmpfs cleanup restaurado em todos os cenários. `project_code_executed=false`.
-- Opções preservadas: workspace_auto_prepare=false, workspace_sync_enabled=true, Owner Ingress habilitado; runner/read tokens presentes; GitHub write token e senha de enrollment vazios. Nenhum backup da RC64 criado, conforme decisão do proprietário.
-- Nenhum código de projeto foi carregado/executado. O probe retorna `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
-- Pendências: quotas agregadas por job não comprovadas (cgroup v2 read-only/sem delegação; /dev/shm é compartilhado); Bubblewrap bloqueado por permissão de namespace/mount; Landlock indisponível; exportador Artesão atual (subprocessos e escrita em diretório) não compatível diretamente com stream. Nenhuma alteração no repositório consumidor.
-- Resultado M108: **prova sintética integrada homologada no Raspberry Pi; Etapa 5B/Etapa 5 ainda NÃO concluídas e execução de código não confiável continua bloqueada.**
+- Cgroup v2 presente, somente leitura e sem delegação; hierarquia visível completa de um nível. CPU e memória sem limites finitos herdados; PIDs finitos em 8.781.
+- /dev/shm é tmpfs de 4.091.707.392 bytes, teto compartilhado do contêiner, não quota por job. /data ext4 sem quota rígida demonstrada.
+- Bubblewrap falha por permissão de mount/namespace; Landlock syscall_unavailable.
+- NO-GO para execução genérica multi-processo na configuração atual. Não usar SYS_ADMIN, cgroup RW, Docker socket/API, host mounts ou alteração de AppArmor/capabilities para contornar.
 
+
+## M110 — limites upstream e reconciliação de branches (25/11/2026)
+
+- A documentação oficial do Home Assistant expõe tmpfs como booleano e ulimits como limites POSIX; o código Supervisor DockerApp aplica ulimits, cpu_rt_runtime e tmpfs, sem mem_limit, cpu_quota/nano_cpus ou pids_limit configuráveis pelo add-on. Não há correção suportada somente em config.yaml para quotas agregadas por job.
+- Branch desenvolvimento estava em 5ce55cef (M104/RC61) e não continha archive_stream_probe.py; release-candidate estava em aa185d21 (M108/RC65). As branches divergiam desde fec0fe9, com 121 commits exclusivos de desenvolvimento e 208 exclusivos de release-candidate.
+- PR #56 de merge geral foi aberto como draft e NÃO é mergeável; não fazer merge cego, reset ou force-push. Um backport direcionado M108 foi preparado em branch separada, preservando o histórico exclusivo de desenvolvimento.
+- Próximo: revisar o backport M108; depois testar de forma sintética e não mutante a disponibilidade de user/mount/net/PID namespaces e tmpfs com limite dentro de namespace. Isso não prova quota CPU/memória agregada.
+- Manter safe_for_untrusted_code=false, Publisher DORMANT, sandbox_export fail-closed; nenhum código de projeto executado.
 
 ## M111 — RC66: probe sintético de user namespaces e tmpfs limitado (25/11/2026)
 
@@ -218,7 +212,6 @@ Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publica
 - RC67 ainda não publicada/instalada; o resultado de namespaces continua desconhecido. Nenhum código de projeto executado.
 - Gates mantidos: `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 
-
 ## M113 — RC67 instalada; resultado real do probe userns (25/11/2026)
 
 - Fonte `release-candidate`: `f519fcd30dfbf89bae00b3f3b467fc367ef21b62`; pacote catálogo `fd13140c1ad656bf9a483127b3c8d62d9218fac9`; proveniência `6e2e165aa96b1d04216aa07b33d5901c71b07aa8`.
@@ -233,18 +226,6 @@ Revisar código/testes/Dockerfile; promover RC66 para release-candidate; publica
 ### Próximo gate M114
 Investigar a origem de EACCES apenas por evidências não mutantes (capabilities dentro do user namespace, perfil AppArmor efetivo e audit logs disponíveis). Não contornar com SYS_ADMIN, privileged, host mounts, Docker API/socket, alteração de AppArmor/seccomp ou capabilities. Se a política do host bloquear mount, registrar a limitação e avaliar alternativa sem mount; manter execução genérica bloqueada até comprovar quotas agregadas e contenção entre jobs.
 
-
-## M114 — RC68: diagnóstico do contexto de segurança dentro do user namespace (25/11/2026)
-
-- M113 confirmou user namespace, UID/GID maps, network namespace e PID namespace/PID 1. O mount namespace foi criado, mas `MS_REC|MS_PRIVATE` retornou `EACCES`; tmpfs e quota por job não foram testados.
-- RC68 acrescenta leitura não mutante de `/proc/self/status` e `/proc/self/attr/current` dentro do processo filho após criar user namespace e mapear UID/GID. Registra CapEff, presença de CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor.
-- A finalidade é distinguir falta de CAP_SYS_ADMIN dentro do user namespace de uma negação externa do syscall; o perfil/LSM só será apontado como causa se houver evidência correspondente. Não altera políticas nem tenta mount alternativo.
-- Testes unitários cobrem o parser do contexto sintético; nenhum código de projeto é executado.
-- RC68 candidata; build ARM64 e probe real pendentes. Gates mantidos: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
-
-### Próximo gate M114
-Publicar RC68 pelo procedimento oficial, atualizar o app existente sem backup da RC anterior, verificar build ARM64, suíte completa e o novo campo child_security_context. Não ampliar permissões, não mudar AppArmor/seccomp/capabilities e não tentar montar tmpfs se a propagação privada falhar.
-
 ## M114 — RC68: diagnóstico real identifica a política AppArmor (25/11/2026)
 
 - RC68 (0.1.0-rc.68) publicada, build ARM64 concluído às 20:08:33.024 BRT, app started; update_available=false.
@@ -255,5 +236,60 @@ Publicar RC68 pelo procedimento oficial, atualizar o app existente sem backup da
 - Nenhum código de projeto executado; tmpfs continua não montado; quota por job não comprovada.
 - Gates: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed.
 
-### Próximo gate M115
-Preparar proposta de perfil AppArmor mínimo em documento/branch isolada. Preservar as regras default e avaliar somente allow rules para rprivate na raiz do mount namespace e tmpfs no diretório scratch do probe. Não criar apparmor.txt, publicar ou instalar sem aprovação explícita do proprietário. Não usar apparmor: false, privileged, SYS_ADMIN no host, full_access ou Docker API/socket.
+### Próximo gate M115 — orientação histórica corrigida
+Preparar a proposta somente em docs/APPARMOR-MOUNT-PROFILE-001.md na branch permanente desenvolvimento. Não criar branch de trabalho. Não criar apparmor.txt, publicar ou instalar sem aprovação explícita do proprietário. Não usar apparmor: false, privileged, SYS_ADMIN no host, full_access ou Docker API/socket.
+
+
+## M115 — reconciliação da fonte ativa com RC68 e revisão da proposta AppArmor (25/11/2026)
+
+- Supervisor consultado: 45c28620_fabrica_software em 0.1.0-rc.68, started, update_available=false. Proteções preservadas: protected=true, privileged=[], full_access=false, AppArmor default.
+- Logs confirmam CAP_SYS_ADMIN no user namespace, Seccomp=0, NoNewPrivs=0, docker-default (enforce) e MS_REC|MS_PRIVATE=EACCES. Consulta ao serviço host com filtro AppArmor não retornou eventos; sem audit record específico.
+- Backport direto para desenvolvimento dos blobs da RC68 validada: config.yaml, userns_probe.py e tests/test_factory_runner_userns_probe.py. Commits: 6e5a232b1a64b6ddf4a5b3eb85449ba550c192ef, b52d98defc10121d2324068fb87a5eecb7600495, 54bd5b9521dba2ae8954d620b96e111a3f4c7291.
+- docs/APPARMOR-MOUNT-PROFILE-001.md refinado: transição proposta é por binário ELF dedicado com cx para subperfil filho; não por interpretador Python compartilhado. Perfil customizado HA substitui o default e precisa preservar S6/API/Ingress com permissões explícitas.
+- Identificação do template base concluída: Docker 29.8.2 fixa moby/profiles/apparmor v0.2.2 no go.mod do tag docker-v29.8.2. O template dessa versão foi consultado e contém deny mount, restrições /proc e /sys, além das permissões base de network/capability/file/umount. A versão do parser AppArmor do HA OS e o perfil efetivamente carregado continuam sem leitura direta.
+- Fragmentos candidatos de política foram incluídos no documento M115 (cx para ELF dedicado, rprivate na raiz, tmpfs com origem/filesystem/destino/flags restritos e umount no scratch). Permanecem não validados: parser HA OS, isolamento do subperfil em relação ao deny mount do pai, comunicação por FD, sinais e cleanup.
+- Parser HA OS esperado inferido como AppArmor 3.1.7 (Buildroot 2025.02.19; defconfig RPi4 habilita AppArmor; pacote fixa 3.1.7), sem leitura direta do binário no host. Fragmentos passaram somente na análise sintática local AppArmor parser 4.1.0; ambiente local sem interface AppArmor no kernel e com avisos de regras mount não aplicadas. Não equivale à validação no HA.
+- Branches: não foi criado novo branch de trabalho nesta etapa. Não houve merge geral entre desenvolvimento e release-candidate, cujos históricos continuam divergentes. O conteúdo M115 está em desenvolvimento.
+- Validação: RC68 já teve build ARM64/suíte Dockerfile concluídos e está instalada. Os três blobs de código foram copiados exatamente da RC68 validada; nenhum teste foi reexecutado após a cópia (conteúdo idêntico). A revisão do perfil customizado ainda é análise documental; parser HA OS não executado.
+- Não criado apparmor.txt; nenhum perfil ativo alterado; nenhuma publicação/instalação nova; nenhum código de projeto executado.
+- Gates: safe_for_untrusted_code=false; Publisher DORMANT; sandbox_export fail-closed. Próximo: fechar desenho e validar parser/perfil + helper ELF sem ativação no host.
+
+
+## M116 — RC69 de desenvolvimento: helper ELF dedicado e probe integrado (25/11/2026)
+
+- Fonte `desenvolvimento`; `config.yaml` atualizado para `0.1.0-rc.69`. RC68 continua instalada/started no HA; RC69 ainda não publicada/instalada.
+- Arquivos alterados: `fr_userns_probe.c`, `userns_probe.py`, `tests/test_factory_runner_userns_probe.py`, `Dockerfile`, `config.yaml`, `CHANGELOG.md`, `README.md`, `RELEASE-PIPELINE.md`, `docs/APPARMOR-MOUNT-PROFILE-001.md`, `docs/ROADMAP-CONCLUSAO-001.md`, `docs/CONTINUIDADE-ATIVA.md`.
+- Helper C compilado com flags estritas `-std=c11 -O2 -Wall -Wextra -Werror -fstack-protector-strong -D_FORTIFY_SOURCE=2`. Dockerfile instala `build-base` apenas em validation, compila o helper e copia o binário para `/usr/local/libexec/fr-userns-probe` na imagem runtime; não leva o toolchain para runtime.
+- Python usa subprocess para executar apenas o helper fixo com environment allowlist, `close_fds=True`, stdin/stderr descartados, stdout como canal de relatório, timeout 6 s e kill do process group. Helper ativa NNP=1 após exec/transição e antes de criar namespaces.
+- Segurança do argumento: helper aceita somente scratch direto `/tmp/fr-userns-probe-*`, diretório real de owner efetivo, modo 0700; rejeita symlink e caminhos com subdiretórios.
+- Testes dirigidos 16/16 PASS no laboratório. A camada Python foi testada com shim local de `isolation_backend_probe` que reproduz as rotinas `root_capabilities`/`capget`; não classificar como suíte integral do checkout. O classificador `available` agora exige exit code 0, erros vazios, NNP=1, CAP_SYS_ADMIN no userns e todos os passos; falha de close/erro residual/exit não zero não pode passar.
+- Probe C local com scratch válido: userns/UID/GID maps/mount namespace/rprivate/tmpfs 1 MiB/ENOSPC/unmount/netns/PID1/NNP PASS; parent mount leak=false; capabilities do pai inalteradas. Perfil AppArmor reportado pelo laboratório: `kernel` (sem confinamento). Não é prova do perfil HA.
+- Estrutura AppArmor parent/child passou parser 4.1.0 com `--skip-kernel-load` (exit 0). Sem interface AppArmor no kernel de teste; perfil não carregado. Parser HA 3.1.7 é inferência Buildroot e precisa confirmação no dispositivo.
+- Supervisor source `5e1b762a9ecd42352259c4c2973896f99126361b` confirma `adjust_profile(self.slug, ...)` e reescrita somente da declaração superior `^profile `. Slug interno HA confirmado `45c28620_fabrica_software`; child `fr_userns_probe` permanece. Referências de sinal no fragmento foram corrigidas para o nome efetivo `45c28620_fabrica_software//fr_userns_probe`.
+- Não executados: Dockerfile completo, suíte integral, build ARM64/Supervisor, transição cx no kernel HA, teste allow/deny de mount sob AppArmor enforce.
+- Não criado/aplicado `apparmor.txt`; nenhum perfil ativo alterado; nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
+- Commits de código principais: Dockerfile `9e0926f10d73805e32ce97884ac3becf67db8103`; helper C `fd123ec314c5861b48a34bcda3f908d0dfdf6d20`; Python `80b5fd69afcf477f08a55341ead4e4a5a26b87e7`; testes finais `5ffd1a2f98c648eea3d8aab707be44ebef132b0f`; manifesto RC69 `4d1b95f7351bb35579b88113dee4d01102711d1e`.
+- Próximo: revisar child profile e parser/loader por arquitetura, preparar promoção controlada RC69, e obter autorização específica antes da atualização HA e antes de ativar AppArmor customizado.
+
+- Comparação de branches atualizada: `release-candidate` HEAD `f7deb5a7e321801de72cfb42f4c320c426071126`; `desenvolvimento` 237 commits exclusivos e 283 atrás; merge-base `fec0fe9cf7951345cbefada12cc239c87b483a5b`. Nenhum PR de promoção aberto; sem merge geral, sem publicação RC69 até reconciliação.
+
+
+## 25/11/2026 — M117: revisão estática e correção de declaração C
+- Identificado que `security_cap_sys_admin_in_userns` era referenciado no helper ELF sem declaração no `struct probe_report`, o que impede compilação estrita do código naquele estado.
+- Corrigido em `desenvolvimento` no commit `75966cd76dc40a149e6a70ce5d5f792b85f8373d`, adicionando o campo booleano ao struct.
+- A alegação anterior de compilação C estrita PASS não é válida para o conteúdo que foi revisado; recompilação e build Dockerfile pós-correção ainda precisam ser executados e registrados.
+- Sem publicação, instalação ou alteração no Home Assistant.
+
+
+## 25/11/2026 — M118: helper ELF estático AMD64/ARM64
+- Antigravity compilou com Zig/musl os targets `x86_64-linux-musl` e `aarch64-linux-musl` usando `-static` e flags estritos: ambos PASS. ELF sem PT_INTERP/PT_DYNAMIC/DT_NEEDED; stripped: 42.688 bytes AMD64 e 45.920 bytes ARM64.
+- Execução em Linux foi BLOCKED no host Windows sem WSL/QEMU. Não é evidência de funcionamento em runtime.
+- Integração no branch `desenvolvimento`: Dockerfile com `-static`; removida permissão de loader dinâmico do child profile. Build Docker e execução no HA continuam pendentes.
+
+
+## 25/11/2026 — M120: auditoria de transição AppArmor e ambiente
+- `@{profile_name}` é local ao perfil atual: no child, expande para o próprio child. O pai pode referenciar o child com `@{profile_name}//fr_userns_probe`; o child não pode usar a variável para obter o nome do pai.
+- Candidato documentado com `Cx`, pai enviando apenas kill/term ao child, child recebendo esses sinais por `peer=*_fabrica_software` e sinais internos por `peer=@{profile_name}`. O wildcard remove o hash variável, mas mantém o sufixo do slug; precisa validar amplitude e correspondência no parser/runtime HA.
+- Allowlist de ambiente em `userns_probe.py` permanece a proteção primária contra herança de segredos; `Cx` não é filtro universal de variáveis.
+- Parser local 4.1.0 aceitou o corpo do candidato com `--preprocess` e `--skip-kernel-load` (exit 0) somente após remover `abstractions/base` do arquivo temporário. Com as abstractions Debian 13, houve falha por declarações ABI 4.0 incompatíveis com ABI 3.0. Nenhum perfil carregado. Parser HA 3.1.7 e execução sob enforce não foram testados. M120 Antigravity não tinha AppArmor CLI/kernel no host Windows.
+- Nenhuma ativação, publicação ou instalação. RC68 permanece instalada; RC69 não homologada; execução de código não confiável permanece bloqueada.

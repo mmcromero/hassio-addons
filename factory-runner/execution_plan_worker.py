@@ -29,6 +29,15 @@ def _emit_error(code: str, status: int = 2) -> int:
 
 
 def main() -> int:
+    try:
+        import executor_hardening as hardening
+        audit = hardening.audit_and_close_unapproved_fds([0, 1, 2])
+        if audit.get("status") == "failed" and (audit.get("unexpected_remaining") or 0) > 0:
+            return _emit_error("unapproved_fds_detected")
+        hardening.configure_oom_score_adj(500)
+    except Exception:
+        pass
+
     if len(sys.argv) != 3 or sys.argv[1] != "--project":
         return _emit_error("invalid_worker_arguments")
     project = sys.argv[2]

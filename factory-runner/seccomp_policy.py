@@ -30,6 +30,16 @@ DENIED_SYSCALLS = (
     "init_module", "finit_module", "delete_module", "swapon", "swapoff",
     "acct", "settimeofday", "clock_settime", "sethostname", "setdomainname",
     "syslog", "getppid",
+    "personality", "kcmp", "quotactl", "quotactl_fd", "lookup_dcookie",
+)
+
+# Essential syscalls that must remain allowed for normal single/subprocess worker operation
+WORKER_ALLOWED_SYSCALLS = (
+    "read", "write", "close", "fstat", "newfstatat", "lseek", "mmap", "mprotect",
+    "munmap", "brk", "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "ioctl",
+    "pread64", "pwrite64", "readv", "writev", "access", "pipe2", "select",
+    "pselect6", "poll", "ppoll", "nanosleep", "gettimeofday", "getpid", "getuid",
+    "getgid", "geteuid", "getegid", "execve", "clone", "wait4", "exit", "exit_group",
 )
 
 
@@ -148,6 +158,16 @@ def _denied(lib, name, *args):
     return denied
 
 
+def is_syscall_denied(name: str) -> bool:
+    """Check if a syscall name is in the strict denylist."""
+    return name in DENIED_SYSCALLS
+
+
+def is_syscall_allowed_for_workers(name: str) -> bool:
+    """Check if a syscall name is in the allowed worker baseline."""
+    return name in WORKER_ALLOWED_SYSCALLS and name not in DENIED_SYSCALLS
+
+
 def self_test(library=None):
     lib = library if library is not None else _load_library()
     pid = os.getpid()
@@ -155,8 +175,14 @@ def self_test(library=None):
         "getppid": _denied(lib, "getppid"),
         "socket": _denied(lib, "socket", 2, 1, 0),
         "socketpair": _denied(lib, "socketpair", 1, 1, 0, 0),
+        "bind": _denied(lib, "bind", -1, 0, 0),
+        "connect": _denied(lib, "connect", -1, 0, 0),
         "setsid": _denied(lib, "setsid"),
         "setpgid": _denied(lib, "setpgid", 0, 0),
         "kill": _denied(lib, "kill", pid, 0),
         "shmget": _denied(lib, "shmget", 0x4652, 4096, 0o1100 | 0o600),
+        "mount": _denied(lib, "mount", 0, 0, 0, 0, 0),
+        "chroot": _denied(lib, "chroot", 0),
+        "ptrace": _denied(lib, "ptrace", 0, 0, 0, 0),
+        "bpf": _denied(lib, "bpf", 0, 0, 0),
     }

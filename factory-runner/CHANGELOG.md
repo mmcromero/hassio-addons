@@ -1,8 +1,13 @@
-# 0.1.0-rc.68 — M114: diagnosticar contexto de segurança no user namespace
+# 0.1.0-rc.69 — M116: helper ELF dedicado para probe de namespaces
 
-- Registra CapEff/CAP_SYS_ADMIN dentro do user namespace, NoNewPrivs, Seccomp e perfil AppArmor efetivo, somente leitura.
-- Adiciona testes unitários para parser do contexto de segurança.
-- Não altera capabilities, AppArmor, seccomp, mounts, cgroups ou permissões; nenhum código de projeto executado.
+- Adiciona helper nativo C compilado no estágio de validação e copiado para a imagem runtime em `/usr/local/libexec/fr-userns-probe`; o estágio runtime não recebe compilador.
+- O helper valida scratch temporário próprio, ativa `PR_SET_NO_NEW_PRIVS=1` depois do exec/transição AppArmor e antes de criar namespaces, escreve UID/GID maps, tenta mount propagation privada, tmpfs 1 MiB, ENOSPC, unmount, netns e PID namespace/PID 1.
+- O Python chama somente o helper fixo, com ambiente allowlist, stdin/stderr descartados, stdout como canal de relatório e `close_fds=True`; timeout mata o grupo de processos. Ausência/falha do helper mantém o probe fail-closed.
+- Adiciona regressões para helper compilado, scratch inválido/symlink, relatório real, timeout/ausência e preservação de `safe_for_untrusted_code=false`.
+- Validação local efetivamente executada: compilação C estrita com `-Wall -Wextra -Werror`; 16/16 testes dirigidos (camada Python com shim local de `isolation_backend_probe`); helper executou userns, UID/GID maps, mount namespace, rprivate, tmpfs 1 MiB, ENOSPC, unmount, netns, PID1 e NNP=1. Perfil AppArmor observado no laboratório: `kernel`, portanto sem confinamento AppArmor.
+- Perfil child AppArmor estrutural passou somente na análise sintática local com parser 4.1.0 e `--skip-kernel-load`; nenhum perfil foi carregado. Parser HA 3.1.7 permanece inferido, não confirmado diretamente.
+- Dockerfile completo, suíte integral, build ARM64/Supervisor e transição `cx` sob AppArmor HA ainda NÃO foram executados. RC69 permanece em desenvolvimento; RC68 continua instalada no HA.
+- Nenhum `apparmor.txt` criado/aplicado; nenhum código de projeto executado; `safe_for_untrusted_code=false`; Publisher DORMANT; `sandbox_export` fail-closed.
 
 # 0.1.0-rc.67 — M112: corrigir import isolado e contrato do App HA
 
@@ -658,3 +663,14 @@ exigem ambiente/política operacionais; não fecha pacote nem publica.
 - M031: fixtures locais de workspace usam `git clone --no-hardlinks`, igualando o comportamento esperado do clone remoto e evitando que a ACL rejeite objetos Git compartilhados por hardlink. A validação agora alcança a suíte E2E não-root.
 
 - M032: fixture Git usa `--no-local --no-hardlinks` para impedir otimização de clone local e garantir que nenhum objeto do snapshot compartilhe inode com o repositório de origem.
+
+
+## 0.1.0-rc.69 — M117: correção de compilação do helper
+- Declara explicitamente no relatório C o campo booleano `security_cap_sys_admin_in_userns`, antes referenciado sem membro correspondente no struct.
+- Revalidação de compilação estrita e build ARM64 ainda pendentes; esta correção não altera a versão instalada nem publica a RC.
+
+
+## 0.1.0-rc.69 — M118: helper ELF estático
+- Dockerfile compila `fr_userns_probe.c` com `-static` para remover dependência do dynamic loader.
+- Child profile não solicita mais leitura de `/lib/ld-musl-*.so.1`.
+- Build e execução reais em AMD64/ARM64 Linux ainda pendentes; sem alteração da versão instalada.
