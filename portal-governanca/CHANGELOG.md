@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.25 — 26/11/2026
+- Corrige quebra literal `\\n` na declaração do ledger em `src/main.ts`, que interrompia o TypeScript.
+- Mantém os 45 testes da suíte e permite prosseguir ao build Vite.
+
+
 ## 0.1.0-dev.24 — 26/11/2026
 - Corrige as flags de abertura do ledger; permissões de arquivo passam como modo, sem O_EXCL acidental.
 - Corrige os dois casos de teste que falharam no build ARM64 dev.23.

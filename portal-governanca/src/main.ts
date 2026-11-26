@@ -10,7 +10,8 @@ const app=document.querySelector<HTMLDivElement>('#app');if(!app)throw new Error
 let view:View='overview',selected:Project|null=null,snapshot:PortfolioSnapshot|null=null,loading=false,lastError:string|null=null,lastErrorCode:string|null=null,lastChecked:string|null=null;
 let catalog:RepositoryCatalog|null=null,catalogLoading=false,catalogError:string|null=null,registering=false,registerMessage:string|null=null,registerError:string|null=null;
 let supervisorSnapshot:SupervisorInventory|null=null,supervisorLoading=false,supervisorError:string|null=null;
-let n8nSnapshot:N8nOverview|null=null,n8nLoading=false,n8nError:string|null=null;\nlet ledgerSnapshot:PortalLedger|null=null,ledgerLoading=false,ledgerError:string|null=null,ledgerSaving=false,ledgerMessage:string|null=null;
+let n8nSnapshot:N8nOverview|null=null,n8nLoading=false,n8nError:string|null=null;
+let ledgerSnapshot:PortalLedger|null=null,ledgerLoading=false,ledgerError:string|null=null,ledgerSaving=false,ledgerMessage:string|null=null;
 const projects=()=>snapshot?.projects??[];
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));
 const date=(v?:string|null)=>v?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v)):'Não informado';
