@@ -1,9 +1,9 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.8",
+  "addon_version": "0.1.0-dev.9",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "ed2c5a741674a1ea1cf3ddae3177478ddfc51bc1",
+  "source_commit": "42ad1778f926882d254e035bf2e4a5386255fea3",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_snapshot": "vendor/design-system",
@@ -23,5 +23,5 @@
       "sha256": "2b501477036ae5ec31aabfc8de17e20d99a167d5fca8214f8c748ddb846111de"
     }
   ],
-  "status": "source package published; Supervisor build and runtime validation pending"
+  "status": "source package published; Supervisor build pending after Dockerfile correction"
 }
