@@ -10,6 +10,18 @@ GITHUB_WRITE_TOKEN="$(jq -r '.github_write_token // empty' "$OPTIONS_FILE")"
 N8N_BASE_URL="$(jq -r '.n8n_base_url // empty' "$OPTIONS_FILE")"
 N8N_API_KEY="$(jq -r '.n8n_api_key // empty' "$OPTIONS_FILE")"
 N8N_INTERNAL_PEER="$(jq -r '.n8n_internal_peer // empty' "$OPTIONS_FILE")"
+# O ledger é persistente e append-only. Preparar o arquivo como root e transferir
+# somente sua propriedade ao usuário não-root do BFF, sem alterar seu conteúdo.
+LEDGER_PATH="/data/portal-ledger.ndjson"
+if [ -L "$LEDGER_PATH" ] || { [ -e "$LEDGER_PATH" ] && [ ! -f "$LEDGER_PATH" ]; }; then
+  echo "[ERROR] Caminho do ledger não é um arquivo regular; início recusado" >&2
+  exit 1
+fi
+if [ ! -e "$LEDGER_PATH" ]; then
+  : > "$LEDGER_PATH"
+fi
+chown portal:portal "$LEDGER_PATH"
+chmod 0600 "$LEDGER_PATH"
 SUPERVISOR_READ_TOKEN="${SUPERVISOR_TOKEN:-}"
 # A credencial do Supervisor é entregue somente ao bridge dedicado.
 # O papel "default" autoriza leitura de status/info, sem privilégios manager.
