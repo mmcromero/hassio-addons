@@ -1,81 +1,9 @@
 {
-  "schemaVersion": 1,
-  "projects": [
-    {
-      "id": "artesao-digital",
-      "name": "Artesão Digital",
-      "domain": "Produto",
-      "summary": "Gestão, fabricação, precificação, catálogo e PDV para artesãos.",
-      "repositories": [
-        {
-          "fullName": "mmcromero/fabricacao_e_orcamentos",
-          "role": "Código-fonte"
-        },
-        {
-          "fullName": "mmcromero/hassio-addons",
-          "role": "Distribuição Home Assistant",
-          "path": "artesaos-piloto/"
-        }
-      ]
-    },
-    {
-      "id": "avisaqui",
-      "name": "Avisaqui",
-      "domain": "Produto",
-      "summary": "Acompanhamento de pedidos por QR Code e comunicação de pedido pronto.",
-      "repositories": [
-        {
-          "fullName": "mmcromero/pager-virtual",
-          "role": "Código-fonte"
-        },
-        {
-          "fullName": "mmcromero/hassio-addons",
-          "role": "Distribuição Home Assistant",
-          "path": "pager-virtual/"
-        }
-      ]
-    },
-    {
-      "id": "factory-runner",
-      "name": "Factory Runner",
-      "domain": "Ferramenta transversal",
-      "summary": "Esteira de preparação, validação e publicação controlada de software.",
-      "repositories": [
-        {
-          "fullName": "mmcromero/factory-runner",
-          "role": "Código-fonte"
-        },
-        {
-          "fullName": "mmcromero/hassio-addons",
-          "role": "Distribuição Home Assistant",
-          "path": "factory-runner/"
-        }
-      ]
-    },
-    {
-      "id": "mensageria",
-      "name": "Central Instagram / WhatsApp",
-      "domain": "Plataforma / canais",
-      "summary": "Canais de atendimento, núcleo compartilhado, Evolution API e workflows n8n.",
-      "repositories": [
-        {
-          "fullName": "mmcromero/instagram-automacoes",
-          "role": "Código-fonte — Instagram"
-        },
-        {
-          "fullName": "mmcromero/whatsapp-automacoes",
-          "role": "Código-fonte — WhatsApp / Evolution"
-        },
-        {
-          "fullName": "mmcromero/n8n-plataforma",
-          "role": "Workflows e contratos n8n"
-        },
-        {
-          "fullName": "mmcromero/hassio-addons",
-          "role": "Distribuição Home Assistant",
-          "path": "instagram-central/ · evolution-api/ · umdoislab-central/"
-        }
-      ]
-    }
-  ]
+  "schemaVersion": 2,
+  "discovery": {
+    "owner": "mmcromero",
+    "manifest": ".portal-governanca.json",
+    "mode": "opt-in"
+  },
+  "projects": []
 }
