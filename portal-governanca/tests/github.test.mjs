@@ -26,6 +26,24 @@ describe("GitHub auto-discovery read-only client",()=>{
   expect(result.projects[0].repositories[1].role).toBe("Distribuição");
   expect(result.discovery.scannedRepositories).toBe(4);
  });
+ it("consulta marcadores em paralelo respeitando o limite global de quatro requisições",async()=>{
+  let active=0,maxActive=0;
+  const repos=Array.from({length:8},(_,i)=>({full_name:"mmcromero/repo-"+i,owner:{login:"mmcromero"},default_branch:"main"}));
+  const fetchImpl=vi.fn(async(input)=>{
+   const u=new URL(String(input));
+   if(u.pathname==="/user/repos")return response(repos);
+   if(u.pathname.includes("/contents/.portal-governanca.json")){
+    active++;maxActive=Math.max(maxActive,active);
+    await new Promise(resolve=>setTimeout(resolve,5));
+    active--;return response({message:"Not Found"},404);
+   }
+   return response({message:"Not Found"},404);
+  });
+  const result=await createGitHubClient({token:"test-token",fetchImpl}).getPortfolio();
+  expect(result.projects).toEqual([]);
+  expect(maxActive).toBeGreaterThan(1);
+  expect(maxActive).toBeLessThanOrEqual(4);
+ });
  it("retorna lista vazia quando nenhum repositório possui marcador",async()=>{
   const fetchImpl=vi.fn(async(input)=>{const u=new URL(String(input));if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/no-marker",owner:{login:"mmcromero"},default_branch:"main"}]);return response({message:"Not Found"},404);});
   const result=await createGitHubClient({token:"test-token",fetchImpl}).getPortfolio();
