@@ -78,6 +78,14 @@
         "aarch64"
       ],
       "source_repo": "https://github.com/mmcromero/design-system"
+    },
+    {
+      "id": "portal-governanca",
+      "directory": "portal-governanca",
+      "slug": "portal_governanca",
+      "architectures": [
+        "aarch64"
+      ]
     }
   ]
 }
