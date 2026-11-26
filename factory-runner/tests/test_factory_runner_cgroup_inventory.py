@@ -132,9 +132,7 @@ class CgroupInventoryTests(unittest.TestCase):
         self.mount_info("rw")
         (self.current / "memory.swap.max").unlink()
         report = self.inspect()
-        # Presence and readability are separate diagnostics: the file exists,
-        # but the read permission check must still block delegation candidacy.
-        self.assertTrue(report["aggregate_controls_present"])
+        self.assertFalse(report["aggregate_controls_present"])
         self.assertFalse(report["delegation_candidate"])
         (self.current / "memory.swap.max").touch()
         (self.current / "cgroup.events").unlink()
@@ -174,7 +172,8 @@ class CgroupInventoryTests(unittest.TestCase):
         self.assertFalse(report["monitor_controls_readable"])
         self.assertTrue(report["required_write_controls_present"])
         self.assertTrue(report["required_write_controls_writable"])
-        self.assertFalse(report["aggregate_controls_present"])
+        # The controls exist; unreadability is a separate state and blocks the candidate.
+        self.assertTrue(report["aggregate_controls_present"])
         self.assertFalse(report["delegation_candidate"])
         self.assertFalse(report["safe_for_untrusted_code"])
 

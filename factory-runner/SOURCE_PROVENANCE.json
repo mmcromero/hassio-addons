@@ -1,17 +1,17 @@
 {
   "format": "factory-runner-private-candidate-provenance-v1",
   "scope": "factory-runner/",
-  "version": "0.1.0-rc.70",
+  "version": "0.1.0-rc.71",
   "repository": "mmcromero/factory-runner",
-  "commit": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
-  "catalog_sha": "681ee0efd18787c15c4810037e12137fb0db6af8",
-  "previous_source": "f2b19e1d3c278541c11ac56c1046a0cda56a23b2",
-  "reviewed_source": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
+  "commit": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+  "catalog_sha": "59b809e3f1d8c19dcce8e9666d39dcf146fb7829",
+  "previous_source": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
+  "reviewed_source": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
   "publication": "OWNER_AUTHORIZED_DIRECT_DISTRIBUTION_EXCEPTION_M172",
-  "authorization": "OWNER_AUTHORIZED_RC70_DIRECT_DISTRIBUTION_2026-11-26_M172",
-  "candidate_distribution": "FACTORY_RUNNER_RC70_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
-  "tests": "RC69_SUPERVISOR_ARM64_BUILD_FAILED_FOUR_CGROUP_INVENTORY_TESTS; RC70_CORRECTED_TEST_FIXTURE_AND_EXPECTATION; REBUILD_PENDING; NO_PROJECT_CODE_EXECUTED",
-  "review_status": "SOURCE_OVERLAY_EXACT_BLOBS; CATALOG_HISTORICAL_FILE_PRESERVED; RC69_BUILD_FAILURE_RECORDED; RC70_BUILD_PENDING",
+  "authorization": "OWNER_AUTHORIZED_RC71_DIRECT_DISTRIBUTION_2026-11-26_M172",
+  "candidate_distribution": "FACTORY_RUNNER_RC71_FROM_DESENVOLVIMENTO_DIRECT_TO_ISOLATED_CATALOG_PATH",
+  "tests": "RC69_BUILD_FAILED_FOUR_CGROUP_TESTS; RC70_BUILD_FAILED_TWO_INVERTED_CGROUP_TEST_ASSERTIONS; RC71_CORRECTED_EXPECTATIONS; SUPERVISOR_ARM64_REBUILD_PENDING; NO_PROJECT_CODE_EXECUTED",
+  "review_status": "SOURCE_OVERLAY_EXACT_BLOBS; CATALOG_HISTORICAL_FILE_PRESERVED; RC69_AND_RC70_FAILURES_RECORDED; RC71_BUILD_PENDING",
   "files": [
     {
       "path": "factory-runner/.dockerignore",
@@ -44,8 +44,8 @@
     {
       "path": "factory-runner/CHANGELOG.md",
       "source_path": "factory-runner-add-on/CHANGELOG.md",
-      "git_blob_sha": "bfca2ebe6ab71c52160920c40d01da67c3e7a217",
-      "size": 69351,
+      "git_blob_sha": "d747d876cc09e92829cd3e7f2d958bf37f601ed8",
+      "size": 70070,
       "mode": "100644"
     },
     {
@@ -156,8 +156,8 @@
     {
       "path": "factory-runner/RELEASE-PIPELINE.md",
       "source_path": "factory-runner-add-on/RELEASE-PIPELINE.md",
-      "git_blob_sha": "fd3f97fedc32224286c53ceb8d21e5eab71549b5",
-      "size": 37491,
+      "git_blob_sha": "11619e38defd1ad963ab5b14fd8c859e7d69c5cd",
+      "size": 38011,
       "mode": "100644"
     },
     {
@@ -226,7 +226,7 @@
     {
       "path": "factory-runner/config.yaml",
       "source_path": "factory-runner-add-on/config.yaml",
-      "git_blob_sha": "a04e6692cb991d3b0aa982b73f40eb2c4757857e",
+      "git_blob_sha": "223283cbfa9ac6bcaf27a332c6538c937d33e3bd",
       "size": 1015,
       "mode": "100644"
     },
@@ -639,8 +639,8 @@
     {
       "path": "factory-runner/tests/test_factory_runner_cgroup_inventory.py",
       "source_path": "factory-runner-add-on/tests/test_factory_runner_cgroup_inventory.py",
-      "git_blob_sha": "6a02f49cec2daeeca516ae9cc0b6bde0936a766f",
-      "size": 9848,
+      "git_blob_sha": "0fa78edf2e681a2e941f6b96b88df9f73b67bb34",
+      "size": 9781,
       "mode": "100644"
     },
     {
@@ -1219,11 +1219,24 @@
     },
     "rc70_source_commit": "af6b2adeddf1e2f52b09ce2474c674bbb5d5b5c2",
     "rc70_publication_status": "PENDING_COMMIT_CREATION",
-    "rc70_build_result": "PENDING_SUPERVISOR_ARM64_BUILD_AND_DOCKERFILE_VALIDATION",
-    "rc70_install_result": "NOT_YET_EXECUTED",
+    "rc70_build_result": "FAIL; SUPERVISOR_ARM64_DOCKERFILE_FULL_SUITE; TWO_INVERTED_ASSERT_EXPECTATIONS_IN_TEST_FACTORY_RUNNER_CGROUP_INVENTORY",
+    "rc70_install_result": "NOT_INSTALLED; RC68_RETAINED_AND_STARTED",
     "rc70_options_policy": "PRESERVE_EXISTING_SUPERVISOR_OPTIONS_AND_PERSISTENT_DATA",
     "rc70_backup_policy": "NO_PREVIOUS_RC_BACKUP_PER_OWNER_DECISION",
     "rc70_security_gate": {
+      "safe_for_untrusted_code": false,
+      "publisher": "DORMANT",
+      "sandbox_export": "FAIL_CLOSED",
+      "apparmor_custom_profile": "NOT_APPLIED",
+      "project_code_executed": false
+    },
+    "rc71_source_commit": "4338e8ef7d6e0a6ede5eee9635647d1b7ac63ab5",
+    "rc71_publication_status": "PENDING_COMMIT_CREATION",
+    "rc71_build_result": "PENDING_SUPERVISOR_ARM64_BUILD_AND_DOCKERFILE_VALIDATION",
+    "rc71_install_result": "NOT_YET_EXECUTED",
+    "rc71_options_policy": "PRESERVE_EXISTING_SUPERVISOR_OPTIONS_AND_PERSISTENT_DATA",
+    "rc71_backup_policy": "NO_PREVIOUS_RC_BACKUP_PER_OWNER_DECISION",
+    "rc71_security_gate": {
       "safe_for_untrusted_code": false,
       "publisher": "DORMANT",
       "sandbox_export": "FAIL_CLOSED",

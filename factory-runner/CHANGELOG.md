@@ -1,3 +1,10 @@
+# 0.1.0-rc.71 — M173: alinhar expectativas dos testes cgroup
+
+- Corrige duas expectativas que haviam ficado invertidas no teste de presença/legibilidade: arquivo ausente deve tornar aggregate_controls_present=false; arquivo presente, porém ilegível, mantém presença verdadeira e monitor_controls_readable=false.
+- O gate delegation_candidate continua exigindo presença, legibilidade, controles graváveis, tipo domain e hierarquia completa.
+- Nenhuma lógica de runtime foi alterada, nenhum teste foi removido e nenhuma proteção foi relaxada.
+- RC70 chegou à suíte completa ARM64, mas falhou em dois asserts do próprio teste de inventário cgroup. RC71 aguarda nova execução integral no Raspberry Pi 4.
+
 # 0.1.0-rc.70 — M172: corrigir fixture e semântica do preflight cgroup
 
 - Corrige a fixture de testes para preencher `memory.swap.max` no cgroup atual, como já fazia nos ancestrais; o parser passa a receber um valor válido e pode testar a hierarquia completa.

@@ -1,6 +1,6 @@
 # Esteira oficial — Factory Runner
 
-**Estado vigente — M172 / 26/11/2026:** RC68 (0.1.0-rc.68) permanece instalada/started no HA; RC69 (0.1.0-rc.69) foi publicada no catálogo, mas o build ARM64 falhou em quatro testes do inventário cgroup. RC70 (0.1.0-rc.70) está em desenvolvimento com correções exclusivamente nas fixtures/expectativas dos testes; ainda não publicada nem instalada. Nenhum perfil AppArmor customizado foi carregado/ativado.
+**Estado vigente — M172 / 26/11/2026:** RC68 (0.1.0-rc.68) permanece instalada/started no HA; RC69 (0.1.0-rc.69) foi publicada no catálogo, mas o build ARM64 falhou em quatro testes do inventário cgroup. RC70 (0.1.0-rc.70) foi publicada, mas o build ARM64 falhou em dois asserts do teste de inventário cgroup. RC71 (0.1.0-rc.71) está em desenvolvimento com as expectativas corrigidas; ainda não publicada nem instalada. Nenhum perfil AppArmor customizado foi carregado/ativado.
 
 **M172 — diagnóstico do primeiro build RC69:** o Supervisor concluiu o estágio C e chegou à suíte completa; quatro testes em `test_factory_runner_cgroup_inventory.py` falharam porque a fixture não preenchia `memory.swap.max` no cgroup atual e uma expectativa confundia presença com legibilidade. Correção RC70: preencher o valor `max` na fixture; manter `aggregate_controls_present` como presença e `monitor_controls_readable` como legibilidade separada. `delegation_candidate` continua exigindo ambos. Nenhum teste foi removido, nenhum gate foi relaxado e nenhum runtime de projeto foi executado.
 
@@ -333,3 +333,6 @@ RC61 adiciona `archive_stream.py` como componente confiável de validação/extr
 **Atualização M157 — 26/11/2026:** revisão de quotas agregadas concluída: cgroup delegation bloqueada pela plataforma; RLIMIT+UID, seccomp sem processos, tmpfs e fila serial não são equivalentes para builds/testes genéricos. Não há executor equivalente suportado no escopo M006/P0. Execução genérica continua bloqueada por `_require_aggregate_isolation()`.
 
 **Atualização M160 — 26/11/2026:** regra de recepção SIGKILL do child usa agora o peer literal exato `45c28620_fabrica_software`, confirmado pelo slug do app no Supervisor 2026.11.0 e pelo `adjust_profile()` que reescreve apenas o nome do perfil pai. Wildcard removido; correspondência exata sob parser 3.1.7/enforce ainda pendente.
+
+
+**M173 — correção de expectativa:** o build RC70 confirmou que a fixture memory.swap.max já estava corrigida; restaram duas expectativas invertidas no mesmo teste: ausência do arquivo deve negar aggregate_controls_present, enquanto arquivo presente mas ilegível deve manter presença verdadeira e negar monitor_controls_readable. RC71 corrige somente essas expectativas; o runtime e o gate permanecem inalterados. Novo build ARM64 pendente.
