@@ -31,6 +31,11 @@ Antes de diagnosticar, configurar ou usar os túneis compartilhados, ler o [manu
 
 Em todo `config.yaml` de add-on, `name` deve começar exatamente com `Fábrica de Ideias - `. Se `panel_title` existir, deve usar o mesmo prefixo. Conferir manifesto-fonte e pacote exportado antes de qualquer publicação. `Fábrica de Softwares` e outras variações são inválidas. Preservar slug, diretório e identificadores técnicos. Falha de nomenclatura reprova a validação; corrija a fonte e os exemplos relacionados, não apenas a cópia distribuída.
 
+## P0 — Assets oficiais de identidade visual
+
+Em cada add-on, manter na raiz da distribuição os blobs oficiais do catálogo: `icon.png` = `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; `logo.png` = `7e500016222b0a5bf395be8ed17447edeb3e2af9`. Comparar Git blob SHA na fonte e no pacote; existência ou semelhança visual não é suficiente. Se a interface web exibir a marca, usar o asset oficial e respeitar o Ingress. Não substituir por iniciais nem criar variantes.
+
+
 ## Aplicação obrigatória
 
 - Toda tarefa recebida sobre pacote/add-on deste catálogo começa pela leitura do `CONTRIBUTING.md` **vigente na main** e do manual do add-on.
