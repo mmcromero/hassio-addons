@@ -45,15 +45,24 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
  }
  async function discoverProjects(){
   const repos=await listOwnedRepositories(),projects=new Map(),warnings=[];
-  for(const repo of repos){if(!repo.default_branch)continue;
-   try{const result=await request("/repos/"+repo.full_name+"/contents/"+MARKER+"?ref="+encodeURIComponent(repo.default_branch));
-    if(result.data?.type!=="file"||typeof result.data.content!=="string")continue;
-    const item=parseManifest(result.data.content,repo);if(!item)continue;
-    let p=projects.get(item.id);
-    if(!p){p={id:item.id,name:item.name,domain:item.domain,summary:item.summary,repositories:[]};projects.set(item.id,p);}
-    else if(p.name!==item.name||p.domain!==item.domain||p.summary!==item.summary)throw new GitHubApiError("Metadados divergentes para project.id "+item.id+" em "+repo.full_name,422,"GITHUB_PROJECT_METADATA_CONFLICT");
-    p.repositories.push({fullName:repo.full_name,role:item.role});
-   }catch(error){if(error.status!==404)warnings.push({repository:repo.full_name,code:error.code||"DISCOVERY_FAILED",message:error.message});}
+  // Fetch marker files concurrently. request() already enforces a global limit of
+  // four GitHub requests, so Promise.all improves latency without increasing the
+  // configured API concurrency or changing the discovery result ordering.
+  const discovered=await Promise.all(repos.map(async repo=>{
+   if(!repo.default_branch)return{repo,item:null,error:null};
+   try{
+    const result=await request("/repos/"+repo.full_name+"/contents/"+MARKER+"?ref="+encodeURIComponent(repo.default_branch));
+    if(result.data?.type!=="file"||typeof result.data.content!=="string")return{repo,item:null,error:null};
+    return{repo,item:parseManifest(result.data.content,repo),error:null};
+   }catch(error){return{repo,item:null,error};}
+  }));
+  for(const {repo,item,error} of discovered){
+   if(error){if(error.status!==404)warnings.push({repository:repo.full_name,code:error.code||"DISCOVERY_FAILED",message:error.message});continue;}
+   if(!item)continue;
+   let p=projects.get(item.id);
+   if(!p){p={id:item.id,name:item.name,domain:item.domain,summary:item.summary,repositories:[]};projects.set(item.id,p);}
+   else if(p.name!==item.name||p.domain!==item.domain||p.summary!==item.summary){warnings.push({repository:repo.full_name,code:"GITHUB_PROJECT_METADATA_CONFLICT",message:"Metadados divergentes para project.id "+item.id+" em "+repo.full_name});continue;}
+   p.repositories.push({fullName:repo.full_name,role:item.role});
   }
   return{projects:[...projects.values()].sort((a,b)=>a.name.localeCompare(b.name,"pt-BR")),scannedRepositories:repos.length,warnings};
  }
