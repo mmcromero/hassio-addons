@@ -3,7 +3,7 @@ import {constants} from "node:fs";
 import {mkdir,open,readFile,lstat} from "node:fs/promises";
 import path from "node:path";
 const APPEND_FLAGS = constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | (constants.O_NOFOLLOW ?? 0);
-const GENESIS="0".repeat(64),TYPES=new Set(["homologation","evidence","decision","agent_event"]),STATUSES=new Set(["PASS","FAIL","NAO_EXECUTADO","NAO_VERIFICADO","BLOQUEADO","INDISPONIVEL"]),MAX_FILE=5*1024*1024,MAX_RECORD=12000;
+const GENESIS="0".repeat(64),TYPES=new Set(["homologation","evidence","decision","agent_event","mission"]),STATUSES=new Set(["PASS","FAIL","NAO_EXECUTADO","NAO_VERIFICADO","BLOQUEADO","INDISPONIVEL"]),MAX_FILE=5*1024*1024,MAX_RECORD=40000;
 const text=(v,n)=>typeof v==="string"?v.trim().slice(0,n):"";
 const digest=v=>createHash("sha256").update(JSON.stringify(v)).digest("hex");
 function validate(v){
@@ -12,7 +12,10 @@ function validate(v){
  if(!TYPES.has(type))throw Object.assign(new Error("Tipo inválido."),{status:400,code:"INVALID_TYPE"});
  if(type==="homologation"&&!STATUSES.has(status))throw Object.assign(new Error("Estado inválido."),{status:400,code:"INVALID_STATUS"});
  const title=text(v.title,160),summary=text(v.summary,2000);if(!title||!summary)throw Object.assign(new Error("Título e descrição são obrigatórios."),{status:400,code:"REQUIRED_FIELDS"});
- const row={type,title,summary,status:type==="homologation"?status:null,projectId:text(v.projectId,64)||null,repository:text(v.repository,160)||null,sha:text(v.sha,64)||null,version:text(v.version,64)||null,environment:text(v.environment,80)||null,responsible:text(v.responsible,80)||null,origin:text(v.origin,80)||"Portal",evidenceKind:type==="evidence"?(v.evidenceKind==="real"?"real":"synthetic"):null,sourceUrl:text(v.sourceUrl,500)||null,eventId:text(v.eventId,64)||null,eventType:text(v.eventType,32)||null,agentId:text(v.agentId,80)||null,taskId:text(v.taskId,80)||null,nextAction:text(v.nextAction,500)||null,deliverables:Array.isArray(v.deliverables)?v.deliverables.map(x=>text(String(x),200)).filter(Boolean).slice(0,50):[]};
+ const prompt=type==="mission"&&typeof v.prompt==="string"?v.prompt.trim():"";
+ if(type==="mission"&&(prompt.length<30||prompt.length>8000))throw Object.assign(new Error("O prompt da missão deve ter entre 30 e 8.000 caracteres."),{status:400,code:"INVALID_MISSION_PROMPT"});
+ if(type==="mission"&&/(?:Bearer\s+\S{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,})/i.test(prompt))throw Object.assign(new Error("O prompt parece conter uma credencial. Remova o segredo antes de cadastrar."),{status:400,code:"SECRET_PATTERN_REJECTED"});
+ const row={type,title,summary,status:type==="homologation"?status:null,projectId:text(v.projectId,64)||null,repository:text(v.repository,160)||null,sha:text(v.sha,64)||null,version:text(v.version,64)||null,environment:text(v.environment,80)||null,responsible:text(v.responsible,80)||null,origin:text(v.origin,80)||"Portal",evidenceKind:type==="evidence"?(v.evidenceKind==="real"?"real":"synthetic"):null,sourceUrl:text(v.sourceUrl,500)||null,eventId:text(v.eventId,64)||null,eventType:text(v.eventType,32)||null,agentId:text(v.agentId,80)||null,taskId:text(v.taskId,80)||null,nextAction:text(v.nextAction,500)||null,deliverables:Array.isArray(v.deliverables)?v.deliverables.map(x=>text(String(x),200)).filter(Boolean).slice(0,50):[],prompt:type==="mission"?prompt:null,missionStatus:type==="mission"?"received":null};
  if(row.sha&&!/^[a-f0-9]{7,64}$/i.test(row.sha))throw Object.assign(new Error("SHA inválido."),{status:400,code:"INVALID_SHA"});if(row.sourceUrl){let u;try{u=new URL(row.sourceUrl);}catch{throw Object.assign(new Error("URL de origem inválida."),{status:400,code:"INVALID_SOURCE_URL"});}if(u.protocol!=="https:")throw Object.assign(new Error("A URL de origem deve usar HTTPS."),{status:400,code:"INVALID_SOURCE_URL"});row.sourceUrl=u.toString();}return row;
 }
 export function createLedger({filePath="/data/portal-ledger.ndjson",now=()=>new Date().toISOString(),id=randomUUID}={}){
@@ -23,5 +26,6 @@ export function createLedger({filePath="/data/portal-ledger.ndjson",now=()=>new 
  async function append(input){const op=queue.then(async()=>{const record=validate(input),rows=await read(),previousHash=rows.at(-1)?.hash||GENESIS,payload={id:id(),createdAt:now(),...record,previousHash},row={...payload,hash:digest(payload)},line=JSON.stringify(row)+"\n";if(Buffer.byteLength(line)>MAX_RECORD)throw Object.assign(new Error("Registro excede limite."),{status:413,code:"RECORD_TOO_LARGE"});const h=await open(filePath,APPEND_FLAGS,0o600);try{const s=await h.stat();if(!s.isFile()||s.size+Buffer.byteLength(line)>MAX_FILE)throw Object.assign(new Error("Limite de armazenamento atingido."),{status:507,code:"LEDGER_STORAGE_LIMIT"});await h.writeFile(line,"utf8");await h.sync();}finally{await h.close();}return row;});queue=op.catch(()=>{});return op;}
  async function hasEvent(eventId){if(!eventId)return false;const rows=await read();return rows.some(r=>r.eventId===eventId);}
  async function listEvents({projectId,agentId,limit=50}={}){const rows=await read();let events=rows.filter(r=>r.type==="agent_event");if(projectId)events=events.filter(r=>r.projectId===projectId);if(agentId)events=events.filter(r=>r.agentId===agentId);return {events:events.slice(-limit).reverse(),total:events.length,lastUpdated:events.at(-1)?.createdAt||null};}
- return {list,append,hasEvent,listEvents};
+ async function listMissions({limit=50}={}){const rows=await read(),missions=rows.filter(r=>r.type==="mission");return {missions:missions.slice(-limit).reverse(),total:missions.length,lastUpdated:missions.at(-1)?.createdAt||null};}
+ return {list,append,hasEvent,listEvents,listMissions};
 }

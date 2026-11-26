@@ -8,3 +8,11 @@ it("detecta adulteração e bloqueia gravação",async()=>{await ledger.append(v
 it("detecta linha truncada",async()=>{await writeFile(file,'{"broken":');await expect(ledger.list()).rejects.toMatchObject({code:"LEDGER_TORN_WRITE"});});
 it("serializa gravações concorrentes",async()=>{await Promise.all(Array.from({length:20},(_,i)=>ledger.append({...valid,title:"Item "+i})));expect((await ledger.list()).total).toBe(20);});
 });
+
+describe("mission intake",()=>{let dir,file,ledger;beforeEach(async()=>{dir=await mkdtemp(path.join(os.tmpdir(),"portal-missions-"));file=path.join(dir,"history.ndjson");ledger=createLedger({filePath:file});});afterEach(async()=>rm(dir,{recursive:true,force:true}));
+ const prompt="Implementar uma melhoria no projeto, respeitando o escopo fechado e os critérios de aceite descritos nesta missão.";
+ it("persiste o prompt integral com estado inicial recebido",async()=>{const row=await ledger.append({type:"mission",title:"Missão recebida",summary:"Prompt cadastrado no Portal.",prompt,origin:"PortalMissionIntake"});expect(row.missionStatus).toBe("received");expect(row.prompt).toBe(prompt);const result=await ledger.listMissions();expect(result.total).toBe(1);expect(result.missions[0].id).toBe(row.id);});
+ it("rejeita prompt curto ou acima do limite",async()=>{await expect(ledger.append({type:"mission",title:"Missão",summary:"Prompt",prompt:"curto"})).rejects.toMatchObject({code:"INVALID_MISSION_PROMPT"});await expect(ledger.append({type:"mission",title:"Missão",summary:"Prompt",prompt:"x".repeat(8001)})).rejects.toMatchObject({code:"INVALID_MISSION_PROMPT"});});
+ it("persiste prompts longos com caracteres multibyte sem truncar",async()=>{const longPrompt="ç".repeat(8000);const row=await ledger.append({type:"mission",title:"Missão",summary:"Prompt longo",prompt:longPrompt});expect(row.prompt).toBe(longPrompt);expect((await ledger.listMissions()).missions[0].prompt).toBe(longPrompt);});
+ it("rejeita credenciais conhecidas dentro do prompt",async()=>{await expect(ledger.append({type:"mission",title:"Missão",summary:"Prompt",prompt:prompt+" ghp_abcdefghijklmnopqrstuvwxyz123456"})).rejects.toMatchObject({code:"SECRET_PATTERN_REJECTED"});});
+});

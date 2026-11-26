@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.27",
+  "addon_version": "0.1.0-dev.33",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "8bc550db274a721f4eea8b6c2d9719aad9214a26",
+  "source_commit": "58f2c63bd052759341820c3c3bd47426430c28c7",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -16,11 +16,31 @@
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "28582f86c6c812e9d476c6599c34ce3c05257638e0726b1be3ffeae604765ce9"
+      "sha256": "4561fd6fd14e1e7e0d5f18e22462a4de543146cf668138314c4cc919f187a9ec"
+    },
+    {
+      "path": "Dockerfile",
+      "sha256": "d4892cbdccc444511d1cb2d4cfa597f56e8bbca81bf5ec25bcd9bd2cc120ae3f"
+    },
+    {
+      "path": "README.md",
+      "sha256": "c01bcf872304f44a88dcdc044f9b1e18d3b48e8d445e52dd3a73c108a94327b0"
     },
     {
       "path": "config.yaml",
-      "sha256": "92b4c036355bbb8d505801beddc6ed9d5945b7931ca9fbab08db5eec2fb2e765"
+      "sha256": "6d51ce8caf2b451d0199253b9304d78dd3b84a679ffe9f45d0460ca3ec27d5d2"
+    },
+    {
+      "path": "icon.png",
+      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
+    },
+    {
+      "path": "logo.png",
+      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9"
+    },
+    {
+      "path": "run.sh",
+      "sha256": "64e65b684a1de1effd410a942166fda173a1726dac63c1e8b419057e0c150d13"
     },
     {
       "path": "config/design-system.lock.json",
@@ -35,20 +55,8 @@
       "sha256": "7cfa85db1328b69ae5e5e3f053b74261013ae9d4d1f4c6ec2f47b295191c8249"
     },
     {
-      "path": "Dockerfile",
-      "sha256": "d4892cbdccc444511d1cb2d4cfa597f56e8bbca81bf5ec25bcd9bd2cc120ae3f"
-    },
-    {
-      "path": "icon.png",
-      "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
-    },
-    {
       "path": "index.html",
       "sha256": "7ef0755099b884ff6421493e02e220438305014c55a6695b340db764ce15d718"
-    },
-    {
-      "path": "logo.png",
-      "sha256": "3b74ca5d462f18b3b4fbdc27e791dbf5f4feebc9ca4cc0e7db55803bb22f09b9"
     },
     {
       "path": "package-lock.json",
@@ -56,19 +64,15 @@
     },
     {
       "path": "package.json",
-      "sha256": "3af06be58d4c3e18a7201c88dd0a3579c6c897d31667d6139506fcb9b695782c"
+      "sha256": "9daa67a6acb83af1e941ab0d620fb8a2deeb607e9173e25df0e95eb3fee76e9e"
     },
     {
       "path": "public/brand-icon.png",
       "sha256": "b49cea4a7963b2a131fde1725a8140d0aaaea06cd60de3427e809d271144eddc"
     },
     {
-      "path": "README.md",
-      "sha256": "c01bcf872304f44a88dcdc044f9b1e18d3b48e8d445e52dd3a73c108a94327b0"
-    },
-    {
-      "path": "run.sh",
-      "sha256": "64e65b684a1de1effd410a942166fda173a1726dac63c1e8b419057e0c150d13"
+      "path": "server/agent-events.mjs",
+      "sha256": "ef73bb3178e33baf2e1ad0b9fddcdacbf1086b2897bd45126c9b97890c196f91"
     },
     {
       "path": "server/github.mjs",
@@ -76,7 +80,7 @@
     },
     {
       "path": "server/index.mjs",
-      "sha256": "c1953ef93a8e19c3235822660941dd967f14f372b1ab1cdcc00466e636cc13fb"
+      "sha256": "30154e0f42747a4315abc48663de5877a1a425a91572ff918f24dc51afbe1a0f"
     },
     {
       "path": "server/ingress.mjs",
@@ -84,7 +88,7 @@
     },
     {
       "path": "server/ledger.mjs",
-      "sha256": "e7c6d444a213f59dfeea47aab11361a7a56de359572cb1d4846613a5768cc1ef"
+      "sha256": "0d704ecec8ff75166e9dc7644351f26d2e0cd569be976a2593b9be96a42a1978"
     },
     {
       "path": "server/n8n.mjs",
@@ -100,7 +104,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "sha256": "d41ddc8850a3298f462432901d7adbe46a40232aeec19a8accf0c861ccbd6c70"
+      "sha256": "c9692fdeebcbd762e416d11a38d1e2beb791d63374cebb424efb56e1404dce97"
     },
     {
       "path": "src/data/projects.ts",
@@ -108,11 +112,11 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "3e36b95186ece4dd3bc64c49608a8895b6d7603a1333258bfcd3e7eeb86de3cf"
+      "sha256": "17675910e0fcf67abd26fd0c70cf6745a4b426faa48efb0f9a4c0f5052b2ec79"
     },
     {
       "path": "src/styles.css",
-      "sha256": "5d0c462de07672aecae528512ca5496ac18e964b831a7c543e760e4983ca17ad"
+      "sha256": "e14546bc6fa6f13eaced9d8325625153b5d93c83ec096cd1c34e3c877b5a50fd"
     },
     {
       "path": "tests/agent-events.test.mjs",
@@ -120,7 +124,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "sha256": "25210215121675630598b8c598e7d38f143d93969980499de68c4e2b9ad04e2a"
+      "sha256": "b386a7dde083ed0981315cfa91d14637261bc77d44aa1c75455afcae541ca740"
     },
     {
       "path": "tests/github.test.mjs",
@@ -136,7 +140,7 @@
     },
     {
       "path": "tests/ledger.test.mjs",
-      "sha256": "659439a8a5459c4119a45f801c99295b77deb39dc6d4f13ca6eb9c3f77a85613"
+      "sha256": "c8581c63f8c984fca61da8cb55c2799321386857e9d3a65a7ba50e4b55219592"
     },
     {
       "path": "tests/n8n.test.mjs",
@@ -167,84 +171,8 @@
       "sha256": "ae2cbe1493ccac1e22d9f9f1d8905005e018f87a14ed06d0b40a976f10a49cae"
     },
     {
-      "path": "vendor/design-system/packages/components/dist/components.iife.js",
-      "sha256": "b2e16606d3c581fbd316a1cfe4e3bf58770b081cd83dfd19c9ccae2ee712afda"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-alert.d.ts",
-      "sha256": "a73484d04366b890c0d5f0876b70c578a5073921e82f7e8c7ddf45b1b022aa94"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-alert.js",
-      "sha256": "b05858ba0a51db199c2bd63c03b0ef204a1204fd0194c5e33cfddc0b3ae4c099"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-badge.d.ts",
-      "sha256": "9ea5c64d6db84be38b7fc8b3fc54ce5b261e5beaad0ad30403a7ee677b1c6ff8"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-badge.js",
-      "sha256": "b93a09666654b5238cdaecf818681ca3cf215b999aa1960b22e7350799d40ba7"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-button.d.ts",
-      "sha256": "27a8edb6b76c09ffe9b14708ba488a6b9900d79b52efe0ef7d6c895d756a857a"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-button.js",
-      "sha256": "cac14e63ed9596bf05f89351f07ff186769dbf403e166b0772497c0d60932193"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-card.d.ts",
-      "sha256": "f6bda26d727d83cd2df3b45f3b14fe9bd71c8a7e53835799ac0ac4158c30e939"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-card.js",
-      "sha256": "93de658dd1cdbef7d4926790c1db008e5ded8d0080a2d17c606dfe5705896bd7"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.d.ts",
-      "sha256": "faaeb95c2ca356ff87f13094197265b14fd3553afd48794e90aed15c07246048"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.js",
-      "sha256": "cd8846d19dfedac753cab346002e2fa6a15bf4bfe56c82a96266712245777b58"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-input.d.ts",
-      "sha256": "ea5af429aa990e3ce97767327c86eafe66fff60e282deaa695cc44e888dbbe88"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-input.js",
-      "sha256": "ee46b04c02967bc161816e303ca740f8a1bb7046fc90c8e82f54de03038b98d5"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/index.d.ts",
-      "sha256": "f8d07aeae921017cb5cec723bede944f37c0118a8f7d46a8ce22fbfa36631d96"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/index.js",
-      "sha256": "9ef1011a5d46cb8ff5239418fed6ded64030eeeb359dc63d6eed2748ff813a06"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/styles.css",
-      "sha256": "91918e1259d12978e8b72d3e0b7a0b40ba8850165606d33189617b106c764b38"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/base-element.d.ts",
-      "sha256": "2bc11288753ed17de111eb6ebef27be1337c068e432f9d08174393cb0750d99e"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/base-element.js",
-      "sha256": "d0da211152e6543c8642d60aa9882dec2c78bcadcbb048f5593a9abe52e8b4ff"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/light-slot.d.ts",
-      "sha256": "579b20fc9fc9beea27e16c65986eaefaf315b4e0c9173597083b2b90dbfe53b0"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/light-slot.js",
-      "sha256": "dc868e935f37084d61a766024b31ed47565efac6f171564993d2a38c2a056d13"
+      "path": "vendor/design-system/PROVENANCE.json",
+      "sha256": "fcacbd0418329b0cc7e9f77b60d3ac8a59f48011a8f68327df03cae06d55e177"
     },
     {
       "path": "vendor/design-system/packages/components/package.json",
@@ -299,22 +227,6 @@
       "sha256": "972f793b0e728d875ad80803f7c3a3818f64d3ccf829354196fa311d842c92e9"
     },
     {
-      "path": "vendor/design-system/packages/tokens/dist/index.d.ts",
-      "sha256": "35fd9cf830f540367aa26cbaa3d68e206402dfcdab4a1c87eb40c7b5703db77c"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/index.js",
-      "sha256": "e46401d96b6fe6ec80c03617579664713c45cf587f05b2a522c87c9be0a2ab33"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/tokens.css",
-      "sha256": "c6c36b17f8d390433c664d5a67d2c2b01a238bd71883e3cb33d098aa4abc0ec9"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/tokens.json",
-      "sha256": "efdb5ee1826ffd8a156e3e4f97adf6aa26b4ccd6eb602c34310742113eb21e55"
-    },
-    {
       "path": "vendor/design-system/packages/tokens/package.json",
       "sha256": "366de8c2db8537f6aaba72035171df2da522683bbee96f439c28e545d2dd9187"
     },
@@ -337,10 +249,6 @@
     {
       "path": "vendor/design-system/packages/tokens/src/theme-governance.json",
       "sha256": "9b534199be60a22318909286594646e9a9e3138b550ea1c2a76c63075393c6ad"
-    },
-    {
-      "path": "vendor/design-system/PROVENANCE.json",
-      "sha256": "fcacbd0418329b0cc7e9f77b60d3ac8a59f48011a8f68327df03cae06d55e177"
     },
     {
       "path": "vite.config.ts",

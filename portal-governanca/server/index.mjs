@@ -131,13 +131,13 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events")&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
@@ -147,6 +147,32 @@ const server=http.createServer(async(req,res)=>{
  }
  if(pathname==="/api/v1/records"&&req.method==="GET"){
   try{json(res,200,await ledger.list());}catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_UNAVAILABLE",message:error.message}});}return;
+ }
+ if(pathname==="/api/v1/missions"&&req.method==="GET"){
+  try{json(res,200,await ledger.listMissions({limit:100}));}
+  catch(error){json(res,error.status||503,{error:{code:error.code||"MISSIONS_UNAVAILABLE",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/missions"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
+  let body;
+  try{body=await readJson(req,40_000);}catch(error){json(res,error.status||400,{error:{code:error.code||"INVALID_JSON",message:error.message}});return;}
+  if(!body||typeof body!=="object"||Array.isArray(body)||typeof body.prompt!=="string"){
+   json(res,400,{error:{code:"INVALID_MISSION_PAYLOAD",message:"Informe o prompt completo da missão."}});return;
+  }
+  try{
+   const row=await ledger.append({
+    type:"mission",
+    title:"Missão recebida",
+    summary:"Prompt cadastrado no Portal. O despacho ainda aguarda integração operacional com um executor.",
+    prompt:body.prompt,
+    projectId:typeof body.projectId==="string"?body.projectId:"",
+    repository:typeof body.repository==="string"?body.repository:"",
+    origin:"PortalMissionIntake"
+   });
+   json(res,201,{mission:row});
+  }catch(error){json(res,error.status||503,{error:{code:error.code||"MISSION_SAVE_FAILED",message:error.message}});}
+  return;
  }
  if(pathname==="/api/v1/records"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}

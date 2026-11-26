@@ -75,3 +75,9 @@ export function getAgentEvents(params?:{project?:string;agent?:string;limit?:num
 export type SystemStatus={checkedAt:string;github:{configured:boolean;registrationConfigured:boolean;status:string};homeAssistant:{bridgeConfigured:boolean;status:string};n8n:{configured:boolean;status:string};agentProtocol:{status:string;totalEvents:number;lastEventAt:string|null}};
 export function getSystemStatus():Promise<SystemStatus>{return apiRequest<SystemStatus>("api/v1/system-status");}
 
+export type PortalMission={id:string;createdAt:string;title:string;summary:string;projectId:string|null;repository:string|null;prompt:string;missionStatus:"received"};
+export type MissionsResponse={missions:PortalMission[];total:number;lastUpdated:string|null};
+export function getMissions():Promise<MissionsResponse>{return apiRequest<MissionsResponse>("api/v1/missions");}
+export function createMission(input:{prompt:string;projectId?:string;repository?:string}):Promise<{mission:PortalMission}>{
+ return apiRequest<{mission:PortalMission}>("api/v1/missions",{method:"POST",body:JSON.stringify(input)});
+}

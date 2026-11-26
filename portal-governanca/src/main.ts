@@ -10,6 +10,8 @@ import {
   getPortalRecords,
   appendPortalRecord,
   getAgentEvents,
+  getMissions,
+  createMission,
   getSystemStatus,
   type PortalLedger,
   type PortfolioSnapshot,
@@ -20,6 +22,7 @@ import {
   type N8nOverview,
   type AgentEvent,
   type AgentEventsResponse,
+  type MissionsResponse,
   type SystemStatus
 } from './api/client';
 import './styles.css';
@@ -27,6 +30,7 @@ import './styles.css';
 type View =
   | 'overview'
   | 'agents'
+  | 'missions'
   | 'projects'
   | 'register'
   | 'homologation'
@@ -38,6 +42,7 @@ type View =
 const nav: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
   { id: 'agents', label: 'Centro de comando' },
+  { id: 'missions', label: 'Missões' },
   { id: 'projects', label: 'Projetos' },
   { id: 'register', label: 'Cadastrar projeto' },
   { id: 'homologation', label: 'Homologações' },
@@ -82,6 +87,14 @@ let ledgerMessage: string | null = null;
 let agentSnapshot: AgentEventsResponse | null = null;
 let agentLoading = false;
 let agentError: string | null = null;
+
+let missionsSnapshot: MissionsResponse | null = null;
+let missionsLoading = false;
+let missionsError: string | null = null;
+let missionSubmitting = false;
+let missionDraft = "";
+let missionMessage: string | null = null;
+let missionError: string | null = null;
 
 let statusSnapshot: SystemStatus | null = null;
 let statusLoading = false;
@@ -323,6 +336,36 @@ function overview() {
     '<div class="section-head"><div><h2>Repositórios de origem</h2><p>Resumo da última leitura, sem executar workflows.</p></div></div><div class="repo-list">' +
     all.map(n => repoMarkup({ fullName: n, role: 'Fonte cadastrada' })).join('') +
     '</div></section>'
+  );
+}
+
+function missionsPage() {
+  const missions = missionsSnapshot?.missions ?? [];
+  const rows = missions.map(m => (
+    '<article class="repo-card"><div class="repo-top"><div><strong>' +
+    esc(m.title) +
+    '</strong><small>' + date(m.createdAt) + ' · ID <code>' + esc(m.id) + '</code></small></div>' +
+    '<ds-badge variant="warning">Recebida</ds-badge></div>' +
+    '<p>' + esc(m.summary) + '</p>' +
+    (m.repository ? '<p class="repo-detail">Repositório: <b>' + esc(m.repository) + '</b></p>' : '') +
+    '<details class="repo-details"><summary>Ver prompt cadastrado</summary><pre class="mission-prompt">' + esc(m.prompt) + '</pre></details>' +
+    '<p class="repo-detail"><b>Despacho:</b> ainda não iniciado. A conexão operacional com os executores está em integração.</p></article>'
+  )).join('');
+  return (
+    '<section><div class="intro"><div><h2>Cadastrar missão</h2><p>Cole o prompt de ativação completo. O Portal registra a solicitação e preserva o texto original.</p></div>' +
+    '<div class="header-meta"><ds-badge variant="warning">Despacho em integração</ds-badge><ds-button variant="secondary" size="sm" data-mission-refresh ' + (missionsLoading ? 'disabled' : '') + '>' + (missionsLoading ? 'Consultando…' : 'Atualizar') + '</ds-button></div></div>' +
+    (missionsError ? '<ds-alert variant="warning" title="Falha ao consultar missões">' + esc(missionsError) + '</ds-alert>' : '') +
+    (missionMessage ? '<ds-alert variant="success" title="Missão recebida">' + esc(missionMessage) + '</ds-alert>' : '') +
+    (missionError ? '<ds-alert variant="warning" title="Não foi possível cadastrar">' + esc(missionError) + '</ds-alert>' : '') +
+    '<ds-card><form class="registration-form" data-mission-form>' +
+    '<label for="mission-prompt">Prompt de ativação</label>' +
+    '<textarea id="mission-prompt" name="prompt" rows="12" maxlength="8000" minlength="30" required placeholder="Cole aqui o prompt completo gerado pelo agente.">' + esc(missionDraft) + '</textarea>' +
+    '<small>Máximo de 8.000 caracteres. Não inclua senhas, tokens ou chaves de acesso.</small>' +
+    '<div class="registration-actions"><button type="submit" class="primary-action" ' + (missionSubmitting ? 'disabled' : '') + '>' + (missionSubmitting ? 'Registrando…' : 'Cadastrar missão') + '</button></div>' +
+    '</form></ds-card>' +
+    '<div class="section-head"><div><h2>Missões cadastradas</h2><p>' + (missionsSnapshot?.total ?? 0) + ' solicitações persistidas.</p></div></div>' +
+    (rows ? '<div class="repo-list">' + rows + '</div>' : '<ds-card><p>Nenhuma missão cadastrada.</p></ds-card>') +
+    '</section>'
   );
 }
 
@@ -715,6 +758,50 @@ async function loadRecords() {
   }
 }
 
+async function loadMissions() {
+  if (missionsLoading) return;
+  missionsLoading = true;
+  missionsError = null;
+  render();
+  try {
+    missionsSnapshot = await getMissions();
+  } catch (e) {
+    missionsError = e instanceof Error ? e.message : 'Falha ao consultar missões';
+  } finally {
+    missionsLoading = false;
+    render();
+  }
+}
+
+async function submitMission(form: HTMLFormElement) {
+  if (missionSubmitting) return;
+  const data = new FormData(form);
+  missionDraft = String(data.get('prompt') || '');
+  missionSubmitting = true;
+  missionMessage = null;
+  missionError = null;
+  missionsError = null;
+  render();
+  try {
+    const result = await createMission({ prompt: missionDraft });
+    missionDraft = "";
+    missionMessage = 'Missão ' + result.mission.id.slice(0, 8) + ' recebida. O despacho ainda não foi iniciado.';
+  } catch (e) {
+    missionError = e instanceof Error ? e.message : 'Falha ao cadastrar missão';
+  } finally {
+    missionSubmitting = false;
+    render();
+  }
+  if (missionMessage) {
+    try {
+      missionsSnapshot = await getMissions();
+    } catch (e) {
+      missionsError = e instanceof Error ? e.message : 'Missão recebida, mas não foi possível atualizar a lista.';
+    }
+    render();
+  }
+}
+
 async function loadAgentEvents() {
   if (agentLoading) return;
   agentLoading = true;
@@ -868,6 +955,7 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
 function body() {
   if (view === 'overview') return overview();
   if (view === 'agents') return agentsPage();
+  if (view === 'missions') return missionsPage();
   if (view === 'projects' && selected) return projectDetail(selected);
   if (view === 'projects')
     return (
@@ -926,6 +1014,7 @@ function render() {
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
       if (['homologation', 'evidence', 'decisions'].includes(view) && !ledgerSnapshot && !ledgerLoading && !ledgerError) void loadRecords();
       if (view === 'agents' && !agentSnapshot && !agentLoading && !agentError) void loadAgentEvents();
+      if (view === 'missions' && !missionsSnapshot && !missionsLoading && !missionsError) void loadMissions();
     })
   );
 
@@ -949,6 +1038,13 @@ function render() {
   app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
   app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
   app!.querySelector<HTMLElement>('[data-agent-refresh]')?.addEventListener('click', () => void loadAgentEvents());
+  app!.querySelector<HTMLElement>('[data-mission-refresh]')?.addEventListener('click', () => void loadMissions());
+
+  const missionForm = app!.querySelector<HTMLFormElement>('[data-mission-form]');
+  missionForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    void submitMission(missionForm);
+  });
 
   const ledgerForm = app!.querySelector<HTMLFormElement>('[data-ledger-form]');
   ledgerForm?.addEventListener('submit', event => {

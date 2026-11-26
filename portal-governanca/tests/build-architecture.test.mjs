@@ -61,4 +61,21 @@ describe("build autossuficiente do add-on",()=>{
   expect(docker).toContain("COPY --from=frontend-build");
   expect(docker).not.toContain("COPY dist/");
  });
+ it("recebe e persiste prompts de ativação sem simular despacho",()=>{
+  const server=fs.readFileSync(path.join(root,"server/index.mjs"),"utf8");
+  const ledger=fs.readFileSync(path.join(root,"server/ledger.mjs"),"utf8");
+  const main=fs.readFileSync(path.join(root,"src/main.ts"),"utf8");
+  const client=fs.readFileSync(path.join(root,"src/api/client.ts"),"utf8");
+  expect(server).toContain("/api/v1/missions");
+  expect(server).toContain("ledger.listMissions");
+  expect(ledger).toContain('type==="mission"');
+  expect(ledger).toContain("SECRET_PATTERN_REJECTED");
+  expect(main).toContain("data-mission-form");
+  expect(main).toContain("Despacho em integração");
+  expect(main).toContain("missionDraft = String(data.get('prompt') || '')");
+  expect(main).toContain("esc(missionDraft)");
+  expect(main).toContain("if (missionMessage)");
+  expect(client).toContain("api/v1/missions");
+ });
+
 });
