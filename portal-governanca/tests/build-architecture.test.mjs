@@ -9,11 +9,13 @@ describe("build autossuficiente do add-on",()=>{
   expect(pkg.dependencies["@mmcromero/ds-tokens"]).toBe("file:vendor/design-system/packages/tokens");
   const provenance=JSON.parse(fs.readFileSync(path.join(root,"vendor/design-system/PROVENANCE.json"),"utf8"));
   const lock=JSON.parse(fs.readFileSync(path.join(root,"config/design-system.lock.json"),"utf8"));
-  expect(provenance.source_commit).toBe(lock.sha);\n  expect(provenance.files).toHaveLength(19);
+  expect(provenance.source_commit).toBe(lock.sha);
+  expect(provenance.files).toHaveLength(19);
   expect(provenance.source_repository).toBe("mmcromero/design-system");
  });
  it("Dockerfile executa npm ci, testes e build antes da imagem runtime",()=>{
-  const dockerPath=fs.existsSync(path.join(root,"Dockerfile"))?path.join(root,"Dockerfile"):path.join(root,"addon/Dockerfile");\n  const docker=fs.readFileSync(dockerPath,"utf8");
+  const dockerPath=fs.existsSync(path.join(root,"Dockerfile"))?path.join(root,"Dockerfile"):path.join(root,"addon/Dockerfile");
+  const docker=fs.readFileSync(dockerPath,"utf8");
   expect(docker).toContain("FROM node:22-alpine AS frontend-build");
   expect(docker).toContain("RUN npm ci");
   expect(docker).toContain("RUN npm run build:design-system && npm test && npm run build:portal");
