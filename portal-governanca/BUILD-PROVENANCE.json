@@ -3,7 +3,7 @@
   "addon_version": "0.1.0-dev.13",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "834448d6b2e42be53ebc7bb74ee48ca99006f01c",
+  "source_commit": "15fe52f7200a5a652252af2bc5d76286491de102",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_snapshot": "vendor/design-system",
@@ -25,7 +25,7 @@
   "source_files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "a3fab856d67c673597db8dcf89a556240839c56c"
+      "git_blob_sha": "07323d9191ed5f51b774826b66108609d8952470"
     },
     {
       "path": "config.yaml",
@@ -41,7 +41,7 @@
     },
     {
       "path": "Dockerfile",
-      "git_blob_sha": "3b8afa2c747ca6e2559b7d3729c618dc824f6afe"
+      "git_blob_sha": "4cbc0d6b822558308ba654e3b0cdf1458fbe2b31"
     },
     {
       "path": "icon.png",
@@ -212,19 +212,19 @@
       "git_blob_sha": "f09a308a78b0379e35f1af8245548f74e2981002"
     }
   ],
-  "status": "Candidata dev.13 publicada no catálogo; build ARM64 do Supervisor e instalação pendentes.",
+  "status": "Candidata dev.13 publicada; primeira tentativa de build ARM64 identificou falta de COPY dos assets no estágio de testes; correção publicada, aguardando nova execução.",
   "build_evidence": {
     "supervisor_app_slug": "45c28620_portal_governanca",
     "installed_version": "0.1.0-dev.12",
     "candidate_version": "0.1.0-dev.13",
     "architecture": "aarch64",
-    "npm_ci": "PENDING",
-    "design_system_build": "PENDING",
-    "portal_tests": "PENDING",
-    "typescript_vite": "PENDING",
-    "supervisor_image_build": "PENDING",
+    "npm_ci": "PASS - 88 packages installed",
+    "design_system_build": "PASS",
+    "portal_tests": "FAIL - 14/15; ENOENT /build/addon/icon.png",
+    "typescript_vite": "NOT_REACHED",
+    "supervisor_image_build": "FAILED - Docker test stage",
     "app_state": "dev.12 started",
-    "update_available": "PENDING",
+    "update_available": true,
     "browser_ingress_homologation": "PENDING"
   }
 }

@@ -5,6 +5,7 @@
 - Reorganiza os quatro indicadores da visão geral em blocos verticais com espaçamento e hierarquia tipográfica próprios.
 - Inclui os assets públicos da interface no pacote e no estágio de build do Supervisor.
 - Corrige a quebra de linha literal acidental no empacotador que impedia sua execução.
+- Inclui icon.png e logo.png no estágio de testes do Docker, garantindo que o teste de integridade dos assets execute no Supervisor.
 
 ## 0.1.0-dev.12 — 25/11/2026
 
