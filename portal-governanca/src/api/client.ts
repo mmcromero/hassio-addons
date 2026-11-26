@@ -43,3 +43,15 @@ export type SupervisorInventory={source:string;checkedAt:string;total:number;upd
 export function getSupervisorInventory(refresh=false):Promise<SupervisorInventory>{
  return apiRequest<SupervisorInventory>("api/v1/home-assistant/apps"+(refresh?"?refresh=1":""));
 }
+
+export type N8nWorkflow={id:string;name:string;active:boolean|null;createdAt:string|null;updatedAt:string|null;tags:string[];projectId:string|null};
+export type N8nExecution={id:string;workflowId:string;workflowName:string|null;status:string;mode:string;startedAt:string|null;stoppedAt:string|null;waitTill:string|null};
+export type N8nOverview={status:"ok"|"not_configured"|"unavailable";source:string;checkedAt:string;workflowCount?:number;activeCount?:number;inactiveCount?:number;executionCount?:number;failedExecutions?:number;workflows:N8nWorkflow[];executions:N8nExecution[];truncated?:{workflows:boolean;executions:boolean};cache?:"HIT"|"MISS";error?:{code:string;message:string}};
+export async function getN8nOverview(refresh=false):Promise<N8nOverview>{
+ const endpoint=new URL("api/v1/n8n/overview",document.baseURI);
+ if(refresh)endpoint.searchParams.set("refresh","1");
+ const response=await fetch(endpoint,{headers:{Accept:"application/json"},cache:"no-store"});
+ const data=await response.json();
+ if(!response.ok)throw Object.assign(new Error(data.error?.message||"HTTP "+response.status),{code:data.error?.code,status:response.status});
+ return data as N8nOverview;
+}

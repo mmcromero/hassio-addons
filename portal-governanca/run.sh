@@ -7,6 +7,8 @@ if [ ! -r "$OPTIONS_FILE" ]; then
 fi
 GITHUB_TOKEN="$(jq -r '.github_token // empty' "$OPTIONS_FILE")"
 GITHUB_WRITE_TOKEN="$(jq -r '.github_write_token // empty' "$OPTIONS_FILE")"
+N8N_BASE_URL="$(jq -r '.n8n_base_url // empty' "$OPTIONS_FILE")"
+N8N_API_KEY="$(jq -r '.n8n_api_key // empty' "$OPTIONS_FILE")"
 SUPERVISOR_READ_TOKEN="${SUPERVISOR_TOKEN:-}"
 # A credencial do Supervisor é entregue somente ao bridge dedicado.
 # O papel "default" autoriza leitura de status/info, sem privilégios manager.
@@ -32,4 +34,6 @@ exec su-exec portal:portal env -i \
   HA_BRIDGE_URL="http://127.0.0.1:8098" \
   GITHUB_TOKEN="$GITHUB_TOKEN" \
   GITHUB_WRITE_TOKEN="$GITHUB_WRITE_TOKEN" \
+  N8N_BASE_URL="$N8N_BASE_URL" \
+  N8N_API_KEY="$N8N_API_KEY" \
   node /app/server/index.mjs

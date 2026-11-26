@@ -38,6 +38,19 @@ describe("build autossuficiente do add-on",()=>{
   expect(fs.existsSync(path.join(root,"server/supervisor-bridge.mjs"))).toBe(true);
   expect(fs.existsSync(path.join(root,"server/supervisor-data.mjs"))).toBe(true);
  });
+ it("inclui conector n8n no runtime e mantém a credencial fora do frontend",()=>{
+  const run=fs.readFileSync(path.join(root,"addon/run.sh"),"utf8");
+  const server=fs.readFileSync(path.join(root,"server/index.mjs"),"utf8");
+  expect(run).toContain("N8N_API_KEY");
+  expect(run).toContain("N8N_BASE_URL");
+  expect(server).toContain("createN8nClient");
+  expect(server).toContain("/api/v1/n8n/overview");
+  expect(fs.existsSync(path.join(root,"server/n8n.mjs"))).toBe(true);
+  expect(server).toContain("N8N_API_KEY");
+  const client=fs.readFileSync(path.join(root,"src/api/client.ts"),"utf8");
+  expect(client).not.toContain("N8N_API_KEY");
+  expect(client).not.toContain("X-N8N-API-KEY");
+ });
  it("Dockerfile executa npm ci, testes e build antes da imagem runtime",()=>{
   const dockerPath=fs.existsSync(path.join(root,"Dockerfile"))?path.join(root,"Dockerfile"):path.join(root,"addon/Dockerfile");
   const docker=fs.readFileSync(dockerPath,"utf8");

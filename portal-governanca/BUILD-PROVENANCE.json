@@ -1,20 +1,20 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.20",
+  "addon_version": "0.1.0-dev.21",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "bf84743e788b5eff977d599bf04b120e8f698b5a",
+  "source_commit": "8e6fe0118a67dd0574507a975de44522deb04905",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "distribution_method": "Direct catalog publication; Home Assistant Supervisor builds ARM64 on the Raspberry Pi",
+  "distribution_method": "Direct export of approved add-on source files to hassio-addons/main/portal-governanca; Supervisor performs ARM64 build on the Raspberry Pi",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "47352ce9c5d18a79b446842bff8eb4ec3fff6bdf"
+      "git_blob_sha": "cfc5cb6376ec2b05c63dda6c2636f2d0d1a42b7a"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "214c5a8e0fe6c383bb78e3d08cb957c497119239"
+      "git_blob_sha": "856752f6036ca4f6a613574868e888c8251b8925"
     },
     {
       "path": "config/design-system.lock.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "812c925ffe0a4629b765b92319fdd19d9741d9cd"
+      "git_blob_sha": "1c87a6f4d54a129dc6e7fd83e1c65aa1fb3dbd8d"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "4eda8e41cd118352d8584d0ac944a7bf0037c417"
+      "git_blob_sha": "53521cb241592775cc7e86fc1d92611ff5ff691d"
     },
     {
       "path": "public/brand-icon.png",
@@ -62,7 +62,7 @@
     },
     {
       "path": "run.sh",
-      "git_blob_sha": "2c68f033bea208884dcf2dd0f65024a3b5403cb2"
+      "git_blob_sha": "2895a206de64813b4ccbf4b0d5daff0ee15879bc"
     },
     {
       "path": "server/github.mjs",
@@ -70,11 +70,15 @@
     },
     {
       "path": "server/index.mjs",
-      "git_blob_sha": "2fa47b516e037ba27e576f12ac0552710d9a4819"
+      "git_blob_sha": "01f3dac2f607d343af881b981ff408e5e906f778"
     },
     {
       "path": "server/ingress.mjs",
       "git_blob_sha": "5d709144b9250ed6e8fa4dcef54f65262db3a569"
+    },
+    {
+      "path": "server/n8n.mjs",
+      "git_blob_sha": "dadbfc112ffe17809262dcd427d2a8b32c72b33a"
     },
     {
       "path": "server/supervisor-bridge.mjs",
@@ -86,7 +90,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "git_blob_sha": "878a96939dc86066c0aae5954da03e54cb154abe"
+      "git_blob_sha": "80b1005a00203a6670c350567c60afe2f44bc55f"
     },
     {
       "path": "src/data/projects.ts",
@@ -94,7 +98,7 @@
     },
     {
       "path": "src/main.ts",
-      "git_blob_sha": "c033b7bb15388b4502f4ff213fc05e7146dc33f9"
+      "git_blob_sha": "fc2e21eaccd7bbb1a74f45437ce7921a58f91f5b"
     },
     {
       "path": "src/styles.css",
@@ -102,7 +106,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "git_blob_sha": "dbf44450815bb3b51babf401ccee1a4ecf14bafc"
+      "git_blob_sha": "7aabf600eda3ce09b75f1d16eb544359a0089f1c"
     },
     {
       "path": "tests/github.test.mjs",
@@ -115,6 +119,10 @@
     {
       "path": "tests/layout.test.mjs",
       "git_blob_sha": "4974e6ec050ea565f961c3619d56cf36f559549c"
+    },
+    {
+      "path": "tests/n8n.test.mjs",
+      "git_blob_sha": "7a87478b9218986be063d4f0e8eaf56926f60ede"
     },
     {
       "path": "tests/portfolio.test.ts",

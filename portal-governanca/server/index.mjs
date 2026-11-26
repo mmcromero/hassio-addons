@@ -4,6 +4,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 import {timingSafeEqual} from "node:crypto";
 import {createGitHubClient} from "./github.mjs";
+import {createN8nClient} from "./n8n.mjs";
 import {getIngressBasePath,isIngressPeer,isLoopbackPeer,stripIngressPath} from "./ingress.mjs";
 
 if(process.env.NODE_ENV==="development")await import("dotenv/config");
@@ -17,6 +18,7 @@ const registry=JSON.parse(await readFile(path.join(ROOT,"config/portfolio.json")
 const haConfig=JSON.parse(await readFile(path.join(ROOT,"config/home-assistant-addons.json"),"utf8"));
 const haMappings=new Map((haConfig.mappings||[]).map(item=>[item.slug,item]));
 const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:process.env.GITHUB_WRITE_TOKEN||""});
+const n8n=createN8nClient({baseUrl:process.env.N8N_BASE_URL||"",apiKey:process.env.N8N_API_KEY||""});
 const haBridgeUrl=process.env.HA_BRIDGE_URL||"";
 let haCache=null;
 const HA_CACHE_MS=30_000;
@@ -137,6 +139,12 @@ const server=http.createServer(async(req,res)=>{
  if(pathname==="/api/v1/home-assistant/apps"&&req.method==="GET"){
   try{json(res,200,await getHomeAssistantApps(requestUrl.searchParams.get("refresh")==="1"));}
   catch(error){json(res,error.status||503,{error:{code:error.code||"SUPERVISOR_UNAVAILABLE",message:error.message},source:"Home Assistant Supervisor",checkedAt:new Date().toISOString()});}
+  return;
+ }
+ if(pathname==="/api/v1/n8n/overview"&&req.method==="GET"){
+  if(!n8n.configured){json(res,200,{status:"not_configured",source:"n8n Public API",checkedAt:new Date().toISOString(),workflows:[],executions:[]});return;}
+  try{json(res,200,{status:"ok",...await n8n.getOverview(requestUrl.searchParams.get("refresh")==="1")});}
+  catch(error){json(res,error.status||503,{status:"unavailable",error:{code:error.code||"N8N_UNAVAILABLE",message:error.message},source:"n8n Public API",checkedAt:new Date().toISOString()});}
   return;
  }
  if(pathname==="/api/health"){

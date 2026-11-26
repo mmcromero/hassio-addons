@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.21 — 26/11/2026
+- Inicia a Fase 4 com conector n8n somente leitura para workflows e metadados de execuções.
+- Adiciona opções protegidas independentes para URL base e API key n8n; nenhuma credencial é enviada ao frontend.
+- Acrescenta a seção Automações n8n com estados, contagens e últimas execuções sem dados internos.
+
+
 ## 0.1.0-dev.20 — 26/11/2026
 - Corrige a integração Supervisor: o papel `default` não autoriza `/v2/apps/status` (403 confirmado em produção).
 - Substitui a listagem global por consultas GET allowlisted `/addons/{slug}/info`, compatíveis com papel `default`, usando lista declarativa de slugs conhecidos.
