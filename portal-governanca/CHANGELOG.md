@@ -1,5 +1,9 @@
 # Changelog — Portal de Governança (add-on)
 
+## 0.1.0-dev.12 — 25/11/2026
+
+- Corrige tipagem do snapshot opcional e do getter de projetos identificados; TypeScript passa a validar o estado vazio e navegação dinâmica.
+
 ## 0.1.0-dev.11 — 25/11/2026
 
 - Inclui Dockerfile e entrypoint no contexto de teste do estágio de build para executar as verificações de arquitetura e isolamento.
