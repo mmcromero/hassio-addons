@@ -1,20 +1,20 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.23",
+  "addon_version": "0.1.0-dev.24",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "c0f7fc60822d590799bc98208c86a85ca96b1835",
+  "source_commit": "7f6648f44c3630bace1dec6ad6000ebcaa14d6dc",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "distribution_method": "Direct export from mmcromero/portal-governanca:desenvolvimento; Supervisor performs the ARM64 build and runs npm ci, tests and Vite build on the Raspberry Pi",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "3044b49c629d522feec411284737115d65ff0f3e"
+      "git_blob_sha": "55100064643da83ba12bdce527510e6bbba0c507"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "770eb586857fe62d58be2a7010fb7fe4ebecfb6f"
+      "git_blob_sha": "fd5c43fdbfc7150560e197516ae9567191953df8"
     },
     {
       "path": "config/design-system.lock.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "22058c58147266a2f2c4347e1ce4e0c521649feb"
+      "git_blob_sha": "7170a342cbb0ecdeb6819ba0c20f60f573837c2c"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "44378876dc92275a05ba119e5dae747420f7d3b9"
+      "git_blob_sha": "4d8d99025049eb9a78ce97f929a4d662e092453d"
     },
     {
       "path": "public/brand-icon.png",
@@ -58,7 +58,7 @@
     },
     {
       "path": "README.md",
-      "git_blob_sha": "cb0aa89bc1c393f49efcd4fc337e6dbdc2d9b545"
+      "git_blob_sha": "34e3f7061ae3ab511ae828008572f69d3dd4d5a4"
     },
     {
       "path": "run.sh",
@@ -78,7 +78,7 @@
     },
     {
       "path": "server/ledger.mjs",
-      "git_blob_sha": "56fb05bcca2adfa4f924e512a7502be91c20800c"
+      "git_blob_sha": "f559d2a6972b64a1d63a8826816ced2aef93b8c8"
     },
     {
       "path": "server/n8n.mjs",

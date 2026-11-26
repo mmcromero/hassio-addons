@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.24 — 26/11/2026
+- Corrige as flags de abertura do ledger; permissões de arquivo passam como modo, sem O_EXCL acidental.
+- Corrige os dois casos de teste que falharam no build ARM64 dev.23.
+
+
 ## 0.1.0-dev.23 — 26/11/2026
 - Entrega o módulo de homologações, evidências e decisões com histórico append-only e integridade SHA-256.
 - Inclui API e interface do ledger; a suíte completa será executada no build ARM64 do Supervisor.

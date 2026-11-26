@@ -16,4 +16,4 @@ Add-on independente para Home Assistant OS, acessado exclusivamente pelo Ingress
 
 ## Instalação e homologação
 
-Versão publicada candidata: `0.1.0-dev.23`. A atualização no Home Assistant OS aarch64 (Raspberry Pi 4) será confirmada pelo Supervisor após a publicação. A homologação visual/funcional pelo botão **Abrir interface** permanece como verificação separada. O endereço de Ingress é dinâmico; não use rotas inventadas como `/app/<slug>`.
+Versão publicada candidata: `0.1.0-dev.24`. A atualização no Home Assistant OS aarch64 (Raspberry Pi 4) será confirmada pelo Supervisor após a publicação. A homologação visual/funcional pelo botão **Abrir interface** permanece como verificação separada. O endereço de Ingress é dinâmico; não use rotas inventadas como `/app/<slug>`.
