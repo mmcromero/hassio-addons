@@ -1,4 +1,7 @@
-# Changelog
+# 0.1.0-dev.32 — 26/11/2026
+- Paraleliza a descoberta dos marcadores de projetos no GitHub, mantendo limite global de quatro requisições simultâneas.
+- Preserva agregação determinística e registra conflitos de metadados sem interromper a descoberta.
+- Acrescenta teste de concorrência para comprovar paralelismo e teto de quatro requisições.
 
 ## 0.1.0-dev.27 — 26/11/2026
 - Implementa a Fase 6B: Protocolo de Comunicação de Agentes e Portal como Centro de Comando.
