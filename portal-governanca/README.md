@@ -1,31 +1,18 @@
 # Portal de Governança — add-on Home Assistant
 
-Painel central de portfólio, evidências e homologações do ecossistema mmcromero. Interface web acessada pelo Home Assistant Ingress.
-
-## Estado da candidata
-
-- Versão: `0.1.0-dev.6`
-- Arquitetura: `aarch64` (Raspberry Pi 4)
-- Ingress: porta interna `8099`; sem portas publicadas no host.
-- Identidade: `Fábrica de Ideias - Portal de Governança`.
-- Ícone e logotipo: `icon.png` e `logo.png` incluídos na distribuição.
+Add-on independente para Home Assistant OS, acessado exclusivamente pelo Ingress. A pasta é um artefato de distribuição gerado pelo repositório-fonte portal-governanca; não é uma segunda fonte de código.
 
 ## Segurança
 
-- Ingress obrigatório, painel restrito a administradores.
-- O servidor aceita somente conexões do proxy Supervisor em `172.30.32.2` e exige o cabeçalho `X-Ingress-Path`.
-- GitHub é opcional; token Fine-grained somente leitura é informado nas opções do app.
-- Não solicita API do Supervisor/Home Assistant, Docker API, host network ou permissões privilegiadas.
+- Somente aarch64 nesta candidata, alvo Raspberry Pi 4.
+- Ingress obrigatório, painel restrito a administradores e sem portas publicadas.
+- O servidor aceita somente conexões do proxy Supervisor em 172.30.32.2 e exige o cabeçalho X-Ingress-Path válido.
+- Sem login Basic duplicado no Ingress.
+- GitHub é opcional; token Fine-grained somente leitura é informado nas opções do add-on e permanece no servidor.
+- Não solicita hassio_api, homeassistant_api, Docker API, host network ou permissões privilegiadas.
 - Nenhuma rota para escrita GitHub, Supervisor ou n8n.
+- O health check local em /healthz não retorna configuração nem credenciais.
 
-## Acesso
+## Instalação e homologação
 
-Abra o app pelo botão **Abrir interface** na página do app no Home Assistant. O endereço de Ingress é dinâmico e não deve ser substituído por uma rota inventada como `/app/<slug>`.
-
-## Proveniência
-
-A fonte canônica é `mmcromero/portal-governanca`, branch `desenvolvimento`. O pacote deste catálogo é somente a distribuição autorizada; não é uma segunda fonte de código.
-
-## Ingress — resultado da correção
-
-A versão `0.1.0-dev.6` foi instalada no Home Assistant e o proprietário confirmou que a interface abriu pelo botão oficial **Abrir interface**. O manifesto omite `ingress_entry` para a entrada na raiz. O servidor aceita caminho com prefixo dinâmico preservado ou removido pelo proxy, sempre condicionado à validação do peer confiável e do cabeçalho `X-Ingress-Path`. A abertura inicial foi confirmada; a homologação detalhada de assets, APIs e navegação deve ser registrada após execução dos respectivos testes.
+Distribuição experimental 0.1.0-dev.5 no catálogo central. Abra pelo botão **Abrir interface** na página do app no Home Assistant. O endereço de Ingress é dinâmico; não acesse por uma rota inventada como `/app/<slug>`. A homologação visual e funcional permanece pendente.
