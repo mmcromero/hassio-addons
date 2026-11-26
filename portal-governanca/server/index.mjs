@@ -15,7 +15,7 @@ const production=process.env.NODE_ENV!=="development";
 const PORT=Number(process.env.PORT||(ingressMode?8099:production?8080:4174));
 const HOST=process.env.PORTAL_HOST||(ingressMode?"0.0.0.0":"127.0.0.1");
 const registry=JSON.parse(await readFile(path.join(ROOT,"config/portfolio.json"),"utf8"));
-const github=createGitHubClient({token:process.env.GITHUB_TOKEN||""});
+const github=createGitHubClient({token:process.env.GITHUB_TOKEN||"",writeToken:process.env.GITHUB_WRITE_TOKEN||""});
 
 if(production&&!ingressMode&&(!process.env.GITHUB_TOKEN||!process.env.PORTAL_BASIC_USER||!process.env.PORTAL_BASIC_PASSWORD))
  throw new Error("Produção standalone exige GITHUB_TOKEN, PORTAL_BASIC_USER e PORTAL_BASIC_PASSWORD.");
@@ -34,6 +34,16 @@ function authorized(req){
   const decoded=Buffer.from(header.slice(6),"base64").toString("utf8"),i=decoded.indexOf(":");
   return i>=0&&equal(decoded.slice(0,i),process.env.PORTAL_BASIC_USER)&&equal(decoded.slice(i+1),process.env.PORTAL_BASIC_PASSWORD);
  }catch{return false;}
+}
+function sameOrigin(req){
+ const origin=req.headers.origin,host=req.headers.host;
+ if(typeof origin!=="string"||typeof host!=="string")return false;
+ try{return new URL(origin).host===host;}catch{return false;}
+}
+async function readJson(req,maxBytes=12_000){
+ const chunks=[];let size=0;
+ for await(const chunk of req){size+=chunk.length;if(size>maxBytes)throw Object.assign(new Error("Corpo da solicitação excede o limite permitido."),{status:413,code:"REQUEST_TOO_LARGE"});chunks.push(chunk);}
+ try{return JSON.parse(Buffer.concat(chunks).toString("utf8"));}catch{throw Object.assign(new Error("JSON inválido."),{status:400,code:"INVALID_JSON"});}
 }
 function securityHeaders(extra={}){
  return {
@@ -90,17 +100,28 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"){text(res,405,"Method not allowed",{Allow:"GET, HEAD"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&rawPath.endsWith("/api/v1/projects/register"))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
 
- if(pathname.startsWith("/api/")&&req.method!=="GET"){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Somente GET está disponível nesta fase."}},{Allow:"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!(pathname==="/api/v1/projects/register"&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"?"GET, POST":"GET"});return;
+ }
+ if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
+  try{const result=await github.registerProject(await readJson(req));json(res,201,result);}
+  catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_REGISTRATION_FAILED",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/repositories"&&req.method==="GET"){
+  try{json(res,200,await github.getRepositoryCatalog());}
+  catch(error){json(res,error.status||502,{error:{code:error.code||"REPOSITORY_CATALOG_UNAVAILABLE",message:error.message}});}
+  return;
  }
  if(pathname==="/api/health"){
-  json(res,200,{status:"ok",checkedAt:new Date().toISOString(),github:{configured:Boolean(process.env.GITHUB_TOKEN),access:"read-only"},mode:ingressMode?"home-assistant-ingress":production?"production":"development"});return;
+  json(res,200,{status:"ok",checkedAt:new Date().toISOString(),github:{configured:Boolean(process.env.GITHUB_TOKEN),access:"read-only",registrationConfigured:Boolean(process.env.GITHUB_WRITE_TOKEN)},mode:ingressMode?"home-assistant-ingress":production?"production":"development"});return;
  }
  if(pathname==="/api/v1/portfolio"){
   try{json(res,200,await github.getPortfolio(registry.projects,{force:requestUrl.searchParams.get("refresh")==="1"}));}

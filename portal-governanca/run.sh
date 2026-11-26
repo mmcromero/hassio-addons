@@ -8,6 +8,7 @@ if [ ! -r "$OPTIONS_FILE" ]; then
 fi
 
 GITHUB_TOKEN="$(jq -r '.github_token // empty' "$OPTIONS_FILE")"
+GITHUB_WRITE_TOKEN="$(jq -r '.github_write_token // empty' "$OPTIONS_FILE")"
 
 # Home Assistant injects these credentials into every app, including the legacy alias.
 # Phase 2 does not use the Supervisor API: remove both token names and its endpoint.
@@ -23,4 +24,5 @@ exec su-exec portal:portal env -i \
   PORT=8099 \
   TZ="${TZ:-UTC}" \
   GITHUB_TOKEN="$GITHUB_TOKEN" \
+  GITHUB_WRITE_TOKEN="$GITHUB_WRITE_TOKEN" \
   node /app/server/index.mjs

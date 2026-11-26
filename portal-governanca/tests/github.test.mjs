@@ -42,3 +42,39 @@ describe("GitHub auto-discovery read-only client",()=>{
   await client.getPortfolio();expect(fetchImpl.mock.calls.length).toBe(n);await client.getPortfolio([],{force:true});expect(fetchImpl.mock.calls.length).toBeGreaterThan(n);
  });
 });
+
+describe("cadastro controlado de marcadores",()=>{
+ it("não permite escrita sem credencial separada",async()=>{
+  const client=createGitHubClient({token:"read-token",fetchImpl:vi.fn()});
+  await expect(client.registerProject({repositoryFullName:"mmcromero/demo",project:{id:"demo",name:"Demo",domain:"Produto",description:"Projeto demo"}})).rejects.toMatchObject({code:"GITHUB_WRITE_NOT_CONFIGURED",status:503});
+ });
+ it("cria marcador somente com token de escrita e na branch padrão",async()=>{
+  const calls=[];
+  const fetchImpl=vi.fn(async(input,init)=>{
+   const u=new URL(String(input));calls.push({path:u.pathname,method:init.method,headers:init.headers,body:init.body});
+   if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/demo",owner:{login:"mmcromero"},default_branch:"main",archived:false}]);
+   if(u.pathname==="/repos/mmcromero/demo/contents/.portal-governanca.json"&&init.method==="GET")return response({message:"Not Found"},404);
+   if(u.pathname==="/repos/mmcromero/demo/contents/.portal-governanca.json"&&init.method==="PUT")return response({content:{path:".portal-governanca.json"}});
+   return response({message:"Not Found"},404);
+  });
+  const client=createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl});
+  const result=await client.registerProject({repositoryFullName:"mmcromero/demo",project:{id:"demo",name:"Demo",domain:"Produto",description:"Projeto demo"}});
+  const write=calls.find(c=>c.method==="PUT");
+  expect(result).toMatchObject({success:true,repository:"mmcromero/demo",branch:"main",marker:".portal-governanca.json"});
+  expect(write.headers.Authorization).toBe("Bearer write-token");
+  const body=JSON.parse(write.body),manifest=JSON.parse(Buffer.from(body.content,"base64").toString("utf8"));
+  expect(body.branch).toBe("main");expect(manifest.project.id).toBe("demo");
+  expect(calls.filter(c=>c.method==="GET").every(c=>c.headers.Authorization==="Bearer read-token")).toBe(true);
+ });
+ it("recusa sobrescrever marcador existente",async()=>{
+  const fetchImpl=vi.fn(async(input,init)=>{const u=new URL(String(input));if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/demo",owner:{login:"mmcromero"},default_branch:"main"}]);if(u.pathname.endsWith("/contents/.portal-governanca.json"))return response({type:"file",content:Buffer.from("{}").toString("base64")});return response([],200);});
+  const client=createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl});
+  await expect(client.registerProject({repositoryFullName:"mmcromero/demo",project:{id:"demo",name:"Demo",domain:"Produto",description:"Projeto demo"}})).rejects.toMatchObject({code:"GITHUB_MARKER_EXISTS",status:409});
+  expect(fetchImpl.mock.calls.some(([,init])=>init.method==="PUT")).toBe(false);
+ });
+ it("rejeita repositório fora do owner autorizado",async()=>{
+  const fetchImpl=vi.fn(async(input)=>{const u=new URL(String(input));if(u.pathname==="/user/repos")return response([]);return response({message:"Not Found"},404);});
+  const client=createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl});
+  await expect(client.registerProject({repositoryFullName:"other/demo",project:{id:"demo",name:"Demo",domain:"Produto",description:"Projeto demo"}})).rejects.toMatchObject({code:"GITHUB_INVALID_REGISTRATION",status:400});
+ });
+});

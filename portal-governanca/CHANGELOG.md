@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.15 — 26/11/2026
+- Adiciona cadastro controlado de projetos com criação de `.portal-governanca.json` na branch padrão selecionada.
+- Mantém o token de leitura e adiciona credencial de escrita opcional e separada, sem ampliar permissões automaticamente.
+- Restringe POST ao Ingress confiável e à origem same-origin; recusa marcador existente e valida consistência do projeto.
+- Inclui tela de cadastro, inventário de repositórios e testes de segurança/integração.
+
+
 ## 0.1.0-dev.14 — 26/11/2026
 - Mantém o cabeçalho das seções alinhado ao topo entre navegações e posiciona o rodapé no fim da área útil em páginas curtas, sem centralização vertical do workspace.
 

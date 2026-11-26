@@ -1,5 +1,5 @@
 name: "Fábrica de Ideias - Portal de Governança"
-version: "0.1.0-dev.14"
+version: "0.1.0-dev.15"
 slug: portal_governanca
 description: "Painel central de portfólio, evidências e homologações do ecossistema mmcromero"
 url: "https://github.com/mmcromero/portal-governanca"
@@ -16,5 +16,7 @@ panel_title: "Fábrica de Ideias - Portal de Governança"
 panel_icon: "mdi:shield-check"
 options:
   github_token: ""
+  github_write_token: ""
 schema:
   github_token: "password?"
+  github_write_token: "password?"

@@ -1,13 +1,14 @@
 import '@mmcromero/ds-tokens/css';
 import '@mmcromero/ds-components/styles.css';
 import '@mmcromero/ds-components';
-import {getPortfolio,type PortfolioSnapshot,type RepoSnapshot,type Project} from './api/client';
+import {getPortfolio,getRepositoryCatalog,registerProject,type PortfolioSnapshot,type RepoSnapshot,type Project,type RepositoryCatalog} from './api/client';
 import './styles.css';
 
-type View='overview'|'projects'|'homologation'|'evidence'|'environments'|'decisions';
-const nav:{id:View;label:string}[]=[{id:'overview',label:'Visão geral'},{id:'projects',label:'Projetos'},{id:'homologation',label:'Homologações'},{id:'evidence',label:'Evidências'},{id:'environments',label:'Ambientes'},{id:'decisions',label:'Decisões e histórico'}];
+type View='overview'|'projects'|'register'|'homologation'|'evidence'|'environments'|'decisions';
+const nav:{id:View;label:string}[]=[{id:'overview',label:'Visão geral'},{id:'projects',label:'Projetos'},{id:'register',label:'Cadastrar projeto'},{id:'homologation',label:'Homologações'},{id:'evidence',label:'Evidências'},{id:'environments',label:'Ambientes'},{id:'decisions',label:'Decisões e histórico'}];
 const app=document.querySelector<HTMLDivElement>('#app');if(!app)throw new Error('Elemento #app não encontrado.');
 let view:View='overview',selected:Project|null=null,snapshot:PortfolioSnapshot|null=null,loading=false,lastError:string|null=null,lastErrorCode:string|null=null,lastChecked:string|null=null;
+let catalog:RepositoryCatalog|null=null,catalogLoading=false,catalogError:string|null=null,registering=false,registerMessage:string|null=null,registerError:string|null=null;
 const projects=()=>snapshot?.projects??[];
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]??c));
 const date=(v?:string|null)=>v?new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(v)):'Não informado';
@@ -37,7 +38,7 @@ function projectCard(p:Project){
  return '<ds-card class="project-card"><div class="project-head"><div><p class="eyebrow">'+esc(p.domain)+'</p><h3>'+esc(p.name)+'</h3></div><ds-badge variant="'+variant(s)+'">'+(snapshot?label(s):'Aguardando consulta')+'</ds-badge></div><p>'+esc(p.summary)+'</p><p class="repo-count">'+p.repositories.length+' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="'+p.id+'">Abrir projeto</ds-button></div></ds-card>';
 }
 function projectDetail(p:Project){
- return '<section><button class="back" data-back>← Voltar aos projetos</button><div class="intro"><div><p class="eyebrow">'+esc(p.domain)+'</p><h2>'+esc(p.name)+'</h2><p>'+esc(p.summary)+'</p></div><ds-badge variant="info">GitHub somente leitura</ds-badge></div><div class="repo-list">'+p.repositories.map(repoMarkup).join('')+'</div></section>';
+ return '<section><button class="back" data-back>← Voltar aos projetos</button><div class="intro"><div><p class="eyebrow">'+esc(p.domain)+'</p><h2>'+esc(p.name)+'</h2><p>'+esc(p.summary)+'</p></div><ds-badge variant="info">Cadastro controlado</ds-badge></div><div class="repo-list">'+p.repositories.map(repoMarkup).join('')+'</div></section>';
 }
 function overview(){
  const currentProjects=projects();const all=[...new Set(currentProjects.flatMap(p=>p.repositories.map(r=>r.fullName)))];
@@ -45,25 +46,65 @@ function overview(){
  const bad=all.filter(n=>['unavailable','not_found_or_no_access'].includes(repoFor(n)?.status||'')).length;
  return '<section><div class="intro"><div><h2>Visão consolidada do portfólio</h2><p>Estado obtido diretamente das fontes GitHub, sem substituir os registros canônicos.</p></div><ds-badge variant="'+(lastError?'warning':snapshot?'success':'warning')+'">'+(lastError?(snapshot?'Dados anteriores · falha ao atualizar':'Falha de consulta'):snapshot?'Consulta realizada':'Aguardando conexão')+'</ds-badge></div>'+
  (lastError?'<ds-alert variant="warning" title="Integração GitHub">'+esc(lastError)+'</ds-alert>':'')+
- '<div class="metrics"><ds-card><div class="metric-content"><small>Projetos no escopo</small><strong>'+currentProjects.length+'</strong><small>Descoberta automática</small></div></ds-card><ds-card><div class="metric-content"><small>Repositórios consultados</small><strong>'+(snapshot?ok+'/'+all.length:'—')+'</strong><small>'+partial+' parciais · '+bad+' indisponíveis</small></div></ds-card><ds-card><div class="metric-content"><small>Última consulta</small><strong class="metric-date">'+(snapshot?date(snapshot.checkedAt):'—')+'</strong><small>'+(snapshot?.cache==='HIT'?'Cache de 60 segundos':'Consulta à API GitHub')+'</small></div></ds-card><ds-card><div class="metric-content"><small>Modo de acesso</small><strong class="metric-word">Somente leitura</strong><small>Sem ações de escrita</small></div></ds-card></div>'+
- '<div class="section-head"><div><h2>Projetos acompanhados</h2><p>Estado do Git separado de publicação, instalação e homologação em runtime.</p></div><ds-button variant="secondary" size="sm" data-view="projects">Ver todos</ds-button></div><div class="projects">'+(currentProjects.length?currentProjects.map(projectCard).join(''):'<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione <code>.portal-governanca.json</code> à raiz de um repositório para incluí-lo no portfólio. Depois, use Atualizar GitHub.</p></ds-card>')+'</div>'+
+ '<div class="metrics"><ds-card><div class="metric-content"><small>Projetos no escopo</small><strong>'+currentProjects.length+'</strong><small>Descoberta automática</small></div></ds-card><ds-card><div class="metric-content"><small>Repositórios consultados</small><strong>'+(snapshot?ok+'/'+all.length:'—')+'</strong><small>'+partial+' parciais · '+bad+' indisponíveis</small></div></ds-card><ds-card><div class="metric-content"><small>Última consulta</small><strong class="metric-date">'+(snapshot?date(snapshot.checkedAt):'—')+'</strong><small>'+(snapshot?.cache==='HIT'?'Cache de 60 segundos':'Consulta à API GitHub')+'</small></div></ds-card><ds-card><div class="metric-content"><small>Modo de acesso</small><strong class="metric-word">Cadastro restrito</strong><small>Somente marcador de projeto</small></div></ds-card></div>'+
+ '<div class="section-head"><div><h2>Projetos acompanhados</h2><p>Estado do Git separado de publicação, instalação e homologação em runtime.</p></div><ds-button variant="secondary" size="sm" data-view="projects">Ver todos</ds-button></div><div class="projects">'+(currentProjects.length?currentProjects.map(projectCard).join(''):'<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione <code>.portal-governanca.json</code> à raiz de um repositório ou use Cadastrar projeto.</p></ds-card>')+'</div>'+
  '<p class="repo-detail">Descoberta: '+(snapshot?.discovery.scannedRepositories??0)+' repositórios examinados; arquivo de identificação '+esc(snapshot?.discovery.file||'.portal-governanca.json')+'.</p>'+(snapshot?.discovery.warnings.length?'<ds-alert variant="warning" title="Avisos na descoberta">'+snapshot.discovery.warnings.map(w=>esc(w.repository+': '+w.message)).join('<br>')+'</ds-alert>':'')+'<div class="section-head"><div><h2>Repositórios de origem</h2><p>Resumo da última leitura, sem executar workflows.</p></div></div><div class="repo-list">'+all.map(n=>repoMarkup({fullName:n,role:'Fonte cadastrada'})).join('')+'</div></section>';
 }
+
+async function loadCatalog(){
+ if(catalogLoading)return;catalogLoading=true;catalogError=null;render();
+ try{catalog=await getRepositoryCatalog();}
+ catch(error){catalogError=error instanceof Error?error.message:"Falha ao consultar repositórios.";catalog=null;}
+ finally{catalogLoading=false;render();}
+}
+function registrationPage(){
+ const repos=catalog?.repositories??[];
+ const options=repos.map(r=>'<option value="'+esc(r.fullName)+'" '+(r.markerStatus!=="available"||r.archived?'disabled':'')+'>'+esc(r.fullName)+' — '+(r.markerStatus==="available"&&!r.archived?'Disponível':r.markerStatus==="registered"?'Já cadastrado':r.markerStatus==="disabled"?'Marcador desativado':r.markerStatus==="invalid"?'Marcador inválido':r.archived?'Arquivado':'Indisponível')+'</option>').join('');
+ const list=repos.map(r=>'<div class="repo-row"><div><strong>'+esc(r.fullName)+'</strong><small>Branch padrão: '+esc(r.defaultBranch)+'</small></div><ds-badge variant="'+(r.markerStatus==="registered"?"success":r.markerStatus==="available"&&!r.archived?"info":"warning")+'">'+(r.markerStatus==="registered"?'Cadastrado':r.markerStatus==="available"&&!r.archived?'Disponível':r.markerStatus==="disabled"?'Desativado':r.markerStatus==="invalid"?'Inválido':r.archived?'Arquivado':'Indisponível')+'</ds-badge></div>').join('');
+ return '<section><div class="intro"><div><h2>Cadastrar projeto</h2><p>Escolha um repositório e crie nele o marcador que habilita a descoberta automática.</p></div><ds-badge variant="info">Escrita controlada</ds-badge></div>'+
+ (catalogError?'<ds-alert variant="warning" title="Consulta ao GitHub">'+esc(catalogError)+'</ds-alert>':'')+
+ (registerMessage?'<ds-alert variant="success" title="Cadastro concluído">'+esc(registerMessage)+'</ds-alert>':'')+
+ (registerError?'<ds-alert variant="warning" title="Não foi possível cadastrar">'+esc(registerError)+'</ds-alert>':'')+
+ (!catalog?.canRegister?'<ds-alert variant="warning" title="Cadastro ainda não habilitado">A credencial GitHub de escrita separada não está configurada. A consulta continua somente leitura; nenhuma permissão foi ampliada automaticamente.</ds-alert>':'')+
+ '<ds-card><form class="registration-form" data-register-form>'+
+ '<label for="register-repository">Repositório GitHub</label><select id="register-repository" name="repositoryFullName" required><option value="">Selecione um repositório</option>'+options+'</select>'+
+ '<label for="register-id">Identificador do projeto</label><input id="register-id" name="id" required maxlength="64" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="exemplo: portal-governanca">'+
+ '<small>Use letras minúsculas, números e hífens. O mesmo ID agrupa vários repositórios.</small>'+
+ '<label for="register-name">Nome do projeto</label><input id="register-name" name="name" required maxlength="120" placeholder="Nome que aparecerá no Portal">'+
+ '<label for="register-domain">Área / domínio</label><input id="register-domain" name="domain" required maxlength="120" placeholder="Ex.: Produto, Infraestrutura, Governança">'+
+ '<label for="register-description">Descrição curta</label><textarea id="register-description" name="description" required maxlength="120" rows="3" placeholder="Explique em uma frase o que é este projeto"></textarea>'+
+ '<div class="registration-actions"><button type="submit" class="primary-action" '+(!catalog?.canRegister||registering||!repos.some(r=>r.markerStatus==="available"&&!r.archived)?'disabled':'')+'>'+(registering?'Criando marcador…':'Criar marcador no GitHub')+'</button></div>'+
+ '<p class="repo-detail">O arquivo será criado na raiz da branch padrão. Se já existir um marcador, o Portal não o sobrescreverá.</p></form></ds-card>'+
+ '<div class="section-head"><div><h2>Repositórios encontrados</h2><p>'+repos.length+' repositórios acessíveis no owner mmcromero.</p></div><ds-button variant="secondary" size="sm" data-catalog-refresh '+(catalogLoading?'disabled':'')+'>Atualizar lista</ds-button></div>'+
+ (catalogLoading?'<p>Consultando GitHub…</p>':list?'<div class="repo-list">'+list+'</div>':'<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>')+
+ '</section>';
+}
+async function submitRegistration(input:{repositoryFullName:string;project:{id:string;name:string;domain:string;description:string}}){
+ if(registering)return;registering=true;registerMessage=null;registerError=null;render();
+ try{const result=await registerProject(input);registerMessage=result.repository+" cadastrado na branch "+result.branch+". O marcador "+result.marker+" foi criado.";catalog=null;await refresh(true);await loadCatalog();}
+ catch(error){registerError=error instanceof Error?error.message:"Falha desconhecida ao cadastrar.";}
+ finally{registering=false;render();}
+}
+
 function body(){
  if(view==='overview')return overview();
  if(view==='projects'&&selected)return projectDetail(selected);
- if(view==='projects')return '<section><div class="intro"><div><h2>Projetos</h2><p>Projetos identificados automaticamente nos repositórios.</p></div></div><div class="projects">'+(projects().length?projects().map(projectCard).join(''):'<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione <code>.portal-governanca.json</code> à raiz de um repositório e atualize o GitHub.</p></ds-card>')+'</div></section>';
+ if(view==='projects')return '<section><div class="intro"><div><h2>Projetos</h2><p>Projetos identificados automaticamente nos repositórios.</p></div><ds-button data-view="register">Cadastrar projeto</ds-button></div><div class="projects">'+(projects().length?projects().map(projectCard).join(''):'<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione <code>.portal-governanca.json</code> à raiz de um repositório ou use Cadastrar projeto.</p></ds-card>')+'</div></section>';
+ if(view==='register')return registrationPage();
  const pages:Record<string,[string,string,string]>={homologation:['Homologações','Critérios de aceite e evidências por produto, versão e ambiente.','O GitHub informa código, branches, PRs e workflows. Isso não comprova instalação nem homologação no Home Assistant ou execução real no n8n.'],evidence:['Evidências','Origem, horário, SHA/versão, ambiente e responsável.','A consulta GitHub fornece metadados e links. Logs de runtime e evidências operacionais serão integrados em etapa posterior, sem copiar payloads de mensagens.'],environments:['Ambientes','Desenvolvimento, release candidate, Home Assistant e n8n.','GitHub não comprova estado do runtime. Home Assistant e n8n permanecem não consultados nesta fase.'],decisions:['Decisões e histórico','Registros imutáveis por acréscimo, com links às fontes canônicas.','As decisões continuam nas Issues e documentos de origem. O Portal começa por apresentá-las sem criar ou alterar registros.']};
  const [title,desc,text]=pages[view];
  return '<section><div class="intro"><div><h2>'+title+'</h2><p>'+desc+'</p></div><ds-badge variant="warning">Escopo Fase 1</ds-badge></div><ds-card title="'+title+'">'+text+'</ds-card></section>';
 }
 function render(){
  const status=lastError?(snapshot?'Atualização falhou · dados anteriores':lastErrorCode==='GITHUB_NOT_CONFIGURED'?'GitHub não configurado':'GitHub indisponível'):snapshot?'GitHub consultado':'GitHub não consultado';
- app!.innerHTML='<a class="skip" href="#main">Pular para o conteúdo</a><div class="shell"><aside class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>PORTFÓLIO · HOMOLOGAÇÃO</small></span></a><p class="nav-label">Acompanhamento</p><nav aria-label="Seções principais">'+nav.map(n=>'<button data-view="'+n.id+'" '+(view===n.id?'aria-current="page"':'')+'>'+n.label+'</button>').join('')+'</nav><div class="side-foot"><ds-badge variant="info">GitHub somente leitura</ds-badge><p>Sem acesso de escrita</p></div></aside><div class="workspace"><header><div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>'+nav.find(n=>n.id===view)?.label+'</h1></div><div class="header-meta"><ds-badge variant="info">Design System 0.1.0 · desenvolvimento</ds-badge><small>'+esc(status)+' · '+(lastChecked?date(lastChecked):'sem consulta')+'</small><ds-button size="sm" variant="secondary" '+(loading?'disabled':'')+' data-refresh>'+(loading?'Consultando…':'Atualizar GitHub')+'</ds-button></div></header><main id="main" tabindex="-1">'+body()+'</main><footer>Portal de Governança · Fase 1 <span>GitHub read-only · HA/n8n fora desta etapa</span></footer></div></div>';
- app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view as View;selected=null;render();document.querySelector<HTMLElement>('#main')?.focus()}));
+ app!.innerHTML='<a class="skip" href="#main">Pular para o conteúdo</a><div class="shell"><aside class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>PORTFÓLIO · HOMOLOGAÇÃO</small></span></a><p class="nav-label">Acompanhamento</p><nav aria-label="Seções principais">'+nav.map(n=>'<button data-view="'+n.id+'" '+(view===n.id?'aria-current="page"':'')+'>'+n.label+'</button>').join('')+'</nav><div class="side-foot"><ds-badge variant="info">GitHub integrado</ds-badge><p>Escrita restrita ao cadastro</p></div></aside><div class="workspace"><header><div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>'+nav.find(n=>n.id===view)?.label+'</h1></div><div class="header-meta"><ds-badge variant="info">Design System 0.1.0 · desenvolvimento</ds-badge><small>'+esc(status)+' · '+(lastChecked?date(lastChecked):'sem consulta')+'</small><ds-button size="sm" variant="secondary" '+(loading?'disabled':'')+' data-refresh>'+(loading?'Consultando…':'Atualizar GitHub')+'</ds-button></div></header><main id="main" tabindex="-1">'+body()+'</main><footer>Portal de Governança · Fase 1 <span>GitHub · leitura e cadastro restrito · HA/n8n fora desta etapa</span></footer></div></div>';
+ app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>b.addEventListener('click',()=>{view=b.dataset.view as View;selected=null;registerMessage=null;registerError=null;render();document.querySelector<HTMLElement>('#main')?.focus();if(view==='register'&&!catalog&&!catalogLoading)void loadCatalog();}));
  app!.querySelectorAll<HTMLElement>('[data-project]').forEach(b=>b.addEventListener('click',()=>{selected=projects().find(p=>p.id===b.dataset.project)||null;view='projects';render();document.querySelector<HTMLElement>('#main')?.focus()}));
  app!.querySelector<HTMLElement>('[data-back]')?.addEventListener('click',()=>{selected=null;render();document.querySelector<HTMLElement>('#main')?.focus()});
  app!.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click',()=>void refresh(true));
+ app!.querySelector<HTMLElement>('[data-catalog-refresh]')?.addEventListener('click',()=>{catalog=null;void loadCatalog();});
+ const form=app!.querySelector<HTMLFormElement>('[data-register-form]');
+ form?.addEventListener('submit',event=>{event.preventDefault();const data=new FormData(form!);void submitRegistration({repositoryFullName:String(data.get('repositoryFullName')||''),project:{id:String(data.get('id')||''),name:String(data.get('name')||''),domain:String(data.get('domain')||''),description:String(data.get('description')||'')}});});
 }
 async function refresh(force=false){
  if(loading)return;loading=true;lastError=null;lastErrorCode=null;render();

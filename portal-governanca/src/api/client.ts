@@ -22,3 +22,18 @@ export async function getPortfolio(refresh=false):Promise<PortfolioSnapshot>{
  if(!response.ok)throw Object.assign(new Error(data.error?.message||"HTTP "+response.status),{code:data.error?.code,status:response.status});
  return data as PortfolioSnapshot;
 }
+
+export type RepositoryCatalogItem={fullName:string;defaultBranch:string;description:string;htmlUrl:string;archived:boolean;markerStatus:"available"|"registered"|"disabled"|"invalid"|"unavailable";projectId:string|null;projectName:string|null;error?:{code:string;message:string}};
+export type RepositoryCatalog={owner:string;canRegister:boolean;marker:string;repositories:RepositoryCatalogItem[]};
+async function apiRequest<T>(url:string,init?:RequestInit):Promise<T>{
+ const headers:Record<string,string>={Accept:"application/json"};
+ if(init?.body)headers["Content-Type"]="application/json";
+ const response=await fetch(new URL(url,document.baseURI),{...init,headers,cache:"no-store"});
+ const data=await response.json();
+ if(!response.ok)throw Object.assign(new Error(data.error?.message||"HTTP "+response.status),{code:data.error?.code,status:response.status});
+ return data as T;
+}
+export function getRepositoryCatalog():Promise<RepositoryCatalog>{return apiRequest<RepositoryCatalog>("api/v1/repositories");}
+export function registerProject(input:{repositoryFullName:string;project:{id:string;name:string;domain:string;description:string}}):Promise<{success:boolean;repository:string;branch:string;marker:string;projectId:string}>{
+ return apiRequest<{success:boolean;repository:string;branch:string;marker:string;projectId:string}>("api/v1/projects/register",{method:"POST",body:JSON.stringify(input)});
+}
