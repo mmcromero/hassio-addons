@@ -19,7 +19,7 @@ describe("build autossuficiente do add-on",()=>{
   const css=fs.readFileSync(path.join(root,"src/styles.css"),"utf8");
   expect(main).toContain('src="./brand-icon.png"');
   expect(main).not.toContain('<span class="mark">G</span>');
-  expect((main.match(/class="metric-content"/g)||[]).length).toBe(4);
+  expect((main.match(/class="metric-content"/g)||[]).length).toBe(8);
   expect(css).toContain(".metric-content{display:flex;flex-direction:column");
   expect(fs.existsSync(path.join(root,"public/brand-icon.png"))).toBe(true);
   const iconPath=fs.existsSync(path.join(root,"icon.png"))?path.join(root,"icon.png"):path.join(root,"addon/icon.png");

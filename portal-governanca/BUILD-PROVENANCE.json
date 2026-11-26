@@ -1,20 +1,20 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.18",
+  "addon_version": "0.1.0-dev.19",
   "source_repository": "mmcromero/portal-governanca",
   "source_branch": "desenvolvimento",
-  "source_commit": "5b35a51b0955f6917865392c6608910c859c0fb6",
+  "source_commit": "c5de80c12cdc70eba872d9bd6c388561b2f6e5e2",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "distribution_method": "Direct source-file export via GitHub Git database API; Dockerfile build is performed by Home Assistant Supervisor on target architecture",
+  "distribution_method": "Direct source-file export via GitHub Git database API; Home Assistant Supervisor builds Dockerfile on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "git_blob_sha": "4f48693099e253adc62a4cb39561b01497bd968b"
+      "git_blob_sha": "9080d2704706360b1b8e0e80cc2ea7a05da8b76a"
     },
     {
       "path": "config.yaml",
-      "git_blob_sha": "c7cccc1bbb389fa1075b4268bab4fec548b1d24d"
+      "git_blob_sha": "562e889dbb3782ae44c4c232f833cb15188cc6df"
     },
     {
       "path": "config/design-system.lock.json",
@@ -46,11 +46,11 @@
     },
     {
       "path": "package-lock.json",
-      "git_blob_sha": "32b2601472ecc538496e84296455673d12a6748f"
+      "git_blob_sha": "757d65268066b10d918ce735a7785c286992e6cf"
     },
     {
       "path": "package.json",
-      "git_blob_sha": "a757e8a7fc8ca265b456091f2e99b47911c596fe"
+      "git_blob_sha": "ef1a37a4db186e43fea89ab6a3ce79e8cbab505b"
     },
     {
       "path": "public/brand-icon.png",
@@ -102,7 +102,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "git_blob_sha": "0798691c5a7c03cd08e6522b4bd85ba4ab9955df"
+      "git_blob_sha": "dbf44450815bb3b51babf401ccee1a4ecf14bafc"
     },
     {
       "path": "tests/github.test.mjs",

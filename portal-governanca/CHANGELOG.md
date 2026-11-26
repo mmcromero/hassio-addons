@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0-dev.19 — 26/11/2026
+- Corrige a asserção da suíte de build: a tela contém quatro indicadores na visão geral e quatro no inventário Home Assistant.
+
+
 ## 0.1.0-dev.18 — 26/11/2026
 - Adiciona inventário read-only de apps Home Assistant pelo endpoint Supervisor v2 `/apps/status`, usando papel `default`.
 - Isola o token Supervisor em processo bridge local; o BFF principal permanece sem a credencial.
