@@ -1,0 +1,19 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "governance",
+  "sys": {
+    "color": {
+      "action": {
+        "primary": {
+          "default": { "$value": "{ref.color.purple.600}", "$type": "color" },
+          "hover": { "$value": "{ref.color.purple.700}", "$type": "color" },
+          "active": { "$value": "{ref.color.purple.800}", "$type": "color" },
+          "text": { "$value": "#ffffff", "$type": "color" }
+        }
+      },
+      "focus": {
+        "ring": { "$value": "{ref.color.purple.600}", "$type": "color" }
+      }
+    }
+  }
+}
