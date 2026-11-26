@@ -37,3 +37,8 @@ export function stripIngressPath(pathname,basePath){
  if(pathname==="//")return "/";
  return null;
 }
+
+export function isN8nPeer(value,allowedPeer){
+ const expected=normalizePeerAddress(allowedPeer);
+ return Boolean(expected&&normalizePeerAddress(value)===expected);
+}
