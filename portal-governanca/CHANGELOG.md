@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.16 — 26/11/2026
+- Corrige os testes de segurança do cadastro para localizar os arquivos de configuração e entrypoint tanto no checkout-fonte quanto no pacote distribuído.
+- Mantém a suíte executada no build real do Supervisor, sem retirar os testes de segurança.
+
+
 ## 0.1.0-dev.15 — 26/11/2026
 - Adiciona cadastro controlado de projetos com criação de `.portal-governanca.json` na branch padrão selecionada.
 - Mantém o token de leitura e adiciona credencial de escrita opcional e separada, sem ampliar permissões automaticamente.
