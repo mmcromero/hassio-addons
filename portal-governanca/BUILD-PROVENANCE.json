@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.41",
+  "addon_version": "0.1.0-dev.42",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "e3c69b7e2ab0d9bf8f6a29e8ee1cae1bb53fe2ea",
+  "source_commit": "cdcf36223c8354d6d9281d8fa536931487f0c8cb",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -11,16 +11,16 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "8cb0b883d47d593d4402683e9796e4f2cc0722e42e79951f9c80553bdb8babb4",
-  "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
+  "npm_lockfile_sha256": "7cf25d3949a8f0a5793e5924f401bb901d3998d168a6400e98b6cdd37539c9ee",
+  "build_strategy": "Supervisor Docker multi-stage build; npm ci + Design System + Vitest JSON report + TypeScript/Vite + build evidence on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "e29904b2f57f9951a700076c1665d197597bde8e5d2b1d73af877ce4c0f3913f"
+      "sha256": "a41cd390608d6c2c0ca5ad76dbda7716a841b626ba1a1e347e1b22ef402ca725"
     },
     {
       "path": "config.yaml",
-      "sha256": "2caf0eb751c85ebcea795ebcb370a1251ceb6b2fd137995cfbc44e6c02dba378"
+      "sha256": "c50690a68124547d7bb757acd1c21e0eb234e771d04db87da03117d4e0672701"
     },
     {
       "path": "config/design-system.lock.json",
@@ -36,7 +36,7 @@
     },
     {
       "path": "Dockerfile",
-      "sha256": "f703e5c278cb583b8a0144f644028a07a03bce3b25a317cb31e4dcd4799599be"
+      "sha256": "9b0b99cb260f401490f30135024771cbd3c852ad31a66d37ab6c044faf97c222"
     },
     {
       "path": "icon.png",
@@ -52,11 +52,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "8cb0b883d47d593d4402683e9796e4f2cc0722e42e79951f9c80553bdb8babb4"
+      "sha256": "7cf25d3949a8f0a5793e5924f401bb901d3998d168a6400e98b6cdd37539c9ee"
     },
     {
       "path": "package.json",
-      "sha256": "9daa67a6acb83af1e941ab0d620fb8a2deeb607e9173e25df0e95eb3fee76e9e"
+      "sha256": "67d9034a290994e419968ffca076cecaf3a1fecd10075043dcf3aa9fffd91d02"
     },
     {
       "path": "public/brand-icon.png",
@@ -64,7 +64,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "35573a53ef163724972235d1dfdda3d1f26af2d9d1a73b87e91e8913ce8d8e0d"
+      "sha256": "31a0d909313c62081af5b24bf611feb05606a3aa46597e98046bdd9b9aa25a8e"
     },
     {
       "path": "run.sh",
@@ -73,6 +73,10 @@
     {
       "path": "server/agent-events.mjs",
       "sha256": "ef73bb3178e33baf2e1ad0b9fddcdacbf1086b2897bd45126c9b97890c196f91"
+    },
+    {
+      "path": "server/build-evidence.mjs",
+      "sha256": "b3d01147469944856b7a6ed047fff445cc928ffdab266e2169bd0d5b7d97e445"
     },
     {
       "path": "server/github.mjs",
@@ -108,7 +112,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "sha256": "5ce0b43ec512a28c72fd287822572eac2a606656d425369732ae3c6d3d22ed7d"
+      "sha256": "4b352efe10bf4d1f9e188a5eb097e358cc358f34adfd8ca2ccb55b1d814c2754"
     },
     {
       "path": "src/data/projects.ts",
@@ -116,7 +120,7 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "6376ce8d29b3f6f0c930041895794f458d2e9eafd5d2e8e145a1673e45a2208f"
+      "sha256": "52d536b50b98dc4b3e70210f97e43856d07649948b7b4ddd3eb106bf9dc17562"
     },
     {
       "path": "src/project-age.ts",
@@ -129,6 +133,10 @@
     {
       "path": "src/project-status.ts",
       "sha256": "783309b3bff3a510264b1abffbf77da36cc146f7f3def23f4fbdb0a0d72aa84a"
+    },
+    {
+      "path": "src/record-views.ts",
+      "sha256": "bc0505674a417914279407df97106c42b4d433ba98dc3f21f755f11866a5d5f4"
     },
     {
       "path": "src/repository-catalog-order.ts",
@@ -144,7 +152,11 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "sha256": "fdae7c9c00ef9f1803ffecdec7b7f83063cd3fbc7c4bb25d985b7b4d7e7a293e"
+      "sha256": "77d1d9fdc39b3a0b49591480560f7bd053e49850eb61a8c4effe0f097c091bad"
+    },
+    {
+      "path": "tests/build-evidence.test.mjs",
+      "sha256": "7b36a5dd3b917c9233e25dc37cdae5c51acafa4873e5e3118b0fadf48acee2c2"
     },
     {
       "path": "tests/github-timeline.test.mjs",
@@ -185,6 +197,10 @@
     {
       "path": "tests/project-status.test.mjs",
       "sha256": "0909686cbd686f7132f6002d7364b0c5a4391bb2e7bbd3fd70da30a4696b5f4c"
+    },
+    {
+      "path": "tests/record-views.test.mjs",
+      "sha256": "dfb0633c2593d63aa0dd60ad2bb7d8a474ccb8da4c9221e0970f5e610d5e2264"
     },
     {
       "path": "tests/register-security.test.mjs",

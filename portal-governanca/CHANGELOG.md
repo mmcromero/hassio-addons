@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.42 — 27/11/2026
+- Gera relatório JSON do build ARM64 somente após a suíte Vitest, o build do Design System e a compilação TypeScript/Vite concluírem com sucesso.
+- Vincula o relatório ao SHA do Portal, SHA do Design System, versão do add-on, digest do lockfile, arquitetura e versão Node.
+- Exibe na área Homologações a contagem real de testes/suítes aprovados, falhos e pendentes, sem converter build em homologação funcional.
+- Adiciona testes para validação estrita da proveniência e do resultado do build.
+
 ## 0.1.0-dev.41 — 27/11/2026
 - Na tela Cadastrar projeto, lista os repositórios já cadastrados primeiro.
 - Agrupa separadamente os repositórios ainda disponíveis para cadastro e os que estão em outros estados (marcador inválido/desativado, arquivado ou indisponível).

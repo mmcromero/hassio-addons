@@ -8,6 +8,7 @@ import {
   getSupervisorInventory,
   getN8nOverview,
   getPortalRecords,
+  getBuildEvidence,
   appendPortalRecord,
   getAgentEvents,
   getMissions,
@@ -20,6 +21,7 @@ import {
   getSystemStatus,
   type PortalLedger,
   type PortalRecord,
+  type BuildEvidence,
   type PortfolioSnapshot,
   type RepoSnapshot,
   type Project,
@@ -36,6 +38,7 @@ import { getProjectAge } from './project-age';
 import { getProjectStatus } from './project-status';
 import { buildProjectChatUrl } from './project-chat-link';
 import { orderRegisteredRepositories } from './repository-catalog-order';
+import { recordsForArea, recordSourceLabel } from './record-views';
 import './styles.css';
 
 type View =
@@ -94,6 +97,9 @@ let ledgerLoading = false;
 let ledgerError: string | null = null;
 let ledgerSaving = false;
 let ledgerMessage: string | null = null;
+let buildEvidenceSnapshot: BuildEvidence | null = null;
+let buildEvidenceLoading = false;
+let buildEvidenceError: string | null = null;
 
 let agentSnapshot: AgentEventsResponse | null = null;
 let agentLoading = false;
@@ -907,6 +913,21 @@ async function loadRecords() {
   }
 }
 
+async function loadBuildEvidence() {
+  if (buildEvidenceLoading) return;
+  buildEvidenceLoading = true;
+  buildEvidenceError = null;
+  render();
+  try {
+    buildEvidenceSnapshot = await getBuildEvidence();
+  } catch (e) {
+    buildEvidenceError = e instanceof Error ? e.message : 'Evidência automática do build indisponível';
+  } finally {
+    buildEvidenceLoading = false;
+    render();
+  }
+}
+
 async function loadMissions() {
   if (missionsLoading) return;
   missionsLoading = true;
@@ -1021,9 +1042,37 @@ async function saveRecord(form: HTMLFormElement) {
   }
 }
 
+function buildEvidencePanel() {
+  if (buildEvidenceLoading) return '<ds-card><p>Consultando o relatório gerado no build ARM64…</p></ds-card>';
+  if (buildEvidenceError) return '<ds-card><ds-alert variant="warning" title="Evidência automática indisponível">' + esc(buildEvidenceError) + '</ds-alert><ds-button variant="secondary" size="sm" data-build-evidence-refresh>Consultar novamente</ds-button></ds-card>';
+  const evidence = buildEvidenceSnapshot;
+  if (!evidence) return '<ds-card><p>O relatório do build ainda não foi consultado.</p><ds-button variant="secondary" size="sm" data-build-evidence-refresh>Consultar build</ds-button></ds-card>';
+  return '<ds-card><div class="intro"><div><h3>Build e testes automatizados</h3><p>Relatório produzido dentro do build multi-stage no Supervisor ARM64</p></div><ds-badge variant="success">PASS · ARM64</ds-badge></div>' +
+    '<div class="repo-facts"><span>Suíte Vitest: <b>' + evidence.tests.passed + '/' + evidence.tests.total + ' aprovados</b></span><span>Falhas: <b>' + evidence.tests.failed + '</b></span><span>Pendentes: <b>' + evidence.tests.pending + '</b></span><span>Suítes: <b>' + evidence.tests.passedSuites + '/' + evidence.tests.totalSuites + '</b></span><span>Node: <b>' + esc(evidence.addon.nodeVersion) + '</b></span><span>Versão: <b>' + esc(evidence.addon.version) + '</b></span></div>' +
+    '<p>Build: ' + esc(date(evidence.builtAt)) + ' · Design System, TypeScript e Vite: PASS</p>' +
+    '<p class="repo-detail">Commit fonte: <code>' + esc(evidence.source.commit) + '</code><br>Design System: <code>' + esc(evidence.designSystem.commit) + '</code><br>Lockfile SHA-256: <code>' + esc(evidence.lockfile.sha256) + '</code></p>' +
+    '<p class="repo-detail">Esta evidência comprova a execução da suíte e a compilação no build da imagem. Não substitui homologação visual, funcional ou operacional após a instalação.</p>' +
+    '<ds-button variant="secondary" size="sm" data-build-evidence-refresh>Atualizar evidência</ds-button></ds-card>';
+}
+
 function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
   const title = type === 'homologation' ? 'Homologações' : type === 'evidence' ? 'Evidências' : 'Decisões e histórico';
-  const records = (ledgerSnapshot?.records || []).filter(r => (type === 'decision' ? r.type === 'decision' : r.type === type));
+  const records = recordsForArea(ledgerSnapshot?.records || [], type);
+  const statusCounts = {
+    pass: records.filter(r => r.status === 'PASS').length,
+    fail: records.filter(r => r.status === 'FAIL').length,
+    pending: records.filter(r => new Set<string>(['NAO_EXECUTADO', 'NAO_VERIFICADO', 'BLOQUEADO', 'INDISPONIVEL']).has(r.status || '')).length
+  };
+  const summary = type === 'homologation'
+    ? '<div class="repo-facts"><span>PASS: <b>' + statusCounts.pass + '</b></span><span>Falhas: <b>' + statusCounts.fail + '</b></span><span>Pendentes / bloqueadas: <b>' + statusCounts.pending + '</b></span></div>'
+    : '<div class="repo-facts"><span>Registros manuais: <b>' + records.filter(r => r.type === (type === 'evidence' ? 'evidence' : 'decision')).length + '</b></span><span>Eventos automáticos: <b>' + records.filter(r => new Set<string>(['agent_event', 'timeline_event', 'mission', 'mission_status']).has(r.type)).length + '</b></span></div>';
+  const emptyMessage = type === 'homologation'
+    ? 'Nenhuma homologação registrada. Resultados só aparecem após uma validação real ser registrada; publicação ou instalação isolada não significa PASS.'
+    : type === 'evidence'
+    ? 'Nenhuma evidência disponível ainda. Evidências manuais, eventos reais de agentes e marcos históricos aparecerão aqui conforme forem registrados nas fontes.'
+    : 'Nenhuma decisão ou marco registrado ainda. Decisões humanas, missões e eventos de ciclo de vida aparecerão aqui sem duplicar o ledger.';
+
+  const buildEvidence = type === 'homologation' ? buildEvidencePanel() : '';
   const statusOptions = ['PASS', 'FAIL', 'NAO_EXECUTADO', 'NAO_VERIFICADO', 'BLOQUEADO', 'INDISPONIVEL']
     .map(x => '<option value="' + x + '">' + x.replaceAll('_', ' ') + '</option>')
     .join('');
@@ -1059,11 +1108,11 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
         '<article class="repo-card"><div class="repo-top"><div><strong>' +
         esc(r.title) +
         '</strong><small>' +
-        date(r.createdAt) +
+        date(r.occurredAt || r.createdAt) +
         ' · ' +
         esc(r.responsible || 'Responsável não informado') +
         ' · ' +
-        (r.evidenceKind === 'real' ? 'Evidência real' : r.evidenceKind === 'synthetic' ? 'Evidência sintética' : esc(r.type)) +
+        (r.evidenceKind === 'real' ? 'Evidência real' : r.evidenceKind === 'synthetic' ? 'Evidência sintética' : esc(recordSourceLabel(r))) +
         '</small></div><ds-badge variant="' +
         (r.status === 'PASS' ? 'success' : r.status === 'FAIL' ? 'error' : 'neutral') +
         '">' +
@@ -1076,6 +1125,8 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
         esc(r.environment || '—') +
         '</b></span><span>Versão: <b>' +
         esc(r.version || '—') +
+        '</b></span><span>Fonte: <b>' +
+        esc(r.sourceName || r.agentId || r.origin || '—') +
         '</b></span><span>SHA: <b>' +
         esc(r.sha || '—') +
         '</b></span></div><small class="repo-detail">Hash: <code>' +
@@ -1098,13 +1149,15 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
     '</ds-badge></div>' +
     (ledgerError ? '<ds-alert variant="warning" title="Histórico">' + esc(ledgerError) + '</ds-alert>' : '') +
     (ledgerMessage ? '<ds-alert variant="success" title="Registro salvo">' + esc(ledgerMessage) + '</ds-alert>' : '') +
+    summary +
+    buildEvidence +
     form +
     '<div class="section-head"><div><h2>Registros</h2><p>' +
     records.length +
     ' exibidos · ' +
     (ledgerSnapshot?.total ?? 0) +
     ' no ledger · últimos 500 disponíveis</p></div><ds-button variant="secondary" size="sm" data-ledger-refresh>Atualizar</ds-button></div>' +
-    (list ? '<div class="repo-list">' + list + '</div>' : '<ds-card><p>Nenhum registro deste tipo ainda.</p></ds-card>') +
+    (list ? '<div class="repo-list">' + list + '</div>' : '<ds-card><p>' + esc(emptyMessage) + '</p></ds-card>') +
     '</section>'
   );
 }
@@ -1170,6 +1223,7 @@ function render() {
       if (view === 'environments' && !supervisorSnapshot && !supervisorLoading && !supervisorError) void loadSupervisor(false);
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
       if (['homologation', 'evidence', 'decisions'].includes(view) && !ledgerSnapshot && !ledgerLoading && !ledgerError) void loadRecords();
+      if (view === 'homologation' && !buildEvidenceSnapshot && !buildEvidenceLoading && !buildEvidenceError) void loadBuildEvidence();
       if (view === 'agents' && !agentSnapshot && !agentLoading && !agentError) void loadAgentEvents();
       if (view === 'missions' && !missionsSnapshot && !missionsLoading && !missionsError) void loadMissions();
     })
@@ -1195,6 +1249,7 @@ function render() {
   app!.querySelector<HTMLElement>('[data-ha-refresh]')?.addEventListener('click', () => void loadSupervisor(true));
   app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
   app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
+  app!.querySelector<HTMLElement>('[data-build-evidence-refresh]')?.addEventListener('click', () => void loadBuildEvidence());
   app!.querySelector<HTMLElement>('[data-timeline-refresh]')?.addEventListener('click', () => { if(selected)void loadTimeline(selected.id,true); });
   app!.querySelector<HTMLElement>('[data-timeline-cancel]')?.addEventListener('click', async () => {
     if(!selected||!window.confirm('Registrar o CANCELAMENTO deste projeto? A decisão será permanente no histórico e encerrará o contador de existência.'))return;
