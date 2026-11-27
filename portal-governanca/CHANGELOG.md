@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.43 — 27/11/2026
+- Centraliza homologações, evidências, decisões/histórico e recursos no contexto de cada projeto.
+- Adiciona seletor universal de projeto e rotas recarregáveis, com filtros no backend para registros e missões.
+- Mantém Missões, Automações, Ambientes e Agentes como áreas globais, com filtro contextual.
+- Adiciona links diretos ao GitHub nos cards e links de recursos do repositório; inclui inventário inicial Cloudflare/Artesão Digital com proveniência e data de observação.
+- Adiciona testes de navegação e isolamento por projeto.
+
 ## 0.1.0-dev.42 — 27/11/2026
 - Gera relatório JSON do build ARM64 somente após a suíte Vitest, o build do Design System e a compilação TypeScript/Vite concluírem com sucesso.
 - Vincula o relatório ao SHA do Portal, SHA do Design System, versão do add-on, digest do lockfile, arquitetura e versão Node.

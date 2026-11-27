@@ -1,0 +1,37 @@
+{
+  "sourceHead": "4b2f4f6fd15a4ac2352f696d16deeb88c37b526e",
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "80c07df487bb6e41981b9776f1672a5595b224aa6e2398791a2abf43370bc8a6"
+    },
+    {
+      "path": "Dockerfile",
+      "sha256": "ba3412bafd25678371c5db2c9eb514b1464a424dab4fbe14d05441eb8d236bb1"
+    },
+    {
+      "path": "README.md",
+      "sha256": "e2ac400f86c25000204b99c1482e928f9b7027e4702da5cda2680eef13e8ce84"
+    },
+    {
+      "path": "config.yaml",
+      "sha256": "87e2b05eef7c716b8dc7cdf3694aae8a9632b52fd8ef8fa3e7bdb66ca54847c9"
+    },
+    {
+      "path": "icon.png",
+      "sha256": "5645902d7bb9116efca8fd0a547f606d19cb8c6270f260a5178e5a77c52fa56d"
+    },
+    {
+      "path": "logo.png",
+      "sha256": "5219f6a7d42c97ccd1e1db016d7b21eb52e5140c25561c2ff70f1f4394426f59"
+    },
+    {
+      "path": "run.sh",
+      "sha256": "c02097da7f2b397d4e0396deb45d3c0ba74aae4ed064889dd20cffb8208eeb6c"
+    },
+    {
+      "path": "config/design-system.lock.json",
+      "sha256": "15bbf82929d9b915275366645c9588caae33a7a44141880b06b4dd148865d5bf"
+    }
+  ]
+}
