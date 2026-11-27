@@ -128,6 +128,38 @@
     {
       "path": "src/project-status.ts",
       "sha256": "dc776c7b91fb50cf9867ff663e6a481d19016009eb3990a65e9effe7a9d8c62a"
+    },
+    {
+      "path": "src/record-views.ts",
+      "sha256": "ba910eeff685bac69955b30e14eb71808d843065fd7e97c194943ad6da94dc67"
+    },
+    {
+      "path": "src/repository-catalog-order.ts",
+      "sha256": "b92c54c3dcc3e446e2fccd9359b0b067065e3033d080a14c8446e2746e6921f2"
+    },
+    {
+      "path": "src/styles.css",
+      "sha256": "5447b1516a1b24c0d9ef5451abf936d47b1f58de876208067bc6c508f8a5f356"
+    },
+    {
+      "path": "tests/agent-events.test.mjs",
+      "sha256": "5c2ecfac0c9ae6f11d4642680bf471d8051d1c973921d927f6552b4c5b437304"
+    },
+    {
+      "path": "tests/build-architecture.test.mjs",
+      "sha256": "bf9e091da68ce89f8abc093c9aea33195e904e809fcf66d726984b6594524098"
+    },
+    {
+      "path": "tests/build-evidence.test.mjs",
+      "sha256": "bfb49eb395e27acdb7d1b16bd1bc8d8945c57573a15c0a396169b0775739b6f1"
+    },
+    {
+      "path": "tests/github-timeline.test.mjs",
+      "sha256": "da396f533c2486e629b873c3dbd88c76691bdf0f6da4ab52ccad9c0e47cabc1b"
+    },
+    {
+      "path": "tests/github.test.mjs",
+      "sha256": "6dc482a80926eeb68c419678adefb326d95087e441aedc2ecb452278ded9ad12"
     }
   ]
 }

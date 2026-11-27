@@ -18,3 +18,14 @@
 .actions{gap:.65rem;align-items:center;flex-wrap:wrap}.project-chat-link{white-space:normal}
 
 .repo-group{margin:1rem 0 1.25rem}.repo-group>h3{margin:.6rem 0;font-size:.95rem;color:#344054}.repo-group .repo-list{gap:.6rem}
+
+.project-context{display:grid;gap:.2rem;text-align:left;color:var(--muted);font-size:.7rem;font-weight:600;letter-spacing:.04em}
+.project-context select{max-width:16rem;min-width:12rem;border:1px solid var(--line);border-radius:.45rem;padding:.45rem .6rem;background:var(--surface,#fff);color:var(--text,#172033);font:inherit;letter-spacing:normal}
+.project-tabs{display:flex;gap:.35rem;overflow-x:auto;border-bottom:1px solid var(--line);padding:.2rem 0 .65rem;margin:1rem 0 1.25rem}
+.project-tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);border-radius:.45rem;padding:.65rem .8rem;cursor:pointer;white-space:nowrap}
+.project-tabs button:hover,.project-tabs button[aria-current=page]{background:var(--surface-secondary,#edf2f7);color:var(--text,#172033);font-weight:700}
+.resource-links{display:flex;flex-wrap:wrap;gap:.55rem 1rem;margin-top:.8rem}
+.resource-links a,.actions a{font-size:.82rem;font-weight:600;color:var(--accent);text-decoration:none}
+.resource-links a:hover,.actions a:hover{text-decoration:underline}
+.actions{gap:.8rem;align-items:center;flex-wrap:wrap}
+@media(max-width:600px){.project-context select{max-width:100%;min-width:0}.actions{justify-content:flex-start}}
