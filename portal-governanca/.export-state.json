@@ -160,6 +160,38 @@
     {
       "path": "tests/github.test.mjs",
       "sha256": "6dc482a80926eeb68c419678adefb326d95087e441aedc2ecb452278ded9ad12"
+    },
+    {
+      "path": "tests/ingress.test.mjs",
+      "sha256": "225b0a1a9bbd9ce167e4d3599a561607671717ede192f7ea377cf82c7dfdbe6f"
+    },
+    {
+      "path": "tests/layout.test.mjs",
+      "sha256": "bf52496cf37a4317e0640cc4fff6f3121fa50a4898e3517d2bfa7339ba3c57da"
+    },
+    {
+      "path": "tests/ledger.test.mjs",
+      "sha256": "b6dae6739ccbecbe9fb183ab06c345597fe5c0af11e32b9722e0cdb5ccb0058d"
+    },
+    {
+      "path": "tests/n8n.test.mjs",
+      "sha256": "706d0b4bf9da52ad3b3ee00fd102d570e891ce2e6dc0325d5d0e1bb085db16ac"
+    },
+    {
+      "path": "tests/portfolio.test.ts",
+      "sha256": "8a0021268fea7c2e869eb3d72a95624497a69f11090203b982e9d5bd2142ca76"
+    },
+    {
+      "path": "tests/project-age.test.mjs",
+      "sha256": "00be214291a5ab6eac0df0146992919830d1ff4ca09186313a634c8f288a3861"
+    },
+    {
+      "path": "tests/project-chat-link.test.mjs",
+      "sha256": "d22de579e7bc37400d44671b96f2522a1b7c1a9efb5c61b88eb44ea0c46907ab"
+    },
+    {
+      "path": "tests/project-context-ui.test.mjs",
+      "sha256": "25f46e2a3291151499f84771bb7f9db29da2097d61c1f44bf576d8969e323034"
     }
   ]
 }
