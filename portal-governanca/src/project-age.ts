@@ -21,7 +21,7 @@ export function getProjectAge(events: ProjectAgeEvent[], now: string): ProjectAg
   }
 
   const end = events
-    .filter(event => event.category === "project_end" && Number.isFinite(Date.parse(event.occurredAt)))
+    .filter(event => ["project_end", "project_cancelled"].includes(event.category) && Number.isFinite(Date.parse(event.occurredAt)))
     .sort((a, b) => Date.parse(a.occurredAt) - Date.parse(b.occurredAt))[0];
   const endAt = end?.occurredAt ?? now;
   if (!Number.isFinite(Date.parse(endAt)) || !Number.isFinite(Date.parse(start.occurredAt))) {
