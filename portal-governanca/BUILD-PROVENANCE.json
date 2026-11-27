@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.37",
+  "addon_version": "0.1.0-dev.38",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "62e0c8b1a8d1ee0d4f833f9d7fd129c0043e1022",
+  "source_commit": "7ad319086bb602a8e4c02c74c117ffb93567db3b",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -16,11 +16,11 @@
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "6db2a21f8d58572281713b7c1ac060f63ebe06fe9e18dc815b5859df9544efc9"
+      "sha256": "57ea53c39984cbd6ae5a9142e1dd99edfc19ddd826f18b77b193e5c8f0699a89"
     },
     {
       "path": "config.yaml",
-      "sha256": "7ac69fc88d3ec1db8d6d4c5a79e1ff07810fbc3cd63fc7a4e4ea9bfe87c38bbc"
+      "sha256": "bf962d787984a17d2443da498ff625b642e2b01910b177ca2428f9998fb11463"
     },
     {
       "path": "config/design-system.lock.json",
@@ -80,7 +80,7 @@
     },
     {
       "path": "server/index.mjs",
-      "sha256": "d0b6e0b32edeae5342a5c0610bca669dec020c3c215b90778b955c0d52074fc7"
+      "sha256": "ece5e9cd11a370a628fc77fa29ba13da3dcdcf71c688e091bccbbd6c11cbb102"
     },
     {
       "path": "server/ingress.mjs",
@@ -108,7 +108,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "sha256": "b31ae62a1ed4550937ce4f9bf87ad8db858d1178df24de634221c60c0e78075a"
+      "sha256": "875d306c2a8c01d5f50aa1e450f79dafc2fa499d29c87b4e57ef90b6c5803024"
     },
     {
       "path": "src/data/projects.ts",
@@ -116,15 +116,19 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "86dba1e8dccd5fe2fefa4e27b51621bf4c813956f92318dda0cb42554f5a9647"
+      "sha256": "26f2bafe39a78080a193a22506eaf3fecc81932065d397df20e98fa9242c4fea"
     },
     {
       "path": "src/project-age.ts",
-      "sha256": "c61f2300c72fc1c02fcaa314b6a700b6d9bc7772abffbfed6fe1494470bf0cab"
+      "sha256": "b4eff41ad6ce3b019c9efbd28216dc587a409838c32a6d4bc1969bd96d5483ee"
+    },
+    {
+      "path": "src/project-status.ts",
+      "sha256": "783309b3bff3a510264b1abffbf77da36cc146f7f3def23f4fbdb0a0d72aa84a"
     },
     {
       "path": "src/styles.css",
-      "sha256": "e0250d0a7c5bee374bc76b26256f705d460faad305d3f3bca3a6cabc173ceb6d"
+      "sha256": "ff92173864c6e2ab14b02249c46b4fc228a27864049dbd4414b36f18523b15f1"
     },
     {
       "path": "tests/agent-events.test.mjs",
@@ -164,7 +168,11 @@
     },
     {
       "path": "tests/project-age.test.mjs",
-      "sha256": "2d27f8f08266c1a1964a4901ce3aaad83e62c0808680c977fc8b9466a225b304"
+      "sha256": "26edcc890d728cfd43fb6861f631e37cb41a6571009a7d790405768465376cbf"
+    },
+    {
+      "path": "tests/project-status.test.mjs",
+      "sha256": "0909686cbd686f7132f6002d7364b0c5a4391bb2e7bbd3fd70da30a4696b5f4c"
     },
     {
       "path": "tests/register-security.test.mjs",
