@@ -14,9 +14,9 @@ COPY Dockerfile run.sh ./
 COPY config.yaml ./
 COPY icon.png logo.png ./
 COPY BUILD-PROVENANCE.json ./
-RUN npm run build:design-system \\
- && npm test -- --reporter=json --outputFile=/build/vitest-results.json \\
- && npm run build:portal \\
+RUN npm run build:design-system \
+ && npm test -- --reporter=json --outputFile=/build/vitest-results.json \
+ && npm run build:portal \
  && node server/build-evidence.mjs
 
 FROM node:22-alpine AS runtime
