@@ -15,7 +15,7 @@ COPY config.yaml ./
 COPY icon.png logo.png ./
 COPY BUILD-PROVENANCE.json ./
 RUN npm run build:design-system
-RUN npm test -- --reporter=json --outputFile=/build/vitest-results.json
+RUN npm test -- --reporter=default --reporter=json --outputFile=/build/vitest-results.json
 RUN node -e 'const r=require("/build/vitest-results.json"); console.log("[Vitest] "+JSON.stringify({success:r.success,total:r.numTotalTests,passed:r.numPassedTests,failed:r.numFailedTests,pending:r.numPendingTests,suites:r.numTotalTestSuites,passedSuites:r.numPassedTestSuites,failedSuites:r.numFailedTestSuites}));'
 RUN npm run build:portal
 RUN node -e 'console.log("[Build environment] "+JSON.stringify({architecture:process.arch,node:process.version}));'
