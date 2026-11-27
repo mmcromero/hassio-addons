@@ -54,7 +54,7 @@ export function getProjectStatus(
   }
 
   const projectRecords = records
-    .filter(record => record.projectId === projectId && record.type === "homologation")
+    .filter(record => projectIdsMatch(record.projectId, projectId) && record.type === "homologation")
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const latestHomologation = projectRecords[0] ?? null;
   const approval = latestHomologation?.status === "PASS" ? latestHomologation : null;

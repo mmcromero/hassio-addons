@@ -58,7 +58,7 @@ describe("build autossuficiente do add-on",()=>{
   expect(docker).toContain("FROM node:22-alpine AS frontend-build");
   expect(docker).toContain("RUN npm ci");
   expect(docker).toContain("npm run build:design-system");
-  expect(docker).toContain("npm test -- --reporter=json --outputFile=/build/vitest-results.json");
+  expect(docker).toContain("npm test -- --reporter=default --reporter=json --outputFile=/build/vitest-results.json");
   expect(docker).toContain("npm run build:portal");
   expect(docker).toContain("node server/build-evidence.mjs");
   expect(docker).toContain("COPY BUILD-PROVENANCE.json ./");
