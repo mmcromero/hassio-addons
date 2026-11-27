@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.37 — 26/11/2026
+- Exibe a idade em dias nos cards de todos os projetos, reutilizando a timeline histórica existente.
+- Carrega os históricos de forma sequencial; atualiza os contadores automaticamente a cada minuto.
+- Usa somente inícios confirmados ou estimados; marca estimativas com ≈ e não calcula idade quando a confiança é desconhecida.
+- Congela o contador em encerramento explícito registrado no ledger.
+- Adiciona testes unitários para início confirmado, estimado, desconhecido, ausência de início e encerramento.
+
 ## 0.1.0-dev.36 — 26/11/2026
 - Corrige o fixture do teste multi-projeto para extrair owner/repository sem incluir o sufixo do endpoint.
 - Mantém a implementação da timeline e toda a cobertura de segurança; repetir o build/testes no Supervisor ARM64 antes de homologar.
