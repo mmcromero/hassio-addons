@@ -10,3 +10,5 @@
 .timeline-end-action{background:#fff;color:#8a341f;border:1px solid #d9b3a8}
 
 .project-age{display:flex;flex-direction:column;gap:.15rem;margin:.9rem 0;padding:.65rem .8rem;border-left:3px solid var(--accent);background:#f1f5ff;border-radius:0 .5rem .5rem 0}.project-age strong{font-size:1.05rem;line-height:1.35;color:#172033}.project-age small{font-size:.75rem;color:var(--muted)}.project-age-unknown{border-left-color:#98a2b3;background:#f7f8fa}.project-age-unknown strong{color:var(--muted)}
+
+.project-status-row{display:flex;align-items:center;gap:.5rem;margin:.65rem 0}.project-status-row ds-badge{font-size:.72rem;font-weight:750;letter-spacing:.025em}.timeline-cancel-action{background:#fff0f0;color:#a32626;border:1px solid #e2aaaa}
