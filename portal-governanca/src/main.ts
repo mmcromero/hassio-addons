@@ -29,6 +29,7 @@ import {
   type MissionsResponse,
   type SystemStatus
 } from './api/client';
+import { getProjectAge } from './project-age';
 import './styles.css';
 
 type View =
@@ -105,6 +106,8 @@ let timelineProjectId: string | null = null;
 let timelineLoading = false;
 let timelineError: string | null = null;
 let timelineServerOffset = 0;
+const projectTimelineCards = new Map<string, ProjectTimelineResponse>();
+let projectTimelineCardsLoading = false;
 
 let statusSnapshot: SystemStatus | null = null;
 let statusLoading = false;
@@ -233,7 +236,42 @@ function repoMarkup(ref: { fullName: string; role: string; path?: string }) {
   );
 }
 
+async function loadProjectTimelineCards(items: Project[], force = false) {
+  if (projectTimelineCardsLoading || !items.length) return;
+  projectTimelineCardsLoading = true;
+  render();
+  try {
+    for (const project of items) {
+      if (!force && projectTimelineCards.has(project.id)) continue;
+      try {
+        const data = await collectProjectTimeline(project.id, force);
+        projectTimelineCards.set(project.id, data);
+        if (data.serverNow) timelineServerOffset = Date.parse(data.serverNow) - Date.now();
+      } catch {
+        try {
+          const data = await getProjectTimeline(project.id);
+          projectTimelineCards.set(project.id, data);
+          if (data.serverNow) timelineServerOffset = Date.parse(data.serverNow) - Date.now();
+        } catch {
+          // A falha de um projeto não impede a exibição dos demais.
+        }
+      }
+      render();
+    }
+  } finally {
+    projectTimelineCardsLoading = false;
+    render();
+  }
+}
+
 function projectCard(p: Project) {
+  const timeline = projectTimelineCards.get(p.id);
+  const age = getProjectAge(timeline?.events ?? [], new Date(Date.now() + timelineServerOffset).toISOString());
+  const ageMarkup = !timeline
+    ? '<div class="project-age project-age-unknown"><strong>…</strong><small>' + (projectTimelineCardsLoading ? 'Consultando histórico' : 'Histórico indisponível') + '</small></div>'
+    : age.days === null
+    ? '<div class="project-age project-age-unknown"><strong>—</strong><small>Início não identificado</small></div>'
+    : '<div class="project-age"><strong>' + (age.confidence === 'estimated' ? '≈ ' : '') + age.days.toLocaleString('pt-BR') + ' dias</strong><small>' + (age.ended ? 'até o encerramento' : 'de existência') + (age.confidence === 'estimated' ? ' · início estimado' : '') + '</small></div>';
   const states = p.repositories.map(r => repoFor(r.fullName)?.status);
   const s = states.length && states.every(x => x === 'ok') ? 'ok' : states.some(x => x === 'ok' || x === 'partial') ? 'partial' : snapshot ? 'unavailable' : 'not_queried';
   return (
@@ -247,7 +285,7 @@ function projectCard(p: Project) {
     (snapshot ? label(s) : 'Aguardando consulta') +
     '</ds-badge></div><p>' +
     esc(p.summary) +
-    '</p><p class="repo-count">' +
+    '</p>' + ageMarkup + '<p class="repo-count">' +
     p.repositories.length +
     ' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="' +
     p.id +
@@ -1182,6 +1220,7 @@ async function refresh(force = false) {
   } finally {
     loading = false;
     render();
+    if (snapshot) void loadProjectTimelineCards(snapshot.projects, force);
   }
 }
 
@@ -1197,4 +1236,7 @@ setInterval(() => {
 }, 60_000);
 
 // Atualiza os contadores temporais sem nova consulta enquanto o detalhe está aberto.
-setInterval(() => { if(view==='projects'&&selected&&timelineSnapshot&&timelineProjectId===selected.id&&!timelineLoading)render(); },60_000);
+setInterval(() => {
+  if (view === 'projects' && selected && timelineSnapshot && timelineProjectId === selected.id && !timelineLoading) render();
+  else if (view === 'projects' && !selected && projectTimelineCards.size) render();
+}, 60_000);
