@@ -192,6 +192,38 @@
     {
       "path": "tests/project-context-ui.test.mjs",
       "sha256": "25f46e2a3291151499f84771bb7f9db29da2097d61c1f44bf576d8969e323034"
+    },
+    {
+      "path": "tests/project-navigation.test.mjs",
+      "sha256": "adbbab8c4a385d56e0ce1db1cc22bc02e6b94dc31918468c95043f7f8767b191"
+    },
+    {
+      "path": "tests/project-status.test.mjs",
+      "sha256": "2865068216a359362e5f7596b4f81a015e6cb4f242485f73cd9ed679e6e210b2"
+    },
+    {
+      "path": "tests/record-views.test.mjs",
+      "sha256": "e9ec1dc0385552635b376c6a264f37099560490d8e899ba962c47911d55adfe7"
+    },
+    {
+      "path": "tests/repository-catalog-order.test.mjs",
+      "sha256": "4d4f46717dd851605903458606863e79882fefc37285608c8ff59fb5488ec7fd"
+    },
+    {
+      "path": "tests/run-sh-env.test.mjs",
+      "sha256": "4a149d6effb9325acd61c06b087522e81a4bac74e5ffa065a06987590d2bd24b"
+    },
+    {
+      "path": "tests/runner-bridge.test.mjs",
+      "sha256": "b14075f2d5e8eb2a2ff0258b6596800ad87b14abafd003196297a8db1ed9ca00"
+    },
+    {
+      "path": "tests/supervisor-security.test.mjs",
+      "sha256": "242c81b2847d94377cec0453862012e8de519fdd95261f717429a8e054f55948"
+    },
+    {
+      "path": "tests/supervisor.test.mjs",
+      "sha256": "3e6ea3d07bcd2600fc7d1accc8677d15ed6522b022e0f6e80a5be51e46bd3801"
     }
   ]
 }
