@@ -39,37 +39,28 @@ import { getProjectStatus } from './project-status';
 import { buildProjectChatUrl } from './project-chat-link';
 import { orderRegisteredRepositories } from './repository-catalog-order';
 import { recordsForArea, recordSourceLabel } from './record-views';
+import { projectResourcesFor } from './data/project-resources';
+import { parsePortalHash, buildPortalHash, projectIdsMatch, runnerProjectId, type PortalView, type ProjectSection } from './project-navigation';
 import './styles.css';
 
-type View =
-  | 'overview'
-  | 'agents'
-  | 'missions'
-  | 'projects'
-  | 'register'
-  | 'homologation'
-  | 'evidence'
-  | 'environments'
-  | 'decisions'
-  | 'automations';
+type View = PortalView;
 
 const nav: { id: View; label: string }[] = [
   { id: 'overview', label: 'Visão geral' },
-  { id: 'agents', label: 'Centro de comando' },
+  { id: 'projects', label: 'Portfólio' },
   { id: 'missions', label: 'Missões' },
-  { id: 'projects', label: 'Projetos' },
-  { id: 'register', label: 'Cadastrar projeto' },
-  { id: 'homologation', label: 'Homologações' },
-  { id: 'evidence', label: 'Evidências' },
-  { id: 'environments', label: 'Ambientes' },
-  { id: 'decisions', label: 'Decisões e histórico' },
-  { id: 'automations', label: 'Automações n8n' }
+  { id: 'agents', label: 'Centro de comando' },
+  { id: 'automations', label: 'Automações' },
+  { id: 'environments', label: 'Ambientes' }
 ];
 
 const app = document.querySelector<HTMLDivElement>('#app');
 if (!app) throw new Error('Elemento #app não encontrado.');
 
-let view: View = 'overview';
+const initialRoute = parsePortalHash(window.location.hash);
+let view: View = initialRoute.view;
+let contextProjectId: string | null = initialRoute.projectId;
+let projectSection: ProjectSection = initialRoute.section;
 let selected: Project | null = null;
 let snapshot: PortfolioSnapshot | null = null;
 let loading = false;
@@ -94,6 +85,7 @@ let n8nError: string | null = null;
 
 let ledgerSnapshot: PortalLedger | null = null;
 let ledgerLoading = false;
+let ledgerRequestVersion = 0;
 let ledgerError: string | null = null;
 let ledgerSaving = false;
 let ledgerMessage: string | null = null;
@@ -103,10 +95,12 @@ let buildEvidenceError: string | null = null;
 
 let agentSnapshot: AgentEventsResponse | null = null;
 let agentLoading = false;
+let agentRequestVersion = 0;
 let agentError: string | null = null;
 
 let missionsSnapshot: MissionsResponse | null = null;
 let missionsLoading = false;
+let missionsRequestVersion = 0;
 let missionsError: string | null = null;
 let missionSubmitting = false;
 let missionDraft = "";
@@ -128,6 +122,42 @@ let statusSnapshot: SystemStatus | null = null;
 let statusLoading = false;
 
 const projects = () => snapshot?.projects ?? [];
+
+function syncRoute() {
+  const hash = buildPortalHash({ view, projectId: view === 'register' ? null : contextProjectId, section: projectSection });
+  if (window.location.hash !== hash) window.history.pushState(null, '', window.location.pathname + window.location.search + hash);
+}
+
+function activeProject(): Project | null {
+  return selected || (contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null);
+}
+
+function projectContextSelector(): string {
+  const missing = contextProjectId && !projects().some(p => p.id === contextProjectId) ? '<option value="' + esc(contextProjectId) + '" selected disabled>Projeto não encontrado · ' + esc(contextProjectId) + '</option>' : '';
+  const options = ['<option value="">Todos os projetos</option>', missing, ...projects().map(p =>
+    '<option value="' + esc(p.id) + '" ' + (contextProjectId === p.id ? 'selected' : '') + '>' + esc(p.name) + '</option>'
+  )].join('');
+  return '<label class="project-context"><span>Projeto</span><select aria-label="Contexto universal de projeto" data-project-context>' + options + '</select></label>';
+}
+
+function restoreRouteFromHash() {
+  if (window.location.hash === '#main') return;
+  const route = parsePortalHash(window.location.hash);
+  view = route.view;
+  contextProjectId = route.projectId;
+  projectSection = route.section;
+  selected = contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
+  render();
+  if (selected && view === 'projects') void loadTimeline(selected.id);
+  if (['homologation', 'evidence', 'decisions'].includes(projectSection) && selected) void loadRecords(selected.id);
+  if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
+  if (view === 'missions') void loadMissions(contextProjectId || undefined);
+  if (view === 'environments' || (view === 'projects' && projectSection === 'environments')) void loadSupervisor(false);
+  if (view === 'automations' || (view === 'projects' && projectSection === 'resources')) void loadN8n(false);
+  if (view === 'projects' && selected?.id === 'portal-governanca' && projectSection === 'homologation' && !buildEvidenceSnapshot) void loadBuildEvidence();
+}
+
+
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] ?? c));
 const date = (v?: string | null) =>
@@ -321,7 +351,7 @@ function projectCard(p: Project) {
     p.repositories.length +
     ' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="' +
     p.id +
-    '">Abrir projeto</ds-button><a class="project-chat-link" href="' + esc(chatUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir nova conversa no ChatGPT sobre ' + esc(p.name) + '">Conversar sobre este projeto <span aria-hidden="true">↗</span></a></div></ds-card>'
+    '">Abrir projeto</ds-button>' + (p.repositories[0] ? '<a class="project-chat-link" href="' + esc(repoFor(p.repositories[0].fullName)?.htmlUrl || ('https://github.com/' + p.repositories[0].fullName)) + '" target="_blank" rel="noopener noreferrer">Abrir GitHub ↗</a>' : '') + '<a class="project-chat-link" href="' + esc(chatUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir nova conversa no ChatGPT sobre ' + esc(p.name) + '">Conversar sobre este projeto <span aria-hidden="true">↗</span></a></div></ds-card>'
   );
 }
 
@@ -364,18 +394,48 @@ async function loadTimeline(projectId:string,force=false){
  finally{timelineLoading=false;render();}
 }
 
+function projectResourcesPanel(p: Project): string {
+  const curated = projectResourcesFor(p.id);
+  const curatedMarkup = curated.map(resource => '<article class="repo-card"><div class="repo-top"><strong>' + esc(resource.label) + '</strong><ds-badge variant="' + (resource.status === 'last_observed_active' ? 'warning' : resource.status === 'historical' ? 'neutral' : 'info') + '">' + (resource.status === 'last_observed_active' ? 'Última observação: ativo' : resource.status === 'historical' ? 'Histórico' : resource.status === 'candidate' ? 'Candidato' : 'Não verificado') + '</ds-badge></div><p>' + esc(resource.description) + '</p><div class="repo-facts"><span>Tipo: <b>' + esc(resource.kind) + '</b></span><span>Observado em: <b>' + esc(resource.observedAt) + '</b></span><span>Confiança: <b>' + esc(resource.confidence.replaceAll('_',' ')) + '</b></span></div><small class="repo-detail">Fonte: ' + esc(resource.source) + '</small>' + (resource.sourceUrl ? '<p><a href="' + esc(resource.sourceUrl) + '" target="_blank" rel="noopener noreferrer">Abrir evidência de origem ↗</a></p>' : '') + '<div class="resource-links">' + resource.links.map(link => '<a href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">' + esc(link.label) + ' ↗</a>').join('') + '</div></article>').join('');
+  const repositoryBlocks = p.repositories.map(ref => {
+    const repo = repoFor(ref.fullName);
+    if (!repo?.htmlUrl) return '<article class="repo-card"><strong>' + esc(ref.fullName) + '</strong><p class="repo-detail">URL canônica não retornada pela consulta; recurso não verificado.</p></article>';
+    const base = repo.htmlUrl.replace(/\/$/, '');
+    const links = [['Repositório',repo.htmlUrl],['Issues',base+'/issues'],['Pull requests',base+'/pulls'],['Actions',base+'/actions'],['Releases',base+'/releases']];
+    return '<article class="repo-card"><div class="repo-top"><strong>' + esc(ref.fullName) + '</strong><ds-badge variant="' + variant(repo.status) + '">' + esc(label(repo.status)) + '</ds-badge></div><div class="resource-links">' + links.map(([name,url]) => '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(name) + ' ↗</a>').join('') + '</div><p class="repo-detail">Fonte: GitHub API · ' + date(snapshot?.checkedAt) + '</p></article>';
+  }).join('');
+  const apps = (supervisorSnapshot?.apps || []).filter(app => projectIdsMatch(app.projectId, p.id));
+  const workflows = (n8nSnapshot?.workflows || []).filter(workflow => projectIdsMatch(workflow.projectId, p.id));
+  const inventoriesPending = supervisorLoading || n8nLoading || !supervisorSnapshot || !n8nSnapshot;
+  const serviceBlocks = [
+    apps.length ? '<div class="section-head"><h3>Home Assistant / Supervisor</h3></div><div class="repo-list">' + apps.map(app => '<article class="repo-row"><div><strong>' + esc(app.name) + '</strong><small>' + esc(app.slug) + ' · ' + esc(app.version || 'versão não informada') + '</small></div><ds-badge variant="' + (app.state === 'started' ? 'success' : 'warning') + '">' + esc(app.state) + '</ds-badge></article>').join('') + '</div>' : '',
+    workflows.length ? '<div class="section-head"><h3>Workflows n8n</h3></div><div class="repo-list">' + workflows.map(w => '<article class="repo-row"><div><strong>' + esc(w.name) + '</strong><small>ID ' + esc(w.id) + '</small></div><ds-badge variant="' + (w.active === true ? 'success' : 'neutral') + '">' + (w.active === true ? 'Ativo' : w.active === false ? 'Inativo' : 'Não verificado') + '</ds-badge></article>').join('') + '</div>' : ''
+  ].join('');
+  return '<section><div class="section-head"><div><h3>Recursos e integrações identificados</h3><p>Links e referências acompanhados de fonte, data de observação e grau de confiança.</p></div></div>' + (curatedMarkup ? '<div class="repo-list">' + curatedMarkup + '</div>' : '') + '<div class="section-head"><h3>GitHub</h3></div><div class="repo-list">' + (repositoryBlocks || '<ds-card><p>Nenhum repositório identificado.</p></ds-card>') + '</div>' + serviceBlocks + ((!apps.length && !workflows.length) ? '<ds-card><p>' + (inventoriesPending ? 'Consultando inventários de Supervisor e n8n; recursos ainda não verificados não serão declarados ausentes.' : 'Não há integrações de Supervisor ou n8n confirmadas para este projeto. Outros recursos serão incluídos quando houver evidência verificável.') + '</p></ds-card>' : '') + '<ds-card><div class="repo-top"><strong>GitHub Codespaces</strong><ds-badge variant="info">Lista geral</ds-badge></div><p>O atalho abre a lista global de Codespaces da conta. O vínculo automático de cada Codespace ao repositório ainda depende de permissão de leitura específica na API do GitHub.</p><div class="resource-links"><a href="https://github.com/codespaces" target="_blank" rel="noopener noreferrer">Abrir Codespaces ↗</a></div></ds-card></section>';
+}
+
 function projectDetail(p: Project) {
-  return (
-    '<section><button class="back" data-back>← Voltar aos projetos</button><div class="intro"><div><p class="eyebrow">' +
-    esc(p.domain) +
-    '</p><h2>' +
-    esc(p.name) +
-    '</h2><p>' +
-    esc(p.summary) +
-    '</p></div><ds-badge variant="info">Cadastro controlado</ds-badge></div>' + projectTimelineMarkup(p) + '<div class="repo-list">' +
-    p.repositories.map(repoMarkup).join('') +
-    '</div></section>'
-  );
+  const sections: {id:ProjectSection;label:string}[] = [
+    {id:'overview',label:'Visão geral'},
+    {id:'development',label:'Desenvolvimento'},
+    {id:'homologation',label:'Homologações'},
+    {id:'evidence',label:'Evidências'},
+    {id:'decisions',label:'Decisões e histórico'},
+    {id:'resources',label:'Recursos e integrações'},
+    {id:'agents',label:'Agentes'},
+    {id:'environments',label:'Ambientes'}
+  ];
+  const section = projectSection === 'homologation' ? recordsPage('homologation',p.id)
+    : projectSection === 'evidence' ? recordsPage('evidence',p.id)
+    : projectSection === 'decisions' ? recordsPage('decision',p.id)
+    : projectSection === 'agents' ? agentsPage(p.id)
+    : projectSection === 'environments' ? environments(p.id)
+    : projectSection === 'resources' ? projectResourcesPanel(p)
+    : projectSection === 'development' ? '<section><div class="section-head"><div><h3>Repositórios e desenvolvimento</h3><p>Branches, commits, Issues, Pull Requests, workflows e releases identificados.</p></div></div><div class="repo-list">' + p.repositories.map(repoMarkup).join('') + '</div></section>'
+    : '<section>' + projectTimelineMarkup(p) + '<div class="section-head"><div><h3>Repositórios vinculados</h3><p>' + p.repositories.length + ' repositório(s) identificados.</p></div></div><div class="repo-list">' + p.repositories.map(repoMarkup).join('') + '</div></section>';
+  const primaryRepo = p.repositories[0]?.fullName;
+  const primaryUrl = primaryRepo ? (repoFor(primaryRepo)?.htmlUrl || 'https://github.com/' + primaryRepo) : null;
+  return '<section><button class="back" data-back>← Voltar ao portfólio</button><div class="intro"><div><p class="eyebrow">' + esc(p.domain) + '</p><h2>' + esc(p.name) + '</h2><p>' + esc(p.summary) + '</p></div><div class="header-meta"><ds-badge variant="info">Projeto selecionado</ds-badge>' + (primaryUrl ? '<a href="' + esc(primaryUrl) + '" target="_blank" rel="noopener noreferrer">Abrir GitHub ↗</a>' : '') + '</div></div><nav class="project-tabs" aria-label="Áreas do projeto">' + sections.map(item => '<button type="button" data-project-section="' + item.id + '" ' + (projectSection === item.id ? 'aria-current="page"' : '') + '>' + item.label + '</button>').join('') + '</nav>' + section + '</section>';
 }
 
 function integrationsPanel() {
@@ -473,8 +533,11 @@ function missionStatusInfo(status: string): { label: string; variant: string } {
   return values[status] || { label: 'Não verificado', variant: 'neutral' };
 }
 
-function missionsPage() {
-  const missions = missionsSnapshot?.missions ?? [];
+function missionsPage(projectId: string | null = contextProjectId) {
+  const allMissions = missionsSnapshot?.missions ?? [];
+  const missions = projectId ? allMissions.filter(m => projectIdsMatch(m.projectId, projectId)) : allMissions;
+  const projectOptions = projects().map(p => { const runnerId = runnerProjectId(p.id); return runnerId ? '<option value="' + esc(runnerId) + '" ' + (projectId && projectIdsMatch(p.id, projectId) ? 'selected' : '') + '>' + esc(p.name) + ' · ' + esc(p.repositories[0]?.fullName || 'sem repositório') + '</option>' : ''; }).join('');
+  const unsupportedContext = projectId && !runnerProjectId(projectId) ? '<ds-alert variant="info" title="Executor ainda não habilitado">O projeto selecionado não possui um perfil de despacho compatível no Runner. Escolha um dos projetos habilitados no formulário.</ds-alert>' : '';
   const rows = missions.map(m => {
     const status = missionStatusInfo(m.missionStatus || 'received');
     const planDetail = m.planStatus
@@ -499,14 +562,14 @@ function missionsPage() {
     );
   }).join('');
   return (
-    '<section><div class="intro"><div><h2>Cadastrar missão</h2><p>O Portal preserva o prompt integral; o Runner recebe apenas o primeiro trecho (até 900 caracteres) e o hash para planejamento read-only. Nenhum código ou teste do projeto será executado.</p></div>' +
+    '<section>' + unsupportedContext + '<div class="intro"><div><h2>Cadastrar missão</h2><p>O Portal preserva o prompt integral; o Runner recebe apenas o primeiro trecho (até 900 caracteres) e o hash para planejamento read-only. Nenhum código ou teste do projeto será executado.</p></div>' +
     '<div class="header-meta"><ds-badge variant="info">Planejamento read-only</ds-badge><ds-button variant="secondary" size="sm" data-mission-refresh ' + (missionsLoading ? 'disabled' : '') + '>' + (missionsLoading ? 'Consultando…' : 'Atualizar') + '</ds-button></div></div>' +
     (missionsError ? '<ds-alert variant="warning" title="Falha ao consultar missões">' + esc(missionsError) + '</ds-alert>' : '') +
     (missionMessage ? '<ds-alert variant="' + (missionMessage.includes('despacho está bloqueado') ? 'warning' : 'success') + '" title="Missão registrada">' + esc(missionMessage) + '</ds-alert>' : '') +
     (missionError ? '<ds-alert variant="warning" title="Não foi possível cadastrar">' + esc(missionError) + '</ds-alert>' : '') +
     '<ds-card><form class="registration-form" data-mission-form>' +
     '<label for="mission-project">Projeto compatível com o Runner HA</label>' +
-    '<select id="mission-project" name="projectId" required><option value="">Selecione o projeto</option><option value="avisaqui">Avisaqui — mmcromero/pager-virtual</option><option value="artesao_digital">Artesão Digital — mmcromero/fabricacao_e_orcamentos</option></select>' +
+    '<select id="mission-project" name="projectId" required><option value="">Selecione o projeto</option>' + projectOptions + '</select><p class="repo-detail">Apenas projetos com executor de missões habilitado aparecem nesta lista.</p>' +
     '<label for="mission-prompt">Prompt de ativação</label>' +
     '<textarea id="mission-prompt" name="prompt" rows="12" maxlength="8000" minlength="30" required placeholder="Cole aqui o prompt completo gerado pelo agente.">' + esc(missionDraft) + '</textarea>' +
     '<small>Máximo de 8.000 caracteres. Não inclua senhas, tokens ou chaves de acesso.</small>' +
@@ -518,9 +581,10 @@ function missionsPage() {
   );
 }
 
-function agentsPage() {
-  const events = agentSnapshot?.events ?? [];
-  const total = agentSnapshot?.total ?? 0;
+function agentsPage(projectId: string | null = contextProjectId) {
+  const allEvents = agentSnapshot?.events ?? [];
+  const events = projectId ? allEvents.filter(e => projectIdsMatch(e.projectId, projectId)) : allEvents;
+  const total = projectId ? events.length : (agentSnapshot?.total ?? 0);
   const lastUp = agentSnapshot?.lastUpdated;
   const stale = isStale(lastUp);
 
@@ -713,8 +777,9 @@ async function submitRegistration(input: { repositoryFullName: string; project: 
   }
 }
 
-function environments() {
-  const apps = supervisorSnapshot?.apps ?? [];
+function environments(projectId: string | null = contextProjectId) {
+  const allApps = supervisorSnapshot?.apps ?? [];
+  const apps = projectId ? allApps.filter(a => projectIdsMatch(a.projectId, projectId)) : allApps;
   const mapped = apps.filter(a => a.projectId),
     updates = apps.filter(a => a.updateAvailable === true),
     stopped = apps.filter(a => a.state !== 'started');
@@ -788,9 +853,12 @@ async function loadSupervisor(force = false) {
   }
 }
 
-function automations() {
-  const workflows = n8nSnapshot?.workflows ?? [],
-    executions = n8nSnapshot?.executions ?? [];
+function automations(projectId: string | null = contextProjectId) {
+  const allWorkflows = n8nSnapshot?.workflows ?? [];
+  const workflows = projectId ? allWorkflows.filter(w => projectIdsMatch(w.projectId, projectId)) : allWorkflows;
+  const allExecutions = n8nSnapshot?.executions ?? [];
+  const scopedWorkflowIds = new Set(workflows.map(w => w.id));
+  const executions = projectId ? allExecutions.filter(e => scopedWorkflowIds.has(e.workflowId)) : allExecutions;
   const rows = workflows
     .map(
       w =>
@@ -898,18 +966,21 @@ async function loadN8n(force = false) {
   }
 }
 
-async function loadRecords() {
-  if (ledgerLoading) return;
+async function loadRecords(projectId?: string) {
+  const requestVersion = ++ledgerRequestVersion;
   ledgerLoading = true;
   ledgerError = null;
   render();
   try {
-    ledgerSnapshot = await getPortalRecords();
+    const result = await getPortalRecords(projectId);
+    if (requestVersion === ledgerRequestVersion) ledgerSnapshot = result;
   } catch (e) {
-    ledgerError = e instanceof Error ? e.message : 'Falha ao consultar histórico';
+    if (requestVersion === ledgerRequestVersion) ledgerError = e instanceof Error ? e.message : 'Falha ao consultar histórico';
   } finally {
-    ledgerLoading = false;
-    render();
+    if (requestVersion === ledgerRequestVersion) {
+      ledgerLoading = false;
+      render();
+    }
   }
 }
 
@@ -928,18 +999,21 @@ async function loadBuildEvidence() {
   }
 }
 
-async function loadMissions() {
-  if (missionsLoading) return;
+async function loadMissions(projectId?: string) {
+  const requestVersion = ++missionsRequestVersion;
   missionsLoading = true;
   missionsError = null;
   render();
   try {
-    missionsSnapshot = await getMissions();
+    const result = await getMissions(projectId);
+    if (requestVersion === missionsRequestVersion) missionsSnapshot = result;
   } catch (e) {
-    missionsError = e instanceof Error ? e.message : 'Falha ao consultar missões';
+    if (requestVersion === missionsRequestVersion) missionsError = e instanceof Error ? e.message : 'Falha ao consultar missões';
   } finally {
-    missionsLoading = false;
-    render();
+    if (requestVersion === missionsRequestVersion) {
+      missionsLoading = false;
+      render();
+    }
   }
 }
 
@@ -980,18 +1054,21 @@ async function submitMission(form: HTMLFormElement) {
   }
 }
 
-async function loadAgentEvents() {
-  if (agentLoading) return;
+async function loadAgentEvents(projectId?: string) {
+  const requestVersion = ++agentRequestVersion;
   agentLoading = true;
   agentError = null;
   render();
   try {
-    agentSnapshot = await getAgentEvents({ limit: 100 });
+    const result = await getAgentEvents({ project: projectId, limit: 100 });
+    if (requestVersion === agentRequestVersion) agentSnapshot = result;
   } catch (e) {
-    agentError = e instanceof Error ? e.message : 'Falha ao consultar eventos de agentes';
+    if (requestVersion === agentRequestVersion) agentError = e instanceof Error ? e.message : 'Falha ao consultar eventos de agentes';
   } finally {
-    agentLoading = false;
-    render();
+    if (requestVersion === agentRequestVersion) {
+      agentLoading = false;
+      render();
+    }
   }
 }
 
@@ -1055,9 +1132,10 @@ function buildEvidencePanel() {
     '<ds-button variant="secondary" size="sm" data-build-evidence-refresh>Atualizar evidência</ds-button></ds-card>';
 }
 
-function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
+function recordsPage(type: 'homologation' | 'evidence' | 'decision', projectId: string | null = contextProjectId) {
   const title = type === 'homologation' ? 'Homologações' : type === 'evidence' ? 'Evidências' : 'Decisões e histórico';
-  const records = recordsForArea(ledgerSnapshot?.records || [], type);
+  const areaRecords = recordsForArea(ledgerSnapshot?.records || [], type);
+  const records = projectId ? areaRecords.filter(r => projectIdsMatch(r.projectId, projectId)) : areaRecords;
   const statusCounts = {
     pass: records.filter(r => r.status === 'PASS').length,
     fail: records.filter(r => r.status === 'FAIL').length,
@@ -1072,7 +1150,7 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
     ? 'Nenhuma evidência disponível ainda. Evidências manuais, eventos reais de agentes e marcos históricos aparecerão aqui conforme forem registrados nas fontes.'
     : 'Nenhuma decisão ou marco registrado ainda. Decisões humanas, missões e eventos de ciclo de vida aparecerão aqui sem duplicar o ledger.';
 
-  const buildEvidence = type === 'homologation' ? buildEvidencePanel() : '';
+  const buildEvidence = type === 'homologation' && projectId === 'portal-governanca' ? buildEvidencePanel() : '';
   const statusOptions = ['PASS', 'FAIL', 'NAO_EXECUTADO', 'NAO_VERIFICADO', 'BLOQUEADO', 'INDISPONIVEL']
     .map(x => '<option value="' + x + '">' + x.replaceAll('_', ' ') + '</option>')
     .join('');
@@ -1089,7 +1167,7 @@ function recordsPage(type: 'homologation' | 'evidence' | 'decision') {
     '<label for="record-summary">Descrição / justificativa</label><textarea id="record-summary" name="summary" rows="3" maxlength="2000" required placeholder="Descreva os critérios, escopo e decisão humana realizada"></textarea>' +
     (type === 'homologation' ? '<label for="record-status">Estado</label><select id="record-status" name="status" required>' + statusOptions + '</select>' : '') +
     (type === 'evidence' ? '<label for="record-kind">Tipo de evidência</label><select id="record-kind" name="evidenceKind"><option value="real">Real / operacional</option><option value="synthetic">Sintética / automatizada</option></select>' : '') +
-    '<label for="record-project">ID do projeto (opcional)</label><input id="record-project" name="projectId" maxlength="64" placeholder="Ex.: portal-governanca">' +
+    (projectId ? '<input type="hidden" name="projectId" value="' + esc(projectId) + '"><p class="repo-detail">Registro vinculado automaticamente ao projeto ' + esc(projectId) + '.</p>' : '<label for="record-project">ID do projeto (opcional)</label><input id="record-project" name="projectId" maxlength="64" placeholder="Ex.: portal-governanca">') +
     '<label for="record-repo">Repositório (opcional)</label><input id="record-repo" name="repository" maxlength="160" placeholder="Ex.: mmcromero/portal-governanca">' +
     '<label for="record-sha">SHA (opcional)</label><input id="record-sha" name="sha" maxlength="64" pattern="[a-fA-F0-9]{7,64}" placeholder="Ex.: 8b23be1">' +
     '<label for="record-version">Versão (opcional)</label><input id="record-version" name="version" maxlength="64" placeholder="Ex.: 0.1.0-dev.27">' +
@@ -1166,20 +1244,18 @@ function body() {
   if (view === 'overview') return overview();
   if (view === 'agents') return agentsPage();
   if (view === 'missions') return missionsPage();
-  if (view === 'projects' && selected) return projectDetail(selected);
+  const project = activeProject();
+  if (view === 'projects' && project) return projectDetail(project);
+  if (view === 'projects' && contextProjectId && !project) return '<section><ds-alert variant="warning" title="Projeto indisponível">O contexto ' + esc(contextProjectId) + ' não foi encontrado no portfólio consultado. O Portal preservou a referência e não selecionou outro projeto.</ds-alert><ds-button data-view="projects">Voltar ao portfólio</ds-button></section>';
   if (view === 'projects')
     return (
-      '<section><div class="intro"><div><h2>Projetos</h2><p>Projetos identificados automaticamente nos repositórios.</p></div><ds-button data-view="register">Cadastrar projeto</ds-button></div><div class="projects">' +
-      (projects().length ? projects().map(projectCard).join('') : '<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione <code>.portal-governanca.json</code> à raiz de um repositório ou use Cadastrar projeto.</p></ds-card>') +
+      '<section><div class="intro"><div><h2>Portfólio de projetos</h2><p>Entre em cada projeto para consultar desenvolvimento, homologações, evidências, decisões e recursos vinculados.</p></div><ds-button data-view="register">Cadastrar projeto</ds-button></div><div class="projects">' +
+      (projects().length ? projects().map(projectCard).join('') : '<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione .portal-governanca.json à raiz de um repositório ou use Cadastrar projeto.</p></ds-card>') +
       '</div></section>'
     );
   if (view === 'register') return registrationPage();
   if (view === 'environments') return environments();
   if (view === 'automations') return automations();
-  if (view === 'homologation') return recordsPage('homologation');
-  if (view === 'evidence') return recordsPage('evidence');
-  if (view === 'decisions') return recordsPage('decision');
-
   return '<section><div class="intro"><div><h2>Não encontrado</h2></div></div></section>';
 }
 
@@ -1198,8 +1274,8 @@ function render() {
     '<a class="skip" href="#main">Pular para o conteúdo</a><div class="shell"><aside class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>CENTRO DE COMANDO</small></span></a><p class="nav-label">Acompanhamento</p><nav aria-label="Seções principais">' +
     nav.map(n => '<button data-view="' + n.id + '" ' + (view === n.id ? 'aria-current="page"' : '') + '>' + n.label + '</button>').join('') +
     '</nav><div class="side-foot"><ds-badge variant="info">GitHub integrado</ds-badge><p>Protocolo de agentes ativo</p></div></aside><div class="workspace"><header><div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
-    nav.find(n => n.id === view)?.label +
-    '</h1></div><div class="header-meta"><ds-badge variant="info">Centro de Comando · v0.1.0</ds-badge><small>' +
+    (view === 'projects' && activeProject() ? activeProject()!.name : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
+    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0</ds-badge><small>' +
     esc(status) +
     ' · ' +
     (lastChecked ? date(lastChecked) : 'sem consulta') +
@@ -1214,33 +1290,76 @@ function render() {
   app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b =>
     b.addEventListener('click', () => {
       view = b.dataset.view as View;
-      selected = null;
+      selected = view === 'projects' && contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
       registerMessage = null;
       registerError = null;
+      syncRoute();
       render();
       document.querySelector<HTMLElement>('#main')?.focus();
       if (view === 'register' && !catalog && !catalogLoading) void loadCatalog();
       if (view === 'environments' && !supervisorSnapshot && !supervisorLoading && !supervisorError) void loadSupervisor(false);
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
-      if (['homologation', 'evidence', 'decisions'].includes(view) && !ledgerSnapshot && !ledgerLoading && !ledgerError) void loadRecords();
-      if (view === 'homologation' && !buildEvidenceSnapshot && !buildEvidenceLoading && !buildEvidenceError) void loadBuildEvidence();
-      if (view === 'agents' && !agentSnapshot && !agentLoading && !agentError) void loadAgentEvents();
-      if (view === 'missions' && !missionsSnapshot && !missionsLoading && !missionsError) void loadMissions();
+      if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
+      if (view === 'missions') void loadMissions(contextProjectId || undefined);
+      if (view === 'projects' && selected) void loadTimeline(selected.id);
     })
   );
 
   app!.querySelectorAll<HTMLElement>('[data-project]').forEach(b =>
     b.addEventListener('click', () => {
       selected = projects().find(p => p.id === b.dataset.project) || null;
+      contextProjectId = selected?.id || null;
+      projectSection = 'overview';
       view = 'projects';
+      syncRoute();
       render();
       document.querySelector<HTMLElement>('#main')?.focus();
       if(selected)void loadTimeline(selected.id);
     })
   );
 
+  app!.querySelectorAll<HTMLButtonElement>('[data-project-section]').forEach(b =>
+    b.addEventListener('click', () => {
+      const project = activeProject();
+      if (!project) return;
+      projectSection = b.dataset.projectSection as ProjectSection;
+      syncRoute();
+      render();
+      if (['homologation','evidence','decisions'].includes(projectSection)) void loadRecords(project.id);
+      if (projectSection === 'homologation' && project.id === 'portal-governanca' && !buildEvidenceSnapshot && !buildEvidenceLoading) void loadBuildEvidence();
+      if (projectSection === 'agents') void loadAgentEvents(project.id);
+      if (projectSection === 'environments') void loadSupervisor(false);
+      if (projectSection === 'resources') { void loadSupervisor(false); void loadN8n(false); }
+    })
+  );
+
+  app!.querySelector<HTMLSelectElement>('[data-project-context]')?.addEventListener('change', event => {
+    const value = (event.currentTarget as HTMLSelectElement).value || null;
+    contextProjectId = value;
+    selected = value ? projects().find(p => p.id === value) || null : null;
+    if (value && ['overview','projects','register'].includes(view)) { view = 'projects'; projectSection = 'overview'; }
+    else if (!value && view === 'projects') projectSection = 'overview';
+    syncRoute();
+    render();
+    if (selected) void loadTimeline(selected.id);
+    if (view === 'projects' && selected) {
+      if (['homologation','evidence','decisions'].includes(projectSection)) void loadRecords(selected.id);
+      if (projectSection === 'agents') void loadAgentEvents(selected.id);
+      if (projectSection === 'environments') void loadSupervisor(false);
+      if (projectSection === 'resources') { void loadSupervisor(false); void loadN8n(false); }
+      if (projectSection === 'homologation' && selected.id === 'portal-governanca' && !buildEvidenceSnapshot && !buildEvidenceLoading) void loadBuildEvidence();
+    }
+    if (view === 'missions') void loadMissions(contextProjectId || undefined);
+    if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
+    if (view === 'environments') void loadSupervisor(false);
+    if (view === 'automations') void loadN8n(false);
+  });
+
   app!.querySelector<HTMLElement>('[data-back]')?.addEventListener('click', () => {
     selected = null;
+    contextProjectId = null;
+    projectSection = 'overview';
+    syncRoute();
     render();
     document.querySelector<HTMLElement>('#main')?.focus();
   });
@@ -1310,17 +1429,35 @@ async function refresh(force = false) {
   try {
     snapshot = await getPortfolio(force);
     lastChecked = snapshot.checkedAt;
+    selected = contextProjectId ? snapshot.projects.find(p => p.id === contextProjectId) || null : null;
   } catch (error) {
     lastError = error instanceof Error ? error.message : 'Falha desconhecida na consulta GitHub';
     lastErrorCode = (error as { code?: string })?.code || null;
   } finally {
     loading = false;
+    selected = contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
     render();
-    if (snapshot) void loadProjectTimelineCards(snapshot.projects, force);
+    if (snapshot) {
+      if (view === 'projects' && selected) {
+        if (projectSection === 'overview') void loadTimeline(selected.id);
+        if (['homologation','evidence','decisions'].includes(projectSection)) void loadRecords(selected.id);
+        if (projectSection === 'homologation' && selected.id === 'portal-governanca' && !buildEvidenceSnapshot) void loadBuildEvidence();
+        if (projectSection === 'agents') void loadAgentEvents(selected.id);
+        if (projectSection === 'environments') void loadSupervisor(false);
+        if (projectSection === 'resources') { void loadSupervisor(false); void loadN8n(false); }
+      }
+      if (view === 'missions') void loadMissions(contextProjectId || undefined);
+      if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
+      if (view === 'environments') void loadSupervisor(false);
+      if (view === 'automations') void loadN8n(false);
+      void loadProjectTimelineCards(snapshot.projects, force);
+    }
   }
 }
 
 // Inicialização
+window.addEventListener('hashchange', restoreRouteFromHash);
+window.addEventListener('popstate', restoreRouteFromHash);
 render();
 void refresh(false);
 void loadSystemStatus();

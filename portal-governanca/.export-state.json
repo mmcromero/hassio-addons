@@ -96,6 +96,38 @@
     {
       "path": "server/supervisor-data.mjs",
       "sha256": "0a347d7d8dac24358f2cffe26814a9f665b92d5a1d2a711aea3d34878e45894c"
+    },
+    {
+      "path": "src/api/client.ts",
+      "sha256": "551a040a0435763fccc77b6b2d143e94e2c8602befb6a98681603c5dcc67de89"
+    },
+    {
+      "path": "src/data/project-resources.ts",
+      "sha256": "d79ae21aa6c6e228c053e9a75df5a9598c75c278333a78c94daf327efc6e5e63"
+    },
+    {
+      "path": "src/data/projects.ts",
+      "sha256": "f7cd64a0a9fc029c1db024ca67b8ff9bb73f0f07d9f41e27c559a6add23eaaa0"
+    },
+    {
+      "path": "src/main.ts",
+      "sha256": "de752c129c13648ad9f4cfb370cbead700143271e21bccc3f65b20c4deb8b1f8"
+    },
+    {
+      "path": "src/project-age.ts",
+      "sha256": "90436b12a4dae5cf98ffb6d2340cb4f1f7d25879295db71b05ec46584ffa804e"
+    },
+    {
+      "path": "src/project-chat-link.ts",
+      "sha256": "54164df9b17e1a08e5bcfe0a10ffeeb7e8b8611590f1706ed34fc107571694d5"
+    },
+    {
+      "path": "src/project-navigation.ts",
+      "sha256": "2e43c65e185c076ab54ce981bffdd63d8cd31d3a2419831ca8a96af266343088"
+    },
+    {
+      "path": "src/project-status.ts",
+      "sha256": "dc776c7b91fb50cf9867ff663e6a481d19016009eb3990a65e9effe7a9d8c62a"
     }
   ]
 }
