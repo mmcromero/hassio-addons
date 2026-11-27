@@ -15,9 +15,11 @@ import {
   getProjectTimeline,
   collectProjectTimeline,
   endProjectTimeline,
+  cancelProjectTimeline,
   type ProjectTimelineResponse,
   getSystemStatus,
   type PortalLedger,
+  type PortalRecord,
   type PortfolioSnapshot,
   type RepoSnapshot,
   type Project,
@@ -30,6 +32,7 @@ import {
   type SystemStatus
 } from './api/client';
 import { getProjectAge } from './project-age';
+import { getProjectStatus } from './project-status';
 import './styles.css';
 
 type View =
@@ -108,6 +111,9 @@ let timelineError: string | null = null;
 let timelineServerOffset = 0;
 const projectTimelineCards = new Map<string, ProjectTimelineResponse>();
 let projectTimelineCardsLoading = false;
+let projectStatusRecords: PortalRecord[] = [];
+let projectStatusRecordsLoaded = false;
+let projectStatusRecordsLoading = false;
 
 let statusSnapshot: SystemStatus | null = null;
 let statusLoading = false;
@@ -239,8 +245,21 @@ function repoMarkup(ref: { fullName: string; role: string; path?: string }) {
 async function loadProjectTimelineCards(items: Project[], force = false) {
   if (projectTimelineCardsLoading || !items.length) return;
   projectTimelineCardsLoading = true;
+  if (force) projectStatusRecordsLoaded = false;
   render();
   try {
+    if (!projectStatusRecordsLoaded && !projectStatusRecordsLoading) {
+      projectStatusRecordsLoading = true;
+      try {
+        const ledger = await getPortalRecords();
+        projectStatusRecords = ledger.records;
+        projectStatusRecordsLoaded = true;
+      } catch {
+        projectStatusRecords = [];
+      } finally {
+        projectStatusRecordsLoading = false;
+      }
+    }
     for (const project of items) {
       if (!force && projectTimelineCards.has(project.id)) continue;
       try {
@@ -266,7 +285,9 @@ async function loadProjectTimelineCards(items: Project[], force = false) {
 
 function projectCard(p: Project) {
   const timeline = projectTimelineCards.get(p.id);
-  const age = getProjectAge(timeline?.events ?? [], new Date(Date.now() + timelineServerOffset).toISOString());
+  const now = new Date(Date.now() + timelineServerOffset).toISOString();
+  const age = getProjectAge(timeline?.events ?? [], now);
+  const lifecycle = getProjectStatus(p.id, p.repositories.map(ref => repoFor(ref.fullName)).filter((repo): repo is RepoSnapshot => Boolean(repo)), projectStatusRecords, timeline?.events ?? [], now);
   const ageMarkup = !timeline
     ? '<div class="project-age project-age-unknown"><strong>…</strong><small>' + (projectTimelineCardsLoading ? 'Consultando histórico' : 'Histórico indisponível') + '</small></div>'
     : age.days === null
@@ -285,7 +306,7 @@ function projectCard(p: Project) {
     (snapshot ? label(s) : 'Aguardando consulta') +
     '</ds-badge></div><p>' +
     esc(p.summary) +
-    '</p>' + ageMarkup + '<p class="repo-count">' +
+    '</p><div class="project-status-row" title="' + esc(lifecycle.reason) + '"><ds-badge variant="' + lifecycle.variant + '">' + lifecycle.label + '</ds-badge></div>' + ageMarkup + '<p class="repo-count">' +
     p.repositories.length +
     ' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="' +
     p.id +
@@ -307,16 +328,18 @@ function projectTimelineMarkup(p:Project):string{
  const latest=visibleEvents.at(-1)||null;
  const activeDays=events.filter(e=>e.category==="activity_day").reduce((sum,e)=>sum+(e.activeDays||0),0);
  const activeDaysEstimated=events.some(e=>e.category==="activity_coverage"&&e.confidence==="estimated");
- const ended=visibleEvents.find(e=>e.category==="project_end")||null;
- const now=new Date(Date.now()+timelineServerOffset).toISOString(),counterEnd=ended?.occurredAt||now;
+ const terminal=visibleEvents.filter(e=>["project_end","project_cancelled"].includes(e.category)).sort((a,b)=>Date.parse(b.occurredAt)-Date.parse(a.occurredAt))[0]||null;
+ const ended=terminal?.category==="project_end"?terminal:null;
+ const cancelled=terminal?.category==="project_cancelled"?terminal:null;
+ const now=new Date(Date.now()+timelineServerOffset).toISOString(),counterEnd=terminal?.occurredAt||now;
  const existence=startEvent?elapsedLabel(startEvent.occurredAt,counterEnd):"Não calculável";
- const lastActivity=events.filter(e=>e.category==="activity_day").at(-1)||visibleEvents.filter(e=>e.category!=="project_end").at(-1)||null;
+ const lastActivity=events.filter(e=>e.category==="activity_day").at(-1)||visibleEvents.filter(e=>!["project_end","project_cancelled"].includes(e.category)).at(-1)||null;
  const activeSpan=startEvent&&lastActivity?elapsedLabel(startEvent.occurredAt,lastActivity.occurredAt):"Não calculável";
  const since=latest?elapsedLabel(latest.occurredAt,now):"Sem marcos";
  const confidence=(value:string)=>value==="confirmed"?"Confirmado":value==="estimated"?"Estimado":"Desconhecido";
  const confidenceVariant=(value:string)=>value==="confirmed"?"success":value==="estimated"?"warning":"neutral";
  const rows=visibleEvents.slice().sort((a,b)=>Date.parse(b.occurredAt)-Date.parse(a.occurredAt)).map(e=>'<article class="timeline-event"><div class="timeline-date">'+timelineDate(e.occurredAt)+'</div><div class="timeline-content"><div class="timeline-event-head"><strong>'+esc(e.title)+'</strong><ds-badge variant="'+confidenceVariant(e.confidence)+'">'+confidence(e.confidence)+'</ds-badge></div><p>'+esc(e.summary)+'</p><small>'+esc(e.sourceName)+' · '+esc(e.repository||'')+(e.sha?' · SHA '+esc(e.sha.slice(0,7)):'')+'</small>'+(e.sourceUrl?'<p><a href="'+esc(e.sourceUrl)+'" target="_blank" rel="noopener noreferrer">Abrir evidência</a></p>':'')+'</div></article>').join('');
- return '<section class="timeline-section"><div class="section-head"><div><h2>Histórico do projeto</h2><p>Marcos históricos coletados de fontes GitHub e preservados no ledger imutável.</p></div><div class="header-meta"><ds-badge variant="'+(data?.integrity==="valid"?"success":"neutral")+'">'+(data?.integrity==="valid"?"Integridade verificada":"Aguardando coleta")+'</ds-badge><button class="primary-action" data-timeline-refresh '+(timelineLoading?'disabled':'')+'>'+(timelineLoading?'Coletando…':'Atualizar histórico')+'</button>'+(ended?'<ds-badge variant="neutral">Projeto encerrado</ds-badge>':'<button class="primary-action timeline-end-action" data-timeline-end '+(timelineLoading?'disabled':'')+'>Registrar encerramento</button>')+'</div></div>'+
+ return '<section class="timeline-section"><div class="section-head"><div><h2>Histórico do projeto</h2><p>Marcos históricos coletados de fontes GitHub e preservados no ledger imutável.</p></div><div class="header-meta"><ds-badge variant="'+(data?.integrity==="valid"?"success":"neutral")+'">'+(data?.integrity==="valid"?"Integridade verificada":"Aguardando coleta")+'</ds-badge><button class="primary-action" data-timeline-refresh '+(timelineLoading?'disabled':'')+'>'+(timelineLoading?'Coletando…':'Atualizar histórico')+'</button>'+(ended?'<ds-badge variant="neutral">Projeto finalizado</ds-badge>':cancelled?'<ds-badge variant="error">Projeto cancelado</ds-badge>':'<button class="primary-action timeline-end-action" data-timeline-end '+(timelineLoading?'disabled':'')+'>Registrar encerramento</button><button class="primary-action timeline-cancel-action" data-timeline-cancel '+(timelineLoading?'disabled':'')+'>Registrar cancelamento</button>')+'</div></div>'+
  (timelineError?'<ds-alert variant="warning" title="Histórico indisponível">'+esc(timelineError)+'</ds-alert>':'')+
  '<div class="metrics timeline-metrics"><ds-card><div class="stat-content"><small>Início identificado</small><strong class="metric-date">'+(startEvent?timelineDate(startEvent.occurredAt):'Não confirmado')+'</strong><small>'+(startEvent?confidence(startEvent.confidence):'Sem evidência suficiente')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Tempo de existência</small><strong class="metric-word">'+existence+'</strong><small>'+(ended?'Congelado no encerramento':'Contador atualizado automaticamente')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Período com atividade registrada</small><strong class="metric-word">'+activeSpan+'</strong><small>Entre a primeira e a última evidência</small></div></ds-card><ds-card><div class="stat-content"><small>Dias com commits</small><strong class="metric-word">'+(activeDays?activeDays+' dias':'Não identificado')+'</strong><small>'+(activeDaysEstimated?'Cobertura parcial':'Dias distintos com atividade observada')+'</small></div></ds-card><ds-card><div class="stat-content"><small>Desde o último marco</small><strong class="metric-word">'+since+'</strong><small>'+(latest?timelineDate(latest.occurredAt):'Nenhuma atividade registrada')+'</small></div></ds-card></div>'+
  (visibleEvents.length?'<div class="timeline-list">'+rows+'</div>':'<ds-card><h3>Histórico ainda não coletado</h3><p>Atualize para investigar commits, Issues, Pull Requests, releases e datas de criação dos repositórios vinculados.</p></ds-card>')+
@@ -1162,6 +1185,13 @@ function render() {
   app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
   app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
   app!.querySelector<HTMLElement>('[data-timeline-refresh]')?.addEventListener('click', () => { if(selected)void loadTimeline(selected.id,true); });
+  app!.querySelector<HTMLElement>('[data-timeline-cancel]')?.addEventListener('click', async () => {
+    if(!selected||!window.confirm('Registrar o CANCELAMENTO deste projeto? A decisão será permanente no histórico e encerrará o contador de existência.'))return;
+    timelineLoading=true;timelineError=null;render();
+    try{timelineSnapshot=await cancelProjectTimeline(selected.id);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}
+    catch(error){timelineError=error instanceof Error?error.message:'Não foi possível registrar o cancelamento.';}
+    finally{timelineLoading=false;render();}
+  });
   app!.querySelector<HTMLElement>('[data-timeline-end]')?.addEventListener('click', async () => {
     if(!selected||!window.confirm('Registrar o encerramento deste projeto? O evento será permanente no histórico e congelará o contador de existência.'))return;
     timelineLoading=true;timelineError=null;render();
