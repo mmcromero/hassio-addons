@@ -263,13 +263,17 @@ const server=http.createServer(async(req,res)=>{
   return;
  }
  if(pathname==="/api/v1/records"&&req.method==="GET"){
-  try{json(res,200,await ledger.list());}catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_UNAVAILABLE",message:error.message}});}return;
+  const projectId=requestUrl.searchParams.get("project");
+  if(projectId&&!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(projectId)){json(res,400,{error:{code:"INVALID_PROJECT_FILTER",message:"Filtro de projeto inválido."}});return;}
+  try{json(res,200,await ledger.list({projectId}));}catch(error){json(res,error.status||503,{error:{code:error.code||"LEDGER_UNAVAILABLE",message:error.message}});}return;
  }
  if(pathname==="/api/v1/missions"&&req.method==="GET"){
+  const projectId=requestUrl.searchParams.get("project");
+  if(projectId&&!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(projectId)){json(res,400,{error:{code:"INVALID_PROJECT_FILTER",message:"Filtro de projeto inválido."}});return;}
   try{
-   const current=await ledger.listMissions({limit:100});
+   const current=await ledger.listMissions({projectId,limit:100});
    await refreshMissionStatuses(current.missions);
-   json(res,200,await ledger.listMissions({limit:100}));
+   json(res,200,await ledger.listMissions({projectId,limit:100}));
   }catch(error){json(res,error.status||503,{error:{code:error.code||"MISSIONS_UNAVAILABLE",message:error.message}});}
   return;
  }

@@ -53,6 +53,11 @@ describe("classificação automática do ciclo de vida do projeto", () => {
     expect(result).toMatchObject({ status: "unknown", label: "STATUS NÃO IDENTIFICADO" });
   });
 
+  it("reconhece homologação histórica vinculada ao ID legado do Artesão", () => {
+    const result = getProjectStatus("artesao-digital", [repo()], [{ type: "homologation", projectId: "artesao_digital", status: "PASS", createdAt: "2026-01-01T00:00:00.000Z" }], [], "2026-02-01T00:00:00.000Z");
+    expect(result.status).toBe("homologated");
+  });
+
   it("ignora homologação de outro projeto", () => {
     const result = getProjectStatus("demo", [repo()], [{ ...approval(), projectId: "other" }], [], "2026-02-01T00:00:00.000Z");
     expect(result.status).toBe("unknown");

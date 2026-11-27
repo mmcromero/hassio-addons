@@ -67,7 +67,7 @@ export type PortalRecord={id:string;createdAt:string;type:"homologation"|"eviden
 export type PortalLedger={records:PortalRecord[];total:number;integrity:string;lastHash:string};
 export type BuildEvidence={schemaVersion:1;kind:"supervisor-addon-build";status:"PASS";builtAt:string;source:{repository:string;commit:string};addon:{version:string;architecture:"aarch64";nodeVersion:string};designSystem:{repository:string;commit:string};lockfile:{version:3;sha256:string};tests:{runner:"Vitest";status:"PASS";total:number;passed:number;failed:number;pending:number;todo:number;totalSuites:number;passedSuites:number;failedSuites:number;durationMs:number|null};build:{designSystem:"PASS";typescript:"PASS";vite:"PASS";strategy:string}};
 export function getBuildEvidence():Promise<BuildEvidence>{return apiRequest<BuildEvidence>("build-evidence.json");}
-export function getPortalRecords():Promise<PortalLedger>{return apiRequest<PortalLedger>("api/v1/records");}
+export function getPortalRecords(projectId?:string):Promise<PortalLedger>{return apiRequest<PortalLedger>("api/v1/records"+(projectId?"?project="+encodeURIComponent(projectId):""));}
 export function appendPortalRecord(input:Partial<PortalRecord>):Promise<{record:PortalRecord}>{return apiRequest("api/v1/records",{method:"POST",body:JSON.stringify(input)});}
 
 export type AgentEvent={id:string;createdAt:string;type:"agent_event";title:string;summary:string;projectId:string|null;eventId:string;eventType:"inicio"|"atualizacao"|"conclusao"|"impedimento"|"bastao";agentId:string;taskId:string;deliverables:string[];nextAction:string|null;responsible:string;origin:string;hash:string;previousHash:string};
@@ -86,7 +86,7 @@ export function getSystemStatus():Promise<SystemStatus>{return apiRequest<System
 
 export type PortalMission={id:string;createdAt:string;title:string;summary:string;projectId:string|null;repository:string|null;prompt:string;missionStatus:"received"|"dispatched"|"planning"|"planned"|"partial"|"blocked"|"cancelled"|"dispatch_blocked";executionId:string|null;runnerStatus:string|null;dispatchError:string|null;planStatus:"PLANNED"|"PARTIAL"|"BLOCKED_SCOPE"|null;selectedCount:number|null;reusedCount:number|null;omittedCount:number|null;planDigest:string|null;receiptDigest:string|null;testsExecutionPerformed:boolean|null;authorizationVerified:boolean|null;nextRunnerAction:string|null;dispatchUpdatedAt:string|null};
 export type MissionsResponse={missions:PortalMission[];total:number;lastUpdated:string|null};
-export function getMissions():Promise<MissionsResponse>{return apiRequest<MissionsResponse>("api/v1/missions");}
+export function getMissions(projectId?:string):Promise<MissionsResponse>{return apiRequest<MissionsResponse>("api/v1/missions"+(projectId?"?project="+encodeURIComponent(projectId):""));}
 export function createMission(input:{prompt:string;projectId:string;repository?:string}):Promise<{mission:PortalMission;dispatch:{status:"dispatched"|"blocked";executionId?:string;runnerStatus?:string;code?:string}}>{
  return apiRequest<{mission:PortalMission;dispatch:{status:"dispatched"|"blocked";executionId?:string;runnerStatus?:string;code?:string}}>("api/v1/missions",{method:"POST",body:JSON.stringify(input)});
 }
