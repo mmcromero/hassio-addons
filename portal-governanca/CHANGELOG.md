@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.0-dev.41 — 27/11/2026
+- Na tela Cadastrar projeto, lista os repositórios já cadastrados primeiro.
+- Agrupa separadamente os repositórios ainda disponíveis para cadastro e os que estão em outros estados (marcador inválido/desativado, arquivado ou indisponível).
+- Aplica a mesma ordem no seletor do formulário; repositórios já cadastrados continuam desabilitados para evitar cadastro duplicado.
+- Ordena alfabeticamente dentro de cada grupo e não altera os dados recebidos do GitHub.
+- Adiciona testes unitários para prioridade, estabilidade dos dados e grupos apresentados na interface.
+
+# Changelog
+
+## 0.1.0-dev.40 — 27/11/2026
+- Acrescenta ao contexto de nova conversa a última Issue criada em cada repositório relacionado: número, título, estado, link, datas de criação e atualização.
+- Orienta o agente a abrir a Issue e ler seus comentários antes de iniciar o trabalho, confirmando se ela continua sendo a mais recente.
+- Distingue repositório sem Issues de consulta indisponível; não declara ausência quando a consulta falha ou a primeira página está ocupada por Pull Requests.
+- Obtém a Issue mais recente pela API de Issues do GitHub, sem depender da Search API.
+- Adiciona testes para composição do prompt e descoberta da Issue.
+
+# Changelog
+
+## 0.1.0-dev.39 — 27/11/2026
+- Adiciona link “Conversar sobre este projeto” em todos os cards.
+- Abre uma nova conversa no ChatGPT Web com resumo limitado do projeto, status, justificativa, idade e referências GitHub.
+- Não inclui credenciais, tokens ou conteúdo privado dos repositórios; orienta o ChatGPT a verificar acesso antes de assumir que pode ler repositórios privados.
+- Limita o tamanho do contexto e a quantidade de repositórios para evitar URLs excessivamente longas.
+- Adiciona testes unitários para composição, codificação e limites do prompt.
+
+# Changelog
+
 ## 0.1.0-dev.38 — 27/11/2026
 - Adiciona etiqueta automática de ciclo de vida aos cards: EM DESENVOLVIMENTO, EM TESTE, HOMOLOGADO, FINALIZADO e CANCELADO.
 - Usa commits, Pull Requests não rascunho, workflows ativos, releases prévias, homologações PASS e eventos terminais explícitos.

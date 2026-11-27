@@ -107,4 +107,16 @@ describe("build autossuficiente do add-on",()=>{
   expect(client).toContain("collectProjectTimeline");
  });
 
+
+ it("prioriza projetos cadastrados na tela de cadastro e no seletor",()=>{
+  const main=fs.readFileSync(path.join(root,"src/main.ts"),"utf8");
+  expect(main).toContain("orderRegisteredRepositories(repos)");
+  expect(main).toContain("registeredRepos.map(optionMarkup)");
+  expect(main).toContain("availableRepos.map(optionMarkup)");
+  expect(main).toContain("registeredRepos.map(rowMarkup)");
+  expect(main).toContain("availableRepos.map(rowMarkup)");
+  expect(main).toContain('label="Já cadastrados"');
+  expect(main).toContain('label="Ainda não cadastrados"');
+ });
+
 });

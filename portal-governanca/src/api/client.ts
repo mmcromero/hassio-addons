@@ -4,6 +4,7 @@ export type RepoSnapshot={
  fullName:string;status:string;htmlUrl?:string;isPrivate?:boolean;defaultBranch?:string;description?:string;
  pushedAt?:string;updatedAt?:string;branches?:{name:string;sha:string|null}[];branchesTruncated?:boolean;
  latestCommit?:{sha:string;message:string;date:string|null;url:string}|null;
+ latestIssue?:{number:number;title:string;state:string;url:string;createdAt:string;updatedAt:string}|null;latestIssueState?:"unavailable"|"available"|"empty";
  openIssues?:{number:number;title:string;state:string;url:string;updatedAt:string;labels:string[]}[];openIssuesTruncated?:boolean;
  openPulls?:{number:number;title:string;state:string;draft:boolean;url:string;updatedAt:string;headSha:string|null;baseBranch:string|null}[];openPullsTruncated?:boolean;
  latestRelease?:{tag:string;name:string|null;publishedAt:string|null;draft:boolean;prerelease:boolean;url:string}|null;

@@ -16,7 +16,8 @@ describe("GitHub auto-discovery read-only client",()=>{
    const name=u.pathname.match(/^\/repos\/(mmcromero\/[^/]+)$/)?.[1];
    if(name)return response({full_name:name,html_url:"https://github.com/"+name,private:true,default_branch:"main"});
    if(u.pathname.endsWith("/branches"))return response([{name:"main",commit:{sha:"abc"}}]);
-   if(u.pathname.endsWith("/issues")||u.pathname.endsWith("/pulls")||u.pathname.endsWith("/releases")||u.pathname.endsWith("/commits"))return response([]);
+   if(u.pathname.endsWith("/issues"))return u.searchParams.get("state")==="all"?response([{number:42,title:"Issue mais recente",state:"open",html_url:"https://github.com/mmcromero/app-a/issues/42",created_at:"2026-11-26T10:00:00Z",updated_at:"2026-11-27T10:00:00Z"}]):response([]);
+   if(u.pathname.endsWith("/pulls")||u.pathname.endsWith("/releases")||u.pathname.endsWith("/commits"))return response([]);
    if(u.pathname.endsWith("/actions/runs"))return response({workflow_runs:[]});
    return response({message:"Not Found"},404);
   });
@@ -24,6 +25,8 @@ describe("GitHub auto-discovery read-only client",()=>{
   expect(result.projects).toHaveLength(1);expect(result.projects[0].id).toBe("produto-x");
   expect(result.projects[0].repositories.map(r=>r.fullName)).toEqual(["mmcromero/app-a","mmcromero/app-b"]);
   expect(result.projects[0].repositories[1].role).toBe("Distribuição");
+  expect(result.projects[0].repositories[0].snapshot.latestIssue).toMatchObject({number:42,title:"Issue mais recente",url:"https://github.com/mmcromero/app-a/issues/42"});
+  expect(result.projects[0].repositories[0].snapshot.latestIssueState).toBe("available");
   expect(result.discovery.scannedRepositories).toBe(4);
  });
  it("consulta marcadores em paralelo respeitando o limite global de quatro requisições",async()=>{

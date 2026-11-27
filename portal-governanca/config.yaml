@@ -1,5 +1,5 @@
 name: "Fábrica de Ideias - Portal de Governança"
-version: "0.1.0-dev.38"
+version: "0.1.0-dev.41"
 slug: portal_governanca
 description: "Painel central de portfólio, evidências e homologações do ecossistema mmcromero"
 url: "https://github.com/mmcromero/portal-governanca"

@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.38",
+  "addon_version": "0.1.0-dev.41",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "7ad319086bb602a8e4c02c74c117ffb93567db3b",
+  "source_commit": "e3c69b7e2ab0d9bf8f6a29e8ee1cae1bb53fe2ea",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -16,11 +16,11 @@
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "57ea53c39984cbd6ae5a9142e1dd99edfc19ddd826f18b77b193e5c8f0699a89"
+      "sha256": "e29904b2f57f9951a700076c1665d197597bde8e5d2b1d73af877ce4c0f3913f"
     },
     {
       "path": "config.yaml",
-      "sha256": "bf962d787984a17d2443da498ff625b642e2b01910b177ca2428f9998fb11463"
+      "sha256": "2caf0eb751c85ebcea795ebcb370a1251ceb6b2fd137995cfbc44e6c02dba378"
     },
     {
       "path": "config/design-system.lock.json",
@@ -64,7 +64,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "02f91022236b10a492104a3e6835b8373b21b37b74682f3a80461d05b8484289"
+      "sha256": "35573a53ef163724972235d1dfdda3d1f26af2d9d1a73b87e91e8913ce8d8e0d"
     },
     {
       "path": "run.sh",
@@ -76,7 +76,7 @@
     },
     {
       "path": "server/github.mjs",
-      "sha256": "043b0268a365db40d427a1d7df5b0e2af74934bbf3bed90cc17f5e9415a119ad"
+      "sha256": "026854df1d99902573407ee0bbcef34ce64149e4bd2ba7dfa4d3044bf0eade0c"
     },
     {
       "path": "server/index.mjs",
@@ -108,7 +108,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "sha256": "875d306c2a8c01d5f50aa1e450f79dafc2fa499d29c87b4e57ef90b6c5803024"
+      "sha256": "5ce0b43ec512a28c72fd287822572eac2a606656d425369732ae3c6d3d22ed7d"
     },
     {
       "path": "src/data/projects.ts",
@@ -116,19 +116,27 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "26f2bafe39a78080a193a22506eaf3fecc81932065d397df20e98fa9242c4fea"
+      "sha256": "6376ce8d29b3f6f0c930041895794f458d2e9eafd5d2e8e145a1673e45a2208f"
     },
     {
       "path": "src/project-age.ts",
       "sha256": "b4eff41ad6ce3b019c9efbd28216dc587a409838c32a6d4bc1969bd96d5483ee"
     },
     {
+      "path": "src/project-chat-link.ts",
+      "sha256": "b5da9aedfef6e8bf70c0d0b58b4b1334a501e1ad611f3f06135a5a0f0bd87b2d"
+    },
+    {
       "path": "src/project-status.ts",
       "sha256": "783309b3bff3a510264b1abffbf77da36cc146f7f3def23f4fbdb0a0d72aa84a"
     },
     {
+      "path": "src/repository-catalog-order.ts",
+      "sha256": "5bbaaacd13625f4cecf1e13dad9e9bc31085eb1ff544d0ed3699c17c67adfb85"
+    },
+    {
       "path": "src/styles.css",
-      "sha256": "ff92173864c6e2ab14b02249c46b4fc228a27864049dbd4414b36f18523b15f1"
+      "sha256": "b609b32d2912823001c02a810e6242aad3dafee00fe3db561325d68a1791023b"
     },
     {
       "path": "tests/agent-events.test.mjs",
@@ -136,7 +144,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "sha256": "db14fadde58394b11ad4e1869c45842e55f1638adf64f547321d726496314eda"
+      "sha256": "fdae7c9c00ef9f1803ffecdec7b7f83063cd3fbc7c4bb25d985b7b4d7e7a293e"
     },
     {
       "path": "tests/github-timeline.test.mjs",
@@ -144,7 +152,7 @@
     },
     {
       "path": "tests/github.test.mjs",
-      "sha256": "584a1243d65bb0111fb5f75bab8a2ca55e599b736b7924b0eb7274bd45ff6a66"
+      "sha256": "8283d8fa7da368c35d224dd805dbf1e853be072c24cdfa80f0f72d05194d39"
     },
     {
       "path": "tests/ingress.test.mjs",
@@ -171,12 +179,20 @@
       "sha256": "26edcc890d728cfd43fb6861f631e37cb41a6571009a7d790405768465376cbf"
     },
     {
+      "path": "tests/project-chat-link.test.mjs",
+      "sha256": "0e4e0d309a9114f8426890cdfc5efe5934912014d05e54f9780c0e9327d47ba7"
+    },
+    {
       "path": "tests/project-status.test.mjs",
       "sha256": "0909686cbd686f7132f6002d7364b0c5a4391bb2e7bbd3fd70da30a4696b5f4c"
     },
     {
       "path": "tests/register-security.test.mjs",
       "sha256": "497117e4d2b3d758a2cce5b6f734cb71f68c5ccb6dfe0e6264d8bd4e6e65ef35"
+    },
+    {
+      "path": "tests/repository-catalog-order.test.mjs",
+      "sha256": "f53c418bf234ceede94ef734e2f5768ba93226a4385330e184b63abcb1b225ea"
     },
     {
       "path": "tests/run-sh-env.test.mjs",

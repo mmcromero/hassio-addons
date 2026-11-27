@@ -24,6 +24,7 @@ import {
   type RepoSnapshot,
   type Project,
   type RepositoryCatalog,
+  type RepositoryCatalogItem,
   type SupervisorInventory,
   type N8nOverview,
   type AgentEvent,
@@ -33,6 +34,8 @@ import {
 } from './api/client';
 import { getProjectAge } from './project-age';
 import { getProjectStatus } from './project-status';
+import { buildProjectChatUrl } from './project-chat-link';
+import { orderRegisteredRepositories } from './repository-catalog-order';
 import './styles.css';
 
 type View =
@@ -288,11 +291,13 @@ function projectCard(p: Project) {
   const now = new Date(Date.now() + timelineServerOffset).toISOString();
   const age = getProjectAge(timeline?.events ?? [], now);
   const lifecycle = getProjectStatus(p.id, p.repositories.map(ref => repoFor(ref.fullName)).filter((repo): repo is RepoSnapshot => Boolean(repo)), projectStatusRecords, timeline?.events ?? [], now);
+  const ageLabel = !timeline ? 'Ainda consultando o histórico' : age.days === null ? 'Início não identificado' : (age.confidence === 'estimated' ? 'Aproximadamente ' : '') + age.days.toLocaleString('pt-BR') + ' dias' + (age.ended ? ' até o encerramento' : ' de existência');
   const ageMarkup = !timeline
     ? '<div class="project-age project-age-unknown"><strong>…</strong><small>' + (projectTimelineCardsLoading ? 'Consultando histórico' : 'Histórico indisponível') + '</small></div>'
     : age.days === null
     ? '<div class="project-age project-age-unknown"><strong>—</strong><small>Início não identificado</small></div>'
     : '<div class="project-age"><strong>' + (age.confidence === 'estimated' ? '≈ ' : '') + age.days.toLocaleString('pt-BR') + ' dias</strong><small>' + (age.ended ? 'até o encerramento' : 'de existência') + (age.confidence === 'estimated' ? ' · início estimado' : '') + '</small></div>';
+  const chatUrl = buildProjectChatUrl({ id: p.id, name: p.name, domain: p.domain, summary: p.summary, status: lifecycle.label, statusReason: lifecycle.reason, age: ageLabel, repositories: p.repositories.map(reference => { const repository = repoFor(reference.fullName); return { ...reference, latestIssue: repository?.latestIssue ?? null, latestIssueState: repository?.latestIssueState }; }) });
   const states = p.repositories.map(r => repoFor(r.fullName)?.status);
   const s = states.length && states.every(x => x === 'ok') ? 'ok' : states.some(x => x === 'ok' || x === 'partial') ? 'partial' : snapshot ? 'unavailable' : 'not_queried';
   return (
@@ -310,7 +315,7 @@ function projectCard(p: Project) {
     p.repositories.length +
     ' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="' +
     p.id +
-    '">Abrir projeto</ds-button></div></ds-card>'
+    '">Abrir projeto</ds-button><a class="project-chat-link" href="' + esc(chatUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir nova conversa no ChatGPT sobre ' + esc(p.name) + '">Conversar sobre este projeto <span aria-hidden="true">↗</span></a></div></ds-card>'
   );
 }
 
@@ -597,54 +602,60 @@ async function loadCatalog() {
 
 function registrationPage() {
   const repos = catalog?.repositories ?? [];
-  const options = repos
-    .map(
-      r =>
-        '<option value="' +
-        esc(r.fullName) +
-        '" ' +
-        (r.markerStatus !== 'available' || r.archived ? 'disabled' : '') +
-        '>' +
-        esc(r.fullName) +
-        ' — ' +
-        (r.markerStatus === 'available' && !r.archived
-          ? 'Disponível'
-          : r.markerStatus === 'registered'
-          ? 'Já cadastrado'
-          : r.markerStatus === 'disabled'
-          ? 'Marcador desativado'
-          : r.markerStatus === 'invalid'
-          ? 'Marcador inválido'
-          : r.archived
-          ? 'Arquivado'
-          : 'Indisponível') +
-        '</option>'
-    )
-    .join('');
-  const list = repos
-    .map(
-      r =>
-        '<div class="repo-row"><div><strong>' +
-        esc(r.fullName) +
-        '</strong><small>Branch padrão: ' +
-        esc(r.defaultBranch) +
-        '</small></div><ds-badge variant="' +
-        (r.markerStatus === 'registered' ? 'success' : r.markerStatus === 'available' && !r.archived ? 'info' : 'warning') +
-        '">' +
-        (r.markerStatus === 'registered'
-          ? 'Cadastrado'
-          : r.markerStatus === 'available' && !r.archived
-          ? 'Disponível'
-          : r.markerStatus === 'disabled'
-          ? 'Desativado'
-          : r.markerStatus === 'invalid'
-          ? 'Inválido'
-          : r.archived
-          ? 'Arquivado'
-          : 'Indisponível') +
-        '</ds-badge></div>'
-    )
-    .join('');
+  const orderedRepos = orderRegisteredRepositories(repos);
+  const registeredRepos = orderedRepos.filter(r => r.markerStatus === 'registered');
+  const availableRepos = orderedRepos.filter(r => r.markerStatus === 'available' && !r.archived);
+  const otherRepos = orderedRepos.filter(r => r.markerStatus !== 'registered' && !(r.markerStatus === 'available' && !r.archived));
+  const optionMarkup = (r: RepositoryCatalogItem) =>
+    '<option value="' +
+    esc(r.fullName) +
+    '" ' +
+    (r.markerStatus !== 'available' || r.archived ? 'disabled' : '') +
+    '>' +
+    esc(r.fullName) +
+    ' — ' +
+    (r.markerStatus === 'available' && !r.archived
+      ? 'Disponível'
+      : r.markerStatus === 'registered'
+      ? 'Já cadastrado'
+      : r.markerStatus === 'disabled'
+      ? 'Marcador desativado'
+      : r.markerStatus === 'invalid'
+      ? 'Marcador inválido'
+      : r.archived
+      ? 'Arquivado'
+      : 'Indisponível') +
+    '</option>';
+  const options = [
+    registeredRepos.length ? '<optgroup label="Já cadastrados">' + registeredRepos.map(optionMarkup).join('') + '</optgroup>' : '',
+    availableRepos.length ? '<optgroup label="Ainda não cadastrados">' + availableRepos.map(optionMarkup).join('') + '</optgroup>' : '',
+    otherRepos.length ? '<optgroup label="Outros estados">' + otherRepos.map(optionMarkup).join('') + '</optgroup>' : ''
+  ].join('');
+  const rowMarkup = (r: RepositoryCatalogItem) =>
+    '<div class="repo-row"><div><strong>' +
+    esc(r.fullName) +
+    '</strong><small>Branch padrão: ' +
+    esc(r.defaultBranch) +
+    '</small></div><ds-badge variant="' +
+    (r.markerStatus === 'registered' ? 'success' : r.markerStatus === 'available' && !r.archived ? 'info' : 'warning') +
+    '">' +
+    (r.markerStatus === 'registered'
+      ? 'Cadastrado'
+      : r.markerStatus === 'available' && !r.archived
+      ? 'Disponível'
+      : r.markerStatus === 'disabled'
+      ? 'Desativado'
+      : r.markerStatus === 'invalid'
+      ? 'Inválido'
+      : r.archived
+      ? 'Arquivado'
+      : 'Indisponível') +
+    '</ds-badge></div>';
+  const list = [
+    registeredRepos.length ? '<div class="repo-group"><h3>Já cadastrados</h3><div class="repo-list">' + registeredRepos.map(rowMarkup).join('') + '</div></div>' : '',
+    availableRepos.length ? '<div class="repo-group"><h3>Ainda não cadastrados</h3><div class="repo-list">' + availableRepos.map(rowMarkup).join('') + '</div></div>' : '',
+    otherRepos.length ? '<div class="repo-group"><h3>Outros estados</h3><div class="repo-list">' + otherRepos.map(rowMarkup).join('') + '</div></div>' : ''
+  ].join('');
   return (
     '<section><div class="intro"><div><h2>Cadastrar projeto</h2><p>Escolha um repositório e crie nele o marcador que habilita a descoberta automática.</p></div><ds-badge variant="info">Escrita controlada</ds-badge></div>' +
     (catalogError ? '<ds-alert variant="warning" title="Consulta ao GitHub">' + esc(catalogError) + '</ds-alert>' : '') +
@@ -661,7 +672,7 @@ function registrationPage() {
     '<label for="register-domain">Área / domínio</label><input id="register-domain" name="domain" required maxlength="120" placeholder="Ex.: Produto, Infraestrutura, Governança">' +
     '<label for="register-description">Descrição curta</label><textarea id="register-description" name="description" required maxlength="120" rows="3" placeholder="Explique em uma frase o que é este projeto"></textarea>' +
     '<div class="registration-actions"><button type="submit" class="primary-action" ' +
-    (!catalog?.canRegister || registering || !repos.some(r => r.markerStatus === 'available' && !r.archived) ? 'disabled' : '') +
+    (!catalog?.canRegister || registering || !availableRepos.length ? 'disabled' : '') +
     '>' +
     (registering ? 'Criando marcador…' : 'Criar marcador no GitHub') +
     '</button></div>' +
@@ -671,7 +682,7 @@ function registrationPage() {
     ' repositórios acessíveis no owner mmcromero.</p></div><ds-button variant="secondary" size="sm" data-catalog-refresh ' +
     (catalogLoading ? 'disabled' : '') +
     '>Atualizar lista</ds-button></div>' +
-    (catalogLoading ? '<p>Consultando GitHub…</p>' : list ? '<div class="repo-list">' + list + '</div>' : '<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>') +
+    (catalogLoading ? '<p>Consultando GitHub…</p>' : list ? list : '<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>') +
     '</section>'
   );
 }
