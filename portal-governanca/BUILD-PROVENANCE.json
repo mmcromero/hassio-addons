@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.36",
+  "addon_version": "0.1.0-dev.37",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "6c4e329754835041a9b4be79a25b363e4870b5e3",
+  "source_commit": "62e0c8b1a8d1ee0d4f833f9d7fd129c0043e1022",
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
   "design_system_packages": {
@@ -16,11 +16,11 @@
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "5dec51985dbc291b1ae19b49e11cd7cc76b1da8625fc6edcf221f17f21d0c9e6"
+      "sha256": "6db2a21f8d58572281713b7c1ac060f63ebe06fe9e18dc815b5859df9544efc9"
     },
     {
       "path": "config.yaml",
-      "sha256": "3c9b300b8183b8725868e25f7dfa7f5990844f8e2d76e1224ac8bd3260335684"
+      "sha256": "7ac69fc88d3ec1db8d6d4c5a79e1ff07810fbc3cd63fc7a4e4ea9bfe87c38bbc"
     },
     {
       "path": "config/design-system.lock.json",
@@ -119,6 +119,10 @@
       "sha256": "86dba1e8dccd5fe2fefa4e27b51621bf4c813956f92318dda0cb42554f5a9647"
     },
     {
+      "path": "src/project-age.ts",
+      "sha256": "c61f2300c72fc1c02fcaa314b6a700b6d9bc7772abffbfed6fe1494470bf0cab"
+    },
+    {
       "path": "src/styles.css",
       "sha256": "e0250d0a7c5bee374bc76b26256f705d460faad305d3f3bca3a6cabc173ceb6d"
     },
@@ -157,6 +161,10 @@
     {
       "path": "tests/portfolio.test.ts",
       "sha256": "ba2cb1f5399b5fab75dbfa9fcedc9bd482596c14573ada40e61ba64fc7a0b975"
+    },
+    {
+      "path": "tests/project-age.test.mjs",
+      "sha256": "2d27f8f08266c1a1964a4901ce3aaad83e62c0808680c977fc8b9466a225b304"
     },
     {
       "path": "tests/register-security.test.mjs",
