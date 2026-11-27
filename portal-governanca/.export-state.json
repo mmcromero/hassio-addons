@@ -32,6 +32,38 @@
     {
       "path": "config/design-system.lock.json",
       "sha256": "15bbf82929d9b915275366645c9588caae33a7a44141880b06b4dd148865d5bf"
+    },
+    {
+      "path": "config/home-assistant-addons.json",
+      "sha256": "0d3ef9d82ea67b2c375b9d15e7c1b55f99b235e529b70f09f76a8eff9bc9602a"
+    },
+    {
+      "path": "config/portfolio.json",
+      "sha256": "6d2df5fcf27a6736631908ce5737febb0fc0150ba73357d82453f22d42764293"
+    },
+    {
+      "path": "index.html",
+      "sha256": "ca21cab9622588d7f97e904c8bef9ac1d39f3d6de11af390c5122edb8f0d5e19"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "2293db1b9eb70a459886bb8280d0515eea49c157acf91dd0fed5547e7cc7f548"
+    },
+    {
+      "path": "package.json",
+      "sha256": "04fd6a6f50fe59b1462dd3a32b47f6b508afc122bd583c5b80874a4a260d9a84"
+    },
+    {
+      "path": "public/brand-icon.png",
+      "sha256": "b0fa92c6203e94c9213758ba80ef7cdb5284d2ac87b48b5892963709ef928406"
+    },
+    {
+      "path": "server/agent-events.mjs",
+      "sha256": "cb928319eda468eb9c5d80cb8e099cb7ccf0436ac6114c1675181112d9921607"
+    },
+    {
+      "path": "server/build-evidence.mjs",
+      "sha256": "ae31d660795a7069b7ec78c10b2a78fdfc30fe2da17aebb3212047b146b368f4"
     }
   ]
 }
