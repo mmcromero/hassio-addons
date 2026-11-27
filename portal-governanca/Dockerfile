@@ -13,7 +13,11 @@ COPY config ./config
 COPY Dockerfile run.sh ./
 COPY config.yaml ./
 COPY icon.png logo.png ./
-RUN npm run build:design-system && npm test && npm run build:portal
+COPY BUILD-PROVENANCE.json ./
+RUN npm run build:design-system \\
+ && npm test -- --reporter=json --outputFile=/build/vitest-results.json \\
+ && npm run build:portal \\
+ && node server/build-evidence.mjs
 
 FROM node:22-alpine AS runtime
 RUN apk add --no-cache bash su-exec jq \
@@ -34,6 +38,7 @@ RUN chmod 0755 /app/run.sh \
  && node --check /app/server/supervisor-data.mjs \
  && node --check /app/server/supervisor-bridge.mjs \
  && node --check /app/server/runner-bridge.mjs \
+ && node --check /app/server/build-evidence.mjs \
  && test -s /app/dist/index.html
 EXPOSE 8099
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
