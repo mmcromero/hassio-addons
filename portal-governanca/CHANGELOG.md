@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-dev.38 — 27/11/2026
+- Adiciona etiqueta automática de ciclo de vida aos cards: EM DESENVOLVIMENTO, EM TESTE, HOMOLOGADO, FINALIZADO e CANCELADO.
+- Usa commits, Pull Requests não rascunho, workflows ativos, releases prévias, homologações PASS e eventos terminais explícitos.
+- Exibe STATUS NÃO IDENTIFICADO quando as evidências não permitem classificação segura.
+- Adiciona registro explícito de cancelamento no histórico do projeto; finalização e cancelamento são estados terminais distintos.
+- O contador de idade congela também no cancelamento.
+- Adiciona testes unitários para classificação, precedência e desfechos.
+
+# Changelog
+
 ## 0.1.0-dev.37 — 26/11/2026
 - Exibe a idade em dias nos cards de todos os projetos, reutilizando a timeline histórica existente.
 - Carrega os históricos de forma sequencial; atualiza os contadores automaticamente a cada minuto.
