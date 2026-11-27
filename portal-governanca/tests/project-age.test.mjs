@@ -17,6 +17,14 @@ describe("idade do projeto nos cards", () => {
     expect(result).toEqual({ days: 2, confidence: "confirmed", ended: true });
   });
 
+  it("congela a idade no cancelamento explícito", () => {
+    const result = getProjectAge([
+      { category: "project_start", occurredAt: "2024-01-01T00:00:00.000Z", confidence: "confirmed" },
+      { category: "project_cancelled", occurredAt: "2024-01-03T00:00:00.000Z", confidence: "confirmed" }
+    ], "2024-01-10T00:00:00.000Z");
+    expect(result).toEqual({ days: 2, confidence: "confirmed", ended: true });
+  });
+
   it("preserva a indicação de início estimado", () => {
     const result = getProjectAge([
       { category: "first_issue", occurredAt: "2024-01-01T00:00:00.000Z", confidence: "estimated" }
