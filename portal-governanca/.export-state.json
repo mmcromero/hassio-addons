@@ -64,6 +64,38 @@
     {
       "path": "server/build-evidence.mjs",
       "sha256": "ae31d660795a7069b7ec78c10b2a78fdfc30fe2da17aebb3212047b146b368f4"
+    },
+    {
+      "path": "server/github.mjs",
+      "sha256": "e7e7dcbed276e2c55ac5e1d28ad1685e05d31d9cbdf3193a04959d59c335ebf2"
+    },
+    {
+      "path": "server/index.mjs",
+      "sha256": "596822967c5bd825684839c661f1fa046f43ec4ccf3c79b7fae00f7b6f854866"
+    },
+    {
+      "path": "server/ingress.mjs",
+      "sha256": "1f0802524e8f9e7082190234ad268918ea4049b60fed74addf99889b51351e2f"
+    },
+    {
+      "path": "server/ledger.mjs",
+      "sha256": "7fab757144f77ea847c9b61b3a89a9fdf72ce672171f5f50ab7f647dba9793b7"
+    },
+    {
+      "path": "server/n8n.mjs",
+      "sha256": "b03fb10507bd289ac1bae95ad180acf044547baea5fefcd68a07e71659c51ca4"
+    },
+    {
+      "path": "server/runner-bridge.mjs",
+      "sha256": "cf11ee0c99fc899d0b48a452ff7765312b7fe9e8bc9d901cee4122a44e4f00e4"
+    },
+    {
+      "path": "server/supervisor-bridge.mjs",
+      "sha256": "d4a349b9b287e7f5f1219efba06bfdd691d0a5c8676da5f75afc8d6bdeed5612"
+    },
+    {
+      "path": "server/supervisor-data.mjs",
+      "sha256": "0a347d7d8dac24358f2cffe26814a9f665b92d5a1d2a711aea3d34878e45894c"
     }
   ]
 }
