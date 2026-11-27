@@ -189,13 +189,13 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")||rawPath.endsWith("/api/v1/timeline/collect")||rawPath.endsWith("/api/v1/timeline/end")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")||rawPath.endsWith("/api/v1/timeline/collect")||rawPath.endsWith("/api/v1/timeline/end")||rawPath.endsWith("/api/v1/timeline/cancel")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end")&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
@@ -240,11 +240,26 @@ const server=http.createServer(async(req,res)=>{
    const portfolio=await github.getPortfolio(registry.projects||[],{force:false}),project=portfolio.projects.find(p=>p.id===projectId);
    if(!project){json(res,404,{error:{code:"PROJECT_NOT_FOUND",message:"Projeto não encontrado no portfólio atual."}});return;}
    const eventId="owner:project_end:"+projectId;
-   if(await ledger.hasEvent(eventId)){json(res,409,{error:{code:"PROJECT_ALREADY_ENDED",message:"O encerramento deste projeto já está registrado."}});return;}
+   if(await ledger.hasEvent(eventId)||await ledger.hasEvent("owner:project_cancelled:"+projectId)){json(res,409,{error:{code:"PROJECT_ALREADY_TERMINAL",message:"Este projeto já possui encerramento ou cancelamento registrado."}});return;}
    await ledger.append({type:"timeline_event",eventId,occurredAt:new Date().toISOString(),confidence:"confirmed",category:"project_end",sourceName:"Decisão registrada no Portal",title:"Projeto encerrado",summary:"Encerramento declarado pelo proprietário no Portal de Governança.",projectId,origin:"OwnerTimelineAction"});
    timelineCollectionCache.delete(projectId);
    json(res,201,{...await ledger.listTimelineEvents({projectId,limit:2000}),serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo"});
   }catch(error){json(res,error.status||503,{error:{code:error.code||"TIMELINE_END_FAILED",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/timeline/cancel"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem não autorizada."}});return;}
+  try{
+   const body=await readJson(req,2000),projectId=typeof body?.projectId==="string"?body.projectId:"";
+   if(!projectId.trim()||projectId.length>120||/[\\u0000-\\u001f]/.test(projectId)){json(res,400,{error:{code:"INVALID_PROJECT_ID",message:"Informe um ID de projeto válido."}});return;}
+   const portfolio=await github.getPortfolio(registry.projects||[],{force:false}),project=portfolio.projects.find(p=>p.id===projectId);
+   if(!project){json(res,404,{error:{code:"PROJECT_NOT_FOUND",message:"Projeto não encontrado no portfólio atual."}});return;}
+   if(await ledger.hasEvent("owner:project_end:"+projectId)||await ledger.hasEvent("owner:project_cancelled:"+projectId)){json(res,409,{error:{code:"PROJECT_ALREADY_TERMINAL",message:"Este projeto já possui encerramento ou cancelamento registrado."}});return;}
+   const eventId="owner:project_cancelled:"+projectId;
+   await ledger.append({type:"timeline_event",eventId,occurredAt:new Date().toISOString(),confidence:"confirmed",category:"project_cancelled",sourceName:"Decisão registrada no Portal",title:"Projeto cancelado",summary:"Cancelamento declarado explicitamente pelo proprietário no Portal de Governança.",projectId,origin:"OwnerTimelineAction"});
+   timelineCollectionCache.delete(projectId);
+   json(res,201,{...await ledger.listTimelineEvents({projectId,limit:2000}),serverNow:new Date().toISOString(),timeZone:"America/Sao_Paulo"});
+  }catch(error){json(res,error.status||503,{error:{code:error.code||"TIMELINE_CANCEL_FAILED",message:error.message}});}
   return;
  }
  if(pathname==="/api/v1/records"&&req.method==="GET"){
