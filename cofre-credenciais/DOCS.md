@@ -23,19 +23,19 @@ Este pacote executa o Vaultwarden, servidor compatível com os clientes Bitwarde
 - Nenhum token administrativo é gerado ou impresso nos logs.
 - A porta 7277 não é publicada no host pelo manifesto.
 
-**Não coloque credenciais reais nesta candidata.** A rota HTTPS está configurada, mas MFA, clientes, backup/restore e revisão independente ainda não foram homologados.
+**Não coloque credenciais reais ainda.** Conta proprietária e MFA foram configurados e o login com segundo fator foi testado; ainda faltam homologação dos clientes/sincronização, backup cifrado externo, restauração isolada e revisão independente.
 
 ## Primeiro acesso — procedimento controlado
 
 1. Abrir `https://romeropi.duckdns.org:8443/cofre` e confirmar que a tela de login carrega pelo acesso externo.
 2. Na configuração do app, habilitar `allow_signups` temporariamente e reiniciar o app.
 3. Abrir a rota HTTPS e criar somente a conta do proprietário.
-4. Ativar autenticação de dois fatores (TOTP) na conta e testar um segundo dispositivo.
+4. Ativar autenticação de dois fatores (TOTP) na conta e guardar o código de recuperação em local seguro.
 5. Voltar à configuração do app, desabilitar `allow_signups` e reiniciar.
-6. Confirmar que uma tentativa de novo cadastro é recusada.
+6. Confirmar no log `Self-registration: false` e testar login em janela anônima, verificando a exigência do segundo fator.
 7. Só depois de backup/restore e revisão independente aprovados considerar a migração de credenciais reais.
 
-Não deixar `allow_signups` habilitado após criar a conta do proprietário.
+**Estado do bootstrap (28/11/2026): CONCLUÍDO.** Conta proprietária criada; TOTP ativado; código de recuperação guardado pelo proprietário; login em janela anônima com segundo fator confirmado pelo proprietário; `allow_signups=false` reaplicado e confirmado no Supervisor (`Self-registration: false`); add-on `0.1.0-rc.3` iniciado. Não houve armazenamento de senha mestra, segredo TOTP ou código de recuperação em logs/documentação. Não deixar `allow_signups` habilitado após criar a conta do proprietário.
 
 ## Configuração
 
@@ -71,7 +71,7 @@ O empacotamento HA deriva do projeto Home Assistant Community App Vaultwarden, l
 
 ## Homologação pendente
 
-Build e inicialização no Raspberry Pi 4 e rota TLS interna no NGINX: PASS. Pendentes: alcance WAN independente, WebSocket com cliente, MFA, consumo de recursos, persistência, backup/restore e atualização controlada.
+Build e inicialização no Raspberry Pi 4 e rota TLS interna no NGINX: PASS. Pendentes: alcance WAN independente, WebSocket com cliente, sincronização multi-cliente, consumo de recursos, backup/restore, recuperação e atualização controlada. MFA/TOTP e login com segundo fator foram concluídos pelo proprietário em 28/11/2026.
 
 
 ## Estado de acesso — 28/11/2026
@@ -124,3 +124,15 @@ location ^~ /cofre/ {
 ```
 
 SHA-256 do arquivo runtime: `f8efa7c53fce11f7bb2b1198aef1320ba68da63c0346ddf9b31f56029c5d925c`. O NGINX inclui esse arquivo no contexto do servidor HTTPS por meio de `nginx_proxy_default*.conf`. Preserve os outros includes; não publicar a porta interna 7277.
+
+
+## Bootstrap da conta proprietária e MFA — 28/11/2026
+
+- Proprietário confirmou criação da conta no Web Vault.
+- Código de recuperação visualizado e guardado pelo proprietário; nenhum código foi enviado ao chat ou registrado.
+- Aplicativo autenticador TOTP ativado pelo proprietário.
+- Login em janela anônima confirmado pelo proprietário, com solicitação e validação do segundo fator.
+- Cadastro público voltou a `allow_signups=false`; Supervisor confirmou `Self-registration: false` após reinício.
+- Estado atual do add-on: `0.1.0-rc.3`, `started`; porta interna 7277 sem mapeamento no host; painel `/admin` desativado.
+- Nenhuma senha mestra, semente TOTP, código de recuperação ou credencial real foi coletada ou registrada.
+- Próximo gate obrigatório antes de importar credenciais reais: plano de backup cifrado externo, teste de restauração isolada (SQLite + anexos), recuperação e revisão de segurança; em paralelo, homologar cliente desktop/extensão/mobile e sincronização.
