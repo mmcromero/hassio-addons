@@ -1,3 +1,8 @@
+## 0.1.0-dev.56 — 28/11/2026
+
+- Corrige a regressão de teste da dev.55: a asserção de navegação agora exige sidebar persistente/sticky em vez do comportamento antigo de fluxo relativo.
+- Mantém o contrato global único do App Shell em todas as rotas, inclusive dentro de projetos.
+
 ## 0.1.0-dev.55 — 28/11/2026
 
 - Corrige a regressão da Central do Projeto: o menu global não é mais ocultado ao entrar em um projeto.

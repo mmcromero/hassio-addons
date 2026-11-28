@@ -67,7 +67,8 @@ describe("estrutura vertical do Portal",()=>{
   for(const selector of [".workspace main > section",".workspace main .registration-form",".workspace main :is(ds-card,.repo-card,.repo-row)",".workspace main .project-tabs","@media(max-width:650px)","@media(max-width:420px)"])expect(css).toContain(selector);
  });
  it("mantém a navegação global no fluxo normal do App Shell",()=>{
-  expect(css).toContain('.workspace > nav[data-ds-region="navigation"]{position:relative;height:auto');
+  expect(css).toContain('.workspace > nav[data-ds-region="navigation"]{');
+  expect(css).toContain("position:sticky;top:0;height:100vh");
  });
  it("move o foco para o conteúdo sem provocar rolagem automática da página",()=>{
   expect(main).toContain("focus({preventScroll:true})");
