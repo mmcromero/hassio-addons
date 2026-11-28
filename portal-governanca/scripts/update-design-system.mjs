@@ -1,0 +1,42 @@
+import { mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const args=process.argv.slice(2);
+function arg(name){const i=args.indexOf(name);return i>=0?args[i+1]:null;}
+const sourceArg=arg('--source'),sha=arg('--sha'),channel=arg('--channel');
+if(!sourceArg||!sha||!channel||!/^[0-9a-f]{40}$/i.test(sha)||!['desenvolvimento','release-candidate','main'].includes(channel))throw new Error('Uso: npm run update:design-system -- --source ../design-system --sha <SHA completo> --channel desenvolvimento|release-candidate|main');
+const source=path.resolve(root,sourceArg);
+const git=(a,encoding='utf8')=>execFileSync('git',a,{cwd:source,encoding,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024});
+if(git(['rev-parse',sha+'^{commit}']).trim()!==sha)throw new Error('SHA não corresponde a um commit Git.');
+git(['merge-base','--is-ancestor',sha,channel]);
+const paths=git(['ls-tree','-r','--name-only','-z',sha,'--','packages/tokens','packages/components','docs/design-system','AGENTS.md']).split('\0').filter(Boolean);
+const selected=paths.filter(p=>(p.startsWith('packages/tokens/')||p.startsWith('packages/components/')||p.startsWith('docs/design-system/')||p==='AGENTS.md')&&!/(^|\/)(test|tests|dist|node_modules)(\/|$)/.test(p));
+if(!selected.includes('packages/components/src/components/ds-app-shell.ts')||!selected.includes('packages/components/src/testing/app-shell.ts'))throw new Error('Commit sem componente/helper App Shell esperado.');
+const stage=path.join(root,'vendor','.design-system-stage-'+process.pid),target=path.join(root,'vendor','design-system'),backup=path.join(root,'vendor','.design-system-backup-'+process.pid);
+await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
+const files=[];
+for(const relative of selected){const bytes=git(['show',sha+':'+relative],null);const dest=path.join(stage,relative);await mkdir(path.dirname(dest),{recursive:true});await writeFile(dest,bytes);files.push({path:relative,git_blob_sha:createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')});}
+const readStage=async p=>JSON.parse(await readFile(path.join(stage,p),'utf8'));
+const tokens=await readStage('packages/tokens/package.json'),components=await readStage('packages/components/package.json');
+if(tokens.name!=='@mmcromero/ds-tokens'||components.name!=='@mmcromero/ds-components')throw new Error('Nomes inesperados nos manifests.');
+const packages={'@mmcromero/ds-tokens':tokens.version,'@mmcromero/ds-components':components.version};
+const provenance={source_repository:'mmcromero/design-system',source_commit:sha,source_channel:channel,snapshot_path:'vendor/design-system',packages,files:files.sort((a,b)=>a.path.localeCompare(b.path)),build:'Docker multi-stage on Supervisor; build snapshot before portal tests and Vite',policy:'Read-only vendored build snapshot; canonical editable source remains in mmcromero/design-system; updates require an explicit reviewed SHA.'};
+await writeFile(path.join(stage,'PROVENANCE.json'),JSON.stringify(provenance,null,2)+'\n');
+const lock={repository:'https://github.com/mmcromero/design-system',ref:sha,sha,sourceChannel:channel,packages,distribution:'vendored-source-snapshot-built-inside-addon-image',vendoredPath:'vendor/design-system',build:'Dockerfile multi-stage; SHA checked by provenance manifest',updatePolicy:'manual-explicit-sha; no automatic production updates'};
+let npmLock=JSON.parse(await readFile(path.join(root,'package-lock.json'),'utf8'));
+npmLock.packages['vendor/design-system/packages/tokens']={name:tokens.name,version:tokens.version};
+npmLock.packages['vendor/design-system/packages/components']={name:components.name,version:components.version,...(components.dependencies||{})};
+const exists=async p=>{try{await readdir(p);return true;}catch{return false;}};
+if(await exists(target))await rename(target,backup);
+try{await rename(stage,target);await rm(backup,{recursive:true,force:true});}catch(error){if(await exists(backup)&&!(await exists(target)))await rename(backup,target);throw error;}
+await writeFile(path.join(root,'config/design-system.lock.json'),JSON.stringify(lock,null,2)+'\n');
+await writeFile(path.join(root,'package-lock.json'),JSON.stringify(npmLock,null,2)+'\n');
+const readmePath=path.join(root,'README.md'),readme=await readFile(readmePath,'utf8');
+const readmePin=/SHA fixado em config.design-system[.]lock[.]json: [0-9a-f]{40}[.]/;
+if(!readmePin.test(readme))throw new Error('README sem marcador do SHA do Design System; atualize o documento antes de trocar o snapshot.');
+await writeFile(readmePath,readme.replace(readmePin,'SHA fixado em config/design-system.lock.json: '+sha+'.'));
+console.log('Snapshot do Design System atualizado com SHA fixado e proveniência.');
+console.log('Commit '+sha+' ('+channel+'); tokens '+tokens.version+'; components '+components.version);

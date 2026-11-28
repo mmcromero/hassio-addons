@@ -9,6 +9,7 @@ COPY src ./src
 COPY public ./public
 COPY tests ./tests
 COPY server ./server
+COPY scripts ./scripts
 COPY config ./config
 COPY Dockerfile run.sh ./
 COPY config.yaml ./

@@ -1,12 +1,12 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.46",
+  "addon_version": "0.1.0-dev.47",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "b285a8af3d97ae98450b4e0c140fe1cc48e84af4",
+  "source_commit": "2f1cef3b30ab37f0164a82819e814081cc5db8b1",
   "source_worktree": {
     "state": "clean",
     "status_entries": [],
-    "fingerprint_sha256": "bccbeead74b599f4bcf19261ed953ed9d7dbab55d648d0b8cabb0da116ae8972"
+    "fingerprint_sha256": "858c3a079a2ac984f64707e7cd578de38815f5410c4e0838ad1ab797a3f79276"
   },
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
@@ -16,17 +16,17 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "200b8c86cb351687b1eacc2806cba05665d5a1bb75f62629c7cd269b236c8f1e",
-  "package_manifest_sha256": "f792d9bace6acbe997ecaaf2ec86cc4a3747bf67fa2617aba3c510ad9ce5dbe1",
+  "npm_lockfile_sha256": "a2da4995ac8951a0be1db260ffce86ca11422c737d0b79c6bc252351a59aab7b",
+  "package_manifest_sha256": "0a680c61a95bad58b5cc29828fb8087d64f7ccd71bf1b2ce628736d79849bf0a",
   "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "31718b219f88e79bbb9b9fe77b321e46923f2d9b5b27c761a1045a3b83d90475"
+      "sha256": "4b17ca2ff1a789d27dd98a39612a4590ce51fd655f1fad2dd63454752fc36f52"
     },
     {
       "path": "config.yaml",
-      "sha256": "0c6cb073fc9ee640a1c37bce4d3ee63bdd0de9ef89e3f892c8271c30c15d74d6"
+      "sha256": "53cf852886acc8b8a7555800c79de541fc5b76ed07fec7c0fe2749dc33031ba1"
     },
     {
       "path": "config/design-system.lock.json",
@@ -42,7 +42,7 @@
     },
     {
       "path": "Dockerfile",
-      "sha256": "e3fa4b6969f3dd215236e1ec60ee42f1677dbf208286f7a467eef556de0ebe39"
+      "sha256": "2607e9182da076534f76822a6d3d441abfa75e1477a1dd102303127da3c76b4b"
     },
     {
       "path": "icon.png",
@@ -58,11 +58,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "54cb64c51bc8e49f01016172c5130e4f207983371de02777ef3e8e668b86f2f4"
+      "sha256": "a884b13538ec6983d0152687115f493766c0d7a6902150d1d5698899eaddd6b8"
     },
     {
       "path": "package.json",
-      "sha256": "b0a34057f7de63c644e5000c2bb95891c3677ec88821f0a269e1b33d3b48f709"
+      "sha256": "fde372a983673b55479a9dfab93f6d16dd77d06455ce6962ed3a9184de672103"
     },
     {
       "path": "public/brand-icon.png",
@@ -70,11 +70,19 @@
     },
     {
       "path": "README.md",
-      "sha256": "149cbe1058537b58437896fe6d62c2a6fd2a9794c2639903da7847807b65a9f8"
+      "sha256": "e6b3128b5bddee0b69e98d7761913446a81aec42bb048605c696eadf397f73d6"
     },
     {
       "path": "run.sh",
       "sha256": "c02097da7f2b397d4e0396deb45d3c0ba74aae4ed064889dd20cffb8208eeb6c"
+    },
+    {
+      "path": "scripts/package-addon.mjs",
+      "sha256": "4b8c62603c7621ccde4022a50fd6c1ff1e7850e489b808a05e6547ec0f404618"
+    },
+    {
+      "path": "scripts/update-design-system.mjs",
+      "sha256": "d83b3b9f64de0b840d56191faa667e741986727b5015d9f0f9db7432df1cf064"
     },
     {
       "path": "server/agent-events.mjs",
@@ -166,7 +174,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "sha256": "0f20791efb2670b4f04d34f3d721941c1de39f0645a9dc3cd4e1708f4aa9ae10"
+      "sha256": "2d4cab2f4348c75d39a59809350825035ee716c3ee8a9e2c4d977567fa2a8738"
     },
     {
       "path": "tests/build-evidence.test.mjs",

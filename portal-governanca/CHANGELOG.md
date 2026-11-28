@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.47 — 28/11/2026
+- Inclui `scripts/` no pacote e no estágio de testes do Supervisor, permitindo que o teste arquitetural valide o empacotador oficial dentro da imagem de build.
+- Corrige a falha da candidata dev.46: `tests/build-architecture.test.mjs` precisava ler `scripts/package-addon.mjs`, ausente no artefato.
+- Mantém o build, testes e compilação do frontend no Supervisor ARM64.
+
+# Changelog
+
 ## 0.1.0-dev.46 — 28/11/2026
 - Corrige o foco após navegação entre telas para não disparar rolagem automática do navegador; preserva a posição visual ao trocar de rota.
 - Adiciona regressão automatizada para impedir o retorno do salto de rolagem.

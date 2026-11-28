@@ -35,6 +35,7 @@ describe("build autossuficiente do add-on",()=>{
   const docker=fs.readFileSync(dockerPath,"utf8");
   expect(docker).toContain("config/home-assistant-addons.json /app/config/home-assistant-addons.json");
   expect(docker).toContain("COPY --chown=portal:portal server/ /app/server/");
+  expect(docker).toContain("COPY scripts ./scripts");
   expect(fs.existsSync(path.join(root,"server/supervisor-bridge.mjs"))).toBe(true);
   expect(fs.existsSync(path.join(root,"server/supervisor-data.mjs"))).toBe(true);
  });
