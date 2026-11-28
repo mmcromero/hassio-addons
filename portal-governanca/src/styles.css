@@ -130,12 +130,6 @@ ds-card.project-card>.ds-card>.ds-card-body{display:flex;flex-direction:column;g
 .workspace main :is(.project-card,.repo-card,.timeline-section){break-inside:avoid}
 .workspace footer{min-width:0;line-height:1.5}
 
-/* Todas as rotas compartilham o mesmo App Shell.
-   A Central do Projeto altera exclusivamente o conteúdo de main. */
-.workspace > nav[data-ds-region="navigation"]{
-  grid-column:1;grid-row:1/4;align-self:start;
-  position:sticky;top:0;height:100vh;min-width:0;
-}
 @media(max-width:650px){
   .workspace main :is(.intro,.section-head){align-items:flex-start;flex-direction:column}
   .workspace main .header-meta{justify-items:start;align-items:flex-start}
@@ -217,4 +211,24 @@ ds-card.integration-card>.ds-card{height:88px;min-width:0;margin:0;padding:9px 1
 }
 .integration-card > .ds-card > .ds-card-body > .integration-copy{
   flex:1 1 auto;min-width:0;
+}
+
+/* Overrides responsivos finais: vêm depois das regras específicas do header.
+   O mobile usa uma coluna e navegação horizontal; não herda grid-column:2 do desktop. */
+@media(max-width:900px){
+  ds-app-shell.workspace.shell{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto minmax(min-content,1fr) auto;
+  }
+  .workspace > header[data-ds-region="header"],
+  .workspace > header.topbar{grid-column:1;grid-row:1}
+  .workspace > nav[data-ds-region="navigation"]{
+    grid-column:1;grid-row:2;position:static;
+    align-self:stretch;height:auto;min-height:0;display:block;
+  }
+  .workspace > main[data-ds-region="main"]{grid-column:1;grid-row:3}
+  .workspace > footer[data-ds-region="footer"]{grid-column:1;grid-row:4}
+  .sidebar-links{display:flex;overflow-x:auto;gap:.3rem}
+  .sidebar-links button{flex:0 0 auto;white-space:nowrap}
+  .side-foot{display:none}
 }

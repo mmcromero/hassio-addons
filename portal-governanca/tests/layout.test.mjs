@@ -74,4 +74,16 @@ describe("estrutura vertical do Portal",()=>{
   expect(main).toContain("focus({preventScroll:true})");
   expect(main).not.toContain("document.querySelector<HTMLElement>('#main-content')?.focus();");
  });
+ it("mantém o App Shell utilizável em mobile após todas as regras do header",()=>{
+  const mobileShell=css.slice(css.lastIndexOf("@media(max-width:900px)"));
+  expect(css.lastIndexOf("@media(max-width:900px)")).toBeGreaterThan(css.lastIndexOf(".workspace > header.topbar{"));
+  expect(mobileShell).toContain("grid-template-columns:minmax(0,1fr)");
+  expect(mobileShell).toContain('.workspace > header.topbar{grid-column:1;grid-row:1}');
+  expect(mobileShell).toContain('.workspace > nav[data-ds-region="navigation"]{');
+  expect(mobileShell).toContain("grid-column:1;grid-row:2;position:static");
+  expect(mobileShell).toContain(".sidebar-links{display:flex;overflow-x:auto");
+  expect(mobileShell).toContain('.workspace > main[data-ds-region="main"]{grid-column:1;grid-row:3}');
+  expect(mobileShell).toContain('.workspace > footer[data-ds-region="footer"]{grid-column:1;grid-row:4}');
+ });
+
 });

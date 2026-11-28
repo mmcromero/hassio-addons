@@ -1,3 +1,11 @@
+## 0.1.0-dev.57 — 28/11/2026
+
+- Corrige a cascata responsiva introduzida na dev.56: a regra global da navegação deixa de sobrescrever o breakpoint mobile.
+- Em larguras até 900px, App Shell usa uma coluna; header/topbar, navegação horizontal, conteúdo e footer recebem explicitamente as linhas/colunas corretas.
+- Corrige o cabeçalho da Visão Geral, que mantinha `grid-column:2` depois da redução para uma coluna.
+- Adiciona teste de regressão que verifica a ordem da regra mobile após as regras desktop do cabeçalho e a posição das quatro regiões.
+- Preserva os estilos desktop, a marca, o cabeçalho aprovado e o snapshot fixado do Design System.
+
 ## 0.1.0-dev.56 — 28/11/2026
 
 - Corrige a regressão de teste da dev.55: a asserção de navegação agora exige sidebar persistente/sticky em vez do comportamento antigo de fluxo relativo.
