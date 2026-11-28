@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.37",
+  "version": "0.2.0-dev.38",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.37",
-  "sourceCommit": "6f81f683f2cb265afb47ea93540c154c8e04646a",
+  "releaseVersion": "0.2.0-dev.38",
+  "sourceCommit": "5abf26edef62603d8a98fbd46ae73b35d235c42d",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,48 +22,51 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-28T19:00:03.976Z",
+  "preparedAt": "2026-11-28T20:07:18.045Z",
   "builtAt": null,
-  "businessSourceSha256": "6b5842e58aff2c4eda54beac86890bd6a95bcbed415011c6c5c0c9e19017772b",
+  "businessSourceSha256": "1116f802f38203634a590dabcf23892f1512e2c58c332c9c8e35c01b0b4fe278",
   "validation": {
-    "sourceCommit": "6f81f683f2cb265afb47ea93540c154c8e04646a",
+    "sourceCommit": "5abf26edef62603d8a98fbd46ae73b35d235c42d",
     "status": "pending-supervisor",
     "directedChecks": [
       {
         "name": "branch-reconciliation",
         "status": "passed",
-        "evidence": "main e release-candidate são ancestrais da candidata; reconciliação de main concluída antes do freeze."
+        "evidence": "release-candidate promovida por fast-forward; development e release-candidate apontam para 5abf26edef62603d8a98fbd46ae73b35d235c42d."
       },
       {
         "name": "core-base-pin",
         "status": "passed",
-        "evidence": "core-base.json aponta para main e845304dc89239272df0610e7eaf78e6dfd22b31; package version 0.1.23 coincide."
+        "evidence": "core-base.json e package.json permanecem na base 0.1.23; identidade, slug, opções, /data e arquitetura aarch64 preservados."
       },
       {
         "name": "schema-and-dependencies",
         "status": "passed",
-        "evidence": "schemaVersions permanecem iguais a dev.36; package.json/package-lock.json não mudaram."
+        "evidence": "schemaVersions e package.json/package-lock.json sem alteração; server/categories.ts adiciona consulta GET somente leitura, sem migrações ou escrita no WooCommerce."
       },
       {
         "name": "reconciliation-static-review",
         "status": "passed",
-        "evidence": "prévia usa snapshot integral e token SHA-256; confirmação revalida snapshot e só grava após token válido; conflitos de material bloqueiam a linha."
+        "evidence": "Revisão estática do diff: prévia sem gravação; confirmação de categorias separada; produtos não confirmados automaticamente."
+      },
+      {
+        "name": "woocommerce-category-taxonomy-review",
+        "status": "passed",
+        "evidence": "GET Store API com hide_empty=false, paginação, hierarquia parent, validação de IDs/pais/ciclos/limites e falha fechada; WooCommerce prioritário e Excel complementar."
       },
       {
         "name": "supervisor-build-and-tests",
         "status": "pending",
-        "evidence": "Dockerfile executa npm test antes do build e verificação de schema em Node.js 24.19.0 no Supervisor ARM64."
+        "evidence": "Dockerfile executa npm test, npm run build, verificação de schema e runtime em Node.js 24.19.0 no Supervisor ARM64."
       },
       {
         "name": "browser-and-data-homologation",
         "status": "pending",
-        "evidence": "aguarda instalação e verificação funcional/visual; nenhuma carga real será confirmada automaticamente."
+        "evidence": "Aguardando instalação no mesmo add-on e conferência funcional/visual; nenhuma carga real será confirmada automaticamente."
       }
     ],
     "build": "pending-supervisor",
-    "physicalValidation": "not-performed",
-    "exportMethod": "Git Data API incremental da release-candidate congelada; código do app, manifests e testes dirigidos copiados para artesaos-piloto; testes incluídos somente no build stage e não na imagem final.",
-    "exporterScript": "scripts/prepare-ha-source.py não executado: o guard UI-only rejeita os módulos server alterados. Exportação incremental rastreável usada para candidata backend; npm test é gate obrigatório do Docker build no Supervisor."
+    "physicalValidation": "not-performed"
   },
   "schemaChecksums": {
     "tenant": [
@@ -213,5 +216,7 @@
       "icon.png": "a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a",
       "logo.png": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
     }
-  }
+  },
+  "exportMethod": "Git Data API incremental from frozen release-candidate; changed app source files, directed build-stage test and release metadata copied only into artesaos-piloto. Test files remain build-stage only and are not copied into runtime image.",
+  "exporterScript": "scripts/prepare-ha-source.py not executed: UI-only backend guard rejects server/categories.ts. The incremental Git Data API route was used as documented by the prior dev.37 backend candidate. npm test remains a mandatory Supervisor build gate."
 }

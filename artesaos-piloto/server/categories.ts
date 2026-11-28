@@ -12,11 +12,44 @@ export function storeCategory(db:DatabaseSync,path:string){
   parent=String(db.prepare('SELECT path FROM categories WHERE category_key=?').get(key(value))!.path);
  }
 }
-export function registerCategories(app:FastifyInstance,db:DatabaseSync){
+type WooCategoryItem={id:number;name:string;parent:number};
+export async function fetchWooCommerceCategories(fetcher:typeof fetch=fetch):Promise<string[]>{
+ const items:WooCategoryItem[]=[];
+ for(let page=1;page<=20;page++){
+  const url=new URL('https://umdoislab.com.br/wp-json/wc/store/v1/products/categories');
+  url.searchParams.set('hide_empty','false');url.searchParams.set('per_page','100');url.searchParams.set('page',String(page));
+  const response=await fetcher(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(12000)});
+  if(!response.ok)throw Error(`WooCommerce respondeu HTTP ${response.status}.`);
+  const batch=await response.json();
+  if(!Array.isArray(batch))throw Error('A resposta de categorias WooCommerce não é uma lista.');
+  for(const raw of batch){const id=Number(raw?.id),name=typeof raw?.name==='string'?raw.name.trim():'',parent=Number(raw?.parent??0);if(!Number.isInteger(id)||id<=0||!name||!Number.isInteger(parent)||parent<0)throw Error('A resposta WooCommerce contém uma categoria inválida.');items.push({id,name,parent});}
+  if(items.length>500)throw Error('A loja retornou mais de 500 categorias; a importação foi interrompida para revisão.');
+  const totalPages=Number(response.headers.get('X-WP-TotalPages')??0);
+  if(batch.length===0||(totalPages>0?page>=totalPages:batch.length<100))break;
+  if(page===20)throw Error('A paginação de categorias WooCommerce excedeu o limite de segurança.');
+ }
+ if(!items.length)throw Error('WooCommerce não retornou categorias.');
+ const byId=new Map<number,WooCategoryItem>();
+ for(const item of items){if(byId.has(item.id))throw Error('WooCommerce retornou IDs de categoria duplicados.');byId.set(item.id,item);}
+ const cache=new Map<number,string>();
+ const resolve=(id:number,trail:number[]=[]):string=>{
+  if(cache.has(id))return cache.get(id)!;
+  if(trail.includes(id))throw Error('A hierarquia de categorias WooCommerce contém um ciclo.');
+  const item=byId.get(id);if(!item)throw Error('A hierarquia WooCommerce referencia uma categoria-pai ausente.');
+  const path=item.parent?resolve(item.parent,[...trail,id])+' > '+item.name:item.name;
+  if(path.length>200)throw Error('Uma categoria WooCommerce excede 200 caracteres.');
+  cache.set(id,path);return path;
+ };
+ const paths=new Map<string,string>();
+ for(const id of byId.keys()){const path=resolve(id),normalized=key(path),existing=paths.get(normalized);if(existing&&existing!==path)throw Error('WooCommerce possui categorias com nomes equivalentes que não podem ser distinguidos no Artesão.');paths.set(normalized,path);}
+ return [...paths.values()];
+}
+export function registerCategories(app:FastifyInstance,db:DatabaseSync,fetcher:typeof fetch=fetch){
 
  const add=(path:string)=>storeCategory(db,path);
  const list=()=>db.prepare('SELECT id,path,reserved,revision FROM categories ORDER BY category_key').all();
  app.get('/api/categories',list);
+ app.get('/api/categories/woocommerce',async(_req,reply)=>{try{return {type:'woocommerce-categories',source:'https://umdoislab.com.br/wp-json/wc/store/v1/products/categories?hide_empty=false',categories:await fetchWooCommerceCategories(fetcher)};}catch(error){return reply.code(502).send({message:'Não foi possível obter a árvore completa de categorias do WooCommerce. Nenhuma categoria foi gravada. '+(error instanceof Error?error.message:'Falha de comunicação.')});}});
  const body={type:'object',additionalProperties:false,required:['path'],properties:{path:{type:'string',minLength:1,maxLength:200},expectedRevision:{type:'integer',minimum:1}}};
  app.post<{Body:{path:string}}>('/api/categories',{schema:{body}},(req,reply)=>{
   const path=clean(req.body.path);if(!valid(path))return reply.code(400).send({message:'Informe uma categoria válida. Produtos de cliente é reservada.'});
