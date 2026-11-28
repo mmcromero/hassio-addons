@@ -1,5 +1,9 @@
 # Changelog — Cofre de Credenciais
 
+## 0.1.0-rc.2 — 2026-11-27
+
+- Corrigida dependência NGINX para Debian Trixie security `1.26.3-3+deb13u11`, alinhada com `nginx-common` disponível no repositório.
+
 ## 0.1.0-rc.1 — 2026-11-27
 
 - Primeira distribuição própria no catálogo mmcromero/hassio-addons.

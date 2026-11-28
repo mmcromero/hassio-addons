@@ -1,6 +1,6 @@
 ---
 name: "Fábrica de Ideias - Cofre de Credenciais"
-version: "0.1.0-rc.1"
+version: "0.1.0-rc.2"
 slug: cofre_credenciais
 description: "Cofre pessoal de senhas, tokens, licenças e chaves baseado no Vaultwarden"
 url: "https://github.com/mmcromero/hassio-addons/tree/main/cofre-credenciais"

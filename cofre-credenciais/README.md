@@ -2,7 +2,7 @@
 
 Distribuição Home Assistant do Vaultwarden, com configuração de segurança e operação mantida por mmcromero.
 
-- Pacote: `0.1.0-rc.1`
+- Pacote: `0.1.0-rc.2`
 - Vaultwarden: `1.37.5` (imagem fixada por digest)
 - Arquiteturas: ARM64 e AMD64
 - Acesso: hostname HTTPS dedicado via NGINX; sem Ingress e sem publicação direta da porta do serviço.
