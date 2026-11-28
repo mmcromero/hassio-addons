@@ -1,0 +1,37 @@
+name: "Fábrica de Ideias - Gerenciador de Mídias"
+slug: umdoislab_media_bridge
+version: "0.1.0"
+description: "Ponte interna autenticada para organizar a cópia do acervo da Umdoislab no MIDIAS2."
+url: https://github.com/mmcromero/hassio-addons/tree/main/media-bridge
+arch:
+  - aarch64
+  - amd64
+startup: application
+boot: auto
+init: false
+stage: experimental
+ingress: false
+backup: cold
+watchdog: false
+ports:
+  8090/tcp: null
+ports_description:
+  8090/tcp: "API interna do serviço; sem mapeamento de porta no host."
+options:
+  filebrowser_url: "http://db21ed7f-filebrowser-quantum:8072"
+  filebrowser_api_token: ""
+  filebrowser_expected_username: "catalogo-operador"
+  filebrowser_expected_scope: ""
+  filebrowser_source: "default"
+  bridge_api_key: ""
+  audit_log: "/data/audit.jsonl"
+  port: 8090
+schema:
+  filebrowser_url: str
+  filebrowser_api_token: password
+  filebrowser_expected_username: str
+  filebrowser_expected_scope: str
+  filebrowser_source: str
+  bridge_api_key: password
+  audit_log: str
+  port: int
