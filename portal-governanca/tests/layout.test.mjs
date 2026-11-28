@@ -25,11 +25,8 @@ describe("estrutura vertical do Portal",()=>{
   expect(result.valid,result.errors.join("\n")).toBe(true);
  });
  it("usa toda a largura disponível e separa sidebar do conteúdo no desktop",()=>{
-  expect(css).toContain("grid-template-columns:233px minmax(0,1fr)!important");
-  expect(css).toContain("padding:0!important");
-  expect(css).toContain("width:233px;min-width:233px;height:100vh");
-  expect(css).toContain("grid-column:2!important;grid-row:2!important");
-  expect(css).toContain("column-gap:0!important");
+  expect(css).toContain("grid-template-columns:13.25rem minmax(0,1fr)");
+  expect(css).toContain("column-gap:1.5rem");
   expect(css).toContain("max-width:none");
   expect(css).toContain("margin:0");
   expect(css).toContain("min-height:100dvh");
@@ -47,6 +44,8 @@ describe("estrutura vertical do Portal",()=>{
   expect(main).toContain("uiIcon('check')");
   expect(css).toContain(".workspace > header.topbar");
   expect(css).toContain(".integration-grid{display:grid;grid-template-columns:repeat(4");
+  expect(css).toContain(".integration-card > .ds-card > .ds-card-body{");
+  expect(css).toContain("display:flex;flex-direction:row;align-items:center");
  });
  it("mantém as oito abas da central individual",()=>{
   for(const id of ["overview","development","homologation","evidence","decisions","resources","agents","environments"])expect(main).toContain("id:'"+id+"'");

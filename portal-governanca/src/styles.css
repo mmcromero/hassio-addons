@@ -219,63 +219,16 @@ ds-card.integration-card>.ds-card{height:88px;min-width:0;margin:0;padding:9px 1
 .workspace > nav[data-ds-region="navigation"][hidden]{display:none!important}
 
 
-/* Correção estrutural desktop — sidebar e conteúdo em colunas reais.
-   O host ds-app-shell também recebe a classe .workspace; zerar o padding
-   do host evita que o grid seja comprimido pela moldura da página. */
-ds-app-shell.workspace.shell:not(.project-shell){
-  display:grid!important;
-  grid-template-columns:233px minmax(0,1fr)!important;
-  grid-template-rows:84px minmax(0,1fr) auto!important;
-  column-gap:0!important;row-gap:0!important;
-  width:100%!important;max-width:none!important;
-  min-height:100vh;min-height:100dvh;
-  margin:0!important;padding:0!important;
-  align-items:stretch;
+
+/* Cards de integração: o conteúdo é movido pelo DS para .ds-card-body.
+   O layout horizontal precisa ser aplicado ao body, não apenas ao container. */
+.integration-card > .ds-card > .ds-card-body{
+  display:flex;flex-direction:row;align-items:center;
+  gap:13px;width:100%;min-width:0;
 }
-ds-app-shell.workspace.shell:not(.project-shell) > nav[data-ds-region="navigation"]{
-  grid-column:1!important;grid-row:1/4!important;
-  display:flex;flex-direction:column;
-  position:sticky;top:0;align-self:start;
-  width:233px;min-width:233px;height:100vh;min-height:100vh;
-  padding:19px 11px 15px;
+.integration-card > .ds-card > .ds-card-body > .integration-icon{
+  flex:0 0 34px;width:34px;height:34px;
 }
-ds-app-shell.workspace.shell:not(.project-shell) > header[data-ds-region="header"]{
-  grid-column:2!important;grid-row:1!important;
-  width:100%;min-width:0;height:84px;min-height:84px;
-  margin:0;padding:0 18px;
-}
-ds-app-shell.workspace.shell:not(.project-shell) > main[data-ds-region="main"]{
-  grid-column:2!important;grid-row:2!important;
-  width:100%;max-width:1600px;min-width:0;
-  margin:0 auto;padding:16px 18px 14px;
-}
-ds-app-shell.workspace.shell:not(.project-shell) > footer[data-ds-region="footer"]{
-  grid-column:2!important;grid-row:3!important;
-  width:100%;min-height:64px;margin:0;
-}
-ds-app-shell.workspace.shell.project-shell{
-  display:grid!important;grid-template-columns:minmax(0,1fr)!important;
-  grid-template-rows:84px minmax(0,1fr) auto!important;
-  width:100%!important;max-width:none!important;margin:0!important;padding:0!important;
-}
-@media(max-width:900px){
-  ds-app-shell.workspace.shell:not(.project-shell){
-    grid-template-columns:minmax(0,1fr)!important;
-    grid-template-rows:auto auto minmax(0,1fr) auto!important;
-  }
-  ds-app-shell.workspace.shell:not(.project-shell) > nav[data-ds-region="navigation"]{
-    grid-column:1!important;grid-row:2!important;
-    position:static;width:100%;min-width:0;height:auto;min-height:0;
-    padding:9px 10px;
-  }
-  ds-app-shell.workspace.shell:not(.project-shell) > header[data-ds-region="header"]{
-    grid-column:1!important;grid-row:1!important;height:auto;min-height:76px;
-    padding:12px 14px;
-  }
-  ds-app-shell.workspace.shell:not(.project-shell) > main[data-ds-region="main"]{
-    grid-column:1!important;grid-row:3!important;padding:13px;
-  }
-  ds-app-shell.workspace.shell:not(.project-shell) > footer[data-ds-region="footer"]{
-    grid-column:1!important;grid-row:4!important;
-  }
+.integration-card > .ds-card > .ds-card-body > .integration-copy{
+  flex:1 1 auto;min-width:0;
 }

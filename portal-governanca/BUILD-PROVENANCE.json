@@ -1,8 +1,8 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.53",
+  "addon_version": "0.1.0-dev.54",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "3a7ce9b934bb02d4a2e3cfb7031e70909c83fb02",
+  "source_commit": "19d280597c8b79c22a2781f88433c2d01b34a055",
   "source_worktree": {
     "state": "clean",
     "status_entries": [],
@@ -373,6 +373,6 @@
       "sha256": "5004a1cfd3bad6346e04979f8ffc58cb8e769283dba4705edf32e3438a9e3ae3"
     }
   ],
-  "generated_by": "GitHub API export reproducing the exact file selection in scripts/package-addon.mjs; local npm command not executed",
-  "packaging_method": "GitHub Git Data API; exact selected source files exported from the recorded commit; SHA-256 hashes recomputed and verified"
+  "generated_by": "GitHub API export of selected source files; source commit recorded; full SHA-256 manifest recalculation deferred",
+  "packaging_method": "GitHub Git Data API export of source files for Supervisor ARM64 build"
 }

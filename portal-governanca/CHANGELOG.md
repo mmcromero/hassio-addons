@@ -1,3 +1,10 @@
+## 0.1.0-dev.54 — 28/11/2026
+
+- Reverte integralmente a alteração indevida de largura, padding, margens e posicionamento global do App Shell introduzida na dev.53.
+- Preserva os espaçamentos laterais anteriores.
+- Corrige somente os cards de integração: o Design System move os elementos para `.ds-card-body`; a disposição horizontal agora é aplicada ao contêiner correto, evitando ícones e textos encavalados.
+- Atualiza teste de regressão para verificar o layout horizontal do conteúdo dos cards e manter os valores de espaçamento anteriores.
+
 ## 0.1.0-dev.53 — 28/11/2026
 
 - Corrige o grid do App Shell no desktop: sidebar com largura explícita de 233px, ocupando a primeira coluna e toda a altura disponível.
