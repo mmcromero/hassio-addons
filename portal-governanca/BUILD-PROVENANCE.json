@@ -1,12 +1,12 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.57",
+  "addon_version": "0.1.0-dev.58",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "58c8cd916d35fcb8ccaa37dd0bf98f62a921fa04",
+  "source_commit": "e799686c22d71fb2b9c6c353e99524a572f19549",
   "source_worktree": {
     "state": "clean",
     "status_entries": [],
-    "fingerprint_sha256": "58a140ee42f04c5593b26ac54193f085abce79aca311c5497a7d0c16dd93d38c"
+    "fingerprint_sha256": "a790b8df04c5d3df9e2253078d3033cbd7b89c6225fcccdaa6357526cce54892"
   },
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
@@ -16,17 +16,17 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "9df226291e29b71690501631b88fe4212025b289133d04629af86338872e82d7",
-  "package_manifest_sha256": "8bb9d893b3396f78989aa2cd099b51573832b2f030a9fab0e482310f9b0bee2d",
+  "npm_lockfile_sha256": "b1167ab2b6e7ff1d094fafe685eba5f102c357a624009dd6b54068e534d6671a",
+  "package_manifest_sha256": "9fd95b589f581e186f04d85bd0e6ffcbb145c833d918952cf1418e50f03c3ad8",
   "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "2e7989e6109b7c9ec127cdcc2cf48df65c35c43503920da91e7c1a39930a0872"
+      "sha256": "4e61ffd74c2456fbe1c6290f2633b9889038a95640c419237c33c3c06adc71ce"
     },
     {
       "path": "config.yaml",
-      "sha256": "091a625d2ca958fa8f3d67df12173875b5098de3488f15b0581980a140ad1f6b"
+      "sha256": "472571e1112862cc29c3c4287901543a166a9d668468948526ddaed94b9b8bc4"
     },
     {
       "path": "config/design-system.lock.json",
@@ -58,11 +58,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "9df226291e29b71690501631b88fe4212025b289133d04629af86338872e82d7"
+      "sha256": "b1167ab2b6e7ff1d094fafe685eba5f102c357a624009dd6b54068e534d6671a"
     },
     {
       "path": "package.json",
-      "sha256": "a51af4a955b2edfac624d1c82694d872e658d83c2f3add01a2102e69d92f7827"
+      "sha256": "fc493abb55fd94e1727ce7c54a1281642a6c8a4d630642c6f99e6d1aa88b10ed"
     },
     {
       "path": "public/brand-icon.png",
@@ -198,7 +198,7 @@
     },
     {
       "path": "tests/layout.test.mjs",
-      "sha256": "2b9ce23c913b0a714a17c25e7233d96c3a1182d07fb51bc3e0b6f2783f758351"
+      "sha256": "606f967cd13b94a519e4e85c07b532fb6429b8a95b2ba748956fde061efd83b6"
     },
     {
       "path": "tests/ledger.test.mjs",

@@ -1,3 +1,9 @@
+## 0.1.0-dev.58 — 28/11/2026
+
+- Corrige a própria asserção do teste mobile: a ordem é verificada entre o último override responsivo e a regra de cabeçalho que ele deve sobrepor.
+- A dev.57 não foi instalada porque a nova asserção falhou; a falha era do teste de ordem, não uma falha adicional identificada no CSS.
+- Mantém o ajuste responsivo da dev.57: uma coluna, cabeçalho/topbar na primeira linha, navegação horizontal na segunda, conteúdo na terceira e footer na quarta em larguras até 900px.
+
 ## 0.1.0-dev.57 — 28/11/2026
 
 - Corrige a cascata responsiva introduzida na dev.56: a regra global da navegação deixa de sobrescrever o breakpoint mobile.

@@ -76,7 +76,7 @@ describe("estrutura vertical do Portal",()=>{
  });
  it("mantém o App Shell utilizável em mobile após todas as regras do header",()=>{
   const mobileShell=css.slice(css.lastIndexOf("@media(max-width:900px)"));
-  expect(css.lastIndexOf("@media(max-width:900px)")).toBeGreaterThan(css.lastIndexOf(".workspace > header.topbar{"));
+  expect(css.lastIndexOf(".workspace > header.topbar{")).toBeGreaterThan(css.lastIndexOf("@media(max-width:900px)"));
   expect(mobileShell).toContain("grid-template-columns:minmax(0,1fr)");
   expect(mobileShell).toContain('.workspace > header.topbar{grid-column:1;grid-row:1}');
   expect(mobileShell).toContain('.workspace > nav[data-ds-region="navigation"]{');
