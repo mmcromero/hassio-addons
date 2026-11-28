@@ -90,3 +90,37 @@ O Supervisor confirma NGINX 4.5.3 com domínio `romeropi.duckdns.org`, porta ext
 - Nenhuma conta ou credencial real foi criada.
 
 O arquivo de rota usa WebSocket Upgrade/Connection, preserva o caminho `/cofre`, encaminha para o hostname interno do app e aplica limite de upload local de 10 MB. Não alterar ou substituir os outros includes existentes.
+
+
+### Include NGINX implantado
+
+Arquivo runtime: `/share/nginx_proxy_default_cofre.conf`.
+
+```nginx
+# Cofre de Credenciais — Vaultwarden via HTTPS no prefixo /cofre
+location = /cofre {
+    return 308 /cofre/;
+}
+
+location ^~ /cofre/ {
+    proxy_pass http://45c28620-cofre-credenciais:7277;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $forward_host;
+    proxy_set_header X-Forwarded-Host $forward_host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header Origin $http_origin;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+
+    proxy_buffering off;
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+    proxy_redirect off;
+    client_max_body_size 10m;
+}
+```
+
+SHA-256 do arquivo runtime: `f8efa7c53fce11f7bb2b1198aef1320ba68da63c0346ddf9b31f56029c5d925c`. O NGINX inclui esse arquivo no contexto do servidor HTTPS por meio de `nginx_proxy_default*.conf`. Preserve os outros includes; não publicar a porta interna 7277.
