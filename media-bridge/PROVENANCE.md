@@ -2,8 +2,8 @@
 
 - Repositório-fonte: https://github.com/mmcromero/gerenciador-de-midias
 - Branch-fonte: `desenvolvimento`
-- Commit-fonte: `ceb6f32d975688b70a31dd1f8fc3a88a2877c3bb`
-- `bridge/service.py` blob: `016ea438fea46e3c9bdc600aaa3f71a06ec1711b`
+- Commit-fonte: `94c195441f4496c9d6e3b26793c632776104fbb0`
+-  `bridge/service.py` blob: `11400081f721e5e4a7605dda4ae87737f52bf09e`
 - `bridge/test_service.py` blob: `95732dec0690d6840fdb2dd1082d595befa39e4d`
 - `bridge/entrypoint.py` blob: `3f66bc6cc6fdb5d309702612ae4e811730a189b4`
 - Testes unitários: 20/20 PASS em ambiente Python isolado; `py_compile` exit 0.

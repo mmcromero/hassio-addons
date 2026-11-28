@@ -480,8 +480,8 @@ def main():
         if len(api_key) < 32:
             raise SystemExit("BRIDGE_API_KEY deve ter ao menos 32 caracteres")
         client = FileBrowserClient(url, token, os.environ.get("FILEBROWSER_SOURCE", "default"))
-        ingress_base_path = client.discover_base_path()
-        print(json.dumps({"event": "ingress_prefix_discovered", "base_path": ingress_base_path}), flush=True)
+        client.discover_base_path()
+        print(json.dumps({"event": "ingress_prefix_discovered"}), flush=True)
         identity = client.verify_identity(username, scope)
         print(json.dumps({"event": "identity_verified", **identity}), flush=True)
         audit = AuditLog(os.environ.get("AUDIT_LOG", "/data/audit.jsonl"))
