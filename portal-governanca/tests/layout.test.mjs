@@ -24,6 +24,15 @@ describe("estrutura vertical do Portal",()=>{
   const result=validateAppShell(document.querySelector("ds-app-shell"));
   expect(result.valid,result.errors.join("\n")).toBe(true);
  });
+ it("usa toda a largura disponível e separa sidebar do conteúdo no desktop",()=>{
+  expect(css).toContain("grid-template-columns:15rem minmax(0,1fr)");
+  expect(css).toContain("column-gap:1.5rem");
+  expect(css).toContain("max-width:none");
+  expect(css).toContain("margin:0");
+  expect(css).toContain("padding:0");
+  expect(css).toContain("min-height:100dvh");
+  expect(css).toContain("grid-row:1/4");
+ });
  it("mantém as oito abas da central individual",()=>{
   for(const id of ["overview","development","homologation","evidence","decisions","resources","agents","environments"])expect(main).toContain("id:'"+id+"'");
   expect(main).toContain("project-section-content");

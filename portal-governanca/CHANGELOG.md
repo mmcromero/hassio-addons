@@ -1,3 +1,10 @@
+## 0.1.0-dev.49 — 28/11/2026
+
+- Corrige o App Shell para ocupar toda a largura disponível, elimina centralização estreita e espaços laterais desperdiçados.
+- Sidebar alinhada ao topo e com altura mínima de viewport; gap explícito de 24px entre navegação e conteúdo.
+- Conteúdo recebe espaçamento lateral consistente; layout responsivo preservado em telas menores.
+- Corrige o rótulo de versão exibido no cabeçalho para acompanhar a versão publicada.
+
 # Changelog
 
 ## 0.1.0-dev.48 — 28/11/2026
