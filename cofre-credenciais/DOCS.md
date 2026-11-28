@@ -10,7 +10,7 @@ Este pacote executa o Vaultwarden, servidor compatível com os clientes Bitwarde
 - Persistência: `/data` (SQLite e anexos).
 - Interface: não usa Home Assistant Ingress.
 - Porta interna do serviço web: `7277/tcp`; mapeamento para a rede do host desativado por padrão.
-- Acesso previsto: hostname HTTPS dedicado pelo NGINX já existente no Home Assistant. A rota ainda precisa ser configurada e homologada.
+- Acesso previsto: `https://romeropi.duckdns.org:8443/cofre`, reutilizando o domínio/certificado HTTPS já existentes e um include de rota no NGINX. A rota ainda precisa ser configurada e homologada.
 
 ## Proteções padrão
 
@@ -27,7 +27,7 @@ Este pacote executa o Vaultwarden, servidor compatível com os clientes Bitwarde
 
 ## Primeiro acesso — procedimento controlado
 
-1. Concluir e testar o hostname HTTPS dedicado e o proxy reverso antes de permitir o cadastro.
+1. Concluir e testar a rota `https://romeropi.duckdns.org:8443/cofre` no NGINX existente antes de permitir o cadastro.
 2. Na configuração do app, habilitar `allow_signups` temporariamente e reiniciar o app.
 3. Abrir o hostname HTTPS e criar somente a conta do proprietário.
 4. Ativar autenticação de dois fatores (TOTP) na conta e testar um segundo dispositivo.
@@ -40,11 +40,11 @@ Não deixar `allow_signups` habilitado após criar a conta do proprietário.
 ## Configuração
 
 - `ssl`: manter `false` quando o NGINX externo terminar TLS; a comunicação interna entre proxy e app será HTTP na rede privada de add-ons.
-- `domain`: preencher com a URL HTTPS pública completa depois de emitir e conferir o certificado.
+- `domain`: preencher com `https://romeropi.duckdns.org:8443/cofre` após adicionar e testar o include NGINX. O Vaultwarden 1.37.5 suporta o prefixo de caminho via `DOMAIN`.
 - `request_size_limit`: limite de requisições JSON do Rocket; o limite de upload também deverá ser definido no vhost externo do NGINX.
 - `log_level`: manter `info` em operação normal.
 
-O app não oferece Ingress. Não habilitar acesso público direto à porta 7277. Não criar redirecionamento de porta no roteador.
+O app não oferece Ingress. Não habilitar acesso público direto à porta 7277. Não criar redirecionamento de porta no roteador. O certificado wildcard `*.romeropi.duckdns.org` já está configurado no DuckDNS; não é necessário emitir outro certificado para a rota proposta.
 
 ## Clientes
 
@@ -72,3 +72,8 @@ O empacotamento HA deriva do projeto Home Assistant Community App Vaultwarden, l
 ## Homologação pendente
 
 Build e inicialização no Raspberry Pi 4, acesso HTTPS via proxy, WebSocket, bloqueio de cadastro, MFA, consumo de recursos, persistência, backup/restore e atualização controlada.
+
+
+## Estado de acesso — 28/11/2026
+
+O Supervisor confirma NGINX 4.5.3 com domínio `romeropi.duckdns.org`, porta externa 8443 e include customizado ativo. DuckDNS confirma SAN `*.romeropi.duckdns.org`, válido até 19/02/2027. A rota candidata usa o caminho `/cofre`; ainda não foi criada. A tela de autenticação só será exposta após autorização específica e teste do include.
