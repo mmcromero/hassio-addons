@@ -1,5 +1,10 @@
 # Changelog — Cofre de Credenciais
 
+## 0.1.0-rc.3 — 2026-11-27
+
+- Corrigida semântica do Vaultwarden: `DISABLE_ADMIN_TOKEN=false` com `ADMIN_TOKEN` ausente mantém o painel administrativo desativado. A configuração anterior habilitava a rota administrativa sem token e foi removida antes de qualquer acesso externo.
+- Removido `build.yaml` obsoleto; parâmetros de build já são definidos no Dockerfile.
+
 ## 0.1.0-rc.2 — 2026-11-27
 
 - Corrigida dependência NGINX para Debian Trixie security `1.26.3-3+deb13u11`, alinhada com `nginx-common` disponível no repositório.

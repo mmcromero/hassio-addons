@@ -1,6 +1,6 @@
 {
   "package": "mmcromero/hassio-addons/cofre-credenciais",
-  "package_version": "0.1.0-rc.2",
+  "package_version": "0.1.0-rc.3",
   "built_by": "Home Assistant Supervisor from Dockerfile on target architecture",
   "source_wrapper": {
     "repository": "https://github.com/hassio-addons/app-vaultwarden",
@@ -28,7 +28,7 @@
     "ORG_CREATION_USERS=none",
     "EMERGENCY_ACCESS_ALLOWED=false",
     "PASSWORD_HINTS_ALLOWED=false",
-    "DISABLE_ADMIN_TOKEN=true; ADMIN_TOKEN unset",
+    "DISABLE_ADMIN_TOKEN=false; ADMIN_TOKEN unset; admin route disabled",
     "ROCKET_ADDRESS=127.0.0.1",
     "host port 7277 mapping disabled"
   ],
@@ -38,5 +38,6 @@
     "libpq5": "17.12-0+deb13u1",
     "nginx": "1.26.3-3+deb13u11",
     "sqlite3": "3.46.1-7+deb13u2"
-  }
+  },
+  "build_yaml_removed": "Supervisor deprecated build.yaml; BUILD_FROM is declared in Dockerfile"
 }

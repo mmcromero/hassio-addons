@@ -29,7 +29,7 @@ export SENDS_ALLOWED=false
 export ORG_CREATION_USERS=none
 export EMERGENCY_ACCESS_ALLOWED=false
 export PASSWORD_HINTS_ALLOWED=false
-export DISABLE_ADMIN_TOKEN=true
+export DISABLE_ADMIN_TOKEN=false
 unset ADMIN_TOKEN
 
 if bashio::config.has_value 'domain'; then
