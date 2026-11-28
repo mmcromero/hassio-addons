@@ -1,0 +1,36 @@
+{
+  "package": "mmcromero/hassio-addons/cofre-credenciais",
+  "package_version": "0.1.0-rc.1",
+  "built_by": "Home Assistant Supervisor from Dockerfile on target architecture",
+  "source_wrapper": {
+    "repository": "https://github.com/hassio-addons/app-vaultwarden",
+    "branch": "main",
+    "commit": "de6e0aa5193634a3f3da79bf78905aa320ce4b2c",
+    "license": "MIT"
+  },
+  "vaultwarden": {
+    "repository": "https://github.com/dani-garcia/vaultwarden",
+    "tag": "1.37.5",
+    "license": "AGPL-3.0",
+    "docker_image": "vaultwarden/server:1.37.5",
+    "multiarch_index_digest": "sha256:4fe17f415f90087377d37c755e0ea3cf189dcc6794e49cdd2a9adbb4937d9e1f",
+    "architectures": [
+      "linux/arm64",
+      "linux/amd64"
+    ]
+  },
+  "base_image": "ghcr.io/hassio-addons/debian-base:9.5.2",
+  "security_changes": [
+    "SIGNUPS_ALLOWED false by default; optional temporary owner bootstrap",
+    "INVITATIONS_ALLOWED=false",
+    "SSO_SIGNUPS_ALLOWED=false",
+    "SENDS_ALLOWED=false",
+    "ORG_CREATION_USERS=none",
+    "EMERGENCY_ACCESS_ALLOWED=false",
+    "PASSWORD_HINTS_ALLOWED=false",
+    "DISABLE_ADMIN_TOKEN=true; ADMIN_TOKEN unset",
+    "ROCKET_ADDRESS=127.0.0.1",
+    "host port 7277 mapping disabled"
+  ],
+  "date": "2026-11-27"
+}

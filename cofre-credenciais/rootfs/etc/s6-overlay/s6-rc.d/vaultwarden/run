@@ -1,0 +1,84 @@
+#!/command/with-contenv bashio
+# shellcheck shell=bash
+# ==============================================================================
+# Home Assistant Community App: Vaultwarden
+# Runs the Vaultwarden server
+# ==============================================================================
+declare log_level
+declare request_size_limit
+declare domain
+declare secret_key
+
+# Set defaults
+export DATA_FOLDER=/data
+export ROCKET_PORT=80
+export ROCKET_ADDRESS=127.0.0.1
+export ROCKET_WORKERS=2
+
+# Security defaults: no public account creation, invitations, Sends, SSO signup,
+# organization creation, password hints, or administrative web panel.
+allow_signups=$(bashio::config 'allow_signups')
+if [[ "${allow_signups}" == "true" ]]; then
+    export SIGNUPS_ALLOWED=true
+else
+    export SIGNUPS_ALLOWED=false
+fi
+export INVITATIONS_ALLOWED=false
+export SSO_SIGNUPS_ALLOWED=false
+export SENDS_ALLOWED=false
+export ORG_CREATION_USERS=none
+export EMERGENCY_ACCESS_ALLOWED=false
+export PASSWORD_HINTS_ALLOWED=false
+export DISABLE_ADMIN_TOKEN=true
+unset ADMIN_TOKEN
+
+if bashio::config.has_value 'domain'; then
+    domain=$(bashio::config 'domain')
+    if [[ -n "${domain}" ]]; then
+        export DOMAIN="${domain}"
+    fi
+fi
+
+# Set a random secret, to remove confusing warning from logs.
+secret_key=$(openssl rand -base64 32)
+export ROCKET_SECRET_KEY="${secret_key}"
+
+# Find the matching log level
+if bashio::config.has_value 'log_level'; then
+    case "$(bashio::string.lower "$(bashio::config 'log_level')")" in
+        all|trace)
+            log_level="trace"
+            ;;
+        debug)
+            log_level="debug"
+            ;;
+        info|notice)
+            log_level="info"
+            ;;
+        warning)
+            log_level="warn"
+            ;;
+        error|fatal)
+            log_level="error"
+            ;;
+        off)
+            log_level="off"
+            ;;
+    esac
+
+    export LOG_LEVEL="${log_level}"
+fi
+
+bashio::log.info "Administrative web panel disabled; no admin token is generated or logged."
+bashio::log.info "Self-registration: ${SIGNUPS_ALLOWED}"
+
+# API request size limit
+if bashio::config.has_value 'request_size_limit'; then
+    request_size_limit=$(bashio::config 'request_size_limit')
+    export ROCKET_LIMITS="{json=${request_size_limit}}"
+fi
+
+# Run the Vaultwarden server
+bashio::log.info 'Starting the Vaultwarden server...'
+cd /opt || bashio::exit.nok
+exec ./vaultwarden

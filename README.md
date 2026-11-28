@@ -58,7 +58,7 @@ A tabela abaixo é um snapshot de 22/11/2026, não um indicador ao vivo. Para a 
 | `artesaos-piloto/` | Fábrica de Ideias - Artesão Digital | 0.2.0-dev.33 | aarch64 |
 | `design-system-lab/` | Fábrica de Ideias - Design System Lab (temporário) | 0.1.0-test.3 | aarch64 |
 
-O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **oito** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
+O registro [`.github/addon-registry.json`](.github/addon-registry.json) reúne os **dez** add-ons. Os arquivos `icon.png` e `logo.png` preservam os mesmos blobs de identidade já utilizados no catálogo (SHA `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a` e `7e500016222b0a5bf395be8ed17447edeb3e2af9`).
 
 **Central WhatsApp original:** a distribuição `0.5.0-rc.1` foi publicada no [commit `45d7ec6`](https://github.com/mmcromero/hassio-addons/commit/45d7ec6e28f60ec6f1ef1e3ebc86baf8b44cfbe3), preservando o `slug: umdoislab_central`. **Não equivale à atualização do app instalado no Raspberry.** A homologação depende do Supervisor.
 
@@ -113,3 +113,8 @@ O add-on experimental **design-system-lab/** executa a validação do repositór
 O app instala Node.js 22, Playwright/Chromium e dependências de teste no container. A validação executa instalação limpa, builds, Vitest, isolamento/DOM e viewports; após sucesso, disponibiliza a Demo estática pelo Ingress para homologação manual com leitor de tela. Não expõe portas do host, não monta diretórios do Home Assistant e não acessa a API do Supervisor.
 
 O token deve ser Fine-grained PAT restrito ao repositório **design-system**, permissão **Contents: Read-only**. Nunca inserir o token em Issue, chat, log ou Git. A instalação é manual e o app permanece em estágio experimental; sua remoção após a homologação não altera os demais add-ons.
+
+
+## Cofre de Credenciais — candidata própria (27/11/2026)
+
+A pasta `cofre-credenciais/` contém a distribuição mantida por mmcromero, baseada no wrapper Home Assistant Community App Vaultwarden (MIT) e no servidor Vaultwarden 1.37.5 (AGPL-3.0), com imagem ARM64/AMD64 fixada por digest. A candidata `0.1.0-rc.1` mantém cadastro, convites, Sends, SSO signup e painel administrativo desativados por padrão; a porta 7277 não é publicada no host. O acesso depende de hostname HTTPS dedicado pelo NGINX existente. **Não cadastrar credenciais reais antes de concluir e homologar HTTPS, MFA, backup e restauração.** Consulte `cofre-credenciais/DOCS.md`.

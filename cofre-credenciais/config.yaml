@@ -1,0 +1,33 @@
+---
+name: "Fábrica de Ideias - Cofre de Credenciais"
+version: "0.1.0-rc.1"
+slug: cofre_credenciais
+description: "Cofre pessoal de senhas, tokens, licenças e chaves baseado no Vaultwarden"
+url: "https://github.com/mmcromero/hassio-addons/tree/main/cofre-credenciais"
+startup: application
+boot: manual
+init: false
+stage: experimental
+arch:
+  - aarch64
+  - amd64
+ports:
+  7277/tcp: null
+map:
+  - ssl
+options:
+  ssl: false
+  certfile: fullchain.pem
+  keyfile: privkey.pem
+  log_level: info
+  request_size_limit: 10485760
+  allow_signups: false
+  domain: ""
+schema:
+  ssl: bool
+  certfile: str
+  keyfile: str
+  log_level: list(trace|debug|info|notice|warning|error|fatal)?
+  request_size_limit: int?
+  allow_signups: bool
+  domain: str?

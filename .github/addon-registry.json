@@ -86,6 +86,17 @@
       "architectures": [
         "aarch64"
       ]
+    },
+    {
+      "id": "cofre-credenciais",
+      "directory": "cofre-credenciais",
+      "slug": "cofre_credenciais",
+      "architectures": [
+        "aarch64",
+        "amd64"
+      ],
+      "source_repo": "https://github.com/hassio-addons/app-vaultwarden",
+      "upstream_project": "https://github.com/dani-garcia/vaultwarden"
     }
   ]
 }
