@@ -1,3 +1,8 @@
+## 0.1.0-dev.52 — 28/11/2026
+
+- Corrige a asserção do teste de layout para refletir a atribuição dinâmica da classe topbar no elemento header.
+- Mantém a recuperação da composição aprovada do cabeçalho e dos ícones SVG das integrações, sem alterar as APIs e o contexto funcional.
+
 ## 0.1.0-dev.51 — 28/11/2026
 
 - Recupera a composição do cabeçalho global do protótipo aprovado: kicker e título à esquerda; seletor, estado de conexão e ação Atualizar GitHub à direita.

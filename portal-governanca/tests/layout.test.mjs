@@ -34,7 +34,7 @@ describe("estrutura vertical do Portal",()=>{
   expect(css).toContain(".workspace header{align-items:center;padding-bottom:.8rem;margin-bottom:1rem}");
  });
  it("preserva o cabeçalho aprovado e os ícones das integrações",()=>{
-  expect(main).toContain('class="topbar"');
+  expect(main).toContain("header.className = 'topbar'");
   expect(main).toContain('class="top-actions"');
   expect(main).toContain("uiIcon('refresh')");
   expect(main).toContain("card('github','GitHub REST API'");
