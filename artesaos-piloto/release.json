@@ -24,7 +24,7 @@
   "metadataVersion": 1,
   "preparedAt": "2026-11-28T19:00:03.976Z",
   "builtAt": null,
-  "businessSourceSha256": "PENDING_SHA256_CALCULATION",
+  "businessSourceSha256": "6b5842e58aff2c4eda54beac86890bd6a95bcbed415011c6c5c0c9e19017772b",
   "validation": {
     "sourceCommit": "6f81f683f2cb265afb47ea93540c154c8e04646a",
     "status": "pending-supervisor",
