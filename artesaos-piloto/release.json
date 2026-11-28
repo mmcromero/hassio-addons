@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.36",
+  "version": "0.2.0-dev.37",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.36",
-  "sourceCommit": "842516f127113d608631f33669b3b1bf167b316b",
+  "releaseVersion": "0.2.0-dev.37",
+  "sourceCommit": "6f81f683f2cb265afb47ea93540c154c8e04646a",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,44 +22,48 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-24T03:02:38.579Z",
+  "preparedAt": "2026-11-28T19:00:03.976Z",
   "builtAt": null,
-  "businessSourceSha256": "bfdb6ec06bd1b58a6746061507d013524e015452538ca85b6e5508b85a3c0cef",
+  "businessSourceSha256": "PENDING_SHA256_CALCULATION",
   "validation": {
-    "sourceCommit": "842516f127113d608631f33669b3b1bf167b316b",
+    "sourceCommit": "6f81f683f2cb265afb47ea93540c154c8e04646a",
     "status": "pending-supervisor",
-    "directedChecks": [],
-    "build": "not-performed",
-    "physicalValidation": "not-performed",
-    "reviewChecks": [
+    "directedChecks": [
       {
-        "name": "source-scope-review",
+        "name": "branch-reconciliation",
         "status": "passed",
-        "evidence": "Diff dev.35→dev.36: única alteração de runtime em server/pilot/entry.ts; demais arquivos alterados são teste, documentação e manifestos. Sem mudança em OAuth, convites, sessão, API, schemas ou dependências."
+        "evidence": "main e release-candidate são ancestrais da candidata; reconciliação de main concluída antes do freeze."
       },
       {
-        "name": "pdv-preservation",
+        "name": "core-base-pin",
         "status": "passed",
-        "evidence": "O diff não contém arquivos do PDV nem componentes de venda/fabricação; runtime restrito à página pública."
+        "evidence": "core-base.json aponta para main e845304dc89239272df0610e7eaf78e6dfd22b31; package version 0.1.23 coincide."
       },
       {
-        "name": "store-identity-and-config",
+        "name": "schema-and-dependencies",
         "status": "passed",
-        "evidence": "Nome oficial, slug artesaos_piloto, opções, portas, volume /data e arquitetura aarch64 preservados; configuração normalizada confere com a publicação anterior."
+        "evidence": "schemaVersions permanecem iguais a dev.36; package.json/package-lock.json não mudaram."
       },
       {
-        "name": "schema-compatibility",
+        "name": "reconciliation-static-review",
         "status": "passed",
-        "evidence": "schemaVersions e schemaChecksums mantidos; fonte histórica validada e publicação anterior são ancestrais da candidata."
+        "evidence": "prévia usa snapshot integral e token SHA-256; confirmação revalida snapshot e só grava após token válido; conflitos de material bloqueiam a linha."
       },
       {
-        "name": "package-integrity-review",
-        "status": "passed",
-        "evidence": "Inventário completo conferido com SHA256SUMS; hashes recalculados para entry.ts, manifestos, Dockerfile e release.json; assets oficiais preservados."
+        "name": "supervisor-build-and-tests",
+        "status": "pending",
+        "evidence": "Dockerfile executa npm test antes do build e verificação de schema em Node.js 24.19.0 no Supervisor ARM64."
+      },
+      {
+        "name": "browser-and-data-homologation",
+        "status": "pending",
+        "evidence": "aguarda instalação e verificação funcional/visual; nenhuma carga real será confirmada automaticamente."
       }
     ],
-    "exportMethod": "Git Data API incremental: pacote dev.35 existente foi usado como base validada; o blob de server/pilot/entry.ts foi copiado diretamente do SHA congelado; manifestos, config, Dockerfile, release.json e SHA256SUMS foram atualizados. Inventário público de 216 arquivos e hashes foram conferidos.",
-    "exporterScript": "not-performed: scripts/prepare-ha-source.py e scripts/test-ha-source.py não foram executados porque esta sessão não dispõe de clone local/runner para a fonte privada."
+    "build": "pending-supervisor",
+    "physicalValidation": "not-performed",
+    "exportMethod": "Git Data API incremental da release-candidate congelada; código do app, manifests e testes dirigidos copiados para artesaos-piloto; testes incluídos somente no build stage e não na imagem final.",
+    "exporterScript": "scripts/prepare-ha-source.py não executado: o guard UI-only rejeita os módulos server alterados. Exportação incremental rastreável usada para candidata backend; npm test é gate obrigatório do Docker build no Supervisor."
   },
   "schemaChecksums": {
     "tenant": [
@@ -202,7 +206,7 @@
   "physicalValidation": "pending",
   "publicationReady": false,
   "storeBranding": {
-    "name": "Fábrica de Softwares - Artesão Digital",
+    "name": "Fábrica de Ideias - Artesão Digital",
     "catalogRepository": "mmcromero/hassio-addons",
     "catalogCommit": "8666d9ab6c2967985e5160afc4aaeedf145dba71",
     "gitBlobs": {

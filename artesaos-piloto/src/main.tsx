@@ -7,7 +7,8 @@ import Help from './Help';
 import LegalGate from './LegalGate';
 import {appName} from './branding';
 import ValidatedForm from './FormValidation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import {subscribeRoute,getRouteSnapshot,registerRoutePreloader} from './navigation';
 import { createRoot } from 'react-dom/client';
 import './style.css';
 import Quotes from './Quotes';
@@ -28,6 +29,17 @@ const Orders=React.lazy(()=>import('./Orders'));
 const ConsignedInventory=React.lazy(()=>import('./ConsignedInventory'));
 const PaymentSettings=React.lazy(()=>import('./PaymentSettings'));
 const ProductInventory=React.lazy(()=>import('./ProductInventory'));
+registerRoutePreloader(view=>{
+ switch(view){
+  case 'vendas':return import('./Sales');
+  case 'financeiro':return import('./Finance');
+  case 'pedidos':return import('./Orders');
+  case 'consignados':return import('./ConsignedInventory');
+  case 'pagamentos':return import('./PaymentSettings');
+  case 'estoque':return import('./ProductInventory');
+  default:return undefined;
+ }
+});
 
 async function request(path: string, options?: RequestInit) {
   const response = await fetch(new URL(path, document.baseURI), options);
@@ -72,11 +84,32 @@ function App() {
     </section><p role="status">{message}</p>
   </main>;
 }
+function StartupRoute({children,hasView}:{children:React.ReactNode;hasView:boolean}){
+ const [ready,setReady]=useState(hasView);
+ useEffect(()=>{
+  if(hasView){setReady(true);return;}
+  setReady(false);let active=true;
+  fetch(new URL('api/operational-preferences',document.baseURI)).then(async response=>{if(!response.ok)throw Error();return response.json();}).then(data=>{
+   if(!active)return;
+   const prefer=data.preferences.prioritize_sales&&data.openSession;
+   const chosen=prefer?'vendas':data.preferences.home_view;
+   const target=viewEnabled(chosen)?chosen:'produtos';
+   if(target!=='produtos'){const url=new URL(location.href);url.searchParams.set('view',target);if(prefer)url.searchParams.set('session',data.openSession.id);history.replaceState(history.state,'',url.href);window.dispatchEvent(new PopStateEvent('popstate'));}
+   else setReady(true);
+  }).catch(()=>{if(active)setReady(true);});
+  return()=>{active=false;};
+ },[hasView]);
+ return ready?children:<main className="route-loading"><p role="status">Carregando tela inicial…</p></main>;
+}
 declare const __APP_VERSION__: string;
-const query=new URLSearchParams(window.location.search);
-const view=query.get('view');
-const area=query.get('area');
-function StartupRoute({children}:{children:React.ReactNode}){const [ready,setReady]=useState(!!view);useEffect(()=>{if(view)return;let active=true;fetch(new URL('api/operational-preferences',document.baseURI)).then(async response=>{if(!response.ok)throw Error();return response.json();}).then(data=>{if(!active)return;const prefer=data.preferences.prioritize_sales&&data.openSession;const chosen=prefer?'vendas':data.preferences.home_view;const target=viewEnabled(chosen)?chosen:'produtos';if(target!=='produtos'){const url=new URL(location.href);url.searchParams.set('view',target);if(prefer)url.searchParams.set('session',data.openSession.id);location.replace(url.href);}else setReady(true);}).catch(()=>{if(active)setReady(true);});return()=>{active=false;};},[]);return ready?children:<main><p role="status">Carregando tela inicial…</p></main>;}
-const pilotPage=!viewEnabled(view??'produtos')?<main className="products-screen ad-module-screen"><AreaNav/><ModuleHeading symbol="layers" title="Módulo ainda não liberado"/><p>Solicite a liberação ao administrador. Seus dados foram preservados.</p><a href="?view=suporte">Abrir suporte</a></main>:view==='consignados'?<main className="products-screen ad-module-screen"><AreaNav active="vendas"/><ModuleHeading symbol="estoque" title="Consignados"/><ConsignedInventory contextual/></main>:view==='materiais'?<main className="products-screen ad-module-screen"><AreaNav/><ModuleHeading symbol="layers" title="Materiais da fabricação"/><MaterialSettings/></main>:view==='pagamentos'?<PaymentSettings/>:view==='fabricacao'?<Manufacturing/>:view==='ajuda'?<Help/>:view==='vendas'?<Sales/>:view==='financeiro'?<Finance/>:view==='pedidos'?<Orders/>:view==='estoque'?<ProductInventory/>:view==='suporte'?<SupportHub/>:view==='configuracoes'?<PilotSettings/>:view==='orcamentos'?<Quotes/>:view==='clientes'?<Clients/>:view==='produto'?<QuoteWireframe/>:view==='diagnostico'?<App/>:<Products/>;
-const page = appName==='Artesão Digital'?<LegalGate><PilotGate allowBeforeSetup={view==='suporte'||view==='ajuda'}><StartupRoute><React.Suspense fallback={<main><p role="status">Carregando área…</p></main>}>{pilotPage}</React.Suspense></StartupRoute></PilotGate></LegalGate>:(view==='configuracoes'&&area&&Object.hasOwn(areaNames,area)?<Settings area={area as Area}/>:view==='fabricacao'?<Manufacturing/>:view==='orcamentos'?<Quotes/>:view==='clientes'?<Clients/>:view==='produtos'?<Products/>:view==='produto'?<QuoteWireframe/>:view==='diagnostico'?<App/>:<Quotes/>);
-createRoot(document.getElementById('root')!).render(<><small className="app-version" aria-label={`Versão ${__APP_VERSION__}`}>v{__APP_VERSION__}</small>{appName==='Artesão Digital'?<OfflineBoundary>{page}</OfflineBoundary>:page}</>);
+const subscribeAppRoute=(listener:()=>void)=>appName==='Artesão Digital'?subscribeRoute(listener):()=>{};
+function RootApp(){
+ const route=useSyncExternalStore(subscribeAppRoute,getRouteSnapshot,getRouteSnapshot);
+ const current=new URL(route,window.location.origin),query=current.searchParams;
+ const view=query.get('view'),area=query.get('area');
+ const navActive=(view==='materiais'||view==='fabricacao'||view==='produto'?'produtos':view==='consignados'?'vendas':view==='pagamentos'?'configuracoes':view) as Area|'configuracoes'|'estoque'|'pedidos'|'financeiro'|'vendas'|'ajuda'|undefined;
+ const pilotPage=!viewEnabled(view??'produtos')?<main className="products-screen ad-module-screen"><AreaNav/><ModuleHeading symbol="layers" title="Módulo ainda não liberado"/><p>Solicite a liberação ao administrador. Seus dados foram preservados.</p><a href="?view=suporte">Abrir suporte</a></main>:view==='consignados'?<main className="products-screen ad-module-screen"><AreaNav active="vendas"/><ModuleHeading symbol="estoque" title="Consignados"/><ConsignedInventory contextual/></main>:view==='materiais'?<main className="products-screen ad-module-screen"><AreaNav/><ModuleHeading symbol="layers" title="Materiais da fabricação"/><MaterialSettings/></main>:view==='pagamentos'?<PaymentSettings/>:view==='fabricacao'?<Manufacturing/>:view==='ajuda'?<Help/>:view==='vendas'?<Sales/>:view==='financeiro'?<Finance/>:view==='pedidos'?<Orders/>:view==='estoque'?<ProductInventory/>:view==='suporte'?<SupportHub/>:view==='configuracoes'?<PilotSettings/>:view==='orcamentos'?<Quotes/>:view==='clientes'?<Clients/>:view==='produto'?<QuoteWireframe/>:view==='diagnostico'?<App/>:<Products/>;
+ const page=appName==='Artesão Digital'?<LegalGate><PilotGate allowBeforeSetup={view==='suporte'||view==='ajuda'}><><AreaNav global active={navActive}/><StartupRoute hasView={!!view}><React.Suspense fallback={<main className="route-loading" aria-live="polite"><p role="status">Carregando área…</p></main>}>{pilotPage}</React.Suspense></StartupRoute></></PilotGate></LegalGate>:(view==='configuracoes'&&area&&Object.hasOwn(areaNames,area)?<Settings area={area as Area}/>:view==='fabricacao'?<Manufacturing/>:view==='orcamentos'?<Quotes/>:view==='clientes'?<Clients/>:view==='produtos'?<Products/>:view==='produto'?<QuoteWireframe/>:view==='diagnostico'?<App/>:<Quotes/>);
+ return <><small className="app-version" aria-label={`Versão ${__APP_VERSION__}`}>v{__APP_VERSION__}</small>{appName==='Artesão Digital'?<OfflineBoundary>{page}</OfflineBoundary>:page}</>;
+}
+createRoot(document.getElementById('root')!).render(<RootApp/>);

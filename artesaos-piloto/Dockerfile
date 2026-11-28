@@ -3,15 +3,15 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --strict-ssl=true
 COPY . .
-RUN npm run build && node scripts/verify-ha-source-schema.mjs && npm prune --omit=dev --ignore-scripts --no-audit && \
+RUN mkdir -p dist && npm test && npm run build && node scripts/verify-ha-source-schema.mjs && npm prune --omit=dev --ignore-scripts --no-audit && \
     node scripts/verify-portable-runtime.mjs && \
     chmod -R a+rX /app/dist /app/dist-server /app/assets/fonts /app/node_modules && \
     chmod a+r /app/package.json /app/pilot-build.json
 
 FROM node:24.19.0-bookworm-slim
-LABEL org.opencontainers.image.revision="842516f127113d608631f33669b3b1bf167b316b" \
-      org.opencontainers.image.version="0.2.0-dev.36" \
-      org.opencontainers.image.created="2026-11-24T03:02:38.579Z" \
+LABEL org.opencontainers.image.revision="6f81f683f2cb265afb47ea93540c154c8e04646a" \
+      org.opencontainers.image.version="0.2.0-dev.37" \
+      org.opencontainers.image.created="2026-11-28T19:00:24.910Z" \
       org.opencontainers.image.source="https://github.com/mmcromero/fabricacao_e_orcamentos" \
       dev.artesao.distribution="home-assistant"
 WORKDIR /app

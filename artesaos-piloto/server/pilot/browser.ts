@@ -27,7 +27,17 @@ export function browserScripts(prefix:string,version:string){
    if(window.pilotVersionReady&&!await window.pilotVersionReady)return;
    await window.pilotBrowserReady;
    document.querySelectorAll('[data-pilot-login]').forEach(button=>button.disabled=false);
-   for(const style of document.querySelectorAll('link[data-pilot-href]'))style.href=style.dataset.pilotHref;
+   const styles=[...document.querySelectorAll('link[data-pilot-href]')];
+   await Promise.all(styles.map(style=>new Promise((resolve,reject)=>{
+    if(style.sheet){resolve(true);return;}
+    const href=style.dataset.pilotHref;
+    if(!href){reject(Error('Missing application stylesheet'));return;}
+    const done=()=>{style.removeEventListener('load',loaded);style.removeEventListener('error',failed);};
+    const loaded=()=>{done();resolve(true);};
+    const failed=()=>{done();reject(Error('Application stylesheet failed'));};
+    style.addEventListener('load',loaded,{once:true});style.addEventListener('error',failed,{once:true});
+    style.href=href;
+   })));
    for(const script of document.querySelectorAll('script[data-pilot-module]'))await import(script.dataset.pilotModule);
   }catch{report();}finally{done?.();}
  };
@@ -57,16 +67,11 @@ export function sessionScript(prefix:string,csrfCookie:string){
   return original(request);
  };
  addEventListener('DOMContentLoaded',async()=>{
-  try{await window.pilotBrowserReady;}catch{return;}
-  if(window.pilotVersionReady&&!await window.pilotVersionReady)return;
-  let response;try{response=await fetch(prefix+'api/pilot/session');}catch{return;}
-  if(!response.ok){location.replace(prefix+'login');return;}
-  const data=await response.json();
   if(document.body.classList.contains('pilot-first-access-detail'))return;
   const bar=document.createElement('nav');bar.id='pilot-account';bar.className='pilot-account-user-layout';bar.setAttribute('aria-label','Conta do Artesão Digital');
   const title=document.createElement('span');title.className='pilot-account-title';title.textContent='Artesão Digital';if(window.pilotBrand)window.pilotBrand(title);
-  const name=document.createElement('span');name.className='pilot-account-user';name.textContent=data.email;name.title=data.email;
-  const logout=document.createElement('button');logout.textContent='Sair';
+  const name=document.createElement('span');name.className='pilot-account-user';name.textContent='Carregando conta…';
+  const logout=document.createElement('button');logout.textContent='Sair';logout.disabled=true;
   const status=document.createElement('p');status.id='pilot-session-status';status.setAttribute('role','alert');status.hidden=true;
   status.style.gridColumn='1 / -1';status.style.margin='0';status.style.fontSize='14px';
   logout.onclick=async()=>{
@@ -83,8 +88,14 @@ export function sessionScript(prefix:string,csrfCookie:string){
    }
   };
   const navigation=document.createElement('div');navigation.id='pilot-navigation';
-  bar.append(title,name,logout,status);const shell=document.createElement('header');shell.id='pilot-shell';shell.append(bar,navigation);document.body.classList.add('pilot-session-active');document.body.prepend(shell);
+  bar.append(title,name,logout,status);const shell=document.createElement('header');shell.id='pilot-shell';shell.append(bar,navigation);
+  document.body.classList.remove('pilot-session-pending');document.body.classList.add('pilot-session-active');document.body.prepend(shell);
   new ResizeObserver(()=>{document.body.style.paddingTop=((document.getElementById('pilot-shell')??bar).offsetHeight+16)+'px';}).observe(shell);
+  try{await window.pilotBrowserReady;}catch{shell.remove();document.body.classList.remove('pilot-session-active');document.body.style.paddingTop='';return;}
+  if(window.pilotVersionReady&&!await window.pilotVersionReady){shell.remove();document.body.classList.remove('pilot-session-active');document.body.style.paddingTop='';return;}
+  let response;try{response=await fetch(prefix+'api/pilot/session');}catch{return;}
+  if(!response.ok){location.replace(prefix+'login');return;}
+  const data=await response.json();name.textContent=data.email;name.title=data.email;logout.disabled=false;
  });
 })();`;
 }
