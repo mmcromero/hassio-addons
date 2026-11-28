@@ -1,12 +1,12 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.59",
+  "addon_version": "0.1.0-dev.60",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "7bed6aad88c6e68a2dd779f50d8995ef7e6b1afe",
+  "source_commit": "7fae694d033ae7c1582b672b61d1572d9bdfaf03",
   "source_worktree": {
-    "state": "clean",
+    "state": "committed_snapshot",
     "status_entries": [],
-    "fingerprint_sha256": "94f55a441591c96edbbaa75d6791f2c025013aff483e840c231d52823b85c303"
+    "fingerprint_sha256": "ec99c12256bec51605e8e09ef9a612d2c19722d442b49ee0fa4dc7df7f2b6159"
   },
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
@@ -16,17 +16,17 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "3e23ba7f450c5c1914300b612b2cc0c728e0b1bc7858bb27ce658ad64bcd6658",
-  "package_manifest_sha256": "02a4f2b43722e3db591c00f8a4b6899be69c4cc14b08dc88f4b8cbff676b2853",
+  "npm_lockfile_sha256": "ae2df2d3dd5485c64e37aeb5086f87df7a1b74ecddf711c9f6fdece754c0adc3",
+  "package_manifest_sha256": "c8ec4d9d06e3c767e0b4d074345484b7ede92d1bbbf5845c6588f4b5a5d48c0a",
   "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "dc3f3bc43f4bdbbbeba934b83ce0bbca4a8763ab23232a66db36ffa1c82e4908"
+      "sha256": "25c33b0d803781535d40f0f4ed465c564144c0458e4707ccfb3f68bdebb8c3c6"
     },
     {
       "path": "config.yaml",
-      "sha256": "c4af019ad6f0af8afff76a3a97dee04c86bbeb71724502993bace9673542ac76"
+      "sha256": "672dec62ffd8e7094154690916fa38447bb4166db6c10d4157f4a4ebab17b612"
     },
     {
       "path": "config/design-system.lock.json",
@@ -58,11 +58,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "3e23ba7f450c5c1914300b612b2cc0c728e0b1bc7858bb27ce658ad64bcd6658"
+      "sha256": "ae2df2d3dd5485c64e37aeb5086f87df7a1b74ecddf711c9f6fdece754c0adc3"
     },
     {
       "path": "package.json",
-      "sha256": "11107a4126a940d2d516073cd8a92860d8e3f57d9dac06a75c8f01e789c11012"
+      "sha256": "4b3f293af81db01e7fb9267d6354baf347ad3537458df5dc238b577315b6f559"
     },
     {
       "path": "public/brand-icon.png",
@@ -94,11 +94,11 @@
     },
     {
       "path": "server/github.mjs",
-      "sha256": "5bcf532ff70d788a0f6dc974f80901d1160ffda3a2e6f10bbff7c854c853bf68"
+      "sha256": "45a37c3b6977fe9790fb6f5280e21db2cf3d63f8c743cb8362d7b35082704042"
     },
     {
       "path": "server/index.mjs",
-      "sha256": "0ba12a6969d0e80378f3fd8bc67b37be42042b10b742d1b292963f8dc4c81521"
+      "sha256": "534aacda95430dd12c5948be5698d921bd1636550cc8a2e749479ee88c405b6e"
     },
     {
       "path": "server/ingress.mjs",
@@ -126,7 +126,7 @@
     },
     {
       "path": "src/api/client.ts",
-      "sha256": "ae9eebd78e3acb119c5f8597638403ede1ca60efd2591322098d290f30ec1a99"
+      "sha256": "220f589d4bb6d861e4f0bd2308ee7dcf91c43da0be3551bbea81ac4936244e7f"
     },
     {
       "path": "src/data/project-resources.ts",
@@ -138,7 +138,7 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "9bf4913ff1a49d11a966eef72f420233120b4facc16e464a5bd28208d52beabe"
+      "sha256": "729620be238cef8177c7de6074f1c21bb6ac2b537bbfff31fd10e7bd1773243e"
     },
     {
       "path": "src/project-age.ts",
@@ -166,7 +166,7 @@
     },
     {
       "path": "src/styles.css",
-      "sha256": "ab1d3c2027b8b9499c4469eba252f758615ef771a11bdeeb13b45bb43b6a9d08"
+      "sha256": "29cef4d860fc1cb1843c885344e489edb6ddde0f2bee9e3de3566edcc1a18c73"
     },
     {
       "path": "tests/agent-events.test.mjs",
@@ -190,7 +190,7 @@
     },
     {
       "path": "tests/github.test.mjs",
-      "sha256": "9edb1be072ac32ab27f92350157c0dc50a998626473d25705b413c789c61b604"
+      "sha256": "ab837c64c11ea32e86063c571e7b255e2dc60175836e8eec7b0f2c141816b8e4"
     },
     {
       "path": "tests/ingress.test.mjs",
@@ -198,7 +198,7 @@
     },
     {
       "path": "tests/layout.test.mjs",
-      "sha256": "b913a0d865fb9b70aa2604b375cf0b8d77eecfd41f4bb1fda62e74f981fb4cfe"
+      "sha256": "9ec6923ae9b854e4a8b07d0ef779e488b3b13c9b03501d838aa4fc17045f8b52"
     },
     {
       "path": "tests/ledger.test.mjs",
@@ -238,7 +238,7 @@
     },
     {
       "path": "tests/register-security.test.mjs",
-      "sha256": "5a74001cd03edd45d76fdcd2d30feae63133822959ad82927d63218b055a2ce3"
+      "sha256": "cc7b56cd733a9d9ec09a42be36e3bd7cc41ca0823e6554569750b79e2657f842"
     },
     {
       "path": "tests/repository-catalog-order.test.mjs",
@@ -373,5 +373,5 @@
       "sha256": "5004a1cfd3bad6346e04979f8ffc58cb8e769283dba4705edf32e3438a9e3ae3"
     }
   ],
-  "generated_by": "GitHub Git Data API; seleção equivalente a scripts/package-addon.mjs; blobs oficiais preservados"
+  "generated_by": "GitHub Git Data API export matching the file selection in scripts/package-addon.mjs; local packager not executed"
 }

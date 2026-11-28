@@ -38,6 +38,13 @@ export function getRepositoryCatalog():Promise<RepositoryCatalog>{return apiRequ
 export function registerProject(input:{repositoryFullName:string;project:{id:string;name:string;domain:string;description:string}}):Promise<{success:boolean;repository:string;branch:string;marker:string;projectId:string}>{
  return apiRequest<{success:boolean;repository:string;branch:string;marker:string;projectId:string}>("api/v1/projects/register",{method:"POST",body:JSON.stringify(input)});
 }
+export type RepositoryActionResult={success:boolean;action:"created"|"reactivated"|"disabled"|"already_disabled";repository:string;branch:string;marker:string;projectId:string;projectName?:string};
+export function quickRegisterProject(repositoryFullName:string):Promise<RepositoryActionResult>{
+ return apiRequest<RepositoryActionResult>("api/v1/projects/quick-register",{method:"POST",body:JSON.stringify({repositoryFullName})});
+}
+export function unregisterProject(repositoryFullName:string):Promise<RepositoryActionResult>{
+ return apiRequest<RepositoryActionResult>("api/v1/projects/unregister",{method:"POST",body:JSON.stringify({repositoryFullName})});
+}
 
 export type SupervisorApp={slug:string;name:string;state:string;version:string|null;versionLatest:string|null;updateAvailable:boolean|null;boot:string|null;watchdog:boolean|null;ingressPanel:boolean|null;protected:boolean|null;autoUpdate:boolean|null;projectId:string|null;projectName:string|null};
 export type SupervisorInventory={source:string;checkedAt:string;total:number;updatesAvailable:number;cache:"HIT"|"MISS";apps:SupervisorApp[]};

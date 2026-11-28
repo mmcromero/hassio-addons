@@ -74,6 +74,14 @@ describe("estrutura vertical do Portal",()=>{
   expect(main).toContain("data-register-form");
   expect(main).toContain("if ((view === 'register' || (view === 'projects' && !selected)) && !catalog && !catalogLoading) void loadCatalog();");
  });
+ it("oferece cadastro e descadastro rápidos sem remover o cadastro manual",()=>{
+  expect(main).toContain('data-repository-action="unregister"');
+  expect(main).toContain('data-repository-action="register"');
+  expect(main).toContain("runRepositoryAction(action, repository)");
+  expect(main).toContain("function registrationPage()");
+  expect(main).toContain("data-register-form");
+  expect(main).toContain("markerStatus === 'disabled'");
+ });
  it("aplica regras visuais compartilhadas às telas e aos formulários",()=>{
   for(const selector of [".workspace main > section",".workspace main .registration-form",".workspace main :is(ds-card,.repo-card,.repo-row)",".workspace main .project-tabs","@media(max-width:650px)","@media(max-width:420px)"])expect(css).toContain(selector);
  });

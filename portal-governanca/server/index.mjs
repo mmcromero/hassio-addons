@@ -189,18 +189,31 @@ const server=http.createServer(async(req,res)=>{
   pathname=stripIngressPath(rawPath,basePath);
   if(pathname===null){text(res,404,"Not found");return;}
   if(rawPath===basePath){res.writeHead(308,securityHeaders({Location:basePath+"/","Cache-Control":"no-store"}));res.end();return;}
-  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")||rawPath.endsWith("/api/v1/timeline/collect")||rawPath.endsWith("/api/v1/timeline/end")||rawPath.endsWith("/api/v1/timeline/cancel")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
+  if(req.method!=="GET"&&req.method!=="HEAD"&&!(req.method==="POST"&&(rawPath.endsWith("/api/v1/projects/register")||rawPath.endsWith("/api/v1/projects/quick-register")||rawPath.endsWith("/api/v1/projects/unregister")||rawPath.endsWith("/api/v1/records")||rawPath.endsWith("/api/v1/agent-events")||rawPath.endsWith("/api/v1/missions")||rawPath.endsWith("/api/v1/timeline/collect")||rawPath.endsWith("/api/v1/timeline/end")||rawPath.endsWith("/api/v1/timeline/cancel")))){text(res,405,"Method not allowed",{Allow:"GET, HEAD, POST"});return;}
  }else if(!authorized(req)){
   text(res,401,"Autenticação necessária",{"WWW-Authenticate":'Basic realm="Portal de Governança", charset="UTF-8"'});
   return;
  }
- if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel")&&req.method==="POST")){
-  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel"?"GET, POST":"GET"});return;
+ if(pathname.startsWith("/api/")&&req.method!=="GET"&&!((pathname==="/api/v1/projects/register"||pathname==="/api/v1/projects/quick-register"||pathname==="/api/v1/projects/unregister"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel")&&req.method==="POST")){
+  json(res,405,{error:{code:"METHOD_NOT_ALLOWED",message:"Método não permitido para este endpoint."}},{Allow:pathname==="/api/v1/projects/register"||pathname==="/api/v1/projects/quick-register"||pathname==="/api/v1/projects/unregister"||pathname==="/api/v1/records"||pathname==="/api/v1/agent-events"||pathname==="/api/v1/missions"||pathname==="/api/v1/timeline/collect"||pathname==="/api/v1/timeline/end"||pathname==="/api/v1/timeline/cancel"?"GET, POST":"GET"});return;
  }
  if(pathname==="/api/v1/projects/register"&&req.method==="POST"){
   if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
   try{const result=await github.registerProject(await readJson(req));json(res,201,result);}
   catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_REGISTRATION_FAILED",message:error.message}});}
+  return;
+ }
+
+ if(pathname==="/api/v1/projects/quick-register"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
+  try{const result=await github.quickRegisterProject(await readJson(req));json(res,201,result);}
+  catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_QUICK_REGISTRATION_FAILED",message:error.message}});}
+  return;
+ }
+ if(pathname==="/api/v1/projects/unregister"&&req.method==="POST"){
+  if(!sameOrigin(req)){json(res,403,{error:{code:"ORIGIN_NOT_ALLOWED",message:"Origem da solicitação não autorizada."}});return;}
+  try{const result=await github.unregisterProject(await readJson(req));json(res,200,result);}
+  catch(error){json(res,error.status||502,{error:{code:error.code||"PROJECT_UNREGISTRATION_FAILED",message:error.message}});}
   return;
  }
  if(pathname==="/api/v1/timeline"&&req.method==="GET"){

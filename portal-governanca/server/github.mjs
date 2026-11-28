@@ -105,6 +105,63 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   cached=null;
   return{success:true,repository:fullName,branch:repo.default_branch,marker:MARKER,projectId:id.trim()};
  }
+
+ async function quickRegisterProject(input){
+  if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
+  if(!writeToken)throw new GitHubApiError("Cadastro indisponível: credencial GitHub de escrita não configurada.",503,"GITHUB_WRITE_NOT_CONFIGURED");
+  const fullName=input?.repositoryFullName;
+  if(typeof fullName!=="string"||!/^mmcromero\/[A-Za-z0-9_.-]+$/.test(fullName))throw new GitHubApiError("Selecione um repositório do owner mmcromero.",400,"GITHUB_INVALID_REGISTRATION");
+  const repos=await listOwnedRepositories(),repo=repos.find(r=>r.full_name===fullName);
+  if(!repo)throw new GitHubApiError("O repositório selecionado não pertence ao owner autorizado ou não está acessível.",404,"GITHUB_REPOSITORY_NOT_ALLOWED");
+  if(repo.archived)throw new GitHubApiError("Não é possível cadastrar repositório arquivado.",409,"GITHUB_REPOSITORY_ARCHIVED");
+  if(!repo.default_branch)throw new GitHubApiError("O repositório não possui branch padrão consultável.",409,"GITHUB_DEFAULT_BRANCH_MISSING");
+  const markerUrl="/repos/"+fullName+"/contents/"+MARKER+"?ref="+encodeURIComponent(repo.default_branch);
+  let current=null;try{current=(await request(markerUrl)).data;}catch(error){if(error.status!==404)throw error;}
+  if(current){
+   if(current.type!=="file"||typeof current.content!=="string"||!current.sha)throw new GitHubApiError("O marcador existente não pôde ser validado; nenhuma alteração foi feita.",409,"GITHUB_MARKER_UNREADABLE");
+   let manifest;try{manifest=JSON.parse(Buffer.from(current.content,"base64").toString("utf8"));}catch{throw new GitHubApiError("O marcador existente contém JSON inválido; nenhuma alteração foi feita.",422,"GITHUB_INVALID_PROJECT_MANIFEST");}
+   parseManifest(current.content,repo);
+   if(manifest?.project?.enabled!==false)throw new GitHubApiError("Este repositório já está cadastrado no portfólio.",409,"GITHUB_MARKER_EXISTS");
+   manifest.project.enabled=true;
+   await writeFile("/repos/"+fullName+"/contents/"+MARKER,{message:"chore(portfolio): reativar "+manifest.project.name,content:Buffer.from(JSON.stringify(manifest,null,2)+"\n","utf8").toString("base64"),branch:repo.default_branch,sha:current.sha});
+   cached=null;return{success:true,action:"reactivated",repository:fullName,branch:repo.default_branch,marker:MARKER,projectId:manifest.project.id,projectName:manifest.project.name};
+  }
+  const existing=await discoverProjects();
+  const repoName=String(repo.name||fullName.split("/")[1]).trim().slice(0,120);
+  const slug=value=>value.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,64).replace(/-+$/g,"")||"projeto";
+  let id=slug(repoName);
+  const matching=existing.projects.find(p=>p.id===id&&p.name.toLocaleLowerCase("pt-BR")===repoName.toLocaleLowerCase("pt-BR"));
+  let project;
+  if(matching)project={id:matching.id,name:matching.name,domain:matching.domain,description:matching.summary};
+  else{
+   const used=new Set(existing.projects.map(p=>p.id)),base=id;let suffix=2;
+   while(used.has(id)){const tail="-"+suffix++;id=base.slice(0,64-tail.length).replace(/-+$/g,"")+tail;}
+   const description=String(repo.description||"").trim().slice(0,120)||("Projeto do repositório GitHub "+fullName+".").slice(0,120);
+   project={id,name:repoName,domain:"Tecnologia",description};
+  }
+  const manifest={schema_version:1,project:{id:project.id,name:project.name,domain:project.domain,description:project.description,enabled:true,repositories:[{full_name:fullName,role:"Repositório do projeto"}]}};
+  await writeFile("/repos/"+fullName+"/contents/"+MARKER,{message:"chore(portfolio): cadastrar "+project.name,content:Buffer.from(JSON.stringify(manifest,null,2)+"\n","utf8").toString("base64"),branch:repo.default_branch});
+  cached=null;return{success:true,action:"created",repository:fullName,branch:repo.default_branch,marker:MARKER,projectId:project.id,projectName:project.name};
+ }
+ async function unregisterProject(input){
+  if(!token)throw new GitHubApiError("Integração GitHub ainda não configurada no servidor.",503,"GITHUB_NOT_CONFIGURED");
+  if(!writeToken)throw new GitHubApiError("Descadastro indisponível: credencial GitHub de escrita não configurada.",503,"GITHUB_WRITE_NOT_CONFIGURED");
+  const fullName=input?.repositoryFullName;
+  if(typeof fullName!=="string"||!/^mmcromero\/[A-Za-z0-9_.-]+$/.test(fullName))throw new GitHubApiError("Selecione um repositório do owner mmcromero.",400,"GITHUB_INVALID_REGISTRATION");
+  const repos=await listOwnedRepositories(),repo=repos.find(r=>r.full_name===fullName);
+  if(!repo)throw new GitHubApiError("O repositório selecionado não pertence ao owner autorizado ou não está acessível.",404,"GITHUB_REPOSITORY_NOT_ALLOWED");
+  if(repo.archived)throw new GitHubApiError("Não é possível descadastrar marcador em repositório arquivado.",409,"GITHUB_REPOSITORY_ARCHIVED");
+  if(!repo.default_branch)throw new GitHubApiError("O repositório não possui branch padrão consultável.",409,"GITHUB_DEFAULT_BRANCH_MISSING");
+  let current;try{current=(await request("/repos/"+fullName+"/contents/"+MARKER+"?ref="+encodeURIComponent(repo.default_branch))).data;}
+  catch(error){if(error.status===404)throw new GitHubApiError("Este repositório não possui marcador para descadastrar.",409,"GITHUB_MARKER_MISSING");throw error;}
+  if(current?.type!=="file"||typeof current.content!=="string"||!current.sha)throw new GitHubApiError("O marcador existente não pôde ser validado; nenhuma alteração foi feita.",409,"GITHUB_MARKER_UNREADABLE");
+  let manifest;try{manifest=JSON.parse(Buffer.from(current.content,"base64").toString("utf8"));}catch{throw new GitHubApiError("O marcador existente contém JSON inválido; nenhuma alteração foi feita.",422,"GITHUB_INVALID_PROJECT_MANIFEST");}
+  parseManifest(current.content,repo);
+  if(manifest?.project?.enabled===false)return{success:true,action:"already_disabled",repository:fullName,branch:repo.default_branch,marker:MARKER,projectId:manifest.project.id};
+  manifest.project.enabled=false;
+  await writeFile("/repos/"+fullName+"/contents/"+MARKER,{message:"chore(portfolio): descadastrar "+manifest.project.name,content:Buffer.from(JSON.stringify(manifest,null,2)+"\n","utf8").toString("base64"),branch:repo.default_branch,sha:current.sha});
+  cached=null;return{success:true,action:"disabled",repository:fullName,branch:repo.default_branch,marker:MARKER,projectId:manifest.project.id,projectName:manifest.project.name};
+ }
  async function fetchRepository(fullName){
   let metadata;try{metadata=(await request("/repos/"+fullName)).data;}catch(error){return{fullName,status:error.status===404?"not_found_or_no_access":"unavailable",htmlUrl:"https://github.com/"+fullName,errors:[{code:error.code||"GITHUB_REQUEST_FAILED",message:error.message}]};}
   const prefix="/repos/"+fullName;
@@ -219,5 +276,5 @@ export function createGitHubClient({token,writeToken="",fetchImpl=fetch,cacheMs=
   const payload={source:"GitHub REST API",mode:"live-read-only-auto-discovery",checkedAt:now().toISOString(),cache:"MISS",discovery:{file:MARKER,owner:OWNER,scannedRepositories:discovery.scannedRepositories,projectsFound:discovery.projects.length,warnings:discovery.warnings},projects:discovery.projects.map(p=>({...p,repositories:p.repositories.map(r=>({...r,snapshot:snapshots[r.fullName]||{fullName:r.fullName,status:"not_queried",errors:[]}}))}))};
   cached={cachedAt:Date.now(),payload};return payload;
  }
- return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject,getRecentAgentComments,getProjectHistory};
+ return{getPortfolio,discoverProjects,getRepositoryCatalog,registerProject,quickRegisterProject,unregisterProject,getRecentAgentComments,getProjectHistory};
 }

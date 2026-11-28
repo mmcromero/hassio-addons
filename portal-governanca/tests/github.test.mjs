@@ -87,6 +87,65 @@ describe("cadastro controlado de marcadores",()=>{
   expect(body.branch).toBe("main");expect(manifest.project.id).toBe("demo");
   expect(calls.filter(c=>c.method==="GET").every(c=>c.headers.Authorization==="Bearer read-token")).toBe(true);
  });
+ it("cadastra rapidamente com metadados derivados do repositório GitHub",async()=>{
+  const calls=[];
+  const fetchImpl=vi.fn(async(input,init)=>{
+   const u=new URL(String(input));calls.push({path:u.pathname,method:init.method,headers:init.headers,body:init.body});
+   if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/meu-app",name:"Meu App",description:"Aplicação de demonstração",owner:{login:"mmcromero"},default_branch:"main",archived:false}]);
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="GET")return response({message:"Not Found"},404);
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="PUT")return response({content:{path:".portal-governanca.json"}});
+   return response({message:"Not Found"},404);
+  });
+  const client=createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl});
+  const result=await client.quickRegisterProject({repositoryFullName:"mmcromero/meu-app"});
+  const write=calls.find(c=>c.method==="PUT"),manifest=JSON.parse(Buffer.from(JSON.parse(write.body).content,"base64").toString("utf8"));
+  expect(result).toMatchObject({success:true,action:"created",repository:"mmcromero/meu-app",branch:"main",projectId:"meu-app",projectName:"Meu App"});
+  expect(manifest.project).toMatchObject({id:"meu-app",name:"Meu App",domain:"Tecnologia",description:"Aplicação de demonstração",enabled:true});
+  expect(manifest.project.repositories).toEqual([{full_name:"mmcromero/meu-app",role:"Repositório do projeto"}]);
+  expect(write.headers.Authorization).toBe("Bearer write-token");
+  expect(calls.filter(c=>c.method==="GET").every(c=>c.headers.Authorization==="Bearer read-token")).toBe(true);
+ });
+ it("reativa marcador desativado preservando metadados e SHA",async()=>{
+  const existing={schema_version:1,project:{id:"meu-app",name:"Meu App",domain:"Produto",description:"Descrição original",enabled:false,repositories:[{full_name:"mmcromero/meu-app",role:"Código-fonte"}]}};
+  const fetchImpl=vi.fn(async(input,init)=>{
+   const u=new URL(String(input));
+   if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/meu-app",owner:{login:"mmcromero"},default_branch:"main",archived:false}]);
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="GET")return response({type:"file",sha:"blob-sha",content:Buffer.from(JSON.stringify(existing)).toString("base64")});
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="PUT")return response({content:{path:".portal-governanca.json"}});
+   return response({message:"Not Found"},404);
+  });
+  const result=await createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl}).quickRegisterProject({repositoryFullName:"mmcromero/meu-app"});
+  const write=fetchImpl.mock.calls.find(([,init])=>init.method==="PUT"),body=JSON.parse(write[1].body),manifest=JSON.parse(Buffer.from(body.content,"base64").toString("utf8"));
+  expect(result.action).toBe("reactivated");expect(body.sha).toBe("blob-sha");
+  expect(manifest.project).toMatchObject({id:"meu-app",name:"Meu App",domain:"Produto",description:"Descrição original",enabled:true});
+  expect(manifest.project.repositories[0].role).toBe("Código-fonte");
+ });
+ it("descadastra alterando somente enabled e preserva o marcador por SHA",async()=>{
+  const existing={schema_version:1,project:{id:"demo",name:"Demo",domain:"Produto",description:"Descrição preservada",repositories:[{full_name:"mmcromero/demo",role:"Código-fonte"}]}};
+  const fetchImpl=vi.fn(async(input,init)=>{
+   const u=new URL(String(input));
+   if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/demo",owner:{login:"mmcromero"},default_branch:"main"}]);
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="GET")return response({type:"file",sha:"marker-sha",content:Buffer.from(JSON.stringify(existing)).toString("base64")});
+   if(u.pathname.endsWith("/contents/.portal-governanca.json")&&init.method==="PUT")return response({content:{path:".portal-governanca.json"}});
+   return response({message:"Not Found"},404);
+  });
+  const result=await createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl}).unregisterProject({repositoryFullName:"mmcromero/demo"});
+  const write=fetchImpl.mock.calls.find(([,init])=>init.method==="PUT"),body=JSON.parse(write[1].body),manifest=JSON.parse(Buffer.from(body.content,"base64").toString("utf8"));
+  expect(result).toMatchObject({success:true,action:"disabled",projectId:"demo"});
+  expect(body.sha).toBe("marker-sha");
+  expect(manifest.project).toMatchObject({id:"demo",name:"Demo",domain:"Produto",description:"Descrição preservada",enabled:false});
+  expect(manifest.project.repositories).toEqual(existing.project.repositories);
+ });
+ it("não descadastra quando o marcador não existe",async()=>{
+  const fetchImpl=vi.fn(async(input,init)=>{const u=new URL(String(input));if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/demo",owner:{login:"mmcromero"},default_branch:"main"}]);return response({message:"Not Found"},404);});
+  await expect(createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl}).unregisterProject({repositoryFullName:"mmcromero/demo"})).rejects.toMatchObject({code:"GITHUB_MARKER_MISSING",status:409});
+  expect(fetchImpl.mock.calls.some(([,init])=>init.method==="PUT")).toBe(false);
+ });
+ it("não permite cadastro rápido ou descadastro sem token de escrita separado",async()=>{
+  const client=createGitHubClient({token:"read-token",fetchImpl:vi.fn()});
+  await expect(client.quickRegisterProject({repositoryFullName:"mmcromero/demo"})).rejects.toMatchObject({code:"GITHUB_WRITE_NOT_CONFIGURED",status:503});
+  await expect(client.unregisterProject({repositoryFullName:"mmcromero/demo"})).rejects.toMatchObject({code:"GITHUB_WRITE_NOT_CONFIGURED",status:503});
+ });
  it("recusa sobrescrever marcador existente",async()=>{
   const fetchImpl=vi.fn(async(input,init)=>{const u=new URL(String(input));if(u.pathname==="/user/repos")return response([{full_name:"mmcromero/demo",owner:{login:"mmcromero"},default_branch:"main"}]);if(u.pathname.endsWith("/contents/.portal-governanca.json"))return response({type:"file",content:Buffer.from("{}").toString("base64")});return response([],200);});
   const client=createGitHubClient({token:"read-token",writeToken:"write-token",fetchImpl});

@@ -14,6 +14,10 @@ describe("cadastro controlado do Portal",()=>{
   const client=await read("../src/api/client.ts"),server=await read("../server/index.mjs");
   expect(client).not.toContain("GITHUB_WRITE_TOKEN");
   expect(server).toContain("sameOrigin(req)");
+  expect(server).toContain("/api/v1/projects/quick-register");
+  expect(server).toContain("/api/v1/projects/unregister");
+  expect(server).toContain("github.quickRegisterProject(await readJson(req))");
+  expect(server).toContain("github.unregisterProject(await readJson(req))");
   expect(server).toContain('pathname==="/api/v1/projects/register"&&req.method==="POST"');
  });
  it("limita o Supervisor ao papel default e não abre privilégios extras",async()=>{

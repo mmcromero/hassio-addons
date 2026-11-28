@@ -5,6 +5,8 @@ import {
   getPortfolio,
   getRepositoryCatalog,
   registerProject,
+  quickRegisterProject,
+  unregisterProject,
   getSupervisorInventory,
   getN8nOverview,
   getPortalRecords,
@@ -74,6 +76,9 @@ let catalogError: string | null = null;
 let registering = false;
 let registerMessage: string | null = null;
 let registerError: string | null = null;
+let repositoryActionBusy: string | null = null;
+let repositoryActionMessage: string | null = null;
+let repositoryActionError: string | null = null;
 
 let supervisorSnapshot: SupervisorInventory | null = null;
 let supervisorLoading = false;
@@ -645,13 +650,20 @@ function portfolioRepositoryCatalog() {
   const repos = catalog?.repositories ?? [];
   const orderedRepos = orderRegisteredRepositories(repos);
   const registeredRepos = orderedRepos.filter(r => r.markerStatus === 'registered');
-  const availableRepos = orderedRepos.filter(r => r.markerStatus === 'available' && !r.archived);
-  const otherRepos = orderedRepos.filter(r => r.markerStatus !== 'registered' && !(r.markerStatus === 'available' && !r.archived));
-  const rowMarkup = (r: RepositoryCatalogItem) =>
-    '<div class="repo-row"><div><strong>' + esc(r.fullName) + '</strong><small>Branch padrão: ' + esc(r.defaultBranch) + '</small></div><ds-badge variant="' +
-    (r.markerStatus === 'registered' ? 'success' : r.markerStatus === 'available' && !r.archived ? 'info' : 'warning') + '">' +
-    (r.markerStatus === 'registered' ? 'Cadastrado' : r.markerStatus === 'available' && !r.archived ? 'Disponível' : r.markerStatus === 'disabled' ? 'Desativado' : r.markerStatus === 'invalid' ? 'Inválido' : r.archived ? 'Arquivado' : 'Indisponível') +
-    '</ds-badge></div>';
+  const availableRepos = orderedRepos.filter(r => (r.markerStatus === 'available' || r.markerStatus === 'disabled') && !r.archived);
+  const otherRepos = orderedRepos.filter(r => r.markerStatus !== 'registered' && !((r.markerStatus === 'available' || r.markerStatus === 'disabled') && !r.archived));
+  const rowMarkup = (r: RepositoryCatalogItem) => {
+    const canAct = Boolean(catalog?.canRegister) && !repositoryActionBusy;
+    const action = r.markerStatus === 'registered' && !r.archived
+      ? '<button type="button" class="repo-action" data-repository-action="unregister" data-repository="' + esc(r.fullName) + '" ' + (!canAct ? 'disabled' : '') + '>' + (repositoryActionBusy === r.fullName ? 'Descadastrando…' : 'Descadastrar') + '</button>'
+      : (r.markerStatus === 'available' || r.markerStatus === 'disabled') && !r.archived
+      ? '<button type="button" class="repo-action primary" data-repository-action="register" data-repository="' + esc(r.fullName) + '" ' + (!canAct ? 'disabled' : '') + '>' + (repositoryActionBusy === r.fullName ? 'Cadastrando…' : r.markerStatus === 'disabled' ? 'Cadastrar novamente' : 'Cadastrar') + '</button>'
+      : '';
+    return '<div class="repo-row"><div><strong>' + esc(r.fullName) + '</strong><small>Branch padrão: ' + esc(r.defaultBranch) + '</small></div><ds-badge variant="' +
+      (r.markerStatus === 'registered' ? 'success' : r.markerStatus === 'available' && !r.archived ? 'info' : 'warning') + '">' +
+      (r.markerStatus === 'registered' ? 'Cadastrado' : r.markerStatus === 'available' && !r.archived ? 'Disponível' : r.markerStatus === 'disabled' ? 'Desativado' : r.markerStatus === 'invalid' ? 'Inválido' : r.archived ? 'Arquivado' : 'Indisponível') +
+      '</ds-badge>' + action + '</div>';
+  };
   const groups = [
     registeredRepos.length ? '<div class="repo-group"><h3>Já cadastrados</h3><div class="repo-list">' + registeredRepos.map(rowMarkup).join('') + '</div></div>' : '',
     availableRepos.length ? '<div class="repo-group"><h3>Ainda não cadastrados</h3><div class="repo-list">' + availableRepos.map(rowMarkup).join('') + '</div></div>' : '',
@@ -662,6 +674,9 @@ function portfolioRepositoryCatalog() {
     '</p></div><ds-button variant="secondary" size="sm" data-catalog-refresh ' + (catalogLoading ? 'disabled' : '') + '>' +
     (catalogLoading ? 'Consultando…' : 'Atualizar lista') + '</ds-button></div>' +
     (catalogError ? '<ds-alert variant="warning" title="Consulta ao GitHub">' + esc(catalogError) + '</ds-alert>' : '') +
+    (repositoryActionMessage ? '<ds-alert variant="success" title="Portfólio atualizado">' + esc(repositoryActionMessage) + '</ds-alert>' : '') +
+    (repositoryActionError ? '<ds-alert variant="warning" title="Não foi possível alterar o cadastro">' + esc(repositoryActionError) + '</ds-alert>' : '') +
+    (!catalog?.canRegister ? '<p class="repo-detail">Ações de cadastro indisponíveis: configure a credencial GitHub de escrita separada.</p>' : '') +
     (catalogLoading ? '<p>Consultando repositórios do GitHub…</p>' : groups || '<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>') +
     '</section>';
 }
@@ -751,6 +766,29 @@ function registrationPage() {
     (catalogLoading ? '<p>Consultando GitHub…</p>' : list ? list : '<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>') +
     '</section>'
   );
+}
+
+async function runRepositoryAction(action: "register" | "unregister", repositoryFullName: string) {
+  if (repositoryActionBusy) return;
+  repositoryActionBusy = repositoryFullName;
+  repositoryActionMessage = null;
+  repositoryActionError = null;
+  render();
+  try {
+    const result = action === "register"
+      ? await quickRegisterProject(repositoryFullName)
+      : await unregisterProject(repositoryFullName);
+    repositoryActionMessage = action === "unregister"
+      ? repositoryFullName + ' foi descadastrado. O marcador foi preservado com enabled=false.'
+      : repositoryFullName + (result.action === "reactivated" ? ' foi reativado no portfólio.' : ' foi cadastrado no portfólio com os dados do GitHub.');
+    catalog = null;
+    await refresh(true);
+  } catch (error) {
+    repositoryActionError = error instanceof Error ? error.message : 'Falha desconhecida ao alterar o cadastro.';
+  } finally {
+    repositoryActionBusy = null;
+    render();
+  }
 }
 
 async function submitRegistration(input: { repositoryFullName: string; project: { id: string; name: string; domain: string; description: string } }) {
@@ -1445,6 +1483,14 @@ function render() {
   ledgerForm?.addEventListener('submit', event => {
     event.preventDefault();
     void saveRecord(ledgerForm);
+  });
+
+  main.querySelectorAll<HTMLButtonElement>('[data-repository-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.repositoryAction;
+      const repository = button.dataset.repository;
+      if ((action === 'register' || action === 'unregister') && repository) void runRepositoryAction(action, repository);
+    });
   });
 
   main.querySelector<HTMLElement>('[data-catalog-refresh]')?.addEventListener('click', () => {

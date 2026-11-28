@@ -232,3 +232,13 @@ ds-card.integration-card>.ds-card{height:88px;min-width:0;margin:0;padding:9px 1
   .sidebar-links button{flex:0 0 auto;white-space:nowrap}
   .side-foot{display:none}
 }
+
+
+/* Ações rápidas do catálogo de repositórios — sem alterar o App Shell. */
+.workspace main .repo-row{align-items:center;flex-wrap:wrap}
+.repo-row>div:first-child{flex:1 1 16rem;min-width:0}
+.repo-action{flex:0 0 auto;min-height:2.25rem;border:1px solid #c5d0df;border-radius:.45rem;background:#fff;color:#26364c;padding:.4rem .75rem;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+.repo-action.primary{background:#075ee8;border-color:#075ee8;color:#fff}
+.repo-action:disabled{opacity:.55;cursor:not-allowed}
+.repo-action:focus-visible{outline:3px solid #e89a3c;outline-offset:2px}
+@media(max-width:650px){.workspace main .repo-row{align-items:flex-start}.repo-row .repo-action{width:100%}}

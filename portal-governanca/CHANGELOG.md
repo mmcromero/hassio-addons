@@ -1,3 +1,13 @@
+## 0.1.0-dev.60 — 28/11/2026
+
+- Adiciona ações rápidas Cadastrar e Descadastrar diretamente na lista de repositórios do Portfólio.
+- Cadastro rápido cria o marcador na branch padrão com ID/nome derivados do repositório, descrição do GitHub (ou fallback factual) e domínio padrão Tecnologia.
+- Reutiliza metadados de projeto existente quando ID e nome coincidem; gera ID livre com sufixo numérico em caso de colisão.
+- Descadastro é reversível: atualiza somente project.enabled=false, preserva o JSON e usa o SHA atual do marcador para evitar sobrescrever mudanças concorrentes.
+- Reativação de marcador desativado preserva os metadados originais e grava enabled=true.
+- Mantém cadastro manual, credenciais de leitura/escrita separadas e proteções de Ingress/Origin.
+- Acrescenta testes para criação rápida, reativação, descadastro, preservação de metadados, SHA e ausência de token de escrita.
+
 ## 0.1.0-dev.59 — 28/11/2026
 
 - Restaura a listagem de repositórios GitHub no Portfólio, separando repositórios já cadastrados, ainda não cadastrados e outros estados.
