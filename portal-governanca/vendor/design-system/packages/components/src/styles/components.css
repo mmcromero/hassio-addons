@@ -460,3 +460,34 @@ dialog.ds-dialog-native::backdrop {
   border-top: 1px solid var(--ds-sys-color-border-subtle);
   background-color: var(--ds-sys-color-surface-subtle);
 }
+
+
+/* ==========================================================================
+   ds-app-shell — estrutura global da aplicação
+   Ordem dos filhos: header → navigation (opcional) → main → footer.
+   Rolagem permanece no documento; não criar scroll containers por padrão.
+   ========================================================================== */
+:where(ds-app-shell) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+ds-app-shell > :where([data-ds-region="header"], [data-ds-region="navigation"], [data-ds-region="footer"]) {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+ds-app-shell > [data-ds-region="main"] {
+  flex: 1 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+ds-app-shell > [data-ds-region="footer"] {
+  margin-block-start: auto;
+}
+
+/* O App Shell não impõe identidade visual, dimensões ou sticky ao consumidor. */

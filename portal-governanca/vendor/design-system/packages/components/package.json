@@ -12,14 +12,21 @@
       "default": "./dist/index.js"
     },
     "./styles.css": "./dist/styles.css",
-    "./components.iife.js": "./dist/components.iife.js"
+    "./components.iife.js": "./dist/components.iife.js",
+    "./testing/app-shell": {
+      "types": "./dist/testing/app-shell.d.ts",
+      "import": "./dist/testing/app-shell.js",
+      "default": "./dist/testing/app-shell.js"
+    }
   },
   "scripts": {
     "build": "tsc && node scripts/copy-css.mjs && esbuild src/index.ts --bundle --format=iife --outfile=dist/components.iife.js",
     "test": "vitest run --environment happy-dom"
   },
   "dependencies": {
-    "@mmcromero/ds-tokens": "0.1.0",
+    "@mmcromero/ds-tokens": "0.1.0"
+  },
+  "devDependencies": {
     "esbuild": "0.21.5"
   }
 }

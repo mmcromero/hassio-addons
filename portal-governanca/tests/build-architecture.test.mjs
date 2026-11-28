@@ -11,7 +11,7 @@ describe("build autossuficiente do add-on",()=>{
   const provenance=JSON.parse(fs.readFileSync(path.join(root,"vendor/design-system/PROVENANCE.json"),"utf8"));
   const lock=JSON.parse(fs.readFileSync(path.join(root,"config/design-system.lock.json"),"utf8"));
   expect(provenance.source_commit).toBe(lock.sha);
-  expect(provenance.files).toHaveLength(19);
+  expect(provenance.files).toHaveLength(24);
   expect(provenance.source_repository).toBe("mmcromero/design-system");
  });
  it("aplica a identidade oficial do catálogo e separa os quatro indicadores",()=>{

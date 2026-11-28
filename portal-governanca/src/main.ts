@@ -141,7 +141,7 @@ function projectContextSelector(): string {
 }
 
 function restoreRouteFromHash() {
-  if (window.location.hash === '#main') return;
+  if (window.location.hash === '#main-content') return;
   const route = parsePortalHash(window.location.hash);
   view = route.view;
   contextProjectId = route.projectId;
@@ -322,39 +322,29 @@ async function loadProjectTimelineCards(items: Project[], force = false) {
   }
 }
 
+function projectLogoMarkup(p: Project, large = false): string {
+  const marks: Record<string, { initials: string; tone: string }> = {
+    'portal-governanca': { initials: 'PG', tone: 'blue' }, avisaqui: { initials: 'AV', tone: 'orange' },
+    'artesao-digital': { initials: 'AD', tone: 'navy' }, 'factory-runner': { initials: 'FR', tone: 'cyan' },
+    'design-system': { initials: 'DS', tone: 'violet' }, 'central-editorial': { initials: 'CE', tone: 'rose' }
+  };
+  const fallback = p.name.trim().split(/[ ]+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
+  const mark = marks[p.id] || { initials: fallback || 'PR', tone: 'neutral' };
+  return '<span class="project-logo ' + (large ? 'project-logo-lg ' : '') + 'tone-' + mark.tone + '" role="img" aria-label="Identidade visual provisória de ' + esc(p.name) + '"><span aria-hidden="true">' + mark.initials + '</span></span>';
+}
+
 function projectCard(p: Project) {
   const timeline = projectTimelineCards.get(p.id);
   const now = new Date(Date.now() + timelineServerOffset).toISOString();
   const age = getProjectAge(timeline?.events ?? [], now);
   const lifecycle = getProjectStatus(p.id, p.repositories.map(ref => repoFor(ref.fullName)).filter((repo): repo is RepoSnapshot => Boolean(repo)), projectStatusRecords, timeline?.events ?? [], now);
-  const ageLabel = !timeline ? 'Ainda consultando o histórico' : age.days === null ? 'Início não identificado' : (age.confidence === 'estimated' ? 'Aproximadamente ' : '') + age.days.toLocaleString('pt-BR') + ' dias' + (age.ended ? ' até o encerramento' : ' de existência');
-  const ageMarkup = !timeline
-    ? '<div class="project-age project-age-unknown"><strong>…</strong><small>' + (projectTimelineCardsLoading ? 'Consultando histórico' : 'Histórico indisponível') + '</small></div>'
-    : age.days === null
-    ? '<div class="project-age project-age-unknown"><strong>—</strong><small>Início não identificado</small></div>'
-    : '<div class="project-age"><strong>' + (age.confidence === 'estimated' ? '≈ ' : '') + age.days.toLocaleString('pt-BR') + ' dias</strong><small>' + (age.ended ? 'até o encerramento' : 'de existência') + (age.confidence === 'estimated' ? ' · início estimado' : '') + '</small></div>';
+  const ageLabel = !timeline ? 'Histórico sendo consultado' : age.days === null ? 'Início não identificado' : (age.confidence === 'estimated' ? 'Aproximadamente ' : '') + age.days.toLocaleString('pt-BR') + ' dias' + (age.ended ? ' até o encerramento' : ' de existência');
+  const ageMarkup = '<span class="project-age-inline">' + (!timeline ? (projectTimelineCardsLoading ? 'Consultando histórico…' : 'Histórico indisponível') : age.days === null ? 'Idade não identificada' : (age.confidence === 'estimated' ? '≈ ' : '') + age.days.toLocaleString('pt-BR') + ' dias') + '</span>';
   const chatUrl = buildProjectChatUrl({ id: p.id, name: p.name, domain: p.domain, summary: p.summary, status: lifecycle.label, statusReason: lifecycle.reason, age: ageLabel, repositories: p.repositories.map(reference => { const repository = repoFor(reference.fullName); return { ...reference, latestIssue: repository?.latestIssue ?? null, latestIssueState: repository?.latestIssueState }; }) });
   const states = p.repositories.map(r => repoFor(r.fullName)?.status);
   const s = states.length && states.every(x => x === 'ok') ? 'ok' : states.some(x => x === 'ok' || x === 'partial') ? 'partial' : snapshot ? 'unavailable' : 'not_queried';
-  return (
-    '<ds-card class="project-card"><div class="project-head"><div><p class="eyebrow">' +
-    esc(p.domain) +
-    '</p><h3>' +
-    esc(p.name) +
-    '</h3></div><ds-badge variant="' +
-    variant(s) +
-    '">' +
-    (snapshot ? label(s) : 'Aguardando consulta') +
-    '</ds-badge></div><p>' +
-    esc(p.summary) +
-    '</p><div class="project-status-row" title="' + esc(lifecycle.reason) + '"><ds-badge variant="' + lifecycle.variant + '">' + lifecycle.label + '</ds-badge></div>' + ageMarkup + '<p class="repo-count">' +
-    p.repositories.length +
-    ' referências de repositório</p><div class="actions"><ds-button variant="secondary" size="sm" data-project="' +
-    p.id +
-    '">Abrir projeto</ds-button>' + (p.repositories[0] ? '<a class="project-chat-link" href="' + esc(repoFor(p.repositories[0].fullName)?.htmlUrl || ('https://github.com/' + p.repositories[0].fullName)) + '" target="_blank" rel="noopener noreferrer">Abrir GitHub ↗</a>' : '') + '<a class="project-chat-link" href="' + esc(chatUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Abrir nova conversa no ChatGPT sobre ' + esc(p.name) + '">Conversar sobre este projeto <span aria-hidden="true">↗</span></a></div></ds-card>'
-  );
+  return ('<ds-card class="project-card"><div class="project-head"><div class="project-identity">' + projectLogoMarkup(p) + '<div class="project-title"><p class="eyebrow">' + esc(p.domain) + '</p><h3>' + esc(p.name) + '</h3></div></div><ds-badge variant="' + variant(s) + '">' + (snapshot ? label(s) : 'Aguardando consulta') + '</ds-badge></div><p class="project-summary">' + esc(p.summary) + '</p><div class="project-status-row" title="' + esc(lifecycle.reason) + '"><ds-badge variant="' + lifecycle.variant + '">' + lifecycle.label + '</ds-badge></div><div class="project-meta">' + ageMarkup + '<span class="project-repo-count">' + p.repositories.length + (p.repositories.length === 1 ? ' repositório' : ' repositórios') + '</span></div><div class="actions"><ds-button variant="primary" size="sm" data-project="' + p.id + '">Abrir projeto <span aria-hidden="true">↗</span></ds-button>' + (p.repositories[0] ? '<a class="project-chat-link" href="' + esc(repoFor(p.repositories[0].fullName)?.htmlUrl || ('https://github.com/' + p.repositories[0].fullName)) + '" target="_blank" rel="noopener noreferrer">GitHub ↗</a>' : '') + '<a class="project-chat-link" href="' + esc(chatUrl) + '" target="_blank" rel="noopener noreferrer" aria-label="Iniciar conversa no ChatGPT sobre ' + esc(p.name) + '">Iniciar conversa ↗</a></div></ds-card>');
 }
-
 function timelineDate(value:string):string{return new Intl.DateTimeFormat("pt-BR",{dateStyle:"short",timeStyle:"short",timeZone:"America/Sao_Paulo"}).format(new Date(value))+" BRT";}
 function elapsedLabel(start:string,end:string):string{
  const ms=Math.max(0,Date.parse(end)-Date.parse(start));
@@ -416,14 +406,10 @@ function projectResourcesPanel(p: Project): string {
 
 function projectDetail(p: Project) {
   const sections: {id:ProjectSection;label:string}[] = [
-    {id:'overview',label:'Visão geral'},
-    {id:'development',label:'Desenvolvimento'},
-    {id:'homologation',label:'Homologações'},
-    {id:'evidence',label:'Evidências'},
-    {id:'decisions',label:'Decisões e histórico'},
-    {id:'resources',label:'Recursos e integrações'},
-    {id:'agents',label:'Agentes'},
-    {id:'environments',label:'Ambientes'}
+    {id:'overview',label:'Visão geral'}, {id:'development',label:'Desenvolvimento'},
+    {id:'homologation',label:'Homologações'}, {id:'evidence',label:'Evidências'},
+    {id:'decisions',label:'Decisões e histórico'}, {id:'resources',label:'Recursos e integrações'},
+    {id:'agents',label:'Agentes'}, {id:'environments',label:'Ambientes'}
   ];
   const section = projectSection === 'homologation' ? recordsPage('homologation',p.id)
     : projectSection === 'evidence' ? recordsPage('evidence',p.id)
@@ -431,13 +417,12 @@ function projectDetail(p: Project) {
     : projectSection === 'agents' ? agentsPage(p.id)
     : projectSection === 'environments' ? environments(p.id)
     : projectSection === 'resources' ? projectResourcesPanel(p)
-    : projectSection === 'development' ? '<section><div class="section-head"><div><h3>Repositórios e desenvolvimento</h3><p>Branches, commits, Issues, Pull Requests, workflows e releases identificados.</p></div></div><div class="repo-list">' + p.repositories.map(repoMarkup).join('') + '</div></section>'
+    : projectSection === 'development' ? '<section><div class="section-head"><div><h3>Repositórios e desenvolvimento</h3><p>Branches, commits, Issues, Pull Requests, workflows e releases identificados.</p></div></div><div class="repo-list">' + (p.repositories.length ? p.repositories.map(repoMarkup).join('') : '<ds-card><p>Nenhum repositório vinculado a este projeto.</p></ds-card>') + '</div></section>'
     : '<section>' + projectTimelineMarkup(p) + '<div class="section-head"><div><h3>Repositórios vinculados</h3><p>' + p.repositories.length + ' repositório(s) identificados.</p></div></div><div class="repo-list">' + p.repositories.map(repoMarkup).join('') + '</div></section>';
   const primaryRepo = p.repositories[0]?.fullName;
   const primaryUrl = primaryRepo ? (repoFor(primaryRepo)?.htmlUrl || 'https://github.com/' + primaryRepo) : null;
-  return '<section><button class="back" data-back>← Voltar ao portfólio</button><div class="intro"><div><p class="eyebrow">' + esc(p.domain) + '</p><h2>' + esc(p.name) + '</h2><p>' + esc(p.summary) + '</p></div><div class="header-meta"><ds-badge variant="info">Projeto selecionado</ds-badge>' + (primaryUrl ? '<a href="' + esc(primaryUrl) + '" target="_blank" rel="noopener noreferrer">Abrir GitHub ↗</a>' : '') + '</div></div><nav class="project-tabs" aria-label="Áreas do projeto">' + sections.map(item => '<button type="button" data-project-section="' + item.id + '" ' + (projectSection === item.id ? 'aria-current="page"' : '') + '>' + item.label + '</button>').join('') + '</nav>' + section + '</section>';
+  return '<section><button class="back" data-back>← Voltar ao portfólio</button><div class="intro project-intro"><div class="project-intro-main">' + projectLogoMarkup(p,true) + '<div class="project-intro-copy"><p class="eyebrow">' + esc(p.domain) + '</p><h2>' + esc(p.name) + '</h2><p>' + esc(p.summary) + '</p></div></div><div class="header-meta"><ds-badge variant="info">Projeto selecionado</ds-badge>' + (primaryUrl ? '<a href="' + esc(primaryUrl) + '" target="_blank" rel="noopener noreferrer">Abrir GitHub ↗</a>' : '') + '</div></div><nav class="project-tabs" aria-label="Áreas do projeto">' + sections.map(item => '<button type="button" data-project-section="' + item.id + '" ' + (projectSection === item.id ? 'aria-current="page"' : '') + '>' + item.label + '</button>').join('') + '</nav><div class="project-section-content">' + section + '</div></section>';
 }
-
 function integrationsPanel() {
   const gh = statusSnapshot?.github;
   const ha = statusSnapshot?.homeAssistant;
@@ -806,6 +791,7 @@ function environments(projectId: string | null = contextProjectId) {
         '</b></span></div></article>'
     )
     .join('');
+  const emptyMessage = projectId ? 'Nenhum app do Home Assistant está vinculado a este projeto.' : 'O Supervisor não retornou add-ons para este ambiente.';
   return (
     '<section><div class="intro"><div><h2>Ambientes Home Assistant</h2><p>Inventário consultado diretamente no Supervisor, sem executar ações nos add-ons.</p></div><ds-button variant="secondary" size="sm" data-ha-refresh ' +
     (supervisorLoading ? 'disabled' : '') +
@@ -831,7 +817,7 @@ function environments(projectId: string | null = contextProjectId) {
         ' · Cache: ' +
         supervisorSnapshot.cache +
         '</p><div class="repo-list">' +
-        rows +
+        (rows || '<ds-card><p>' + emptyMessage + '</p></ds-card>') +
         '</div>'
       : '<ds-card><p>O inventário ainda não foi consultado. Use “Atualizar inventário” para buscar os add-ons instalados.</p></ds-card>') +
     '</section>'
@@ -1259,7 +1245,20 @@ function body() {
   return '<section><div class="intro"><div><h2>Não encontrado</h2></div></div></section>';
 }
 
+function navIcon(id: View): string {
+  const paths: Record<View,string> = {
+    overview:'<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3Z"/>',
+    projects:'<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H10l2 2h7.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z"/>',
+    missions:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',
+    agents:'<rect x="4" y="7" width="16" height="13" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M8 16h8"/>',
+    automations:'<path d="m13 2-9 12h7l-1 8 10-13h-7Z"/>',
+    environments:'<rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="14" width="18" height="7" rx="1.5"/><path d="M7 6.5h.01M7 17.5h.01"/>',
+    register:'<path d="M12 5v14M5 12h14"/>'
+  };
+  return '<span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true">' + (paths[id] || paths.overview) + '</svg></span>';
+}
 function render() {
+  const projectFocused = view === 'projects' && !!activeProject();
   const status = lastError
     ? snapshot
       ? 'Atualização falhou · dados anteriores'
@@ -1270,42 +1269,50 @@ function render() {
     ? 'GitHub consultado'
     : 'GitHub não consultado';
 
-  app!.innerHTML =
-    '<a class="skip" href="#main">Pular para o conteúdo</a><div class="shell"><aside class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>CENTRO DE COMANDO</small></span></a><p class="nav-label">Acompanhamento</p><nav aria-label="Seções principais">' +
-    nav.map(n => '<button data-view="' + n.id + '" ' + (view === n.id ? 'aria-current="page"' : '') + '>' + n.label + '</button>').join('') +
-    '</nav><div class="side-foot"><ds-badge variant="info">GitHub integrado</ds-badge><p>Protocolo de agentes ativo</p></div></aside><div class="workspace"><header><div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
-    (view === 'projects' && activeProject() ? activeProject()!.name : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
-    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0</ds-badge><small>' +
-    esc(status) +
-    ' · ' +
-    (lastChecked ? date(lastChecked) : 'sem consulta') +
-    '</small><ds-button size="sm" variant="secondary" ' +
-    (loading ? 'disabled' : '') +
-    ' data-refresh>' +
-    (loading ? 'Consultando…' : 'Atualizar GitHub') +
-    '</ds-button></div></header><main id="main" tabindex="-1">' +
-    body() +
-    '</main><footer>Portal de Governança · Centro de Comando e Portfólio <span>GitHub · Ingress · Supervisor · n8n · Protocolo de Agentes</span></footer></div></div>';
-
-  app!.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b =>
-    b.addEventListener('click', () => {
-      view = b.dataset.view as View;
+  // O App Shell e as regiões globais são criados uma vez. Nas rotas seguintes,
+  // somente main recebe o novo conteúdo; header, navegação e footer permanecem.
+  if (!app!.querySelector('ds-app-shell')) {
+    app!.innerHTML = '<a class="skip" href="#main-content">Pular para o conteúdo</a><ds-app-shell class="shell workspace"><header data-ds-region="header"></header><nav data-ds-region="navigation" aria-label="Seções principais" class="sidebar"><a class="brand" href="#overview"><img class="brand-mark" src="./brand-icon.png" alt="Fábrica de Ideias"><span><b>Governança</b><small>CENTRO DE COMANDO</small></span></a><p class="nav-label">Acompanhamento</p><div class="sidebar-links">' + nav.map(n => '<button data-view="' + n.id + '">' + navIcon(n.id) + '<span>' + n.label + '</span></button>').join('') + '</div><div class="side-foot"><ds-badge variant="info">GitHub integrado</ds-badge><p>Protocolo de agentes ativo</p></div></nav><main data-ds-region="main" id="main-content" tabindex="-1"></main><footer data-ds-region="footer">Portal de Governança · Centro de Comando e Portfólio <span>GitHub · Ingress · Supervisor · n8n · Protocolo de Agentes</span></footer></ds-app-shell>';
+    const navOnce = app!.querySelector<HTMLElement>('nav[data-ds-region="navigation"]')!;
+    navOnce.addEventListener('click', event => {
+      const button = (event.target as Element).closest<HTMLButtonElement>('[data-view]');
+      if (!button) return;
+      view = button.dataset.view as View;
       selected = view === 'projects' && contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
       registerMessage = null;
       registerError = null;
       syncRoute();
       render();
-      document.querySelector<HTMLElement>('#main')?.focus();
+      document.querySelector<HTMLElement>('#main-content')?.focus();
       if (view === 'register' && !catalog && !catalogLoading) void loadCatalog();
       if (view === 'environments' && !supervisorSnapshot && !supervisorLoading && !supervisorError) void loadSupervisor(false);
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
       if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
       if (view === 'missions') void loadMissions(contextProjectId || undefined);
       if (view === 'projects' && selected) void loadTimeline(selected.id);
-    })
-  );
+    });
+  }
 
-  app!.querySelectorAll<HTMLElement>('[data-project]').forEach(b =>
+  const shell = app!.querySelector<HTMLElement>('ds-app-shell')!;
+  const header = app!.querySelector<HTMLElement>('header[data-ds-region="header"]')!;
+  const globalNav = app!.querySelector<HTMLElement>('nav[data-ds-region="navigation"]')!;
+  const main = app!.querySelector<HTMLElement>('main[data-ds-region="main"]')!;
+  shell.classList.toggle('project-shell', projectFocused);
+  globalNav.hidden = projectFocused;
+  header.innerHTML = '<div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
+    (projectFocused ? 'Central do Projeto' : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
+    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.45</ds-badge><small>' +
+    esc(status) + ' · ' + (lastChecked ? date(lastChecked) : 'sem consulta') +
+    '</small><ds-button size="sm" variant="secondary" ' + (loading ? 'disabled' : '') + ' data-refresh>' +
+    (loading ? 'Consultando…' : 'Atualizar GitHub') + '</ds-button></div>';
+  main.innerHTML = body();
+  globalNav.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => {
+    if (button.dataset.view === view) button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  });
+  header.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click', () => void refresh(true));
+
+  main.querySelectorAll<HTMLElement>('[data-project]').forEach(b =>
     b.addEventListener('click', () => {
       selected = projects().find(p => p.id === b.dataset.project) || null;
       contextProjectId = selected?.id || null;
@@ -1313,12 +1320,12 @@ function render() {
       view = 'projects';
       syncRoute();
       render();
-      document.querySelector<HTMLElement>('#main')?.focus();
+      document.querySelector<HTMLElement>('#main-content')?.focus();
       if(selected)void loadTimeline(selected.id);
     })
   );
 
-  app!.querySelectorAll<HTMLButtonElement>('[data-project-section]').forEach(b =>
+  main.querySelectorAll<HTMLButtonElement>('[data-project-section]').forEach(b =>
     b.addEventListener('click', () => {
       const project = activeProject();
       if (!project) return;
@@ -1333,7 +1340,7 @@ function render() {
     })
   );
 
-  app!.querySelector<HTMLSelectElement>('[data-project-context]')?.addEventListener('change', event => {
+  header.querySelector<HTMLSelectElement>('[data-project-context]')?.addEventListener('change', event => {
     const value = (event.currentTarget as HTMLSelectElement).value || null;
     contextProjectId = value;
     selected = value ? projects().find(p => p.id === value) || null : null;
@@ -1355,56 +1362,56 @@ function render() {
     if (view === 'automations') void loadN8n(false);
   });
 
-  app!.querySelector<HTMLElement>('[data-back]')?.addEventListener('click', () => {
+  main.querySelector<HTMLElement>('[data-back]')?.addEventListener('click', () => {
     selected = null;
     contextProjectId = null;
     projectSection = 'overview';
     syncRoute();
     render();
-    document.querySelector<HTMLElement>('#main')?.focus();
+    document.querySelector<HTMLElement>('#main-content')?.focus();
   });
 
-  app!.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click', () => void refresh(true));
-  app!.querySelector<HTMLElement>('[data-ha-refresh]')?.addEventListener('click', () => void loadSupervisor(true));
-  app!.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
-  app!.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
-  app!.querySelector<HTMLElement>('[data-build-evidence-refresh]')?.addEventListener('click', () => void loadBuildEvidence());
-  app!.querySelector<HTMLElement>('[data-timeline-refresh]')?.addEventListener('click', () => { if(selected)void loadTimeline(selected.id,true); });
-  app!.querySelector<HTMLElement>('[data-timeline-cancel]')?.addEventListener('click', async () => {
+  header.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click', () => void refresh(true));
+  main.querySelector<HTMLElement>('[data-ha-refresh]')?.addEventListener('click', () => void loadSupervisor(true));
+  main.querySelector<HTMLElement>('[data-n8n-refresh]')?.addEventListener('click', () => void loadN8n(true));
+  main.querySelector<HTMLElement>('[data-ledger-refresh]')?.addEventListener('click', () => void loadRecords());
+  main.querySelector<HTMLElement>('[data-build-evidence-refresh]')?.addEventListener('click', () => void loadBuildEvidence());
+  main.querySelector<HTMLElement>('[data-timeline-refresh]')?.addEventListener('click', () => { if(selected)void loadTimeline(selected.id,true); });
+  main.querySelector<HTMLElement>('[data-timeline-cancel]')?.addEventListener('click', async () => {
     if(!selected||!window.confirm('Registrar o CANCELAMENTO deste projeto? A decisão será permanente no histórico e encerrará o contador de existência.'))return;
     timelineLoading=true;timelineError=null;render();
     try{timelineSnapshot=await cancelProjectTimeline(selected.id);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}
     catch(error){timelineError=error instanceof Error?error.message:'Não foi possível registrar o cancelamento.';}
     finally{timelineLoading=false;render();}
   });
-  app!.querySelector<HTMLElement>('[data-timeline-end]')?.addEventListener('click', async () => {
+  main.querySelector<HTMLElement>('[data-timeline-end]')?.addEventListener('click', async () => {
     if(!selected||!window.confirm('Registrar o encerramento deste projeto? O evento será permanente no histórico e congelará o contador de existência.'))return;
     timelineLoading=true;timelineError=null;render();
     try{timelineSnapshot=await endProjectTimeline(selected.id);if(timelineSnapshot.serverNow)timelineServerOffset=Date.parse(timelineSnapshot.serverNow)-Date.now();}
     catch(error){timelineError=error instanceof Error?error.message:'Não foi possível registrar o encerramento.';}
     finally{timelineLoading=false;render();}
   });
-  app!.querySelector<HTMLElement>('[data-agent-refresh]')?.addEventListener('click', () => void loadAgentEvents());
-  app!.querySelector<HTMLElement>('[data-mission-refresh]')?.addEventListener('click', () => void loadMissions());
+  main.querySelector<HTMLElement>('[data-agent-refresh]')?.addEventListener('click', () => void loadAgentEvents());
+  main.querySelector<HTMLElement>('[data-mission-refresh]')?.addEventListener('click', () => void loadMissions());
 
-  const missionForm = app!.querySelector<HTMLFormElement>('[data-mission-form]');
+  const missionForm = main.querySelector<HTMLFormElement>('[data-mission-form]');
   missionForm?.addEventListener('submit', event => {
     event.preventDefault();
     void submitMission(missionForm);
   });
 
-  const ledgerForm = app!.querySelector<HTMLFormElement>('[data-ledger-form]');
+  const ledgerForm = main.querySelector<HTMLFormElement>('[data-ledger-form]');
   ledgerForm?.addEventListener('submit', event => {
     event.preventDefault();
     void saveRecord(ledgerForm);
   });
 
-  app!.querySelector<HTMLElement>('[data-catalog-refresh]')?.addEventListener('click', () => {
+  main.querySelector<HTMLElement>('[data-catalog-refresh]')?.addEventListener('click', () => {
     catalog = null;
     void loadCatalog();
   });
 
-  const form = app!.querySelector<HTMLFormElement>('[data-register-form]');
+  const form = main.querySelector<HTMLFormElement>('[data-register-form]');
   form?.addEventListener('submit', event => {
     event.preventDefault();
     const data = new FormData(form!);

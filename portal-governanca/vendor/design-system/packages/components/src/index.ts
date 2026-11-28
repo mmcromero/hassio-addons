@@ -4,8 +4,9 @@ import { DsBadge } from './components/ds-badge.js';
 import { DsAlert } from './components/ds-alert.js';
 import { DsCard } from './components/ds-card.js';
 import { DsDialog } from './components/ds-dialog.js';
+import { DsAppShell } from './components/ds-app-shell.js';
 
-export { DsButton, DsInput, DsBadge, DsAlert, DsCard, DsDialog };
+export { DsButton, DsInput, DsBadge, DsAlert, DsCard, DsDialog, DsAppShell };
 
 /**
  * Registra todos os Custom Elements no customElements registry.
@@ -30,7 +31,8 @@ export function registerAllComponents() {
     ['ds-badge', DsBadge],
     ['ds-alert', DsAlert],
     ['ds-card', DsCard],
-    ['ds-dialog', DsDialog]
+    ['ds-dialog', DsDialog],
+    ['ds-app-shell', DsAppShell]
   ];
 
   for (const [tag, ctor] of registry) {

@@ -13,6 +13,7 @@ export class DsDialog extends BaseElement {
   private lightSlot: { connect: () => void; disconnect: () => void } | null = null;
   private previousFocus: HTMLElement | null = null;
   private initialized = false;
+  private closePending = false;
 
   connectedCallback() {
     if (!this.initialized) { this.initialized = true; this.render(); }
@@ -84,8 +85,7 @@ export class DsDialog extends BaseElement {
     });
     dialogEl.addEventListener('close', () => {
       if (this.hasAttribute('open')) this.removeAttribute('open');
-      this.previousFocus?.focus();
-      this.dispatchEvent(new CustomEvent('ds-close', { bubbles: true }));
+      this.finishClose();
     });
   }
 
@@ -95,16 +95,32 @@ export class DsDialog extends BaseElement {
     const shouldBeOpen = this.hasAttribute('open');
     if (shouldBeOpen && !this.dialogEl.open) {
       this.previousFocus = document.activeElement as HTMLElement | null;
+      this.closePending = true;
       typeof this.dialogEl.showModal === 'function'
         ? this.dialogEl.showModal()
         : this.dialogEl.setAttribute('open', '');
     } else if (!shouldBeOpen && this.dialogEl.open) {
-      typeof this.dialogEl.close === 'function'
-        ? this.dialogEl.close()
-        : this.dialogEl.removeAttribute('open');
+      if (typeof this.dialogEl.close === 'function') {
+        // The native close event is queued by HTMLDialogElement.close().
+        // Restore focus only from that event; doing it synchronously here lets
+        // the browser's later native focus restoration steal focus back from
+        // the newly rendered logical target.
+        this.dialogEl.close();
+      } else {
+        this.dialogEl.removeAttribute('open');
+        this.finishClose();
+      }
     } else if (openChanged && !shouldBeOpen) {
-      this.previousFocus?.focus();
-      this.previousFocus = null;
+      this.finishClose();
     }
+  }
+
+  private finishClose() {
+    if (!this.closePending) return;
+    this.closePending = false;
+    const returnTarget = this.previousFocus;
+    this.previousFocus = null;
+    if (returnTarget?.isConnected) returnTarget.focus();
+    this.dispatchEvent(new CustomEvent('ds-close', { bubbles: true }));
   }
 }

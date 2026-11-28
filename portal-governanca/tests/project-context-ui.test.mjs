@@ -46,6 +46,7 @@ describe("central de projeto e contexto universal",()=>{
   expect(main).not.toContain("if (view === 'overview') { contextProjectId = null");
   expect(main).toContain("if (projectSection === 'agents') void loadAgentEvents(selected.id)");
   expect(main).toContain("if (projectSection === 'environments') void loadSupervisor(false)");
+  expect(main).toContain("Nenhum app do Home Assistant está vinculado a este projeto.");
   expect(main).toContain("if (projectSection === 'resources') { void loadSupervisor(false); void loadN8n(false); }");
   expect(main).toContain("if (['homologation','evidence','decisions'].includes(projectSection)) void loadRecords(selected.id)");
  });

@@ -1,6 +1,6 @@
 {
   "name": "@mmcromero/portal-governanca",
-  "version": "0.1.0-dev.43",
+  "version": "0.1.0-dev.45",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,7 +14,8 @@
     "test": "vitest run",
     "package:addon": "node scripts/package-addon.mjs",
     "build:design-system": "npm run build --prefix vendor/design-system/packages/tokens && npm run build --prefix vendor/design-system/packages/components",
-    "build:portal": "tsc --noEmit && vite build"
+    "build:portal": "tsc --noEmit && vite build",
+    "update:design-system": "node scripts/update-design-system.mjs"
   },
   "dependencies": {
     "@mmcromero/ds-components": "file:vendor/design-system/packages/components",

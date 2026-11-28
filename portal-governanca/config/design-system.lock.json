@@ -1,12 +1,14 @@
 {
   "repository": "https://github.com/mmcromero/design-system",
-  "ref": "e4a8db199dadbe52979ab5a0665262b40906d4de",
-  "sha": "e4a8db199dadbe52979ab5a0665262b40906d4de",
+  "ref": "feaae354526a6b5c4b1c4786374057c759de9b37",
+  "sha": "feaae354526a6b5c4b1c4786374057c759de9b37",
+  "sourceChannel": "desenvolvimento",
   "packages": {
     "@mmcromero/ds-tokens": "0.1.0",
     "@mmcromero/ds-components": "0.1.0"
   },
   "distribution": "vendored-source-snapshot-built-inside-addon-image",
   "vendoredPath": "vendor/design-system",
-  "build": "Dockerfile multi-stage; SHA checked by provenance manifest"
+  "build": "Dockerfile multi-stage; SHA checked by provenance manifest",
+  "updatePolicy": "manual-explicit-sha; no automatic production updates"
 }

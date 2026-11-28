@@ -1,6 +1,7 @@
 {
   "source_repository": "mmcromero/design-system",
-  "source_commit": "e4a8db199dadbe52979ab5a0665262b40906d4de",
+  "source_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
+  "source_channel": "desenvolvimento",
   "snapshot_path": "vendor/design-system",
   "packages": {
     "@mmcromero/ds-tokens": "0.1.0",
@@ -8,20 +9,20 @@
   },
   "files": [
     {
+      "path": "docs/design-system/API-COMPONENTES.md",
+      "git_blob_sha": "f40af1b9a27152fc19e26664774b7c0ee68d893f"
+    },
+    {
+      "path": "docs/design-system/DS-STD-APP-SHELL.md",
+      "git_blob_sha": "de93ca8e5017c15d30b97da16d81e1504ce2cd8e"
+    },
+    {
+      "path": "docs/design-system/GUIA-PRIMEIRO-CONSUMIDOR.md",
+      "git_blob_sha": "99d2e639b5cefe9046fa219ca28f2c58e739d34d"
+    },
+    {
       "path": "packages/components/package.json",
-      "git_blob_sha": "7918ee8edb95a74fdf66c8a7c7a586c2a55e2571"
-    },
-    {
-      "path": "packages/components/tsconfig.json",
-      "git_blob_sha": "d1a86abb82e773b702c50d61386ad5f8b8eb3450"
-    },
-    {
-      "path": "packages/components/src/index.ts",
-      "git_blob_sha": "21db0b72390a8bfa3c65f76ba0b99bdd1f60bbb8"
-    },
-    {
-      "path": "packages/components/src/styles/components.css",
-      "git_blob_sha": "420d2fa6b12b9d3ef40841f4b59b5fc22e6a925a"
+      "git_blob_sha": "caa3819d3555935c527b3913f5ace74e450f63c7"
     },
     {
       "path": "packages/components/scripts/copy-css.mjs",
@@ -30,6 +31,10 @@
     {
       "path": "packages/components/src/components/ds-alert.ts",
       "git_blob_sha": "4a67e401f4060ea24840d0fbae61b6466f9001df"
+    },
+    {
+      "path": "packages/components/src/components/ds-app-shell.ts",
+      "git_blob_sha": "3428c7c79c393d1ef3972f960a9655435608261f"
     },
     {
       "path": "packages/components/src/components/ds-badge.ts",
@@ -45,11 +50,23 @@
     },
     {
       "path": "packages/components/src/components/ds-dialog.ts",
-      "git_blob_sha": "190e017a2e96c4d78a53607a163aae2a7f86e58a"
+      "git_blob_sha": "e6ff00dc3ac463db77a13bb198db3f839ef13a5a"
     },
     {
       "path": "packages/components/src/components/ds-input.ts",
       "git_blob_sha": "221279857fe15ef0f6c215dbe9d5aad49fef87ce"
+    },
+    {
+      "path": "packages/components/src/index.ts",
+      "git_blob_sha": "e9c8d72c5ee65b04a8bf05c6e98d9ea4ec921b9d"
+    },
+    {
+      "path": "packages/components/src/styles/components.css",
+      "git_blob_sha": "98c4dad9b67e4c8b9fbba7f251d1116a62f30a7c"
+    },
+    {
+      "path": "packages/components/src/testing/app-shell.ts",
+      "git_blob_sha": "df3f06cdad99cff1510f013f66160cb1ad162f13"
     },
     {
       "path": "packages/components/src/utils/base-element.ts",
@@ -58,6 +75,10 @@
     {
       "path": "packages/components/src/utils/light-slot.ts",
       "git_blob_sha": "9db4de263902543998bfb75f77233d1f82dc78d2"
+    },
+    {
+      "path": "packages/components/tsconfig.json",
+      "git_blob_sha": "d1a86abb82e773b702c50d61386ad5f8b8eb3450"
     },
     {
       "path": "packages/tokens/package.json",
@@ -85,5 +106,5 @@
     }
   ],
   "build": "Docker multi-stage on Supervisor; build snapshot before portal tests and Vite",
-  "policy": "Read-only vendored build snapshot; canonical editable source remains in mmcromero/design-system"
+  "policy": "Read-only vendored build snapshot; canonical editable source remains in mmcromero/design-system; updates require an explicit reviewed SHA."
 }
