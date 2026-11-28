@@ -428,30 +428,15 @@ function integrationsPanel() {
   const ha = statusSnapshot?.homeAssistant;
   const n8 = statusSnapshot?.n8n;
   const ag = statusSnapshot?.agentProtocol;
-
+  const card = (icon: string, title: string, value: string, detail: string, tone = "") =>
+    '<ds-card class="integration-card"><div class="integration-icon ' + tone + '">' + uiIcon(icon) + '</div><div class="integration-copy"><strong>' + title + '</strong><span class="state">' + uiIcon('check') + ' ' + value + '</span><small>' + detail + '</small></div></ds-card>';
   return (
-    '<div class="section-head"><div><h2>Estado das Integrações</h2><p>Monitoramento unificado dos canais da Fábrica de Ideias.</p></div></div>' +
-    '<div class="metrics">' +
-    '<ds-card><div class="stat-content"><small>GitHub REST API</small><strong>' +
-    (gh?.configured ? 'Conectado' : 'Não configurado') +
-    '</strong><small>' +
-    (snapshot ? date(snapshot.checkedAt) : 'Sem consulta') +
-    '</small></div></ds-card>' +
-    '<ds-card><div class="stat-content"><small>Supervisor Bridge</small><strong>' +
-    (ha?.bridgeConfigured ? 'Ativo' : 'Offline') +
-    '</strong><small>' +
-    (supervisorSnapshot ? supervisorSnapshot.total + ' add-ons' : 'Sem inventário') +
-    '</small></div></ds-card>' +
-    '<ds-card><div class="stat-content"><small>n8n API</small><strong>' +
-    (n8?.configured ? 'Configurado' : 'Pendente') +
-    '</strong><small>' +
-    (n8nSnapshot?.status === 'ok' ? n8nSnapshot.workflowCount + ' workflows' : 'Read-only') +
-    '</small></div></ds-card>' +
-    '<ds-card><div class="stat-content"><small>Protocolo Agentes</small><strong>' +
-    (ag?.status === 'active' ? 'Ativo' : 'Aguardando') +
-    '</strong><small>' +
-    (ag?.totalEvents ?? agentSnapshot?.total ?? 0) +
-    ' eventos registrados</small></div></ds-card>' +
+    '<div class="section-head integration-section-head"><div><h2>' + uiIcon('branch','section-icon') + ' Estado das Integrações</h2><p>Monitoramento unificado dos canais da Fábrica de Ideias.</p></div></div>' +
+    '<div class="integration-grid">' +
+    card('github','GitHub REST API',gh?.configured ? 'Conectado' : 'Não configurado',snapshot ? date(snapshot.checkedAt) : 'Sem consulta') +
+    card('layers','Supervisor Bridge',ha?.bridgeConfigured ? 'Ativo' : 'Offline',supervisorSnapshot ? supervisorSnapshot.total + ' add-ons' : 'Sem inventário') +
+    card('n8n','n8n API',n8?.configured ? 'Configurado' : 'Pendente',n8nSnapshot?.status === 'ok' ? n8nSnapshot.workflowCount + ' workflows' : 'Read-only','n8n-icon') +
+    card('bot','Protocolo de Agentes',ag?.status === 'active' ? 'Ativo' : 'Aguardando',(ag?.totalEvents ?? agentSnapshot?.total ?? 0) + ' eventos registrados') +
     '</div>'
   );
 }
@@ -1257,6 +1242,22 @@ function navIcon(id: View): string {
   };
   return '<span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true">' + (paths[id] || paths.overview) + '</svg></span>';
 }
+function uiIcon(name: string, className = "ico-svg"): string {
+  const paths: Record<string,string> = {
+    github:'<path fill="currentColor" d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.08c-3.1.67-3.75-1.32-3.75-1.32-.5-1.28-1.24-1.62-1.24-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 .1.76 2.02 3.23 1.42.1-.72.39-1.21.7-1.49-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.05-1.14 3.05-1.14.61 1.54.23 2.68.11 2.96.72.78 1.15 1.78 1.15 3 0 4.29-2.61 5.23-5.1 5.51.4.35.75 1.03.75 2.08v3.08c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/>',
+    layers:'<path d="m12 2 10 5.5-10 5.5L2 7.5 12 2Z M2 12l10 5.5L22 12 M2 16.5 12 22l10-5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>',
+    n8n:'<g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 12 18 5M6 12l12 7"/></g><g fill="currentColor"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="4.5" r="3"/><circle cx="19" cy="19.5" r="3"/></g>',
+    bot:'<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M8 16h8M2 11v5M22 11v5M9 20v2M15 20v2"/></g><circle cx="12" cy="3" r="1.5" fill="currentColor"/>',
+    check:'<path d="m5 12 4.5 4.5L19 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    refresh:'<path d="M20 7v5h-5M4 17v-5h5M5.5 9A7 7 0 0 1 18 6l2 2M4 16l2 2a7 7 0 0 0 12.5-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+    info:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v5m0-8h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    folder:'<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H10l2 2h7.5A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+    branch:'<circle cx="6" cy="5" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="19" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 7v10m0-6c0-3 12-1 12-5v11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+    calendar:'<rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 3v4m10-4v4M3 10h18" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    lock:'<rect x="4" y="10" width="16" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+  };
+  return '<svg class="' + className + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (paths[name] || paths.info) + '</svg>';
+}
 function render() {
   const projectFocused = view === 'projects' && !!activeProject();
   const status = lastError
@@ -1299,12 +1300,13 @@ function render() {
   const main = app!.querySelector<HTMLElement>('main[data-ds-region="main"]')!;
   shell.classList.toggle('project-shell', projectFocused);
   globalNav.hidden = projectFocused;
-  header.innerHTML = '<div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
+  header.className = 'topbar';
+  header.innerHTML = '<div class="page-title"><div class="kicker">ECOSSISTEMA MMCROMERO</div><h1>' +
     (projectFocused ? 'Central do Projeto' : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
-    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.50</ds-badge><small>' +
-    esc(status) + ' · ' + (lastChecked ? date(lastChecked) : 'sem consulta') +
-    '</small><ds-button size="sm" variant="secondary" ' + (loading ? 'disabled' : '') + ' data-refresh>' +
-    (loading ? 'Consultando…' : 'Atualizar GitHub') + '</ds-button></div>';
+    '</h1></div><div class="top-actions">' + projectContextSelector() +
+    '<span class="connection"><span class="connection-dot"></span>' + esc(status) + '</span>' +
+    '<button class="btn primary" type="button" data-refresh ' + (loading ? 'disabled' : '') + '>' +
+    uiIcon('refresh') + (loading ? 'Consultando…' : 'Atualizar GitHub') + '</button></div>';
   main.innerHTML = body();
   globalNav.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => {
     if (button.dataset.view === view) button.setAttribute('aria-current','page');

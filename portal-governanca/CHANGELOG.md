@@ -1,3 +1,10 @@
+## 0.1.0-dev.51 — 28/11/2026
+
+- Recupera a composição do cabeçalho global do protótipo aprovado: kicker e título à esquerda; seletor, estado de conexão e ação Atualizar GitHub à direita.
+- Recupera os quatro ícones SVG das integrações (GitHub, Supervisor/layers, n8n/network, Protocolo de Agentes/bot) e os ícones de confirmação.
+- Recupera a composição horizontal e as dimensões dos cartões de integração, mantendo os valores dinâmicos reais do Portal.
+- Preserva a navegação contextual, as APIs, os dados e os componentes funcionais já existentes.
+
 ## 0.1.0-dev.50 — 28/11/2026
 
 - Preserva integralmente o CSS aprovado do cabeçalho, restaurado da baseline dev.48.

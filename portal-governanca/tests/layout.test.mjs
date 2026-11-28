@@ -33,6 +33,18 @@ describe("estrutura vertical do Portal",()=>{
   expect(css).toContain("grid-row:1/4");
   expect(css).toContain(".workspace header{align-items:center;padding-bottom:.8rem;margin-bottom:1rem}");
  });
+ it("preserva o cabeçalho aprovado e os ícones das integrações",()=>{
+  expect(main).toContain('class="topbar"');
+  expect(main).toContain('class="top-actions"');
+  expect(main).toContain("uiIcon('refresh')");
+  expect(main).toContain("card('github','GitHub REST API'");
+  expect(main).toContain("card('layers','Supervisor Bridge'");
+  expect(main).toContain("card('n8n','n8n API'");
+  expect(main).toContain("card('bot','Protocolo de Agentes'");
+  expect(main).toContain("uiIcon('check')");
+  expect(css).toContain(".workspace > header.topbar");
+  expect(css).toContain(".integration-grid{display:grid;grid-template-columns:repeat(4");
+ });
  it("mantém as oito abas da central individual",()=>{
   for(const id of ["overview","development","homologation","evidence","decisions","resources","agents","environments"])expect(main).toContain("id:'"+id+"'");
   expect(main).toContain("project-section-content");

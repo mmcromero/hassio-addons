@@ -166,4 +166,54 @@ ds-app-shell.workspace.shell.project-shell{grid-template-columns:minmax(0,1fr);g
   .workspace *, .workspace *::before, .workspace *::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
 
+
+/* Visão Geral — recuperar a composição aprovada no protótipo fiel V4. */
+.workspace > header.topbar{
+  grid-column:2;grid-row:1;align-self:stretch;
+  height:84px;min-height:84px;flex:none;
+  margin:0;padding:0 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:#fff;border:0;border-bottom:1px solid #d7dfeb;border-radius:0;
+}
+.page-title{min-width:0}
+.page-title .kicker{font-size:12px;font-weight:700;color:#526176;margin:0 0 3px;letter-spacing:normal}
+.page-title h1{font-size:34px;line-height:1;margin:0;letter-spacing:-1px;font-weight:750}
+.top-actions{display:flex;align-items:center;gap:12px;min-width:0}
+.top-actions .project-context{display:grid;gap:3px;font-size:13px;font-weight:700;color:#25354b;letter-spacing:normal}
+.top-actions .project-context select{width:316px;max-width:316px;height:39px;border:1px solid #c4cfdd;border-radius:7px;background:#fff;padding:0 12px;font-size:15px;color:#202c3e}
+.connection{height:39px;padding:0 14px;border-radius:8px;background:#d9f5e4;color:#176d3b;display:flex;align-items:center;gap:8px;font-weight:700;white-space:nowrap;font-size:13px}
+.connection-dot{width:10px;height:10px;border-radius:50%;background:#16a34a;flex:none}
+.connection:has(+ .btn:disabled) .connection-dot{background:#d97706}
+.btn{height:38px;border:1px solid #c3cedd;border-radius:7px;background:#fff;color:#17263b;padding:0 13px;font-weight:650;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;cursor:pointer}
+.btn.primary{background:#075ee8;border-color:#075ee8;color:#fff}
+.btn .ico-svg{width:15px;height:15px}
+.integration-section-head{margin:0 0 11px}
+.integration-section-head h2{font-size:18px;margin:0;font-weight:750;display:flex;align-items:center;gap:9px}
+.integration-section-head .section-icon{width:18px;height:18px;color:#075ee8}
+.integration-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+ds-card.integration-card{display:block;min-width:0;margin:0;border:0;padding:0;background:transparent;box-shadow:none}
+ds-card.integration-card>.ds-card{height:88px;min-width:0;margin:0;padding:9px 14px;border:1px solid #cbd6e5;border-radius:9px;background:#fff;box-shadow:0 1px 2px rgba(18,38,63,.07);display:flex;flex-direction:row;align-items:center;gap:13px}
+.integration-icon{width:34px;height:34px;display:grid;place-items:center;color:#075ee8;flex:none}
+.integration-icon .ico-svg{width:29px;height:29px}
+.integration-icon.n8n-icon{color:#ea477b}
+.integration-copy{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.integration-copy strong{display:block;font-size:13px;line-height:1.25;color:#111d31}
+.integration-copy .state{display:inline-flex;align-items:center;gap:5px;border-radius:999px;background:#d9f5e3;color:#126a37;padding:4px 10px;font-size:12px;font-weight:700;line-height:1;white-space:nowrap}
+.integration-copy .state .ico-svg{width:13px;height:13px}
+.integration-copy small{display:block;color:#526176;font-size:11px;line-height:1.25;overflow-wrap:anywhere}
+@media(max-width:1120px){
+ .top-actions .project-context select{width:230px;max-width:230px}
+ .integration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .workspace > header.topbar{height:auto;min-height:76px;padding:12px 14px;align-items:flex-start;flex-direction:column;gap:10px}
+ .page-title h1{font-size:27px}
+ .top-actions{width:100%;flex-wrap:wrap;gap:7px}
+ .top-actions .project-context{flex:1;min-width:160px}
+ .top-actions .project-context select{width:100%;max-width:100%}
+ .connection,.top-actions>.btn{height:36px;font-size:12px}
+ .integration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:410px){.integration-grid{grid-template-columns:1fr}}
+
 .workspace > nav[data-ds-region="navigation"][hidden]{display:none!important}
