@@ -1,12 +1,12 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.54",
+  "addon_version": "0.1.0-dev.55",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "19d280597c8b79c22a2781f88433c2d01b34a055",
+  "source_commit": "6138106f361eb4c4a8031a8c051b4bf2949e5893",
   "source_worktree": {
     "state": "clean",
     "status_entries": [],
-    "fingerprint_sha256": "83e1869deaabff40ca6a32511b4aa74e98aab4798eb76b8c0f66f3575e0a6c22"
+    "fingerprint_sha256": "4550514b6f3b2f8d85d66b2e25f37acb929634f57bec801cfcb31d8e77799fed"
   },
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
@@ -16,17 +16,17 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "8e3a987931a548fd6bd9e1473887bdc11d119f9859d8bc7e38a201fe5e5837e3",
-  "package_manifest_sha256": "6bfc9a4a612443abc2d635685b5788f412627bafadf2492266aeeed32f88312b",
+  "npm_lockfile_sha256": "d4827fe2b29d08b898195210a0d874bacfb54a5791257ea607045e29fb8e8cf6",
+  "package_manifest_sha256": "0e0b096ba2bf8a095efcaad5f4cc4ae01d6738aff2c1055134f1ce9971930f9f",
   "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "57e61423423feee71d2d7a0eba4dbae052f39f370cbcb970073828510ced56c7"
+      "sha256": "fcf72e8ac9914708b9a72b2b55c2047664838e1696c48fd9f1964677b4310ed1"
     },
     {
       "path": "config.yaml",
-      "sha256": "767f004caad0f7dca4eee82e391f844437243990203308b91ff141a528bee7cb"
+      "sha256": "27f0b189ecec36207d1ab59408f067eaca68f70bc3732517a104ffb21640e509"
     },
     {
       "path": "config/design-system.lock.json",
@@ -58,11 +58,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "8e3a987931a548fd6bd9e1473887bdc11d119f9859d8bc7e38a201fe5e5837e3"
+      "sha256": "d4827fe2b29d08b898195210a0d874bacfb54a5791257ea607045e29fb8e8cf6"
     },
     {
       "path": "package.json",
-      "sha256": "7e602f98dcacb210bf3a72d15bd5425bd126d02e0ffae2c4371c170f609fed4e"
+      "sha256": "de61b89400d56ec02cb5dc4f5e617238185ee55bc574f2b3e929ecd9a478807f"
     },
     {
       "path": "public/brand-icon.png",
@@ -138,7 +138,7 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "e3792548bc6f8c7664c8d9cb7ef1c1bd0b089d8b096f56f199f41a4a51f0d5a7"
+      "sha256": "76a1d993109868251458fb0d6e33412919c6a95eabd98b961ad9a14945081bcd"
     },
     {
       "path": "src/project-age.ts",
@@ -166,7 +166,7 @@
     },
     {
       "path": "src/styles.css",
-      "sha256": "338848ae569922e0d8708e6dd45a77c9a68ef61ff23118321abbdf3caf9c1676"
+      "sha256": "934e54de864f582f64d7f74522488a0c25db8c4fdcb2d2cf59324a663eef4ed6"
     },
     {
       "path": "tests/agent-events.test.mjs",
@@ -198,7 +198,7 @@
     },
     {
       "path": "tests/layout.test.mjs",
-      "sha256": "4ed2349852fc8a617f54e1d17f76ae7ac09b6a3e55dc5ae8d6cd751f541ea0c2"
+      "sha256": "646b03cc5ba42174a6b06eda690c907756c89fc54bad0e7a9a4b793a608f93ca"
     },
     {
       "path": "tests/ledger.test.mjs",
@@ -373,6 +373,6 @@
       "sha256": "5004a1cfd3bad6346e04979f8ffc58cb8e769283dba4705edf32e3438a9e3ae3"
     }
   ],
-  "generated_by": "GitHub API export of selected source files; source commit recorded; full SHA-256 manifest recalculation deferred",
-  "packaging_method": "GitHub Git Data API export of source files for Supervisor ARM64 build"
+  "generated_by": "GitHub API export reproducing scripts/package-addon.mjs selection; local npm command not executed",
+  "packaging_method": "GitHub Git Data API; exact selected files exported from source commit; SHA-256 hashes recomputed and verified"
 }

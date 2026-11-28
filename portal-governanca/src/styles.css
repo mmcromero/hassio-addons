@@ -130,21 +130,11 @@ ds-card.project-card>.ds-card>.ds-card-body{display:flex;flex-direction:column;g
 .workspace main :is(.project-card,.repo-card,.timeline-section){break-inside:avoid}
 .workspace footer{min-width:0;line-height:1.5}
 
-/* Central do Projeto: App Shell sem navegação global duplicada */
-ds-app-shell.workspace.shell.project-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(min-content,1fr) auto}
-.project-shell > header[data-ds-region="header"]{grid-column:1;grid-row:1}
-.project-shell > main[data-ds-region="main"]{grid-column:1;grid-row:2}
-.project-shell > footer[data-ds-region="footer"]{grid-column:1;grid-row:3}
-
-/* Navegação global no fluxo do App Shell; sem sticky/fixed estrutural */
-.workspace > nav[data-ds-region="navigation"]{position:relative;height:auto;align-self:stretch;min-height:100%}
-
-@media(max-width:900px){
-  ds-app-shell.workspace.shell.project-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(min-content,1fr) auto}
-  .project-shell > header[data-ds-region="header"]{grid-column:1;grid-row:1}
-  .project-shell > main[data-ds-region="main"]{grid-column:1;grid-row:2}
-  .project-shell > footer[data-ds-region="footer"]{grid-column:1;grid-row:3}
-  .workspace > nav[data-ds-region="navigation"]{position:relative;height:auto;min-height:0}
+/* Todas as rotas compartilham o mesmo App Shell.
+   A Central do Projeto altera exclusivamente o conteúdo de main. */
+.workspace > nav[data-ds-region="navigation"]{
+  grid-column:1;grid-row:1/4;align-self:start;
+  position:sticky;top:0;height:100vh;min-width:0;
 }
 @media(max-width:650px){
   .workspace main :is(.intro,.section-head){align-items:flex-start;flex-direction:column}
@@ -215,10 +205,6 @@ ds-card.integration-card>.ds-card{height:88px;min-width:0;margin:0;padding:9px 1
  .integration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:410px){.integration-grid{grid-template-columns:1fr}}
-
-.workspace > nav[data-ds-region="navigation"][hidden]{display:none!important}
-
-
 
 /* Cards de integração: o conteúdo é movido pelo DS para .ds-card-body.
    O layout horizontal precisa ser aplicado ao body, não apenas ao container. */

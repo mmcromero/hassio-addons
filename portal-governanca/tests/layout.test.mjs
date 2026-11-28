@@ -9,7 +9,7 @@ describe("estrutura vertical do Portal",()=>{
  it("usa App Shell em grid e preserva a ordem semântica",()=>{
   expect(css).toContain("ds-app-shell.workspace.shell{display:grid");
   expect(main).toContain("const projectFocused = view === 'projects' && !!activeProject()");
-  expect(main).toContain("shell.classList.toggle('project-shell', projectFocused)");
+  expect(main).not.toContain("shell.classList.toggle('project-shell'");
   expect(main).toContain('<header data-ds-region="header">');
   expect(main).toContain('<nav data-ds-region="navigation" aria-label="Seções principais" class="sidebar">');
   expect(main).toContain('<main data-ds-region="main" id="main-content" tabindex="-1">');
@@ -54,9 +54,14 @@ describe("estrutura vertical do Portal",()=>{
  it("preserva header, navegação e footer e atualiza apenas main entre rotas",()=>{
   expect(main).toContain("if (!app!.querySelector");
   expect(main).toContain("main.innerHTML = body()");
-  expect(main).toContain("globalNav.hidden = projectFocused");
+  expect(main).toContain("globalNav.hidden = false");
+  expect(main).not.toContain("globalNav.hidden = projectFocused");
+  expect(css).not.toContain(".project-shell");
+  expect(css).toContain(".workspace > nav[data-ds-region=\"navigation\"]{");
+  expect(css).toContain("position:sticky;top:0;height:100vh");
   expect(main).toContain("navOnce.addEventListener");
-  expect(css).toContain("ds-app-shell.workspace.shell.project-shell{grid-template-columns:minmax(0,1fr)");
+  expect(main).toContain("main.innerHTML = body()");
+  expect(main).toContain("Header, navegação e footer são regiões globais permanentes");
  });
  it("aplica regras visuais compartilhadas às telas e aos formulários",()=>{
   for(const selector of [".workspace main > section",".workspace main .registration-form",".workspace main :is(ds-card,.repo-card,.repo-row)",".workspace main .project-tabs","@media(max-width:650px)","@media(max-width:420px)"])expect(css).toContain(selector);

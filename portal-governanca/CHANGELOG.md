@@ -1,3 +1,11 @@
+## 0.1.0-dev.55 — 28/11/2026
+
+- Corrige a regressão da Central do Projeto: o menu global não é mais ocultado ao entrar em um projeto.
+- Remove a grade especial de uma coluna que deslocava o cabeçalho e eliminava a coluna da navegação.
+- Todas as rotas reutilizam o mesmo App Shell: header, navegação lateral e footer permanecem nas mesmas regiões; somente o conteúdo de main é atualizado.
+- Sidebar mantém a coluna, altura e comportamento sticky globais também dentro de projetos.
+- Atualiza testes de regressão para proibir ocultação da navegação e overrides estruturais específicos da Central do Projeto.
+
 ## 0.1.0-dev.54 — 28/11/2026
 
 - Reverte integralmente a alteração indevida de largura, padding, margens e posicionamento global do App Shell introduzida na dev.53.

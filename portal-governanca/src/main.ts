@@ -1298,8 +1298,9 @@ function render() {
   const header = app!.querySelector<HTMLElement>('header[data-ds-region="header"]')!;
   const globalNav = app!.querySelector<HTMLElement>('nav[data-ds-region="navigation"]')!;
   const main = app!.querySelector<HTMLElement>('main[data-ds-region="main"]')!;
-  shell.classList.toggle('project-shell', projectFocused);
-  globalNav.hidden = projectFocused;
+  // Header, navegação e footer são regiões globais permanentes em todas as rotas.
+  // A navegação nunca é ocultada; somente o conteúdo de main é substituído.
+  globalNav.hidden = false;
   header.className = 'topbar';
   header.innerHTML = '<div class="page-title"><div class="kicker">ECOSSISTEMA MMCROMERO</div><h1>' +
     (projectFocused ? 'Central do Projeto' : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
