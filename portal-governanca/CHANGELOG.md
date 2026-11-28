@@ -1,3 +1,10 @@
+## 0.1.0-dev.59 — 28/11/2026
+
+- Restaura a listagem de repositórios GitHub no Portfólio, separando repositórios já cadastrados, ainda não cadastrados e outros estados.
+- Restaura o acionamento do formulário de cadastro manual pelo botão Cadastrar projeto.
+- Carrega o catálogo ao abrir o Portfólio, entrar diretamente na rota de cadastro ou retornar pela navegação.
+- Adiciona testes de regressão para a listagem e o fluxo de cadastro.
+
 ## 0.1.0-dev.58 — 28/11/2026
 
 - Corrige a própria asserção do teste mobile: a ordem é verificada entre o último override responsivo e a regra de cabeçalho que ele deve sobrepor.

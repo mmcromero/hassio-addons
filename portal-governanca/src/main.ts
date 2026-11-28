@@ -148,6 +148,7 @@ function restoreRouteFromHash() {
   projectSection = route.section;
   selected = contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
   render();
+  if ((view === 'register' || (view === 'projects' && !selected)) && !catalog && !catalogLoading) void loadCatalog();
   if (selected && view === 'projects') void loadTimeline(selected.id);
   if (['homologation', 'evidence', 'decisions'].includes(projectSection) && selected) void loadRecords(selected.id);
   if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
@@ -638,6 +639,31 @@ async function loadCatalog() {
     catalogLoading = false;
     render();
   }
+}
+
+function portfolioRepositoryCatalog() {
+  const repos = catalog?.repositories ?? [];
+  const orderedRepos = orderRegisteredRepositories(repos);
+  const registeredRepos = orderedRepos.filter(r => r.markerStatus === 'registered');
+  const availableRepos = orderedRepos.filter(r => r.markerStatus === 'available' && !r.archived);
+  const otherRepos = orderedRepos.filter(r => r.markerStatus !== 'registered' && !(r.markerStatus === 'available' && !r.archived));
+  const rowMarkup = (r: RepositoryCatalogItem) =>
+    '<div class="repo-row"><div><strong>' + esc(r.fullName) + '</strong><small>Branch padrão: ' + esc(r.defaultBranch) + '</small></div><ds-badge variant="' +
+    (r.markerStatus === 'registered' ? 'success' : r.markerStatus === 'available' && !r.archived ? 'info' : 'warning') + '">' +
+    (r.markerStatus === 'registered' ? 'Cadastrado' : r.markerStatus === 'available' && !r.archived ? 'Disponível' : r.markerStatus === 'disabled' ? 'Desativado' : r.markerStatus === 'invalid' ? 'Inválido' : r.archived ? 'Arquivado' : 'Indisponível') +
+    '</ds-badge></div>';
+  const groups = [
+    registeredRepos.length ? '<div class="repo-group"><h3>Já cadastrados</h3><div class="repo-list">' + registeredRepos.map(rowMarkup).join('') + '</div></div>' : '',
+    availableRepos.length ? '<div class="repo-group"><h3>Ainda não cadastrados</h3><div class="repo-list">' + availableRepos.map(rowMarkup).join('') + '</div></div>' : '',
+    otherRepos.length ? '<div class="repo-group"><h3>Outros estados</h3><div class="repo-list">' + otherRepos.map(rowMarkup).join('') + '</div></div>' : ''
+  ].join('');
+  return '<section class="portfolio-repositories"><div class="section-head"><div><h2>Repositórios do GitHub</h2><p>' +
+    (catalog ? repos.length + ' repositórios encontrados no owner mmcromero.' : 'Consulte todos os repositórios e veja quais já pertencem ao portfólio.') +
+    '</p></div><ds-button variant="secondary" size="sm" data-catalog-refresh ' + (catalogLoading ? 'disabled' : '') + '>' +
+    (catalogLoading ? 'Consultando…' : 'Atualizar lista') + '</ds-button></div>' +
+    (catalogError ? '<ds-alert variant="warning" title="Consulta ao GitHub">' + esc(catalogError) + '</ds-alert>' : '') +
+    (catalogLoading ? '<p>Consultando repositórios do GitHub…</p>' : groups || '<ds-card><p>Nenhum repositório disponível para exibição.</p></ds-card>') +
+    '</section>';
 }
 
 function registrationPage() {
@@ -1222,7 +1248,7 @@ function body() {
     return (
       '<section><div class="intro"><div><h2>Portfólio de projetos</h2><p>Entre em cada projeto para consultar desenvolvimento, homologações, evidências, decisões e recursos vinculados.</p></div><ds-button data-view="register">Cadastrar projeto</ds-button></div><div class="projects">' +
       (projects().length ? projects().map(projectCard).join('') : '<ds-card><h3>Nenhum projeto identificado</h3><p>Adicione .portal-governanca.json à raiz de um repositório ou use Cadastrar projeto.</p></ds-card>') +
-      '</div></section>'
+      '</div>' + portfolioRepositoryCatalog() + '</section>'
     );
   if (view === 'register') return registrationPage();
   if (view === 'environments') return environments();
@@ -1285,7 +1311,7 @@ function render() {
       syncRoute();
       render();
       document.querySelector<HTMLElement>('#main-content')?.focus({preventScroll:true});
-      if (view === 'register' && !catalog && !catalogLoading) void loadCatalog();
+      if ((view === 'register' || (view === 'projects' && !selected)) && !catalog && !catalogLoading) void loadCatalog();
       if (view === 'environments' && !supervisorSnapshot && !supervisorLoading && !supervisorError) void loadSupervisor(false);
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
       if (view === 'agents') void loadAgentEvents(contextProjectId || undefined);
@@ -1309,6 +1335,18 @@ function render() {
     '<button class="btn primary" type="button" data-refresh ' + (loading ? 'disabled' : '') + '>' +
     uiIcon('refresh') + (loading ? 'Consultando…' : 'Atualizar GitHub') + '</button></div>';
   main.innerHTML = body();
+  main.querySelectorAll<HTMLElement>('[data-view]').forEach(button => {
+    button.addEventListener('click', () => {
+      view = button.dataset.view as View;
+      selected = view === 'projects' && contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
+      if (view !== 'register') { registerMessage = null; registerError = null; }
+      syncRoute();
+      render();
+      document.querySelector<HTMLElement>('#main-content')?.focus({preventScroll:true});
+      if ((view === 'register' || (view === 'projects' && !selected)) && !catalog && !catalogLoading) void loadCatalog();
+      if (view === 'projects' && selected) void loadTimeline(selected.id);
+    });
+  });
   globalNav.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => {
     if (button.dataset.view === view) button.setAttribute('aria-current','page');
     else button.removeAttribute('aria-current');
@@ -1448,6 +1486,7 @@ async function refresh(force = false) {
     selected = contextProjectId ? projects().find(p => p.id === contextProjectId) || null : null;
     render();
     if (snapshot) {
+      if (view === 'projects' && !selected && !catalog && !catalogLoading) void loadCatalog();
       if (view === 'projects' && selected) {
         if (projectSection === 'overview') void loadTimeline(selected.id);
         if (['homologation','evidence','decisions'].includes(projectSection)) void loadRecords(selected.id);

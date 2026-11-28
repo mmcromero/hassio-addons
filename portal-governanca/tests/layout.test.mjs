@@ -63,6 +63,17 @@ describe("estrutura vertical do Portal",()=>{
   expect(main).toContain("main.innerHTML = body()");
   expect(main).toContain("Header, navegação e footer são regiões globais permanentes");
  });
+ it("preserva o catálogo de repositórios no Portfólio e o fluxo de cadastro manual",()=>{
+  expect(main).toContain("function portfolioRepositoryCatalog()");
+  expect(main).toContain("portfolioRepositoryCatalog() + '</section>'");
+  expect(main).toContain('<h3>Já cadastrados</h3>');
+  expect(main).toContain('<h3>Ainda não cadastrados</h3>');
+  expect(main).toContain('data-view="register">Cadastrar projeto</ds-button>');
+  expect(main).toContain("main.querySelectorAll<HTMLElement>('[data-view]')");
+  expect(main).toContain("if (view === 'register') return registrationPage();");
+  expect(main).toContain("data-register-form");
+  expect(main).toContain("if ((view === 'register' || (view === 'projects' && !selected)) && !catalog && !catalogLoading) void loadCatalog();");
+ });
  it("aplica regras visuais compartilhadas às telas e aos formulários",()=>{
   for(const selector of [".workspace main > section",".workspace main .registration-form",".workspace main :is(ds-card,.repo-card,.repo-row)",".workspace main .project-tabs","@media(max-width:650px)","@media(max-width:420px)"])expect(css).toContain(selector);
  });
