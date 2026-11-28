@@ -100,6 +100,20 @@ Quando a fonte do add-on estiver em outro repositório, a publicação é uma **
 4. **PUBLICADO NO GITHUB NÃO SIGNIFICA INSTALADO OU HOMOLOGADO.** A instalação/atualização no Home Assistant é uma etapa separada feita pelo operador autorizado. Ali são observados build real quando aplicável, inicialização, logs e comportamento da função no hardware alvo. Resultado real deve voltar ao registro da tarefa.
 5. Falha de build ou execução real deve ser diagnosticada com logs/versão e corrigida na fonte do produto; repetir a esteira somente na parte afetada. Não alterar dados do host, add-ons alheios ou serviços por inferência.
 
+## 3.1 Operação do Supervisor pelo HA-MCP
+
+Quando o ambiente disponibilizar as ferramentas HA-MCP, o agente deve verificar o schema real das operações. `ha_get_app` é leitura de inventário/estado; `ha_manage_app` é a ferramenta de gerenciamento e possui ações de escrita do Supervisor. **Não concluir que o conector é somente leitura pelo nome do namespace MCP.**
+
+Fluxo de catálogo:
+1. Consultar slug e versões com `ha_get_app`.
+2. Recarregar metadados com `ha_manage_app(action="check_updates")` — isso não instala.
+3. Consultar novamente a versão disponível com `ha_get_app`.
+4. Instalar/atualizar com `ha_manage_app(slug="<slug-confirmado>", action="update")`.
+5. Verificar versão e estado com `ha_get_app`; conferir logs do app e do Supervisor.
+6. Se a operação retornar erro ou estado desconhecido, verificar estado persistente e logs antes de repetir.
+
+Para apps de catálogo com Dockerfile e sem `image`, o Supervisor executa o build na arquitetura do dispositivo durante `update`. Não exigir shell local, Codespaces, Actions, QEMU ou runner ARM64 externo como pré-requisito genérico. `check_updates` não instala; `update` instala uma versão mais recente; `rebuild` destina-se a apps locais cujo conteúdo mudou sem mudar a versão. Respeitar o manual específico, a autorização contínua registrada e os limites de cada produto.
+
 ## 4. Registro mínimo de bloqueio
 
 Registrar na **Issue existente**: procedimento e revisão consultados; ambiente/HEAD/sintoma; tentativa autorizada e resultado; evidência concreta do que permanece bloqueado; por que as alternativas aprovadas não resolvem; próxima ação e responsável. Bloqueios reais de segurança, credenciais, permissões e autorização permanecem válidos. Não inventar aprovação nem criar Issue duplicada.
