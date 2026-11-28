@@ -1301,7 +1301,7 @@ function render() {
   globalNav.hidden = projectFocused;
   header.innerHTML = '<div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
     (projectFocused ? 'Central do Projeto' : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
-    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.49</ds-badge><small>' +
+    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.50</ds-badge><small>' +
     esc(status) + ' · ' + (lastChecked ? date(lastChecked) : 'sem consulta') +
     '</small><ds-button size="sm" variant="secondary" ' + (loading ? 'disabled' : '') + ' data-refresh>' +
     (loading ? 'Consultando…' : 'Atualizar GitHub') + '</ds-button></div>';

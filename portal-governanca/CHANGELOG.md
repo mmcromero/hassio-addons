@@ -1,3 +1,10 @@
+## 0.1.0-dev.50 — 28/11/2026
+
+- Preserva integralmente o CSS aprovado do cabeçalho, restaurado da baseline dev.48.
+- Mantém a correção estrutural mínima: App Shell sem limite de largura/centralização e gap de 24px entre sidebar e conteúdo.
+- Mantém a largura original da sidebar (13,25rem), sem alterar padding, margem, alinhamento interno ou tipografia do cabeçalho.
+- Teste de regressão verifica explicitamente a preservação do espaçamento original do cabeçalho.
+
 ## 0.1.0-dev.49 — 28/11/2026
 
 - Corrige o App Shell para ocupar toda a largura disponível, elimina centralização estreita e espaços laterais desperdiçados.
