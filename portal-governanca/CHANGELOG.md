@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.48 — 28/11/2026
+- Ajusta o teste arquitetural para verificar a chamada real `git status --porcelain=v1` do empacotador, sem exigir uma string de comando inexistente.
+- Mantém o empacotador e os scripts incluídos no pacote e no contexto de testes do Supervisor.
+
+# Changelog
+
 ## 0.1.0-dev.47 — 28/11/2026
 - Inclui `scripts/` no pacote e no estágio de testes do Supervisor, permitindo que o teste arquitetural valide o empacotador oficial dentro da imagem de build.
 - Corrige a falha da candidata dev.46: `tests/build-architecture.test.mjs` precisava ler `scripts/package-addon.mjs`, ausente no artefato.

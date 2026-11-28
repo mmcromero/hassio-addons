@@ -128,7 +128,7 @@ describe("build autossuficiente do add-on",()=>{
   const script=fs.readFileSync(path.join(root,"scripts/package-addon.mjs"),"utf8");
   expect(script).not.toContain("assertClean");
   expect(script).not.toContain("possui alterações não commitadas");
-  expect(script).toContain('git status --porcelain=v1');
+  expect(script).toContain('"status","--porcelain=v1"');
   expect(script).toContain("source_worktree");
   expect(script).toContain("status_entries");
   expect(script).toContain("package_manifest_sha256");
