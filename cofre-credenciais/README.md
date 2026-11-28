@@ -5,7 +5,7 @@ Distribuição Home Assistant do Vaultwarden, com configuração de segurança e
 - Pacote: `0.1.0-rc.3`
 - Vaultwarden: `1.37.5` (imagem fixada por digest)
 - Arquiteturas: ARM64 e AMD64
-- Acesso: hostname HTTPS dedicado via NGINX; sem Ingress e sem publicação direta da porta do serviço.
+- Acesso: rota HTTPS `/cofre` no NGINX existente; sem Ingress e sem publicação direta da porta do serviço.
 - Cadastro, convites, Sends, SSO signup e painel administrativo desativados por padrão.
 
 Consulte [DOCS.md](DOCS.md) antes de instalar ou configurar. Esta RC deve ser homologada com dados fictícios; não cadastrar credenciais reais antes da aprovação de backup/restore e segurança.
