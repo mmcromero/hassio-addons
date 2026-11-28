@@ -12,7 +12,6 @@ init: false
 stage: experimental
 ingress: false
 backup: cold
-watchdog: false
 ports:
   8090/tcp: null
 ports_description:
