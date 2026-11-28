@@ -1,3 +1,10 @@
+## 0.1.0-dev.53 — 28/11/2026
+
+- Corrige o grid do App Shell no desktop: sidebar com largura explícita de 233px, ocupando a primeira coluna e toda a altura disponível.
+- Remove o padding externo conflitante do host `ds-app-shell.workspace.shell`, que comprimia a coluna da navegação e aproximava o conteúdo da borda.
+- Reposiciona header, main e footer explicitamente na segunda coluna, preservando a composição aprovada e o comportamento responsivo.
+- Adiciona regressões CSS para largura da sidebar, reset do host e posicionamento do conteúdo.
+
 ## 0.1.0-dev.52 — 28/11/2026
 
 - Corrige a asserção do teste de layout para refletir a atribuição dinâmica da classe topbar no elemento header.
