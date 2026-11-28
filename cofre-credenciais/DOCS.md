@@ -4,13 +4,13 @@ Este pacote executa o Vaultwarden, servidor compatível com os clientes Bitwarde
 
 ## Estado desta candidata
 
-- Versão do pacote HA: `0.1.0-rc.1`
+- Versão instalada do pacote HA: `0.1.0-rc.3`
 - Servidor: Vaultwarden `1.37.5`, imagem multi-arquitetura fixada por digest.
 - Arquitetura declarada: `aarch64` e `amd64`.
 - Persistência: `/data` (SQLite e anexos).
 - Interface: não usa Home Assistant Ingress.
 - Porta interna do serviço web: `7277/tcp`; mapeamento para a rede do host desativado por padrão.
-- Acesso previsto: `https://romeropi.duckdns.org:8443/cofre`, reutilizando o domínio/certificado HTTPS já existentes e um include de rota no NGINX. A rota ainda precisa ser configurada e homologada.
+- Acesso configurado: `https://romeropi.duckdns.org:8443/cofre`, reutilizando o domínio/certificado HTTPS já existentes e o include `/share/nginx_proxy_default_cofre.conf` no NGINX 4.5.3. A rota foi testada via TLS no listener interno do NGINX; a alcançabilidade WAN a partir de uma rede externa independente ainda não foi verificada.
 
 ## Proteções padrão
 
@@ -23,13 +23,13 @@ Este pacote executa o Vaultwarden, servidor compatível com os clientes Bitwarde
 - Nenhum token administrativo é gerado ou impresso nos logs.
 - A porta 7277 não é publicada no host pelo manifesto.
 
-**Não coloque credenciais reais nesta candidata.** A POC inicial deve usar apenas uma conta e dados fictícios até a homologação de HTTPS, autenticação, backup e restauração.
+**Não coloque credenciais reais nesta candidata.** A rota HTTPS está configurada, mas MFA, clientes, backup/restore e revisão independente ainda não foram homologados.
 
 ## Primeiro acesso — procedimento controlado
 
-1. Concluir e testar a rota `https://romeropi.duckdns.org:8443/cofre` no NGINX existente antes de permitir o cadastro.
+1. Abrir `https://romeropi.duckdns.org:8443/cofre` e confirmar que a tela de login carrega pelo acesso externo.
 2. Na configuração do app, habilitar `allow_signups` temporariamente e reiniciar o app.
-3. Abrir o hostname HTTPS e criar somente a conta do proprietário.
+3. Abrir a rota HTTPS e criar somente a conta do proprietário.
 4. Ativar autenticação de dois fatores (TOTP) na conta e testar um segundo dispositivo.
 5. Voltar à configuração do app, desabilitar `allow_signups` e reiniciar.
 6. Confirmar que uma tentativa de novo cadastro é recusada.
@@ -40,11 +40,11 @@ Não deixar `allow_signups` habilitado após criar a conta do proprietário.
 ## Configuração
 
 - `ssl`: manter `false` quando o NGINX externo terminar TLS; a comunicação interna entre proxy e app será HTTP na rede privada de add-ons.
-- `domain`: preencher com `https://romeropi.duckdns.org:8443/cofre` após adicionar e testar o include NGINX. O Vaultwarden 1.37.5 suporta o prefixo de caminho via `DOMAIN`.
+- `domain`: já configurado como `https://romeropi.duckdns.org:8443/cofre`. O Vaultwarden 1.37.5 suporta o prefixo de caminho via `DOMAIN`.
 - `request_size_limit`: limite de requisições JSON do Rocket; o limite de upload também deverá ser definido no vhost externo do NGINX.
 - `log_level`: manter `info` em operação normal.
 
-O app não oferece Ingress. Não habilitar acesso público direto à porta 7277. Não criar redirecionamento de porta no roteador. O certificado wildcard `*.romeropi.duckdns.org` já está configurado no DuckDNS; não é necessário emitir outro certificado para a rota proposta.
+O app não oferece Ingress. Não habilitar acesso público direto à porta 7277. Não criar redirecionamento de porta no roteador. O certificado wildcard `*.romeropi.duckdns.org` já está configurado no DuckDNS; não foi necessário emitir outro certificado para a rota.
 
 ## Clientes
 
@@ -71,9 +71,22 @@ O empacotamento HA deriva do projeto Home Assistant Community App Vaultwarden, l
 
 ## Homologação pendente
 
-Build e inicialização no Raspberry Pi 4, acesso HTTPS via proxy, WebSocket, bloqueio de cadastro, MFA, consumo de recursos, persistência, backup/restore e atualização controlada.
+Build e inicialização no Raspberry Pi 4 e rota TLS interna no NGINX: PASS. Pendentes: alcance WAN independente, WebSocket com cliente, MFA, consumo de recursos, persistência, backup/restore e atualização controlada.
 
 
 ## Estado de acesso — 28/11/2026
 
 O Supervisor confirma NGINX 4.5.3 com domínio `romeropi.duckdns.org`, porta externa 8443 e include customizado ativo. DuckDNS confirma SAN `*.romeropi.duckdns.org`, válido até 19/02/2027. A rota candidata usa o caminho `/cofre`; ainda não foi criada. A tela de autenticação só será exposta após autorização específica e teste do include.
+
+
+## Implementação da rota — 28/11/2026
+
+- Arquivo: `/share/nginx_proxy_default_cofre.conf`
+- SHA-256: `f8efa7c53fce11f7bb2b1198aef1320ba68da63c0346ddf9b31f56029c5d925c`
+- NGINX 4.5.3 reiniciado; estado `started`.
+- Vaultwarden `DOMAIN` configurado para a URL pública com prefixo `/cofre`.
+- Teste TLS no listener interno do NGINX, com SNI e Host corretos: TLS verify result 0; Web Vault HTTP 200; CSS HTTP 200; API config HTTP 200; cadastro desativado; painel administrativo desativado.
+- A porta 7277 continua sem mapeamento no host.
+- Nenhuma conta ou credencial real foi criada.
+
+O arquivo de rota usa WebSocket Upgrade/Connection, preserva o caminho `/cofre`, encaminha para o hostname interno do app e aplica limite de upload local de 10 MB. Não alterar ou substituir os outros includes existentes.
