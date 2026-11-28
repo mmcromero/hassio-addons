@@ -9,4 +9,7 @@
 - Testes unitários: 20/20 PASS em ambiente Python isolado; `py_compile` exit 0.
 - Imagem: construída pelo Supervisor no dispositivo Home Assistant a partir deste diretório; não há imagem pré-publicada.
 - Arquivos oficiais de marca: `icon.png` blob `a0fdd10938db1b6a65aa60469e83ed1c7c9bd33a`; `logo.png` blob `7e500016222b0a5bf395be8ed17447edeb3e2af9`.
+- Commit do catálogo com manifest corrigido e build validado: `b88892dfce4ee981a8a934b47d9a725505c17e10`.
+- Supervisor: instalado/iniciado em 28/11/2026, slug `45c28620_umdoislab_media_bridge`, versão `0.1.0`, arquitetura `aarch64`.
+- Health via HA MCP: HTTP 200 `configured=false` em modo seguro. Porta 8090 sem host mapping; Ingress, host network, privilégios e mounts ausentes.
 - Nenhum segredo, token ou chave real faz parte do pacote.
