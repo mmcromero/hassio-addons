@@ -41,4 +41,8 @@ describe("estrutura vertical do Portal",()=>{
  it("mantém a navegação global no fluxo normal do App Shell",()=>{
   expect(css).toContain('.workspace > nav[data-ds-region="navigation"]{position:relative;height:auto');
  });
+ it("move o foco para o conteúdo sem provocar rolagem automática da página",()=>{
+  expect(main).toContain("focus({preventScroll:true})");
+  expect(main).not.toContain("document.querySelector<HTMLElement>('#main-content')?.focus();");
+ });
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.46 — 28/11/2026
+- Corrige o foco após navegação entre telas para não disparar rolagem automática do navegador; preserva a posição visual ao trocar de rota.
+- Adiciona regressão automatizada para impedir o retorno do salto de rolagem.
+- Aguardando execução da suíte, build e homologação visual no Home Assistant.
+
+
 ## 0.1.0-dev.43 — 27/11/2026
 - Centraliza homologações, evidências, decisões/histórico e recursos no contexto de cada projeto.
 - Adiciona seletor universal de projeto e rotas recarregáveis, com filtros no backend para registros e missões.

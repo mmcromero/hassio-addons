@@ -1,8 +1,13 @@
 {
   "product": "Portal de Governança",
-  "addon_version": "0.1.0-dev.45",
+  "addon_version": "0.1.0-dev.46",
   "source_repository": "mmcromero/portal-governanca",
-  "source_commit": "9ef96bd9176e110d6c293305423b0d343b9246a9",
+  "source_commit": "b285a8af3d97ae98450b4e0c140fe1cc48e84af4",
+  "source_worktree": {
+    "state": "clean",
+    "status_entries": [],
+    "fingerprint_sha256": "bccbeead74b599f4bcf19261ed953ed9d7dbab55d648d0b8cabb0da116ae8972"
+  },
   "design_system_repository": "mmcromero/design-system",
   "design_system_commit": "feaae354526a6b5c4b1c4786374057c759de9b37",
   "design_system_packages": {
@@ -11,16 +16,17 @@
   },
   "design_system_snapshot": "vendor/design-system",
   "npm_lockfile_version": 3,
-  "npm_lockfile_sha256": "a1f134f12dad6662fc12c4b8e661590a028458edbe5af40fca620df4ee6311af",
+  "npm_lockfile_sha256": "200b8c86cb351687b1eacc2806cba05665d5a1bb75f62629c7cd269b236c8f1e",
+  "package_manifest_sha256": "f792d9bace6acbe997ecaaf2ec86cc4a3747bf67fa2617aba3c510ad9ce5dbe1",
   "build_strategy": "Supervisor Docker multi-stage build; npm ci + npm test + npm run build on target architecture",
   "files": [
     {
       "path": "CHANGELOG.md",
-      "sha256": "80c07df487bb6e41981b9776f1672a5595b224aa6e2398791a2abf43370bc8a6"
+      "sha256": "31718b219f88e79bbb9b9fe77b321e46923f2d9b5b27c761a1045a3b83d90475"
     },
     {
       "path": "config.yaml",
-      "sha256": "1bef626981a8fa33282b8648b3568501b412bbaa3aed62b27c055119f516f505"
+      "sha256": "0c6cb073fc9ee640a1c37bce4d3ee63bdd0de9ef89e3f892c8271c30c15d74d6"
     },
     {
       "path": "config/design-system.lock.json",
@@ -52,11 +58,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "a1f134f12dad6662fc12c4b8e661590a028458edbe5af40fca620df4ee6311af"
+      "sha256": "54cb64c51bc8e49f01016172c5130e4f207983371de02777ef3e8e668b86f2f4"
     },
     {
       "path": "package.json",
-      "sha256": "7e01586d578473d7349b863d4f72f34b4e162734d1de8968ef849d15cb3c3dcf"
+      "sha256": "b0a34057f7de63c644e5000c2bb95891c3677ec88821f0a269e1b33d3b48f709"
     },
     {
       "path": "public/brand-icon.png",
@@ -64,7 +70,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "e2ac400f86c25000204b99c1482e928f9b7027e4702da5cda2680eef13e8ce84"
+      "sha256": "149cbe1058537b58437896fe6d62c2a6fd2a9794c2639903da7847807b65a9f8"
     },
     {
       "path": "run.sh",
@@ -124,7 +130,7 @@
     },
     {
       "path": "src/main.ts",
-      "sha256": "fb25efabe900f45f5184ee13995780bb4e836aa38c85095e43095faa74bac316"
+      "sha256": "e8a0e2029484c5a8cf94b142b7accc387ad76cce4984fddfdb4eef9668c62d58"
     },
     {
       "path": "src/project-age.ts",
@@ -160,7 +166,7 @@
     },
     {
       "path": "tests/build-architecture.test.mjs",
-      "sha256": "a2b42fc15691178cdb2091ca8253581b1de90cd421c38b433013b0ba2b20e9cc"
+      "sha256": "0f20791efb2670b4f04d34f3d721941c1de39f0645a9dc3cd4e1708f4aa9ae10"
     },
     {
       "path": "tests/build-evidence.test.mjs",
@@ -184,7 +190,7 @@
     },
     {
       "path": "tests/layout.test.mjs",
-      "sha256": "05ad6d04f86bf65496ee6cda85590f6cf4027dae42f6194a4b73c67b19875773"
+      "sha256": "4c05df32bc917cd58625f008ba86c69571a8f99eeb9d31e3cb0f92d11868de4b"
     },
     {
       "path": "tests/ledger.test.mjs",
@@ -267,102 +273,6 @@
       "sha256": "90e1c2b58f05c84f15f90240e4b9ed8991ee369288bd340a4da8d656abf3c0c5"
     },
     {
-      "path": "vendor/design-system/packages/components/dist/components.iife.js",
-      "sha256": "3bd8e8a2b71a6a7188fec7f149f323f47f442f18d39c5a773e0e40b62426cb4f"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-alert.d.ts",
-      "sha256": "a73484d04366b890c0d5f0876b70c578a5073921e82f7e8c7ddf45b1b022aa94"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-alert.js",
-      "sha256": "b05858ba0a51db199c2bd63c03b0ef204a1204fd0194c5e33cfddc0b3ae4c099"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-app-shell.d.ts",
-      "sha256": "cbbbbd64298ab8ffa31938c8974ab8234cb2de2591c44196783f73f233de25e1"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-app-shell.js",
-      "sha256": "7cb743f053f57b2146cecbf83e496d6258ccb30b9570ed3a12b1de0bad2c0878"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-badge.d.ts",
-      "sha256": "9ea5c64d6db84be38b7fc8b3fc54ce5b261e5beaad0ad30403a7ee677b1c6ff8"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-badge.js",
-      "sha256": "b93a09666654b5238cdaecf818681ca3cf215b999aa1960b22e7350799d40ba7"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-button.d.ts",
-      "sha256": "27a8edb6b76c09ffe9b14708ba488a6b9900d79b52efe0ef7d6c895d756a857a"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-button.js",
-      "sha256": "cac14e63ed9596bf05f89351f07ff186769dbf403e166b0772497c0d60932193"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-card.d.ts",
-      "sha256": "f6bda26d727d83cd2df3b45f3b14fe9bd71c8a7e53835799ac0ac4158c30e939"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-card.js",
-      "sha256": "93de658dd1cdbef7d4926790c1db008e5ded8d0080a2d17c606dfe5705896bd7"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.d.ts",
-      "sha256": "9dc2b279d64afa122f5605c5f1458686f7498619fde5e4c42dfd36fb9fcee28d"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-dialog.js",
-      "sha256": "2b505787751f5915c8fb6027b827614ca2126c5019123d7b3c30640155781ada"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-input.d.ts",
-      "sha256": "ea5af429aa990e3ce97767327c86eafe66fff60e282deaa695cc44e888dbbe88"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/components/ds-input.js",
-      "sha256": "ee46b04c02967bc161816e303ca740f8a1bb7046fc90c8e82f54de03038b98d5"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/index.d.ts",
-      "sha256": "00b14f67c4ee8950b6354d7a6e49643fd1c05e984060d571777a588b3f7d37a0"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/index.js",
-      "sha256": "d01280f1a6377634328aacb0937c7fc37cf50f585736019ee5e663ee128f73ed"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/styles.css",
-      "sha256": "f054e71859dfd2059863b3115eb5da5a5b4b34ac7a71ba4a51e47d54965a4159"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/testing/app-shell.d.ts",
-      "sha256": "986d1aa95738573384b37be727113b77c8f025a65e7b3d3de20d8dcbc0d15eed"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/testing/app-shell.js",
-      "sha256": "0af0bd3cca168693b77a3c5e4ad2c0f0475939c463038efd7eb310fe4ead1f00"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/base-element.d.ts",
-      "sha256": "2bc11288753ed17de111eb6ebef27be1337c068e432f9d08174393cb0750d99e"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/base-element.js",
-      "sha256": "d0da211152e6543c8642d60aa9882dec2c78bcadcbb048f5593a9abe52e8b4ff"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/light-slot.d.ts",
-      "sha256": "579b20fc9fc9beea27e16c65986eaefaf315b4e0c9173597083b2b90dbfe53b0"
-    },
-    {
-      "path": "vendor/design-system/packages/components/dist/utils/light-slot.js",
-      "sha256": "dc868e935f37084d61a766024b31ed47565efac6f171564993d2a38c2a056d13"
-    },
-    {
       "path": "vendor/design-system/packages/components/package.json",
       "sha256": "dcb8780214281728939b25f8e1581d6fd6869fab9d9058f6ac589a2117a353ad"
     },
@@ -423,22 +333,6 @@
       "sha256": "eefed588ac33eb6a9cbdfa81478fe44c6ee56c59f3f77464c89d1aa5a3587486"
     },
     {
-      "path": "vendor/design-system/packages/tokens/dist/index.d.ts",
-      "sha256": "35fd9cf830f540367aa26cbaa3d68e206402dfcdab4a1c87eb40c7b5703db77c"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/index.js",
-      "sha256": "e46401d96b6fe6ec80c03617579664713c45cf587f05b2a522c87c9be0a2ab33"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/tokens.css",
-      "sha256": "c6c36b17f8d390433c664d5a67d2c2b01a238bd71883e3cb33d098aa4abc0ec9"
-    },
-    {
-      "path": "vendor/design-system/packages/tokens/dist/tokens.json",
-      "sha256": "efdb5ee1826ffd8a156e3e4f97adf6aa26b4ccd6eb602c34310742113eb21e55"
-    },
-    {
       "path": "vendor/design-system/packages/tokens/package.json",
       "sha256": "0d6565352915accc74fbb1e03036267135b1db2f91ae423c19ff296632044ecb"
     },
@@ -471,5 +365,6 @@
       "sha256": "5004a1cfd3bad6346e04979f8ffc58cb8e769283dba4705edf32e3438a9e3ae3"
     }
   ],
-  "generated_by": "npm run package:addon"
+  "generated_by": "GitHub API export matching scripts/package-addon.mjs file selection",
+  "packaging_method": "GitHub Git Data API; source file blobs and paths copied byte-for-byte"
 }

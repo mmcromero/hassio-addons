@@ -1283,7 +1283,7 @@ function render() {
       registerError = null;
       syncRoute();
       render();
-      document.querySelector<HTMLElement>('#main-content')?.focus();
+      document.querySelector<HTMLElement>('#main-content')?.focus({preventScroll:true});
       if (view === 'register' && !catalog && !catalogLoading) void loadCatalog();
       if (view === 'environments' && !supervisorSnapshot && !supervisorLoading && !supervisorError) void loadSupervisor(false);
       if (view === 'automations' && !n8nSnapshot && !n8nLoading && !n8nError) void loadN8n(false);
@@ -1301,7 +1301,7 @@ function render() {
   globalNav.hidden = projectFocused;
   header.innerHTML = '<div><p class="eyebrow">ECOSSISTEMA MMCROMERO</p><h1>' +
     (projectFocused ? 'Central do Projeto' : view === 'register' ? 'Cadastrar projeto' : nav.find(n => n.id === view)?.label) +
-    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.45</ds-badge><small>' +
+    '</h1></div><div class="header-meta">' + projectContextSelector() + '<ds-badge variant="info">Centro de Comando · v0.1.0-dev.46</ds-badge><small>' +
     esc(status) + ' · ' + (lastChecked ? date(lastChecked) : 'sem consulta') +
     '</small><ds-button size="sm" variant="secondary" ' + (loading ? 'disabled' : '') + ' data-refresh>' +
     (loading ? 'Consultando…' : 'Atualizar GitHub') + '</ds-button></div>';
@@ -1320,7 +1320,7 @@ function render() {
       view = 'projects';
       syncRoute();
       render();
-      document.querySelector<HTMLElement>('#main-content')?.focus();
+      document.querySelector<HTMLElement>('#main-content')?.focus({preventScroll:true});
       if(selected)void loadTimeline(selected.id);
     })
   );
@@ -1368,7 +1368,7 @@ function render() {
     projectSection = 'overview';
     syncRoute();
     render();
-    document.querySelector<HTMLElement>('#main-content')?.focus();
+    document.querySelector<HTMLElement>('#main-content')?.focus({preventScroll:true});
   });
 
   header.querySelector<HTMLElement>('[data-refresh]')?.addEventListener('click', () => void refresh(true));

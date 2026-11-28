@@ -1,6 +1,6 @@
 # Portal de Governança — add-on Home Assistant
 
-**Candidata:** 0.1.0-dev.43.
+**Candidata:** 0.1.0-dev.46.
 
 Add-on independente para Home Assistant OS, acessado exclusivamente pelo Ingress. Esta pasta é o pacote de distribuição gerado a partir do repositório-fonte mmcromero/portal-governanca; não é uma segunda fonte de código.
 
@@ -24,7 +24,7 @@ Add-on independente para Home Assistant OS, acessado exclusivamente pelo Ingress
 - Dias ativos são dias distintos com commits observados no fuso America/Sao_Paulo; não representam horas trabalhadas.
 - O início não é inferido da data de criação do repositório.
 - Encerramento depende de registro explícito do proprietário; o contador congela nessa data.
-- A coleta e o build/testes são executados no ambiente de destino pelo Supervisor durante a instalação/atualização.
+- A coleta e o build/testes são executados no ambiente de destino pelo Supervisor durante a instalação/atualização. A preparação do pacote não exige checkout Git limpo nem Codespaces; a proveniência identifica o HEAD de referência e os hashes do conteúdo efetivamente distribuído.
 
 ## Instalação e homologação
 
