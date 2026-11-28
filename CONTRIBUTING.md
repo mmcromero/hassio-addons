@@ -78,6 +78,20 @@ A validação deve conferir existência, formato e dimensões recomendadas no pa
 5. **Exceções justificadas:** imagem pré-compilada, dependência binária nativa, comportamento específico de arquitetura, falha concreta de build ou risco de segurança podem exigir build/ensaio extra antes da publicação. Registrar motivo, teste mínimo necessário, alternativa, responsável e autorização. Não confundir impossibilidade de emular com impossibilidade de publicar RC de teste, se autorizada.
 6. **Não repetir** testes já válidos para artefato/SHA não alterado sem causa técnica. Não converter SKIP ou build antigo em PASS.
 
+### P0 — Transferência controlada da fonte para o catálogo
+
+Quando a fonte do add-on estiver em outro repositório, a publicação é uma **exportação de pacote**, não um merge entre repositórios:
+
+1. Consultar o manual e as instruções do produto; identificar branch/SHA da fonte e a seleção oficial de arquivos do pacote.
+2. Construir ou preparar o pacote pelo executor documentado pelo produto. Não impor Codespaces, Actions, QEMU, checkout limpo ou ferramenta externa sem requisito técnico comprovado.
+3. Atualizar exclusivamente `<slug-do-app>/` na `main` deste catálogo. Preferir Git Data API (blobs + tree baseado no HEAD atual + commit) ou mecanismo equivalente que preserve o restante da árvore.
+4. Nunca fazer merge da branch-fonte neste repositório, substituir a árvore completa, remover arquivos compartilhados ou alterar outros apps como efeito colateral.
+5. Antes do commit, revisar o diff e validar manifesto, versão, identidade, arquitetura, assets, dependências, segredos e proveniência. Depois, reler o HEAD e conferir que o diff ficou limitado ao app autorizado.
+6. Usar atualização condicional do ref (expected SHA/lease). Se a `main` avançar durante a operação, reler e reconciliar; não usar force push para contornar concorrência.
+7. Só depois da confirmação do commit, atualizar o índice do Supervisor, conferir a versão disponível e executar a instalação/atualização autorizada. Acompanhar build e logs no hardware-alvo e registrar separadamente publicação, instalação, build e homologação.
+
+**Regra de conduta:** não discutir com o proprietário a existência de uma rota já documentada nem pedir que ele repita instruções. O executor deve consultar o manual, escolher a ferramenta disponível, executar e apresentar evidência. Se houver falha real, apontar a etapa e a mensagem observada e corrigir essa etapa. Um NO-GO sem tentativa do procedimento e sem evidência concreta é desvio de procedimento.
+
 ## 3. Fechamento, publicação e homologação
 
 1. Concluir o lote completo na fonte aprovada e verificar o HEAD. Se houver processo de congelamento/candidata/exportação, aplicá-lo conforme o manual do produto; não inventar comandos, branches ou gates novos.
