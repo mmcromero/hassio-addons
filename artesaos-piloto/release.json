@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.38",
+  "version": "0.2.0-dev.39",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.38",
-  "sourceCommit": "5abf26edef62603d8a98fbd46ae73b35d235c42d",
+  "releaseVersion": "0.2.0-dev.39",
+  "sourceCommit": "6beba7fb1f56f30208854b206dc3b3d693307f96",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,17 +22,17 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-28T20:07:18.045Z",
+  "preparedAt": "2026-11-28T20:13:04.393Z",
   "builtAt": null,
-  "businessSourceSha256": "1116f802f38203634a590dabcf23892f1512e2c58c332c9c8e35c01b0b4fe278",
+  "businessSourceSha256": "094b4a53184f74aae329d647dbf139661cf178e32e3cd14ea34cc6389aacf2fd",
   "validation": {
-    "sourceCommit": "5abf26edef62603d8a98fbd46ae73b35d235c42d",
+    "sourceCommit": "6beba7fb1f56f30208854b206dc3b3d693307f96",
     "status": "pending-supervisor",
     "directedChecks": [
       {
         "name": "branch-reconciliation",
         "status": "passed",
-        "evidence": "release-candidate promovida por fast-forward; development e release-candidate apontam para 5abf26edef62603d8a98fbd46ae73b35d235c42d."
+        "evidence": "release-candidate congelada no SHA 6beba7fb1f56f30208854b206dc3b3d693307f96 após promoção fast-forward de development."
       },
       {
         "name": "core-base-pin",
@@ -42,12 +42,12 @@
       {
         "name": "schema-and-dependencies",
         "status": "passed",
-        "evidence": "schemaVersions e package.json/package-lock.json sem alteração; server/categories.ts adiciona consulta GET somente leitura, sem migrações ou escrita no WooCommerce."
+        "evidence": "schemaVersions e package.json/package-lock.json sem alteração; sem migrações ou dependências novas."
       },
       {
-        "name": "reconciliation-static-review",
+        "name": "build-failure-analysis-dev38",
         "status": "passed",
-        "evidence": "Revisão estática do diff: prévia sem gravação; confirmação de categorias separada; produtos não confirmados automaticamente."
+        "evidence": "Logs do Supervisor identificaram erro TS2339 por narrowing e ausência de testes devido a .dockerignore. Ambos corrigidos no source SHA 6beba7fb1f56f30208854b206dc3b3d693307f96; novo build ainda pendente."
       },
       {
         "name": "woocommerce-category-taxonomy-review",
@@ -57,12 +57,12 @@
       {
         "name": "supervisor-build-and-tests",
         "status": "pending",
-        "evidence": "Dockerfile executa npm test, npm run build, verificação de schema e runtime em Node.js 24.19.0 no Supervisor ARM64."
+        "evidence": "Dockerfile executa npm test com test/ agora incluído, npm run build, verificação de schema e runtime em Node.js 24.19.0 no Supervisor ARM64."
       },
       {
         "name": "browser-and-data-homologation",
         "status": "pending",
-        "evidence": "Aguardando instalação no mesmo add-on e conferência funcional/visual; nenhuma carga real será confirmada automaticamente."
+        "evidence": "Aguardando build/instalação e conferência funcional/visual; nenhuma carga real será confirmada automaticamente."
       }
     ],
     "build": "pending-supervisor",
@@ -217,6 +217,6 @@
       "logo.png": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
     }
   },
-  "exportMethod": "Git Data API incremental from frozen release-candidate; changed app source files, directed build-stage test and release metadata copied only into artesaos-piloto. Test files remain build-stage only and are not copied into runtime image.",
-  "exporterScript": "scripts/prepare-ha-source.py not executed: UI-only backend guard rejects server/categories.ts. The incremental Git Data API route was used as documented by the prior dev.37 backend candidate. npm test remains a mandatory Supervisor build gate."
+  "exportMethod": "Git Data API incremental from frozen release-candidate; updated ProductSettings.tsx, .dockerignore, source manifest, Dockerfile labels, directed tests and release metadata copied only into artesaos-piloto. Test files are present in build context and are not copied into runtime image.",
+  "exporterScript": "scripts/prepare-ha-source.py not executed: UI-only backend guard rejects server/categories.ts. Incremental Git Data API route retained from dev.37 backend candidate precedent; npm test remains a mandatory Supervisor build gate."
 }

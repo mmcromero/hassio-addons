@@ -1,6 +1,5 @@
 node_modules
 dist
 dist-server
-test
 *.sqlite*
 .local-data
