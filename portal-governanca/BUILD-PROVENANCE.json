@@ -373,6 +373,6 @@
       "sha256": "5004a1cfd3bad6346e04979f8ffc58cb8e769283dba4705edf32e3438a9e3ae3"
     }
   ],
-  "generated_by": "npm run package:addon",
-  "packaging_method": "GitHub Git Data API; byte-identical export of the official package-addon.mjs file selection"
+  "generated_by": "GitHub API export reproducing the exact file selection in scripts/package-addon.mjs; local npm command not executed",
+  "packaging_method": "GitHub Git Data API; byte-identical export of the official package-addon.mjs file selection; source files and package manifest SHA-256 verified"
 }
