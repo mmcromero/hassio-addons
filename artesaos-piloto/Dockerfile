@@ -9,9 +9,9 @@ RUN mkdir -p dist && npm test && npm run build && node scripts/verify-ha-source-
     chmod a+r /app/package.json /app/pilot-build.json
 
 FROM node:24.19.0-bookworm-slim
-LABEL org.opencontainers.image.revision="6beba7fb1f56f30208854b206dc3b3d693307f96" \
-      org.opencontainers.image.version="0.2.0-dev.39" \
-      org.opencontainers.image.created="2026-11-28T20:13:04.393Z" \
+LABEL org.opencontainers.image.revision="d20af4c496d515e6a252894ee6ef12f1ec5967ae" \
+      org.opencontainers.image.version="0.2.0-dev.40" \
+      org.opencontainers.image.created="2026-11-28T20:16:20.442Z" \
       org.opencontainers.image.source="https://github.com/mmcromero/fabricacao_e_orcamentos" \
       dev.artesao.distribution="home-assistant"
 WORKDIR /app

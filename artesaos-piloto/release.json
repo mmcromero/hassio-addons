@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0-dev.39",
+  "version": "0.2.0-dev.40",
   "stage": "offline-catalog",
   "distributions": [
     "home-assistant",
@@ -12,8 +12,8 @@
     "support": 2,
     "legal": 3
   },
-  "releaseVersion": "0.2.0-dev.39",
-  "sourceCommit": "6beba7fb1f56f30208854b206dc3b3d693307f96",
+  "releaseVersion": "0.2.0-dev.40",
+  "sourceCommit": "d20af4c496d515e6a252894ee6ef12f1ec5967ae",
   "distribution": "home-assistant",
   "packageKind": "source-addon",
   "architecture": "linux/arm64",
@@ -22,17 +22,17 @@
   "repositoryPath": "artesaos-piloto",
   "baseVersion": "0.1.23",
   "metadataVersion": 1,
-  "preparedAt": "2026-11-28T20:13:04.393Z",
+  "preparedAt": "2026-11-28T20:16:20.442Z",
   "builtAt": null,
-  "businessSourceSha256": "094b4a53184f74aae329d647dbf139661cf178e32e3cd14ea34cc6389aacf2fd",
+  "businessSourceSha256": "916167d77918a9f52cc19cb2c8e05cd8a9b0160d6f483b7b56f74169f5d66cf3",
   "validation": {
-    "sourceCommit": "6beba7fb1f56f30208854b206dc3b3d693307f96",
+    "sourceCommit": "d20af4c496d515e6a252894ee6ef12f1ec5967ae",
     "status": "pending-supervisor",
     "directedChecks": [
       {
         "name": "branch-reconciliation",
         "status": "passed",
-        "evidence": "release-candidate congelada no SHA 6beba7fb1f56f30208854b206dc3b3d693307f96 após promoção fast-forward de development."
+        "evidence": "release-candidate congelada no SHA d20af4c496d515e6a252894ee6ef12f1ec5967ae após promoção fast-forward de development."
       },
       {
         "name": "core-base-pin",
@@ -45,9 +45,9 @@
         "evidence": "schemaVersions e package.json/package-lock.json sem alteração; sem migrações ou dependências novas."
       },
       {
-        "name": "build-failure-analysis-dev38",
+        "name": "build-failure-analysis-dev38-dev39",
         "status": "passed",
-        "evidence": "Logs do Supervisor identificaram erro TS2339 por narrowing e ausência de testes devido a .dockerignore. Ambos corrigidos no source SHA 6beba7fb1f56f30208854b206dc3b3d693307f96; novo build ainda pendente."
+        "evidence": "Logs do Supervisor identificaram erro de narrowing, exclusão da pasta test, regex mal escapada e asserção de seletor obsoleta. Correções registradas no source SHA d20af4c496d515e6a252894ee6ef12f1ec5967ae."
       },
       {
         "name": "woocommerce-category-taxonomy-review",
@@ -57,7 +57,7 @@
       {
         "name": "supervisor-build-and-tests",
         "status": "pending",
-        "evidence": "Dockerfile executa npm test com test/ agora incluído, npm run build, verificação de schema e runtime em Node.js 24.19.0 no Supervisor ARM64."
+        "evidence": "Dockerfile executa npm test com test/ incluído, npm run build, verificação de schema e runtime em Node.js 24.19.0 no Supervisor ARM64."
       },
       {
         "name": "browser-and-data-homologation",
@@ -217,6 +217,6 @@
       "logo.png": "7e500016222b0a5bf395be8ed17447edeb3e2af9"
     }
   },
-  "exportMethod": "Git Data API incremental from frozen release-candidate; updated ProductSettings.tsx, .dockerignore, source manifest, Dockerfile labels, directed tests and release metadata copied only into artesaos-piloto. Test files are present in build context and are not copied into runtime image.",
+  "exportMethod": "Git Data API incremental from frozen release-candidate; corrected directed test files, release metadata and Dockerfile labels copied only into artesaos-piloto. test/ included in build context and excluded from runtime image.",
   "exporterScript": "scripts/prepare-ha-source.py not executed: UI-only backend guard rejects server/categories.ts. Incremental Git Data API route retained from dev.37 backend candidate precedent; npm test remains a mandatory Supervisor build gate."
 }

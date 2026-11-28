@@ -116,7 +116,7 @@ test('referência existente com unidade incompatível não é reutilizada',async
   const material:MaterialUse={...emptyMaterial(),name:'PLA genérico',purchaseQuantity:1,purchasePrice:130,purchaseUnit:'kg',quantity:20,unit:'g'};
   const incoming={...product,name:'Produto com referência incompatível',sku:'REF-CONFLICT',sourceKeys:['excel:ref-conflict'],prices:{wholesale:1000,factory:2000,retail:3000},manufacturing:{...emptyProduction(),machineSeconds:100,humanSeconds:60,materials:[material]}};
   const preview=(await app.inject({method:'POST',url:'/api/products/reconcile',payload:{records:[{key:'ref-conflict',product:incoming}],confirm:false}})).json();
-  assert.equal(preview.valid,false);assert.match(preview.details[0].errors.join(' '),/tipo\\/unidade incompatível/);
+  assert.equal(preview.valid,false);assert.match(preview.details[0].errors.join(' '),/tipo\/unidade incompatível/);
   assert.equal((await app.inject('/api/products')).json().length,0);assert.equal((await app.inject('/api/materials')).json().length,1);
  }finally{await app.close();rmSync(dir,{recursive:true,force:true});}
 });

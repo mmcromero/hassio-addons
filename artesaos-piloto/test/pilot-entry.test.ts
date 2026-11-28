@@ -21,7 +21,7 @@ test('entrada separa inscrição e autenticação sem duplicar formulários nem 
  assert.match(html,/placeholder="Seu nome"/);assert.match(html,/placeholder="Seu e-mail"/);assert.match(html,/placeholder="DDD e número \(opcional\)"/);
  assert.match(html,/class="entry-sr-only" for="interest-name"/);assert.match(html,/aria-describedby="interest-privacy"/);
  assert.match(html,/data-pilot-brand="horizontal"/);assert.doesNotMatch(html,/class="entry-legal"/);
- const script=entryScript();assert.match(script,/De artesão para artesão\./);assert.match(script,/Acesso administrativo/);assert.match(script,/#pilot-build-info/);
+ const script=entryScript();assert.match(script,/De artesão para artesão\./);assert.match(script,/Acesso administrativo/);assert.match(script,/pilot-build-info/);
  assert.match(html,/developers\.google\.com\/static\/identity\/images\/g-logo\.png/);
  assert.match(script,/a\[href\*="\/legal"\]/);assert.match(script,/#terms/);assert.match(script,/#privacy/);assert.match(script,/#cookies/);
  assert.match(script,/pilot-account/);
